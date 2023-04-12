@@ -6,7 +6,7 @@ import (
 )
 
 func usage() {
-	fmt.Println("Usage: gitlab-nvim <merge-request-id> <line-number> <comment>")
+	fmt.Println("Usage: gitlab-nvim <project-id> <line-number> <comment>")
 	os.Exit(1)
 }
 
@@ -15,9 +15,14 @@ func main() {
 		usage()
 	}
 
-	mergeId, lineId, comment := os.Args[1], os.Args[2], os.Args[3]
+	projectId, lineNumber, comment := os.Args[1], os.Args[2], os.Args[3]
 
-	if mergeId == "" || lineId == "" || comment == "" {
+	if projectId == "" || lineNumber == "" || comment == "" {
 		usage()
 	}
+
+	fmt.Println("Project ID is: ", projectId)
+	fmt.Println("Current Line number is: ", lineNumber)
+	fmt.Println("Comment is: ", comment)
+
 }

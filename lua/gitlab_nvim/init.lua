@@ -1,18 +1,18 @@
 local Job = require("plenary.job")
 local M = {}
 
-M.MERGE_REQUEST_ID = nil
+M.PROJECT_ID = nil
 
 local function error(msg)
   vim.api.nvim_err_writeln("Error: " .. msg)
 end
 
-M.comment = function()
+M.comment = function(comment)
   local data = {}
   local current_line_number = vim.api.nvim_call_function('line', { '.' })
   Job:new({
     command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
-    args = { "hi", current_line_number, "This is a comment" },
+    args = { M.PROJECT_ID, current_line_number, comment },
     on_stdout = function(_, line)
       table.insert(data, line)
     end,
@@ -23,10 +23,10 @@ M.comment = function()
 end
 
 M.setup = function(args)
-  if args.merge_request_id == nil then
-    error("No merge request ID provided")
+  if args.project_id == nil then
+    error("No project ID provided!")
   end
-  M.MERGE_REQUEST_ID = args.merge_request_id
+  M.PROJECT_ID = args.project_id
 end
 
 return M
