@@ -24,6 +24,9 @@ func main() {
 		project := commands.GetProjectInfo()
 		fmt.Printf("%+v", project)
 		os.Exit(0)
+	case "comment":
+		project := commands.GetProjectInfo()
+		commands.MakeComment(project.ID)
 	default:
 		usage()
 	}

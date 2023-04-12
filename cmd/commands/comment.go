@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	projectId      = 40444811
 	discussionsUrl = "https://gitlab.com/api/v4/projects/%d/merge_requests/%s/discussions"
 	mrVersionsUrl  = "https://gitlab.com/api/v4/projects/%d/merge_requests/%s/versions"
 )
@@ -76,7 +75,7 @@ type MRVersion struct {
 	RealSize       string    `json:"real_size"`
 }
 
-func MakeComment() {
+func MakeComment(projectId int) {
 	mergeId := getCurrentMergeId()
 
 	err, response := getMRVersions(mergeId, projectId)
@@ -129,7 +128,6 @@ func createComment(mergeId string, projectId int, mrInfo MRVersion) error {
 		return err
 	}
 	req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
-
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	res, err := client.Do(req)
 	if err != nil {
