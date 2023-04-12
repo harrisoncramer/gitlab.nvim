@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/commands"
 )
 
 func usage() {
@@ -11,18 +13,28 @@ func usage() {
 }
 
 func main() {
-	if len(os.Args) < 4 {
+	if len(os.Args) < 2 {
 		usage()
 	}
 
-	projectId, lineNumber, comment := os.Args[1], os.Args[2], os.Args[3]
+	command := os.Args[1]
 
-	if projectId == "" || lineNumber == "" || comment == "" {
+	switch command {
+	case "projectInfo":
+		commands.ProjectInfo()
+
+	default:
 		usage()
 	}
 
-	fmt.Println("Project ID is: ", projectId)
-	fmt.Println("Current Line number is: ", lineNumber)
-	fmt.Println("Comment is: ", comment)
+	// if command == "" || projectId == "" || lineNumber == "" || comment == "" {
+	// 	usage()
+	// }
+
+	// , projectId, lineNumber, comment := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
+	// 	fmt.Println("Command is: ", command)
+	// 	fmt.Println("Project ID is: ", projectId)
+	// 	fmt.Println("Current Line number is: ", lineNumber)
+	// 	fmt.Println("Comment is: ", comment)
 
 }

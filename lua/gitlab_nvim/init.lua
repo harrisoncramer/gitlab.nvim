@@ -12,7 +12,22 @@ M.comment = function(comment)
   local current_line_number = vim.api.nvim_call_function('line', { '.' })
   Job:new({
     command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
-    args = { M.PROJECT_ID, current_line_number, comment },
+    args = { "comment", M.PROJECT_ID, current_line_number, comment },
+    on_stdout = function(_, line)
+      table.insert(data, line)
+    end,
+    on_exit = function()
+      P(data)
+    end,
+  }):start()
+end
+
+M.projectInfo = function()
+  local data = {}
+  local current_line_number = vim.api.nvim_call_function('line', { '.' })
+  Job:new({
+    command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
+    args = { "projectInfo" },
     on_stdout = function(_, line)
       table.insert(data, line)
     end,
