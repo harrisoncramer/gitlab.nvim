@@ -37,11 +37,4 @@ func main() {
 	default:
 		usage()
 	}
-
-	// , projectId, lineNumber, comment := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
-	// 	fmt.Println("Command is: ", command)
-	// 	fmt.Println("Project ID is: ", projectId)
-	// 	fmt.Println("Current Line number is: ", lineNumber)
-	// 	fmt.Println("Comment is: ", comment)
-
 }
