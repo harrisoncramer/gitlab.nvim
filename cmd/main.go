@@ -21,8 +21,9 @@ func main() {
 
 	switch command {
 	case "projectInfo":
-		commands.ProjectInfo()
-
+		project := commands.GetProjectInfo()
+		fmt.Printf("%+v", project)
+		os.Exit(0)
 	default:
 		usage()
 	}
