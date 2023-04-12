@@ -6,7 +6,7 @@ import (
 )
 
 func usage() {
-	fmt.Println("Usage: gitlab-nvim <merge-request-id> <line-id> <comment-string>")
+	fmt.Println("Usage: gitlab-nvim <merge-request-id> <line-number> <comment>")
 	os.Exit(1)
 }
 
