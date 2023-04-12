@@ -76,7 +76,7 @@ type MRVersion struct {
 	RealSize       string    `json:"real_size"`
 }
 
-func main() {
+func MakeComment() {
 	mergeId := getCurrentMergeId()
 
 	err, response := getMRVersions(mergeId, projectId)
