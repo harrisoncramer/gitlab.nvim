@@ -75,7 +75,7 @@ type MRVersion struct {
 	RealSize       string    `json:"real_size"`
 }
 
-func MakeComment(projectId int) {
+func MakeComment(projectId int, lineNumber string, fileName string, comment string) {
 	mergeId := getCurrentMergeId()
 
 	err, response := getMRVersions(mergeId, projectId)
@@ -94,7 +94,7 @@ func MakeComment(projectId int) {
 	}
 
 	/* Create a thread for discussion with latest MR information */
-	err = createComment(mergeId, projectId, diffVersionInfo[0])
+	err = createComment(mergeId, projectId, diffVersionInfo[0], fileName, lineNumber, comment)
 	if err != nil {
 		log.Fatalf("Error making comment thread: %v", err)
 	}
@@ -104,7 +104,7 @@ func MakeComment(projectId int) {
 }
 
 /* POSTs the comment to the merge request */
-func createComment(mergeId string, projectId int, mrInfo MRVersion) error {
+func createComment(mergeId string, projectId int, mrInfo MRVersion, fileName string, lineNumber string, comment string) error {
 
 	payload := &bytes.Buffer{}
 	writer := multipart.NewWriter(payload)
@@ -112,10 +112,10 @@ func createComment(mergeId string, projectId int, mrInfo MRVersion) error {
 	_ = writer.WriteField("position[base_sha]", mrInfo.BaseCommitSHA)
 	_ = writer.WriteField("position[head_sha]", mrInfo.HeadCommitSHA)
 	_ = writer.WriteField("position[start_sha]", mrInfo.StartCommitSHA)
-	_ = writer.WriteField("position[new_path]", "main.go")
-	_ = writer.WriteField("position[old_path]", "main.go")
-	_ = writer.WriteField("position[new_line]", "119")
-	_ = writer.WriteField("body", "Another new comment!")
+	_ = writer.WriteField("position[new_path]", fileName)
+	_ = writer.WriteField("position[old_path]", fileName)
+	_ = writer.WriteField("position[new_line]", lineNumber)
+	_ = writer.WriteField("body", comment)
 	err := writer.Close()
 	if err != nil {
 		return err

@@ -8,7 +8,7 @@ import (
 )
 
 func usage() {
-	fmt.Println("Usage: gitlab-nvim <project-id> <line-number> <comment>")
+	fmt.Println("Usage: gitlab-nvim <command>")
 	os.Exit(1)
 }
 
@@ -25,15 +25,18 @@ func main() {
 		fmt.Printf("%+v", project)
 		os.Exit(0)
 	case "comment":
+		if len(os.Args) < 5 {
+			usage()
+		}
+		lineNumber, fileName, comment := os.Args[2], os.Args[3], os.Args[4]
+		if lineNumber == "" || fileName == "" || comment == "" {
+			usage()
+		}
 		project := commands.GetProjectInfo()
-		commands.MakeComment(project.ID)
+		commands.MakeComment(project.ID, lineNumber, fileName, comment)
 	default:
 		usage()
 	}
-
-	// if command == "" || projectId == "" || lineNumber == "" || comment == "" {
-	// 	usage()
-	// }
 
 	// , projectId, lineNumber, comment := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
 	// 	fmt.Println("Command is: ", command)
