@@ -34,6 +34,8 @@ func main() {
 		}
 		project := commands.GetProjectInfo()
 		commands.MakeComment(project.ID, lineNumber, fileName, comment)
+	case "approve":
+		commands.Approve()
 	default:
 		usage()
 	}

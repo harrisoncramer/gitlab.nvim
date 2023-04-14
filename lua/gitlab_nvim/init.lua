@@ -1,13 +1,27 @@
-local Job     = require("plenary.job")
-local popup   = require("gitlab_nvim.utils.popup")
-local u       = require("gitlab_nvim.utils")
-local M       = {}
+local Job    = require("plenary.job")
+local popup  = require("gitlab_nvim.utils.popup")
+local u      = require("gitlab_nvim.utils")
+local M      = {}
 
-M.PROJECT_ID  = nil
+M.PROJECT_ID = nil
 
 -- This function just opens the popup window
-M.comment     = function()
+M.comment    = function()
   popup:mount()
+end
+
+local bin    = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin"
+
+local function printSuccess(_, line)
+  if line ~= nil and line ~= "" then
+    require("notify")(line, "info")
+  end
+end
+
+local function printError(_, line)
+  if line ~= nil and line ~= "" then
+    require("notify")(line, "error")
+  end
 end
 
 -- This function invokes our binary and sends the text to Gitlab
@@ -16,7 +30,7 @@ M.sendComment = function(text)
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
   Job:new({
-    command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
+    command = bin,
     args = {
       "comment",
       M.PROJECT_ID,
@@ -24,14 +38,8 @@ M.sendComment = function(text)
       relative_file_path,
       text,
     },
-    on_stdout = function(_, line)
-      require("notify")(line, "info")
-    end,
-    on_stderr = function(_, line)
-      require("notify")(line, "error")
-    end,
-    on_exit = function(code)
-    end,
+    on_stdout = printSuccess,
+    on_stderr = printError
   }):start()
 end
 
@@ -40,17 +48,24 @@ end
 M.projectInfo = function()
   local data = {}
   Job:new({
-    command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
+    command = bin,
     args = { "projectInfo" },
     on_stdout = function(_, line)
       table.insert(data, line)
     end,
-    on_stderr = function(_, line)
-      print(line)
-    end,
+    on_stderr = printError,
     on_exit = function()
       u.P(data)
     end,
+  }):start()
+end
+
+M.approve     = function()
+  Job:new({
+    command = bin,
+    args = { "approve" },
+    on_stdout = printSuccess,
+    on_stderr = printError
   }):start()
 end
 
