@@ -103,7 +103,7 @@ func MakeComment(projectId int, lineNumber string, fileName string, comment stri
 		log.Fatalf("Error making comment thread: %v", err)
 	}
 
-	log.Println("Comment created")
+	fmt.Println("Comment created")
 }
 
 /* POSTs the comment to the merge request */
@@ -141,18 +141,8 @@ func createComment(mergeId string, projectId int, mrInfo MRVersion, fileName str
 
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
-	var badResponse BadResponse
-
-	log.Println(string(body))
-
-	err = json.Unmarshal(body, &badResponse)
-	if err != nil {
-		return errors.New("Recevied non-200 response")
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("Recieved non-200 response: %s", badResponse.Message))
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.New(fmt.Sprintf("Recieved non-200 response: %d", res.StatusCode))
 	}
 
 	return nil

@@ -24,7 +24,7 @@ M.comment = function(comment)
       comment
     },
     on_stdout = function(_, line)
-      require("notify")(line, "success")
+      require("notify")(line, "info")
     end,
     on_stderr = function(_, line)
       require("notify")(line, "error")
