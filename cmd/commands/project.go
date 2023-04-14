@@ -43,7 +43,7 @@ func GetProjectInfo() Project {
 	projectName := strings.TrimSpace(string(output))
 
 	if err != nil {
-		log.Fatalf("Error getting repository name: %e", err)
+		log.Fatalf("Error getting repository name: %s", err)
 	}
 
 	url := fmt.Sprintf("https://gitlab.com/api/v4/projects?search=%s&owned=true", projectName)
@@ -54,7 +54,7 @@ func GetProjectInfo() Project {
 	res, err := client.Do(req)
 
 	if err != nil {
-		log.Fatalf("Error getting repository info: %e", err)
+		log.Fatalf("Error getting repository info: %s", err)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -64,13 +64,13 @@ func GetProjectInfo() Project {
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Fatalf("Error reading body: %e", err)
+		log.Fatalf("Error reading body: %s", err)
 	}
 
 	var project []Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
-		log.Fatalf("Error unmarshaling data from JSON: %e", err)
+		log.Fatalf("Error unmarshaling data from JSON: %s", err)
 	}
 
 	if len(project) > 1 {

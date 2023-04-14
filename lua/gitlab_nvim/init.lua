@@ -24,13 +24,12 @@ M.comment = function(comment)
       comment
     },
     on_stdout = function(_, line)
-      print("stdout")
+      require("notify")(line, "success")
     end,
     on_stderr = function(_, line)
-      print(line)
+      require("notify")(line, "error")
     end,
-    on_exit = function()
-      print("exit")
+    on_exit = function(code)
     end,
   }):start()
 end

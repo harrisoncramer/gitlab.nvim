@@ -84,7 +84,7 @@ func MakeComment(projectId int, lineNumber string, fileName string, comment stri
 
 	err, response := getMRVersions(mergeId, projectId)
 	if err != nil {
-		log.Fatalf("Error making diff thread: %e", err)
+		log.Fatalf("Error making diff thread: %s", err)
 	}
 	defer response.Body.Close()
 
@@ -192,7 +192,7 @@ func getCurrentMergeId() string {
 
 	output, err := gitCmd.Output()
 	if err != nil {
-		log.Fatalf("Error running git rev-parse: %e", err)
+		log.Fatalf("Error running git rev-parse: %s", err)
 	}
 
 	sourceBranch := strings.TrimSpace(string(output))
@@ -201,7 +201,7 @@ func getCurrentMergeId() string {
 
 	output, err = glabCmd.Output()
 	if err != nil {
-		log.Fatalf("Error running the command: %e", err)
+		log.Fatalf("Error running the command: %s", err)
 	}
 
 	result := strings.TrimSpace(string(output))
