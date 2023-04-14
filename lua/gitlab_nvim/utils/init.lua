@@ -21,7 +21,19 @@ local get_current_line_number = function()
   return vim.api.nvim_call_function('line', { '.' })
 end
 
+function P(...)
+  local objects = {}
+  for i = 1, select("#", ...) do
+    local v = select(i, ...)
+    table.insert(objects, vim.inspect(v))
+  end
+
+  print(table.concat(objects, "\n"))
+  return ...
+end
+
 local M = {}
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
+M.P = P
 return M

@@ -4,13 +4,7 @@ local M = {}
 
 M.PROJECT_ID = nil
 
-local function error(msg)
-  vim.api.nvim_err_writeln("Error: " .. msg)
-end
-
 M.comment = function(comment)
-  local data = {}
-
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
 
@@ -34,18 +28,6 @@ M.comment = function(comment)
   }):start()
 end
 
-M.error = function(msg)
-  Job:new({
-    command = "/Users/harrisoncramer/Desktop/gitlab_nvim/error.sh",
-    on_stderr = function(_, line)
-      print("there was an error")
-    end,
-    on_stdout = function(_, line)
-      print(line)
-    end,
-  }):start()
-end
-
 M.projectInfo = function()
   local data = {}
   Job:new({
@@ -58,7 +40,7 @@ M.projectInfo = function()
       print(line)
     end,
     on_exit = function()
-      P(data)
+      u.P(data)
     end,
   }):start()
 end
