@@ -1,4 +1,5 @@
 local Job = require("plenary.job")
+local u = require("gitlab_nvim.utils")
 local M = {}
 
 M.PROJECT_ID = nil
@@ -9,12 +10,18 @@ end
 
 M.comment = function(comment)
   local data = {}
-  local current_line_number = vim.api.nvim_call_function('line', { '.' })
+
+  local relative_file_path = u.get_relative_file_path()
+  local current_line_number = u.get_current_line_number()
+
   Job:new({
     command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
-    args = { "comment", M.PROJECT_ID, current_line_number, comment },
+    args = { "comment", M.PROJECT_ID, current_line_number, fileName, comment },
     on_stdout = function(_, line)
       table.insert(data, line)
+    end,
+    on_stderr = function(_, line)
+      print(line)
     end,
     on_exit = function()
       P(data)
@@ -24,12 +31,14 @@ end
 
 M.projectInfo = function()
   local data = {}
-  local current_line_number = vim.api.nvim_call_function('line', { '.' })
   Job:new({
     command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
     args = { "projectInfo" },
     on_stdout = function(_, line)
       table.insert(data, line)
+    end,
+    on_stderr = function(_, line)
+      print(line)
     end,
     on_exit = function()
       P(data)

@@ -22,14 +22,14 @@ func main() {
 	switch command {
 	case "projectInfo":
 		project := commands.GetProjectInfo()
-		fmt.Printf("%+v", project)
+		fmt.Println(project)
 		os.Exit(0)
 	case "comment":
-		if len(os.Args) < 5 {
+		if len(os.Args) < 6 {
 			usage()
 		}
-		lineNumber, fileName, comment := os.Args[2], os.Args[3], os.Args[4]
-		if lineNumber == "" || fileName == "" || comment == "" {
+		projectId, lineNumber, fileName, comment := os.Args[2], os.Args[3], os.Args[4], os.Args[5]
+		if lineNumber == "" || fileName == "" || comment == "" || projectId == "" {
 			usage()
 		}
 		project := commands.GetProjectInfo()

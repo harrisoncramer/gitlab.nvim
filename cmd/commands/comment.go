@@ -96,10 +96,11 @@ func MakeComment(projectId int, lineNumber string, fileName string, comment stri
 	/* Create a thread for discussion with latest MR information */
 	err = createComment(mergeId, projectId, diffVersionInfo[0], fileName, lineNumber, comment)
 	if err != nil {
-		log.Fatalf("Error making comment thread: %v", err)
+		fmt.Printf("Error making comment thread: %v", err)
+		os.Exit(1)
 	}
 
-	log.Println("Comment created!")
+	fmt.Printf("Comment created!")
 
 }
 
@@ -127,6 +128,7 @@ func createComment(mergeId string, projectId int, mrInfo MRVersion, fileName str
 	if err != nil {
 		return err
 	}
+
 	req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	res, err := client.Do(req)

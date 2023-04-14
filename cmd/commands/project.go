@@ -34,6 +34,7 @@ type Project struct {
 func GetProjectInfo() Project {
 	cmd := exec.Command("bash", "-c", "basename \"$(git rev-parse --show-toplevel)\" ")
 	output, err := cmd.Output()
+
 	if err != nil {
 		fmt.Println("Error running git rev-parse:", err)
 	}
