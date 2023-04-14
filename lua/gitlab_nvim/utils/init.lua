@@ -1,4 +1,4 @@
-function get_git_root()
+local function get_git_root()
   local output = vim.fn.system('git rev-parse --show-toplevel 2>/dev/null')
   if vim.v.shell_error == 0 then
     return vim.fn.substitute(output, '\n', '', '')
@@ -7,7 +7,7 @@ function get_git_root()
   end
 end
 
-function get_relative_file_path()
+local function get_relative_file_path()
   local git_root = get_git_root()
   if git_root ~= nil then
     local current_file = vim.fn.expand('%:p')
