@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -42,8 +43,7 @@ func GetProjectInfo() Project {
 	projectName := strings.TrimSpace(string(output))
 
 	if err != nil {
-		fmt.Println("Error getting repository name:", err)
-		os.Exit(1)
+		log.Fatalf("Error getting repository name: %e", err)
 	}
 
 	url := fmt.Sprintf("https://gitlab.com/api/v4/projects?search=%s&owned=true", projectName)
@@ -54,37 +54,31 @@ func GetProjectInfo() Project {
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println("Error getting repository info:", err)
-		os.Exit(1)
+		log.Fatalf("Error getting repository info: %e", err)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		fmt.Println("Repo returned non-200 exit code: ", res.StatusCode)
-		os.Exit(1)
+		log.Fatalf("Repo returned non-200 exit code: %d", res.StatusCode)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println("Error reading body: ", err)
-		os.Exit(1)
+		log.Fatalf("Error reading body: %e", err)
 	}
 
 	var project []Project
 	err = json.Unmarshal(body, &project)
 	if err != nil {
-		fmt.Println("Error unmarshaling data from JSON: ", err)
-		os.Exit(1)
+		log.Fatalf("Error unmarshaling data from JSON: %e", err)
 	}
 
 	if len(project) > 1 {
-		fmt.Println("Please provide a unique project name")
-		os.Exit(1)
+		log.Fatal("Please provide a unique project name")
 	}
 
 	if len(project) == 0 {
-		fmt.Println("Project not found")
-		os.Exit(1)
+		log.Fatal("Project not found")
 
 	}
 

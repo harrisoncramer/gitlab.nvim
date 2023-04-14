@@ -16,15 +16,33 @@ M.comment = function(comment)
 
   Job:new({
     command = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin",
-    args = { "comment", M.PROJECT_ID, current_line_number, fileName, comment },
+    args = {
+      "comment",
+      M.PROJECT_ID,
+      current_line_number,
+      relative_file_path,
+      comment
+    },
     on_stdout = function(_, line)
-      table.insert(data, line)
+      print("stdout")
     end,
     on_stderr = function(_, line)
       print(line)
     end,
     on_exit = function()
-      P(data)
+      print("exit")
+    end,
+  }):start()
+end
+
+M.error = function(msg)
+  Job:new({
+    command = "/Users/harrisoncramer/Desktop/gitlab_nvim/error.sh",
+    on_stderr = function(_, line)
+      print("there was an error")
+    end,
+    on_stdout = function(_, line)
+      print(line)
     end,
   }):start()
 end

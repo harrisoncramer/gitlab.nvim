@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/commands"
 )
 
 func usage() {
-	fmt.Println("Usage: gitlab-nvim <command>")
-	os.Exit(1)
+	log.Fatalf("Usage: gitlab-nvim <command>")
 }
 
 func main() {

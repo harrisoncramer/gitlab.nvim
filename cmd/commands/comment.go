@@ -75,12 +75,16 @@ type MRVersion struct {
 	RealSize       string    `json:"real_size"`
 }
 
+type BadResponse struct {
+	Message string `json:"message"`
+}
+
 func MakeComment(projectId int, lineNumber string, fileName string, comment string) {
 	mergeId := getCurrentMergeId()
 
 	err, response := getMRVersions(mergeId, projectId)
 	if err != nil {
-		log.Fatalf("Error making diff thread: %err", err)
+		log.Fatalf("Error making diff thread: %e", err)
 	}
 	defer response.Body.Close()
 
@@ -96,12 +100,10 @@ func MakeComment(projectId int, lineNumber string, fileName string, comment stri
 	/* Create a thread for discussion with latest MR information */
 	err = createComment(mergeId, projectId, diffVersionInfo[0], fileName, lineNumber, comment)
 	if err != nil {
-		fmt.Printf("Error making comment thread: %v", err)
-		os.Exit(1)
+		log.Fatalf("Error making comment thread: %v", err)
 	}
 
-	fmt.Printf("Comment created!")
-
+	log.Println("Comment created")
 }
 
 /* POSTs the comment to the merge request */
@@ -132,14 +134,26 @@ func createComment(mergeId string, projectId int, mrInfo MRVersion, fileName str
 	req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	res, err := client.Do(req)
+
 	if err != nil {
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return err
-	}
 	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	var badResponse BadResponse
+
+	log.Println(string(body))
+
+	err = json.Unmarshal(body, &badResponse)
+	if err != nil {
+		return errors.New("Recevied non-200 response")
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Recieved non-200 response: %s", badResponse.Message))
+	}
 
 	return nil
 }
@@ -178,8 +192,7 @@ func getCurrentMergeId() string {
 
 	output, err := gitCmd.Output()
 	if err != nil {
-		fmt.Println("Error running git rev-parse:", err)
-		os.Exit(1)
+		log.Fatalf("Error running git rev-parse: %e", err)
 	}
 
 	sourceBranch := strings.TrimSpace(string(output))
@@ -188,8 +201,7 @@ func getCurrentMergeId() string {
 
 	output, err = glabCmd.Output()
 	if err != nil {
-		fmt.Println("Error running the command:", err)
-		os.Exit(1)
+		log.Fatalf("Error running the command: %e", err)
 	}
 
 	result := strings.TrimSpace(string(output))
