@@ -1,37 +1,16 @@
 local Job     = require("plenary.job")
-local Popup   = require("nui.popup")
+local popup   = require("gitlab_nvim.utils.popup")
 local u       = require("gitlab_nvim.utils")
 local M       = {}
 
 M.PROJECT_ID  = nil
 
-local event   = require("nui.utils.autocmd").event
-
-local popup   = Popup({
-  buf_options = {
-    filetype = 'gitlab_nvim'
-  },
-  enter = true,
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Comment",
-    },
-  },
-  position = "50%",
-  size = {
-    width = "40%",
-    height = "60%",
-  },
-})
-
-M.popup       = popup
-
 M.comment     = function()
   popup:mount()
 end
 
+-- This function invokes our binary and sends the text to Gitlab
+-- The text comes from the after/ftplugin/gitlab_nvim.lua file
 M.sendComment = function(text)
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
@@ -55,6 +34,8 @@ M.sendComment = function(text)
   }):start()
 end
 
+-- This function fetches some information abour our current repository
+-- and prints it to the screen
 M.projectInfo = function()
   local data = {}
   Job:new({
@@ -72,6 +53,8 @@ M.projectInfo = function()
   }):start()
 end
 
+-- This function initializes the plugin so that we can communicate with
+-- Gitlab's API
 M.setup       = function(args)
   if args.project_id == nil then
     error("No project ID provided!")
