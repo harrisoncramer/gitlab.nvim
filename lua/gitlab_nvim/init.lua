@@ -5,6 +5,7 @@ local M       = {}
 
 M.PROJECT_ID  = nil
 
+-- This function just opens the popup window
 M.comment     = function()
   popup:mount()
 end
