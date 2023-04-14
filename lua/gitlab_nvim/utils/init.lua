@@ -32,8 +32,15 @@ function P(...)
   return ...
 end
 
+local function get_buffer_text(bufnr)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local text = table.concat(lines, "\n")
+  return text
+end
+
 local M = {}
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
+M.get_buffer_text = get_buffer_text
 M.P = P
 return M
