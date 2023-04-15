@@ -1,5 +1,4 @@
 local Job    = require("plenary.job")
-local json   = require("gitlab_nvim.utils.json")
 local popup  = require("gitlab_nvim.utils.popup")
 local u      = require("gitlab_nvim.utils")
 local M      = {}
