@@ -2,11 +2,8 @@ package commands
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,7 +22,7 @@ func Revoke(projectId string) {
 
 	sourceBranch := strings.TrimSpace(string(output))
 
-	canBeRevoked := checkCanBeRevoked(projectId, sourceBranch)
+	canBeRevoked := canBeRevoked(projectId, sourceBranch)
 
 	if !canBeRevoked {
 		log.Fatal("Merge request can not be revoked")
@@ -78,40 +75,14 @@ func Revoke(projectId string) {
 	}
 }
 
-func checkCanBeRevoked(projectId string, sourceBranch string) bool {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(revokeUrl, projectId), nil)
-	if err != nil {
-		log.Fatal("Failed to create request: ", err)
-	}
+func canBeRevoked(projectId string, sourceBranch string) bool {
+	mrs := GetMRs(fmt.Sprintf(revokeUrl, projectId))
 
-	client := &http.Client{}
-
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal("Error checking MR status: ", err)
-	}
-
-	if res.StatusCode == 404 {
-		log.Fatalf("No open merge request for this branch")
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	if err != nil {
-		log.Fatal("Error reading response body: ", err)
-	}
-
-	var jsonData []MergeRequest
-	err = json.Unmarshal(body, &jsonData)
-	if err != nil {
-		log.Fatal("Error unmarshaling JSON response: ", err)
-	}
-
-	if len(jsonData) == 0 {
+	if len(mrs) == 0 {
 		return false
 	}
 
-	if jsonData[0].SourceBranch == sourceBranch {
+	if mrs[0].SourceBranch == sourceBranch {
 		return true
 	}
 

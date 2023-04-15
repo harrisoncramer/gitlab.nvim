@@ -2,26 +2,12 @@ package commands
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 )
-
-type MergeRequest struct {
-	ID           int    `json:"id"`
-	IID          int    `json:"iid"`
-	ProjectID    int    `json:"project_id"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	State        string `json:"state"`
-	SourceBranch string `json:"source_branch"`
-	TargetBranch string `json:"target_branch"`
-}
 
 const approvalUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests?state=opened&approved=no"
 
@@ -89,39 +75,13 @@ func Approve(projectId string) {
 }
 
 func canBeApproved(projectId string, sourceBranch string) bool {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(approvalUrl, projectId), nil)
-	if err != nil {
-		log.Fatal("Failed to create request: ", err)
-	}
+	mrs := GetMRs(fmt.Sprintf(approvalUrl, projectId))
 
-	client := &http.Client{}
-
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal("Error checking MR status: ", err)
-	}
-
-	if res.StatusCode == 404 {
-		log.Fatalf("No open merge request for this branch")
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-
-	if err != nil {
-		log.Fatal("Error reading response body: ", err)
-	}
-
-	var jsonData []MergeRequest
-	err = json.Unmarshal(body, &jsonData)
-	if err != nil {
-		log.Fatal("Error unmarshaling JSON response: ", err)
-	}
-
-	if len(jsonData) == 0 {
+	if len(mrs) == 0 {
 		return false
 	}
 
-	if jsonData[0].SourceBranch == sourceBranch {
+	if mrs[0].SourceBranch == sourceBranch {
 		return true
 	}
 
