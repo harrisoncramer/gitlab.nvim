@@ -54,6 +54,4 @@ func Approve() {
 	if err != nil {
 		log.Fatalf("Error approving MR: %s", err)
 	}
-
-	fmt.Println("Approved!")
 }

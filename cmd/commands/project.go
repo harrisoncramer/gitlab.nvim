@@ -82,6 +82,8 @@ func GetProjectInfo() Project {
 
 	}
 
+	/* We will parse this in our Lua code */
+	fmt.Println(string(body))
 	return project[0]
 
 }

@@ -1,4 +1,5 @@
 local Job    = require("plenary.job")
+local json   = require("gitlab_nvim.utils.json")
 local popup  = require("gitlab_nvim.utils.popup")
 local u      = require("gitlab_nvim.utils")
 local M      = {}
@@ -43,9 +44,11 @@ M.sendComment = function(text)
   }):start()
 end
 
+M.projectInfo = {}
+
 -- This function fetches some information abour our current repository
--- and prints it to the screen
-M.projectInfo = function()
+-- and sets it in the module
+M.initProject = function()
   local data = {}
   Job:new({
     command = bin,
@@ -55,7 +58,8 @@ M.projectInfo = function()
     end,
     on_stderr = printError,
     on_exit = function()
-      u.P(data)
+      local parsed = vim.json.decode(data[1])
+      M.projectInfo = parsed[1]
     end,
   }):start()
 end
@@ -69,13 +73,14 @@ M.approve     = function()
   }):start()
 end
 
--- This function initializes the plugin so that we can communicate with
--- Gitlab's API
+-- This function initializes the plugin so that we can communicate with Gitlab's API
 M.setup       = function(args)
   if args.project_id == nil then
     error("No project ID provided!")
   end
   M.PROJECT_ID = args.project_id
+
+  M.initProject()
 end
 
 return M

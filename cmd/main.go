@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -21,9 +20,7 @@ func main() {
 
 	switch command {
 	case "projectInfo":
-		project := commands.GetProjectInfo()
-		fmt.Println(project)
-		os.Exit(0)
+		commands.GetProjectInfo()
 	case "comment":
 		if len(os.Args) < 6 {
 			usage()
