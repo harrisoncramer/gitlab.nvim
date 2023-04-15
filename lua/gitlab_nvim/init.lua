@@ -74,8 +74,18 @@ M.approve     = function()
   }):start()
 end
 
+M.revoke      = function()
+  Job:new({
+    command = bin,
+    args = { "revoke", M.projectInfo.id },
+    on_stdout = printSuccess,
+    on_stderr = printError
+  }):start()
+end
+
+
 -- This function initializes the plugin so that we can communicate with Gitlab's API
-M.setup       = function(args)
+M.setup = function(args)
   if args.project_id == nil then
     error("No project ID provided!")
   end

@@ -12,20 +12,9 @@ import (
 	"strings"
 )
 
-type MergeRequest struct {
-	ID           int    `json:"id"`
-	IID          int    `json:"iid"`
-	ProjectID    int    `json:"project_id"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	State        string `json:"state"`
-	SourceBranch string `json:"source_branch"`
-	TargetBranch string `json:"target_branch"`
-}
+const revokeUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests?state=opened&approved=yes"
 
-const approvalUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests?state=opened&approved=no"
-
-func Approve(projectId string) {
+func Revoke(projectId string) {
 
 	gitCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 
@@ -36,12 +25,13 @@ func Approve(projectId string) {
 
 	sourceBranch := strings.TrimSpace(string(output))
 
-	canBeApproved := canBeApproved(projectId, sourceBranch)
-	if !canBeApproved {
-		log.Fatal("Merge request can not be approved")
+	canBeRevoked := checkCanBeRevoked(projectId, sourceBranch)
+
+	if !canBeRevoked {
+		log.Fatal("Merge request can not be revoked")
 	}
 
-	cmd := exec.Command("glab", "mr", "approve")
+	cmd := exec.Command("glab", "mr", "revoke")
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -88,8 +78,8 @@ func Approve(projectId string) {
 	}
 }
 
-func canBeApproved(projectId string, sourceBranch string) bool {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(approvalUrl, projectId), nil)
+func checkCanBeRevoked(projectId string, sourceBranch string) bool {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(revokeUrl, projectId), nil)
 	if err != nil {
 		log.Fatal("Failed to create request: ", err)
 	}

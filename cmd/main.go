@@ -37,6 +37,12 @@ func main() {
 			usage()
 		}
 		commands.Approve(projectId)
+	case "revoke":
+		projectId := os.Args[2]
+		if projectId == "" {
+			usage()
+		}
+		commands.Revoke(projectId)
 	default:
 		usage()
 	}
