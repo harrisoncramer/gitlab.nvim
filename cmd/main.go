@@ -32,7 +32,11 @@ func main() {
 		project := commands.GetProjectInfo()
 		commands.MakeComment(project.ID, lineNumber, fileName, comment)
 	case "approve":
-		commands.Approve()
+		projectId := os.Args[2]
+		if projectId == "" {
+			usage()
+		}
+		commands.Approve(projectId)
 	default:
 		usage()
 	}

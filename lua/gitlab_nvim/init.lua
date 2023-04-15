@@ -68,7 +68,7 @@ end
 M.approve     = function()
   Job:new({
     command = bin,
-    args = { "approve" },
+    args = { "approve", M.projectInfo.id },
     on_stdout = printSuccess,
     on_stderr = printError
   }):start()
