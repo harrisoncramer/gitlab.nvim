@@ -6,22 +6,13 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 const approvalUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests?state=opened&approved=no"
 
 func Approve(projectId string) {
 
-	gitCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-
-	output, err := gitCmd.Output()
-	if err != nil {
-		log.Fatalf("Error running git rev-parse: %s", err)
-	}
-
-	sourceBranch := strings.TrimSpace(string(output))
-
+	sourceBranch := GetCurrentBranch()
 	canBeApproved := canBeApproved(projectId, sourceBranch)
 	if !canBeApproved {
 		log.Fatal("Merge request can not be approved")

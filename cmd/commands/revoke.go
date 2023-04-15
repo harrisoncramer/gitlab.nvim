@@ -6,24 +6,14 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 const revokeUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests?state=opened&approved=yes"
 
 func Revoke(projectId string) {
 
-	gitCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-
-	output, err := gitCmd.Output()
-	if err != nil {
-		log.Fatalf("Error running git rev-parse: %s", err)
-	}
-
-	sourceBranch := strings.TrimSpace(string(output))
-
+	sourceBranch := GetCurrentBranch()
 	canBeRevoked := canBeRevoked(projectId, sourceBranch)
-
 	if !canBeRevoked {
 		log.Fatal("Merge request can not be revoked")
 	}

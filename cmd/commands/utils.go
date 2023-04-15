@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os/exec"
+	"strings"
 )
 
 type MergeRequest struct {
@@ -48,4 +50,17 @@ func GetMRs(url string) []MergeRequest {
 	}
 
 	return jsonData
+}
+
+func GetCurrentBranch() string {
+	gitCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+
+	output, err := gitCmd.Output()
+	if err != nil {
+		log.Fatalf("Error running git rev-parse: %s", err)
+	}
+
+	sourceBranch := strings.TrimSpace(string(output))
+	return sourceBranch
+
 }
