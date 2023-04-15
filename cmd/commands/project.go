@@ -33,8 +33,16 @@ type Project struct {
 
 /* Returns metadata about the current project */
 func GetProjectInfo() Project {
-	cmd := exec.Command("bash", "-c", "basename \"$(git rev-parse --show-toplevel)\" ")
+
+	cmd := exec.Command("bash", "-c", "git remote get-url origin | grep 'gitlab'")
 	output, err := cmd.Output()
+
+	if err != nil {
+		return Project{}
+	}
+
+	cmd = exec.Command("bash", "-c", "basename \"$(git rev-parse --show-toplevel)\" ")
+	output, err = cmd.Output()
 
 	if err != nil {
 		fmt.Println("Error running git rev-parse:", err)

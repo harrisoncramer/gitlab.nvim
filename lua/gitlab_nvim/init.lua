@@ -57,8 +57,10 @@ M.initProject = function()
     end,
     on_stderr = printError,
     on_exit = function()
-      local parsed = vim.json.decode(data[1])
-      M.projectInfo = parsed[1]
+      if data[1] ~= nil then
+        local parsed = vim.json.decode(data[1])
+        M.projectInfo = parsed[1]
+      end
     end,
   }):start()
 end
