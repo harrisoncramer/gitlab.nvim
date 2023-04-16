@@ -4,6 +4,8 @@ NOTE: This plugin is currently a work in progress and not stable, or ready for p
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. The plugin wraps around the Gitlab CLI tool.
 
+https://hjc-public.s3.amazonaws.com/gitlab_nvim_demo.mp4
+
 ## Requirements
 
 - Go
