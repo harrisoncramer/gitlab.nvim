@@ -28,6 +28,7 @@ With Lazy:
       require('gitlab_nvim').setup({ project_id = 3 })
     end,
 }
+```
 
 By default, the tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
 
