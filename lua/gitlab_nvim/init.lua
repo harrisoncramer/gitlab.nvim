@@ -23,7 +23,7 @@ end
 
 -- Builds the Go binary, and initializes the plugin so that we can communicate with Gitlab's API
 M.setup   = function(args)
-  local binExists = vim.fn.filereadable(bin)
+  local binExists = io.open(bin, "r")
   if not binExists then
     local installCode = os.execute("go build -o bin ./cmd/main.go")
     if installCode ~= 0 then
