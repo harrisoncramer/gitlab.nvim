@@ -1,5 +1,6 @@
 local Job     = require("plenary.job")
-local popup   = require("gitlab.utils.popup")
+local comment = require("gitlab.utils.comment")
+local summary = require("gitlab.utils.summary")
 local u       = require("gitlab.utils")
 local M       = {}
 
@@ -75,6 +76,8 @@ end
 local mrData      = {}
 M.read            = function()
   if u.baseInvalid() then return end
+  summary:mount()
+  local currentBuffer = vim.api.nvim_get_current_buf()
   Job:new({
     command = bin,
     args = { "read", M.projectInfo.id },
@@ -87,6 +90,23 @@ M.read            = function()
         local parsed = vim.json.decode(mrData[1])
         local title = parsed.title
         local description = parsed.description
+        -- Use string.gmatch to iterate over matches of pattern "\n" (newline)
+        local lines = {}
+        for line in description:gmatch("[^\n]+") do
+          table.insert(lines, line)
+          table.insert(lines, "")
+        end
+        vim.schedule(function()
+          -- Preprocess the replacement string to escape newline characters
+          vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
+          vim.api.nvim_buf_set_option(currentBuffer, "modifiable", false)
+          summary.border:set_text("top", title, "center")
+          local function exit()
+            summary:unmount()
+          end
+          vim.keymap.set('n', '<Esc>', exit, { buffer = true })
+          vim.keymap.set('n', ':', '', { buffer = true })
+        end)
       end
     end,
   }):start()
@@ -117,7 +137,7 @@ end
 -- Opens the popup window
 M.comment         = function()
   if u.baseInvalid() then return end
-  popup:mount()
+  comment:mount()
 end
 
 -- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab.lua file

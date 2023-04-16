@@ -1,21 +1,21 @@
 local Popup = require("nui.popup")
-local comment = Popup({
+local summary = Popup({
   buf_options = {
-    filetype = 'gitlab_nvim'
+    filetype = 'markdown'
   },
   enter = true,
   focusable = true,
   border = {
     style = "rounded",
     text = {
-      top = "Comment",
+      top = "Loading Summary...",
     },
   },
   position = "50%",
   size = {
-    width = "40%",
-    height = "60%",
+    width = "80%",
+    height = "80%",
   },
 })
 
-return comment
+return summary
