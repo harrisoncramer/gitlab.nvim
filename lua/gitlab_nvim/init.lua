@@ -3,7 +3,7 @@ local popup   = require("gitlab_nvim.utils.popup")
 local u       = require("gitlab_nvim.utils")
 local M       = {}
 
-local bin     = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin"
+local bin     = "./bin"
 
 M.PROJECT_ID  = nil
 M.projectInfo = {}
