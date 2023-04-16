@@ -22,7 +22,8 @@ With Lazy:
     "harrisoncramer/gitlab.nvim",
     dependencies = {
       "rcarriga/nvim-notify",
-      "MunifTanjim/nui.nvim"
+      "MunifTanjim/nui.nvim",
+      "sindrets/diffview.nvim"
     },
     config = function()
       require('gitlab_nvim').setup({ project_id = 3 })
