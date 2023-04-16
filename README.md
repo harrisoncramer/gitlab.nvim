@@ -11,6 +11,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - <a href="https://github.com/folke/lazy.nvim">lazy.nvim</a>
 - <a href="https://github.com/MunifTanjim/nui.nvim">nui.nvim</a>
 - <a href="https://github.com/rcarriga/nvim-notify">nvim-notify</a>
+- <a href="https://github.com/sindrets/diffview.nvim">diffview.nvim</a>
 
 ## Installation
 
@@ -35,7 +36,13 @@ The first time you call the setup function the Go binary will be built.
 
 First, check out the branch that you want to review locally.
 
-The `approve` command will approve the merge request for the current branch.
+The `review` command will open up a diffview of all your changed files, using the diffview plugin
+
+```lua
+require("gitlab_nvim").review()
+```
+
+The `approve` command will approve the merge request for the current branch
 
 ```lua
 require("gitlab_nvim").approve()

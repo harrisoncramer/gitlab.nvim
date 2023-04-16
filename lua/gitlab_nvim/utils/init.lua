@@ -38,9 +38,29 @@ local function get_buffer_text(bufnr)
   return text
 end
 
+local branch_exists = function(b)
+  local is_git_branch = io.popen("git rev-parse --is-inside-work-tree 2>/dev/null"):read("*a")
+  if is_git_branch == "true\n" then
+    for line in io.popen("git branch 2>/dev/null"):lines() do
+      line = line:gsub("%s+", "")
+      if line == b then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+
+local press_enter = function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
+end
+
 local M = {}
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text
+M.branch_exists = branch_exists
+M.press_enter = press_enter
 M.P = P
 return M

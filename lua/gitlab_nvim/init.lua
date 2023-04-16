@@ -56,6 +56,22 @@ M.setup   = function(args)
   }):start()
 end
 
+M.review  = function()
+  local isDiff = vim.fn.getwinvar(nil, "&diff")
+  local bufName = vim.api.nvim_buf_get_name(0)
+  local has_develop = u.branch_exists("main")
+  if not has_develop then
+    require("notify")('No main branch, cannot review!', "error")
+    return
+  end
+  if isDiff ~= 0 or u.string_starts(bufName, "diff") then
+    return
+  else
+    vim.cmd.DiffviewOpen("main")
+    u.press_enter()
+  end
+end
+
 -- Approves the merge request
 M.approve = function()
   Job:new({
