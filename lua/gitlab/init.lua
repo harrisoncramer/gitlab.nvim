@@ -3,7 +3,7 @@ local popup   = require("gitlab.utils.popup")
 local u       = require("gitlab.utils")
 local M       = {}
 
-local binPath = vim.fn.stdpath("data") .. "/lazy/gitlab.nvim"
+local binPath = vim.fn.stdpath("data") .. "/lazy/gitlab"
 local bin     = binPath .. "/bin"
 
 M.PROJECT_ID  = nil
@@ -24,8 +24,13 @@ end
 
 -- Builds the Go binary, and initializes the plugin so that we can communicate with Gitlab's API
 M.setup   = function(args)
+  if args.dev == true then
+    -- This is for the developer (harrisoncramer) only.
+    binPath = vim.fn.stdpath("config") .. "/dev-plugins/gitlab"
+    bin = binPath .. "/bin"
+  end
   local binExists = io.open(bin, "r")
-  if not binExists then
+  if not binExists or args.dev == true then
     local command = string.format("cd %s && go build -o bin ./cmd/main.go", binPath)
     local installCode = os.execute(command)
     if installCode ~= 0 then
