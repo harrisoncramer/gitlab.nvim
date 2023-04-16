@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -79,7 +80,12 @@ type BadResponse struct {
 	Message string `json:"message"`
 }
 
-func MakeComment(projectId int, lineNumber string, fileName string, comment string) {
+func MakeComment(projectIdStr string, lineNumber string, fileName string, comment string) {
+	projectId, err := strconv.Atoi(projectIdStr)
+	if err != nil {
+		log.Fatalf("Project Id not correct, provided %d", projectId)
+	}
+
 	mergeId := getCurrentMergeId()
 
 	err, response := getMRVersions(mergeId, projectId)

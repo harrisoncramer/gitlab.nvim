@@ -1,16 +1,12 @@
-local Job    = require("plenary.job")
-local popup  = require("gitlab_nvim.utils.popup")
-local u      = require("gitlab_nvim.utils")
-local M      = {}
+local Job     = require("plenary.job")
+local popup   = require("gitlab_nvim.utils.popup")
+local u       = require("gitlab_nvim.utils")
+local M       = {}
 
-M.PROJECT_ID = nil
+local bin     = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin"
 
--- This function just opens the popup window
-M.comment    = function()
-  popup:mount()
-end
-
-local bin    = "/Users/harrisoncramer/Desktop/gitlab_nvim/bin"
+M.PROJECT_ID  = nil
+M.projectInfo = {}
 
 local function printSuccess(_, line)
   if line ~= nil and line ~= "" then
@@ -24,30 +20,14 @@ local function printError(_, line)
   end
 end
 
--- This function invokes our binary and sends the text to Gitlab
--- The text comes from the after/ftplugin/gitlab_nvim.lua file
-M.sendComment = function(text)
-  local relative_file_path = u.get_relative_file_path()
-  local current_line_number = u.get_current_line_number()
-  Job:new({
-    command = bin,
-    args = {
-      "comment",
-      M.PROJECT_ID,
-      current_line_number,
-      relative_file_path,
-      text,
-    },
-    on_stdout = printSuccess,
-    on_stderr = printError
-  }):start()
-end
 
-M.projectInfo = {}
+-- This function initializes the plugin so that we can communicate with Gitlab's API
+M.setup   = function(args)
+  if args.project_id == nil then
+    error("No project ID provided!")
+  end
+  M.PROJECT_ID = args.project_id
 
--- This function fetches some information abour our current repository
--- and sets it in the module
-M.initProject = function()
   local data = {}
   Job:new({
     command = bin,
@@ -65,7 +45,8 @@ M.initProject = function()
   }):start()
 end
 
-M.approve     = function()
+-- Approves the merge request
+M.approve = function()
   Job:new({
     command = bin,
     args = { "approve", M.projectInfo.id },
@@ -74,7 +55,8 @@ M.approve     = function()
   }):start()
 end
 
-M.revoke      = function()
+-- Revokes approval for the current merge request
+M.revoke  = function()
   Job:new({
     command = bin,
     args = { "revoke", M.projectInfo.id },
@@ -83,15 +65,28 @@ M.revoke      = function()
   }):start()
 end
 
+-- Opens the popup window
+M.comment = function()
+  popup:mount()
+end
 
--- This function initializes the plugin so that we can communicate with Gitlab's API
-M.setup = function(args)
-  if args.project_id == nil then
-    error("No project ID provided!")
-  end
-  M.PROJECT_ID = args.project_id
 
-  M.initProject()
+-- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab_nvim.lua file
+M.sendComment = function(text)
+  local relative_file_path = u.get_relative_file_path()
+  local current_line_number = u.get_current_line_number()
+  Job:new({
+    command = bin,
+    args = {
+      "comment",
+      M.projectInfo.id,
+      current_line_number,
+      relative_file_path,
+      text,
+    },
+    on_stdout = printSuccess,
+    on_stderr = printError
+  }):start()
 end
 
 return M

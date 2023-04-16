@@ -7,9 +7,12 @@ import (
 	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/commands"
 )
 
-func usage() {
-	log.Fatalf("Usage: gitlab-nvim <command>")
-}
+const (
+	INFO    = "projectInfo"
+	APPROVE = "approve"
+	REVOKE  = "revoke"
+	COMMENT = "comment"
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -19,9 +22,21 @@ func main() {
 	command := os.Args[1]
 
 	switch command {
-	case "projectInfo":
+	case INFO:
 		commands.GetProjectInfo()
-	case "comment":
+	case APPROVE:
+		projectId := os.Args[2]
+		if projectId == "" {
+			usage()
+		}
+		commands.Approve(projectId)
+	case REVOKE:
+		projectId := os.Args[2]
+		if projectId == "" {
+			usage()
+		}
+		commands.Revoke(projectId)
+	case COMMENT:
 		if len(os.Args) < 6 {
 			usage()
 		}
@@ -29,21 +44,12 @@ func main() {
 		if lineNumber == "" || fileName == "" || comment == "" || projectId == "" {
 			usage()
 		}
-		project := commands.GetProjectInfo()
-		commands.MakeComment(project.ID, lineNumber, fileName, comment)
-	case "approve":
-		projectId := os.Args[2]
-		if projectId == "" {
-			usage()
-		}
-		commands.Approve(projectId)
-	case "revoke":
-		projectId := os.Args[2]
-		if projectId == "" {
-			usage()
-		}
-		commands.Revoke(projectId)
+		commands.MakeComment(projectId, lineNumber, fileName, comment)
 	default:
 		usage()
 	}
+}
+
+func usage() {
+	log.Fatalf("Usage: gitlab-nvim <command> <args>")
 }
