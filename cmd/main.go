@@ -9,7 +9,7 @@ import (
 
 const (
 	INFO    = "projectInfo"
-	READ    = "read"
+	SUMMARY = "summary"
 	APPROVE = "approve"
 	REVOKE  = "revoke"
 	COMMENT = "comment"
@@ -31,8 +31,8 @@ func main() {
 		commands.GetProjectInfo()
 	case APPROVE:
 		commands.Approve(projectId)
-	case READ:
-		commands.Read(projectId)
+	case SUMMARY:
+		commands.Summary(projectId)
 	case REVOKE:
 		commands.Revoke(projectId)
 	case COMMENT:

@@ -77,13 +77,13 @@ local mrData      = {}
 local function exit(popup)
   popup:unmount()
 end
-M.read    = function()
+M.summary = function()
   if u.baseInvalid() then return end
   summary:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
   Job:new({
     command = bin,
-    args = { "read", M.projectInfo.id },
+    args = { "summary", M.projectInfo.id },
     on_stderr = printError,
     on_stdout = function(_, line)
       table.insert(mrData, line)

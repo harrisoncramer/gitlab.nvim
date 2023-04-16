@@ -52,17 +52,17 @@ The first time you call the setup function the Go binary will be built.
 
 First, check out the branch that you want to review locally.
 
-The `review` command will open up a diffview of all your changed files, using the diffview plugin
 
+The `summary` command will pull down the MR description into a buffer so that you can read it
+
+```lua
+require("gitlab_nvim").summary()
+```
+
+The `review` command will open up a diffview of all your changed files, using the diffview plugin
 
 ```lua
 require("gitlab_nvim").review()
-```
-
-The `read` command will pull down the MR description into a buffer so that you can read it
-
-```lua
-require("gitlab_nvim").read()
 ```
 
 The `approve` command will approve the merge request for the current branch
@@ -81,4 +81,24 @@ The `comment` command will open up a NUI popover that will allow you to create a
 
 ```lua
 require("gitlab_nvim").comment()
+```
+
+## Keybindings
+
+This plugin does not create any keybindings by default, _except_ for inside of the popups, where:
+
+- `<esc>` quits the popups
+- `<leader>s` sends the comment
+
+These bindings are local and do not overwrite anything in your configuration.
+
+These are the keybindings that I'm using:
+
+```lua
+local gitlab = require("gitlab")
+vim.keymap.set("n", "<leader>gls", gitlab.summary)
+vim.keymap.set("n", "<leader>glr", gitlab.review)
+vim.keymap.set("n", "<leader>gla", gitlab.approve)
+vim.keymap.set("n", "<leader>glR", gitlab.revoke)
+vim.keymap.set("n", "<leader>glc", gitlab.comment)
 ```

@@ -10,7 +10,7 @@ import (
 )
 
 /* Pulls down the MR description */
-func Read(projectId string) error {
+func Summary(projectId string) error {
 
 	mergeId := getCurrentMergeId()
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(mrUrl, projectId, mergeId), nil)
