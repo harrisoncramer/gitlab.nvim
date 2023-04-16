@@ -21,13 +21,17 @@ local function printError(_, line)
 end
 
 
--- Builds the Go binary
-M.install = function()
-  vim.fn.system("go build -o bin ./cmd/main.go")
-end
-
--- Initializes the plugin so that we can communicate with Gitlab's API
+-- Builds the Go binary, and initializes the plugin so that we can communicate with Gitlab's API
 M.setup   = function(args)
+  local binExists = vim.fn.filereadable(bin)
+  if not binExists then
+    local installCode = os.execute("go build -o bin ./cmd/main.go")
+    if installCode ~= 0 then
+      require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
+      return
+    end
+  end
+
   if args.project_id == nil then
     error("No project ID provided!")
   end
