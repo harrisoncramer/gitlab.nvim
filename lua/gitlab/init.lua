@@ -74,7 +74,10 @@ M.review          = function()
 end
 
 local mrData      = {}
-M.read            = function()
+local function exit(popup)
+  popup:unmount()
+end
+M.read    = function()
   if u.baseInvalid() then return end
   summary:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
@@ -101,10 +104,7 @@ M.read            = function()
           vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
           vim.api.nvim_buf_set_option(currentBuffer, "modifiable", false)
           summary.border:set_text("top", title, "center")
-          local function exit()
-            summary:unmount()
-          end
-          vim.keymap.set('n', '<Esc>', exit, { buffer = true })
+          vim.keymap.set('n', '<Esc>', function() exit(summary) end, { buffer = true })
           vim.keymap.set('n', ':', '', { buffer = true })
         end)
       end
@@ -113,7 +113,7 @@ M.read            = function()
 end
 
 -- Approves the merge request
-M.approve         = function()
+M.approve = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,
@@ -124,7 +124,7 @@ M.approve         = function()
 end
 
 -- Revokes approval for the current merge request
-M.revoke          = function()
+M.revoke  = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,
@@ -135,13 +135,22 @@ M.revoke          = function()
 end
 
 -- Opens the popup window
-M.comment         = function()
+local function send()
+  local text = u.get_buffer_text(comment.bufnr)
+  comment:unmount()
+  M.sendComment(text)
+end
+
+M.comment     = function()
   if u.baseInvalid() then return end
   comment:mount()
+  vim.keymap.set('n', '<Esc>', function() exit(comment) end, { buffer = true })
+  vim.keymap.set('n', ':', '', { buffer = true })
+  vim.keymap.set('n', '<leader>s', send, { buffer = true })
 end
 
 -- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab.lua file
-M.sendComment     = function(text)
+M.sendComment = function(text)
   if u.baseInvalid() then return end
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
