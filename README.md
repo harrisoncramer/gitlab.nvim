@@ -17,7 +17,13 @@ https://user-images.githubusercontent.com/32515581/232324922-a0796d0e-447b-463b-
 
 ## Installation
 
-With Lazy:
+First, configure the Gitlab CLI. Next, you'll need to have the following environment variable available in your shell:
+
+```bash
+export GITLAB_TOKEN="your_gitlab_token"
+```
+
+Then install the plugin with <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 
 ```lua
 {
