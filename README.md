@@ -35,7 +35,7 @@ return {
   },
   config = function()
     local gitlab = require("gitlab")
-    gitlab.setup({ project_id = 3, dev = true })
+    gitlab.setup({ project_id = 3 })
   end,
 }
 ```
