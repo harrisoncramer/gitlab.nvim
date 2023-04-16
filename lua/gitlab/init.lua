@@ -1,6 +1,6 @@
 local Job     = require("plenary.job")
-local popup   = require("gitlab_nvim.utils.popup")
-local u       = require("gitlab_nvim.utils")
+local popup   = require("gitlab.utils.popup")
+local u       = require("gitlab.utils")
 local M       = {}
 
 local binPath = vim.fn.stdpath("data") .. "/lazy/gitlab.nvim"
@@ -105,7 +105,7 @@ M.comment = function()
 end
 
 
--- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab_nvim.lua file
+-- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab.lua file
 M.sendComment = function(text)
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
