@@ -3,7 +3,8 @@ local popup   = require("gitlab_nvim.utils.popup")
 local u       = require("gitlab_nvim.utils")
 local M       = {}
 
-local binPath = vim.fn.stdpath("data") .. "/lazy/gitlab.nvim/bin"
+local binPath = vim.fn.stdpath("data") .. "/lazy/gitlab.nvim"
+local bin     = binPath .. "/bin"
 
 M.PROJECT_ID  = nil
 M.projectInfo = {}
@@ -23,7 +24,7 @@ end
 
 -- Builds the Go binary, and initializes the plugin so that we can communicate with Gitlab's API
 M.setup   = function(args)
-  local binExists = io.open(binPath, "r")
+  local binExists = io.open(bin, "r")
   if not binExists then
     local command = string.format("cd %s && go build -o bin ./cmd/main.go", binPath)
     local installCode = os.execute(command)
@@ -40,7 +41,7 @@ M.setup   = function(args)
 
   local data = {}
   Job:new({
-    command = binPath,
+    command = bin,
     args = { "projectInfo" },
     on_stdout = function(_, line)
       table.insert(data, line)
@@ -58,7 +59,7 @@ end
 -- Approves the merge request
 M.approve = function()
   Job:new({
-    command = binPath,
+    command = bin,
     args = { "approve", M.projectInfo.id },
     on_stdout = printSuccess,
     on_stderr = printError
@@ -68,7 +69,7 @@ end
 -- Revokes approval for the current merge request
 M.revoke  = function()
   Job:new({
-    command = binPath,
+    command = bin,
     args = { "revoke", M.projectInfo.id },
     on_stdout = printSuccess,
     on_stderr = printError
@@ -86,7 +87,7 @@ M.sendComment = function(text)
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
   Job:new({
-    command = binPath,
+    command = bin,
     args = {
       "comment",
       M.projectInfo.id,
