@@ -1,3 +1,54 @@
 # gitlab.nvim
 
-A Neovim plugin designed to make it easy to review Gitlab MRs from within the editor. The plugin wraps around the Gitlab CLI tool.
+NOTE: This plugin is currently a work in progress and not stable, or ready for public use.
+
+This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. The plugin wraps around the Gitlab CLI tool.
+
+## Requirements
+
+- Go
+- The Gitlab CLI
+- <a href="https://github.com/folke/lazy.nvim">lazy.nvim</a>
+- <a href="https://github.com/MunifTanjim/nui.nvim">nui.nvim</a>
+- <a href="https://github.com/rcarriga/nvim-notify">nvim-notify</a>
+
+## Installation
+
+With Lazy:
+
+```lua
+{
+    "harrisoncramer/gitlab.nvim",
+    dependencies = {
+      "rcarriga/nvim-notify",
+      "MunifTanjim/nui.nvim"
+    },
+    config = function()
+      require('gitlab_nvim').setup({ project_id = 3 })
+    end,
+}
+```
+
+The first time you call the setup function the Go binary will be built.
+
+## Usage
+
+First, check out the branch that you want to review locally.
+
+The `approve` command will approve the merge request for the current branch.
+
+```lua
+require("gitlab_nvim").approve()
+```
+
+The `revoke` command will revoke approval for the merge request for the current branch.
+
+```lua
+require("gitlab_nvim").revoke()
+```
+
+The `comment` command will open up a NUI popover that will allow you to create a Gitlab comment on the current line. To send the comment, use `<leader>s`
+
+```lua
+require("gitlab_nvim").comment()
+```
