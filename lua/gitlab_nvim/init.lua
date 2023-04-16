@@ -21,7 +21,12 @@ local function printError(_, line)
 end
 
 
--- This function initializes the plugin so that we can communicate with Gitlab's API
+-- Builds the Go binary
+M.install = function()
+  vim.fn.system("go build -o bin ./cmd/main.go")
+end
+
+-- Initializes the plugin so that we can communicate with Gitlab's API
 M.setup   = function(args)
   if args.project_id == nil then
     error("No project ID provided!")
