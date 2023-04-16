@@ -1,6 +1,6 @@
-local popup = require("gitlab_nvim.utils.popup")
-local core = require("gitlab_nvim")
-local u = require("gitlab_nvim.utils")
+local popup = require("gitlab.utils.popup")
+local core = require("gitlab")
+local u = require("gitlab.utils")
 
 local function send()
   local text = u.get_buffer_text(popup.bufnr)

@@ -9,39 +9,38 @@ import (
 
 const (
 	INFO    = "projectInfo"
+	READ    = "read"
 	APPROVE = "approve"
 	REVOKE  = "revoke"
 	COMMENT = "comment"
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 3 {
 		usage()
 	}
 
-	command := os.Args[1]
+	command, projectId := os.Args[1], os.Args[2]
+
+	if projectId == "" {
+		usage()
+	}
 
 	switch command {
 	case INFO:
 		commands.GetProjectInfo()
 	case APPROVE:
-		projectId := os.Args[2]
-		if projectId == "" {
-			usage()
-		}
 		commands.Approve(projectId)
+	case READ:
+		commands.Read(projectId)
 	case REVOKE:
-		projectId := os.Args[2]
-		if projectId == "" {
-			usage()
-		}
 		commands.Revoke(projectId)
 	case COMMENT:
 		if len(os.Args) < 6 {
 			usage()
 		}
-		projectId, lineNumber, fileName, comment := os.Args[2], os.Args[3], os.Args[4], os.Args[5]
-		if lineNumber == "" || fileName == "" || comment == "" || projectId == "" {
+		lineNumber, fileName, comment := os.Args[3], os.Args[4], os.Args[5]
+		if lineNumber == "" || fileName == "" || comment == "" {
 			usage()
 		}
 		commands.MakeComment(projectId, lineNumber, fileName, comment)
@@ -51,5 +50,5 @@ func main() {
 }
 
 func usage() {
-	log.Fatalf("Usage: gitlab-nvim <command> <args>")
+	log.Fatalf("Usage: gitlab-nvim <command> <project-id> <args?>")
 }

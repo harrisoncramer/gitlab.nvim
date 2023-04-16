@@ -23,7 +23,7 @@ end
 
 
 -- Builds the Go binary, and initializes the plugin so that we can communicate with Gitlab's API
-M.setup   = function(args)
+M.setup       = function(args)
   if args.dev == true then
     -- This is for the developer (harrisoncramer) only.
     binPath = vim.fn.stdpath("config") .. "/dev-plugins/gitlab"
@@ -50,11 +50,10 @@ M.setup   = function(args)
     M.BASE_BRANCH = args.base_branch
   end
 
-
   local data = {}
   Job:new({
     command = bin,
-    args = { "projectInfo" },
+    args = { "projectInfo", M.PROJECT_ID },
     on_stdout = function(_, line)
       table.insert(data, line)
     end,
@@ -68,24 +67,25 @@ M.setup   = function(args)
   }):start()
 end
 
-M.review  = function()
-  local isDiff = vim.fn.getwinvar(nil, "&diff")
-  local bufName = vim.api.nvim_buf_get_name(0)
-  local hasBaseBranch = u.branch_exists(M.BASE_BRANCH)
-  if not hasBaseBranch then
-    require("notify")('No ' .. M.BASE_BRANCH .. ' branch, cannot review!', "error")
-    return
-  end
-  if isDiff ~= 0 or u.string_starts(bufName, "diff") then
-    return
-  else
-    vim.cmd.DiffviewOpen(M.BASE_BRANCH)
-    u.press_enter()
-  end
+M.review      = function()
+  if u.baseInvalid() then return end
+  vim.cmd.DiffviewOpen(M.BASE_BRANCH)
+  u.press_enter()
+end
+
+M.read        = function()
+  if u.baseInvalid() then return end
+  Job:new({
+    command = bin,
+    args = { "read", M.projectInfo.id },
+    on_stdout = printSuccess,
+    on_stderr = printError
+  }):start()
 end
 
 -- Approves the merge request
-M.approve = function()
+M.approve     = function()
+  if u.baseInvalid() then return end
   Job:new({
     command = bin,
     args = { "approve", M.projectInfo.id },
@@ -95,7 +95,8 @@ M.approve = function()
 end
 
 -- Revokes approval for the current merge request
-M.revoke  = function()
+M.revoke      = function()
+  if u.baseInvalid() then return end
   Job:new({
     command = bin,
     args = { "revoke", M.projectInfo.id },
@@ -105,13 +106,14 @@ M.revoke  = function()
 end
 
 -- Opens the popup window
-M.comment = function()
+M.comment     = function()
+  if u.baseInvalid() then return end
   popup:mount()
 end
 
-
 -- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab.lua file
 M.sendComment = function(text)
+  if u.baseInvalid() then return end
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
   Job:new({

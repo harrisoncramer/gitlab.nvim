@@ -11,14 +11,13 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	discussionsUrl = "https://gitlab.com/api/v4/projects/%d/merge_requests/%s/discussions"
-	mrVersionsUrl  = "https://gitlab.com/api/v4/projects/%d/merge_requests/%s/versions"
+	discussionsUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/discussions"
+	mrVersionsUrl  = "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/versions"
 )
 
 type Comment struct {
@@ -80,12 +79,7 @@ type BadResponse struct {
 	Message string `json:"message"`
 }
 
-func MakeComment(projectIdStr string, lineNumber string, fileName string, comment string) {
-	projectId, err := strconv.Atoi(projectIdStr)
-	if err != nil {
-		log.Fatalf("Project Id not correct, provided %d", projectId)
-	}
-
+func MakeComment(projectId string, lineNumber string, fileName string, comment string) {
 	mergeId := getCurrentMergeId()
 
 	err, response := getMRVersions(mergeId, projectId)
@@ -113,7 +107,7 @@ func MakeComment(projectIdStr string, lineNumber string, fileName string, commen
 }
 
 /* POSTs the comment to the merge request */
-func createComment(mergeId string, projectId int, mrInfo MRVersion, fileName string, lineNumber string, comment string) error {
+func createComment(mergeId string, projectId string, mrInfo MRVersion, fileName string, lineNumber string, comment string) error {
 
 	payload := &bytes.Buffer{}
 	writer := multipart.NewWriter(payload)
@@ -155,7 +149,7 @@ func createComment(mergeId string, projectId int, mrInfo MRVersion, fileName str
 }
 
 /* Gets the latest merge request revision data */
-func getMRVersions(mergeId string, projectId int) (e error, response *http.Response) {
+func getMRVersions(mergeId string, projectId string) (e error, response *http.Response) {
 
 	gitlabToken := os.Getenv("GITLAB_TOKEN")
 	url := fmt.Sprintf(mrVersionsUrl, projectId, mergeId)

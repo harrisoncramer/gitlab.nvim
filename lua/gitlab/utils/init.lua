@@ -59,6 +59,22 @@ local press_enter = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
 end
 
+local baseInvalid = function()
+  local u = require("gitlab.utils")
+  local base = require("gitlab").BASE_BRANCH
+  local isDiff = vim.fn.getwinvar(nil, "&diff")
+  local bufName = vim.api.nvim_buf_get_name(0)
+  local hasBaseBranch = u.branch_exists(base)
+  if not hasBaseBranch then
+    require("notify")('No base branch, cannot review!', "error")
+    return true
+  end
+  if isDiff ~= 0 or u.string_starts(bufName, "diff") then
+    return true
+  end
+end
+
+
 local M = {}
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
@@ -66,5 +82,6 @@ M.get_buffer_text = get_buffer_text
 M.branch_exists = branch_exists
 M.press_enter = press_enter
 M.string_starts = string_starts
+M.baseInvalid = baseInvalid
 M.P = P
 return M
