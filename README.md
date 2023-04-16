@@ -26,16 +26,17 @@ export GITLAB_TOKEN="your_gitlab_token"
 Then install the plugin with <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 
 ```lua
-{
-    "harrisoncramer/gitlab.nvim",
-    dependencies = {
-      "rcarriga/nvim-notify",
-      "MunifTanjim/nui.nvim",
-      "sindrets/diffview.nvim"
-    },
-    config = function()
-      require('gitlab_nvim').setup({ project_id = 3 })
-    end,
+return {
+  "harrisoncramer/gitlab",
+  dependencies = {
+    "sindrets/diffview.nvim",
+    "rcarriga/nvim-notify",
+    "MunifTanjim/nui.nvim"
+  },
+  config = function()
+    local gitlab = require("gitlab")
+    gitlab.setup({ project_id = 3, dev = true })
+  end,
 }
 ```
 
