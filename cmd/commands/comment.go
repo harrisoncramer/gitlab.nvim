@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	mrUrl          = "https://gitlab.com/api/v4/projects/%s/merge_requests/%s"
 	discussionsUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/discussions"
 	mrVersionsUrl  = "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/versions"
 )

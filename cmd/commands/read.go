@@ -1,19 +1,23 @@
 package commands
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
 
 /* Pulls down the MR description */
 func Read(projectId string) error {
-	mergeId := getCurrentMergeId()
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(discussionsUrl, projectId, mergeId), nil)
 
+	mergeId := getCurrentMergeId()
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(mrUrl, projectId, mergeId), nil)
+
+	if err != nil {
+		log.Fatalf("Failed to build read request: %s", err.Error())
+	}
 	if err != nil {
 		return err
 	}
@@ -24,7 +28,7 @@ func Read(projectId string) error {
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return err
+		log.Fatalf("Failed to make read request: %s", err.Error())
 	}
 
 	defer res.Body.Close()
@@ -35,16 +39,15 @@ func Read(projectId string) error {
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return err
+		log.Fatalf("Failed to parse read response: %s", err.Error())
 	}
 
-	var response MergeRequest
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return err
-	}
+	// var mr MergeRequest
+	// err = json.Unmarshal(body, &mr)
+	// if err != nil {
+	// 	log.Fatalf("Failed to unmarshal read response data: %s", err.Error())
+	// }
 
-	fmt.Println(response.Description)
-
+	fmt.Println(string(body))
 	return nil
 }
