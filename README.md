@@ -54,8 +54,15 @@ First, check out the branch that you want to review locally.
 
 The `review` command will open up a diffview of all your changed files, using the diffview plugin
 
+
 ```lua
 require("gitlab_nvim").review()
+```
+
+The `read` command will pull down the MR description into a buffer so that you can read it
+
+```lua
+require("gitlab_nvim").read()
 ```
 
 The `approve` command will approve the merge request for the current branch
