@@ -28,6 +28,11 @@ With Lazy:
       require('gitlab_nvim').setup({ project_id = 3 })
     end,
 }
+
+By default, the tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
+
+```lua
+require('gitlab_nvim').setup({ project_id = 3, base_branch = 'master' })
 ```
 
 The first time you call the setup function the Go binary will be built.
