@@ -39,6 +39,13 @@ M.setup   = function(args)
   end
   M.PROJECT_ID = args.project_id
 
+  if args.base_branch == nil then
+    M.BASE_BRANCH = "main"
+  else
+    M.BASE_BRANCH = args.base_branch
+  end
+
+
   local data = {}
   Job:new({
     command = bin,
@@ -59,15 +66,15 @@ end
 M.review  = function()
   local isDiff = vim.fn.getwinvar(nil, "&diff")
   local bufName = vim.api.nvim_buf_get_name(0)
-  local has_develop = u.branch_exists("main")
-  if not has_develop then
-    require("notify")('No main branch, cannot review!', "error")
+  local hasBaseBranch = u.branch_exists(M.BASE_BRANCH)
+  if not hasBaseBranch then
+    require("notify")('No ' .. M.BASE_BRANCH .. ' branch, cannot review!', "error")
     return
   end
   if isDiff ~= 0 or u.string_starts(bufName, "diff") then
     return
   else
-    vim.cmd.DiffviewOpen("main")
+    vim.cmd.DiffviewOpen(M.BASE_BRANCH)
     u.press_enter()
   end
 end
