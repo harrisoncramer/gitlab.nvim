@@ -54,7 +54,7 @@ func GetProjectInfo() Project {
 		log.Fatalf("Error getting repository name: %s", err)
 	}
 
-	url := fmt.Sprintf("https://gitlab.com/api/v4/projects?search=%s&owned=true", projectName)
+	url := fmt.Sprintf("https://gitlab.com/api/v4/projects?search=%s", projectName)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
 
