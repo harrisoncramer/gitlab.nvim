@@ -128,20 +128,35 @@ M.listComments = function()
     args = { "listComments", M.projectInfo.id },
     on_stdout = function(_, line)
       local comments = vim.json.decode(line)
+      M.comments = comments
       vim.schedule(function()
         vim.cmd.tabnew()
         local buf = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
         vim.api.nvim_set_current_buf(buf)
+        vim.keymap.set('n', 'O', function()
+          local current_line = vim.api.nvim_get_current_line()
+          local _, __, commentId = string.find(current_line, "%((%d+)%)")
+          local match = u.findValueById(M.comments, commentId)
+          if match == nil then
+            return
+          end
+          local file = match.position.new_path
+          local line = match.position.new_line
+          u.jump_to_file(file, line)
+          u.add_comment_sign(line)
+        end, { buffer = true })
         if comments == nil then
           require("notify")("No comments found", "warn")
         else
           for _, c in ipairs(comments) do
             local cTable = {}
-            table.insert(cTable, "# @" .. c.author.username .. " on " .. u.formatDate(c.created_at))
+            table.insert(cTable,
+              "# @" .. c.author.username .. " on " .. u.formatDate(c.created_at) .. " (" .. c.id .. ")")
             for bodyLine in c.body:gmatch("[^\n]+") do
               table.insert(cTable, bodyLine)
             end
+            table.insert(cTable, "")
             table.insert(cTable, "")
             local line_count = vim.api.nvim_buf_line_count(buf)
             if line_count == 1 then line_count = -1 end

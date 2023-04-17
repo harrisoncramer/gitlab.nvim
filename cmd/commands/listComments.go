@@ -29,6 +29,7 @@ type MergeRequestNote struct {
 	Internal        bool                   `json:"internal"`
 	NoteableIID     int                    `json:"noteable_iid"`
 	CommandsChanges map[string]interface{} `json:"commands_changes"`
+	Position        NotePosition           `json:"position"`
 }
 
 type Author struct {
@@ -38,6 +39,18 @@ type Author struct {
 	State     string `json:"state"`
 	AvatarURL string `json:"avatar_url"`
 	WebURL    string `json:"web_url"`
+}
+
+type NotePosition struct {
+	BaseSHA      string  `json:"base_sha"`
+	StartSHA     string  `json:"start_sha"`
+	HeadSHA      string  `json:"head_sha"`
+	OldPath      string  `json:"old_path"`
+	NewPath      string  `json:"new_path"`
+	PositionType string  `json:"position_type"`
+	OldLine      *int    `json:"old_line"`
+	NewLine      *int    `json:"new_line"`
+	LineRange    *string `json:"line_range"`
 }
 
 func ListComments(projectId string) {

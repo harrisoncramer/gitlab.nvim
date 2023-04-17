@@ -74,7 +74,7 @@ local formatDate = function(date_string)
   local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 
   -- Format date into human-readable string without leading zeros
-  local formatted_date = os.date("%A, %B %e, %Y at%l:%M:%S %p", date)
+  local formatted_date = os.date("%A, %B %e at%l:%M %p", date)
   return formatted_date
 end
 
@@ -82,6 +82,30 @@ local add_comment_sign = function(line_number)
   local bufnr = vim.api.nvim_get_current_buf()
   vim.cmd("sign define piet text= texthl=Substitute")
   vim.fn.sign_place(0, "piet", "piet", bufnr, { lnum = line_number })
+end
+
+local function jump_to_file(filename, line_number)
+  -- Check if the buffer with the given filename is already open
+  local bufnr = vim.fn.bufnr(filename)
+  if bufnr ~= -1 then
+    -- Buffer is already open, switch to it
+    vim.cmd("buffer " .. bufnr)
+    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+    return
+  end
+
+  -- If buffer is not already open, open it
+  vim.cmd("edit " .. filename)
+  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+end
+
+local function findValueById(tbl, id)
+  for i = 1, #tbl do
+    if tbl[i].id == tonumber(id) then
+      return tbl[i]
+    end
+  end
+  return nil
 end
 
 local M = {}
@@ -94,6 +118,8 @@ M.string_starts = string_starts
 M.baseInvalid = baseInvalid
 M.formatDate = formatDate
 M.add_comment_sign = add_comment_sign
+M.jump_to_file = jump_to_file
+M.findValueById = findValueById
 
 M.P = P
 return M
