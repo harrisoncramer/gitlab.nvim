@@ -131,22 +131,21 @@ M.listComments = function()
       vim.schedule(function()
         vim.cmd.tabnew()
         local buf = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+        vim.api.nvim_set_current_buf(buf)
         if comments == nil then
           require("notify")("No comments found", "warn")
         else
-          local lines = {}
           for _, c in ipairs(comments) do
-            table.insert(lines, "")
-            table.insert(lines, "--------------------------------------")
-            table.insert(lines, "")
+            local cTable = {}
+            table.insert(cTable, "# @" .. c.author.username .. " on " .. u.formatDate(c.created_at))
             for bodyLine in c.body:gmatch("[^\n]+") do
-              table.insert(lines, bodyLine)
+              table.insert(cTable, bodyLine)
             end
+            table.insert(cTable, "")
             local line_count = vim.api.nvim_buf_line_count(buf)
-            vim.api.nvim_buf_set_lines(buf, 0, -1, true, lines)
-            vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + #lines + 3, false, lines)
-            vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-            vim.api.nvim_set_current_buf(buf)
+            if line_count == 1 then line_count = -1 end
+            vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + #cTable + 3, false, cTable)
           end
           vim.api.nvim_buf_set_option(buf, 'modifiable', false)
         end

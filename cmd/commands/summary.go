@@ -42,12 +42,6 @@ func Summary(projectId string) error {
 		log.Fatalf("Failed to parse read response: %s", err.Error())
 	}
 
-	// var mr MergeRequest
-	// err = json.Unmarshal(body, &mr)
-	// if err != nil {
-	// 	log.Fatalf("Failed to unmarshal read response data: %s", err.Error())
-	// }
-
 	fmt.Println(string(body))
 	return nil
 }

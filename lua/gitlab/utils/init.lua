@@ -69,6 +69,20 @@ local baseInvalid = function()
   end
 end
 
+local formatDate = function(date_string)
+  local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
+  local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+
+  -- Format date into human-readable string without leading zeros
+  local formatted_date = os.date("%A, %B %e, %Y at%l:%M:%S %p", date)
+  return formatted_date
+end
+
+local add_comment_sign = function(line_number)
+  local bufnr = vim.api.nvim_get_current_buf()
+  vim.cmd("sign define piet text= texthl=Substitute")
+  vim.fn.sign_place(0, "piet", "piet", bufnr, { lnum = line_number })
+end
 
 local M = {}
 M.get_relative_file_path = get_relative_file_path
@@ -78,5 +92,8 @@ M.branch_exists = branch_exists
 M.press_enter = press_enter
 M.string_starts = string_starts
 M.baseInvalid = baseInvalid
+M.formatDate = formatDate
+M.add_comment_sign = add_comment_sign
+
 M.P = P
 return M
