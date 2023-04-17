@@ -64,7 +64,7 @@ local baseInvalid = function()
   local base = require("gitlab").BASE_BRANCH
   local hasBaseBranch = u.branch_exists(base)
   if not hasBaseBranch then
-    require("notify")('No base branch, cannot review!', "error")
+    require("notify")('No base branch. If this is a Gitlab repository, please check your setup function!', "error")
     return true
   end
 end
