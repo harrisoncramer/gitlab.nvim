@@ -91,16 +91,18 @@ M.summary = function()
     on_exit = function()
       if mrData[1] ~= nil then
         local parsed = vim.json.decode(mrData[1])
+        if parsed == nil then
+          require("notify")("Merge request description not found.", "error")
+          return
+        end
         local title = parsed.title
         local description = parsed.description
-        -- Use string.gmatch to iterate over matches of pattern "\n" (newline)
         local lines = {}
         for line in description:gmatch("[^\n]+") do
           table.insert(lines, line)
           table.insert(lines, "")
         end
         vim.schedule(function()
-          -- Preprocess the replacement string to escape newline characters
           vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
           vim.api.nvim_buf_set_option(currentBuffer, "modifiable", false)
           summary.border:set_text("top", title, "center")

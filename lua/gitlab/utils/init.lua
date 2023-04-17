@@ -60,6 +60,7 @@ local press_enter = function()
 end
 
 local baseInvalid = function()
+  print("called baseInvalid")
   local u = require("gitlab.utils")
   local base = require("gitlab").BASE_BRANCH
   local isDiff = vim.fn.getwinvar(nil, "&diff")
@@ -67,9 +68,6 @@ local baseInvalid = function()
   local hasBaseBranch = u.branch_exists(base)
   if not hasBaseBranch then
     require("notify")('No base branch, cannot review!', "error")
-    return true
-  end
-  if isDiff ~= 0 or u.string_starts(bufName, "diff") then
     return true
   end
 end
