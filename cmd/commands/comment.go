@@ -104,7 +104,7 @@ func MakeComment(projectId string, lineNumber string, fileName string, comment s
 		log.Fatalf("Error making comment thread: %v", err)
 	}
 
-	fmt.Println("Comment created")
+	fmt.Println("Comment created: " + comment[0:30] + "...")
 }
 
 /* POSTs the comment to the merge request */

@@ -61,7 +61,11 @@ M.setup           = function(args)
     on_exit = function()
       if projectData[1] ~= nil then
         local parsed = vim.json.decode(projectData[1])
-        M.projectInfo = parsed[1]
+        if parsed == nil then
+          require("notify")("Could not get project data", "error")
+        else
+          M.projectInfo = parsed[1]
+        end
       end
     end,
   }):start()
@@ -77,7 +81,9 @@ local mrData      = {}
 local function exit(popup)
   popup:unmount()
 end
-M.summary = function()
+
+-- Provides the description and title of the MR for reading
+M.summary      = function()
   if u.baseInvalid() then return end
   summary:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
@@ -114,8 +120,44 @@ M.summary = function()
   }):start()
 end
 
+-- Places all of the comments into a readable list
+M.listComments = function()
+  if u.baseInvalid() then return end
+  Job:new({
+    command = bin,
+    args = { "listComments", M.projectInfo.id },
+    on_stdout = function(_, line)
+      local comments = vim.json.decode(line)
+      vim.schedule(function()
+        vim.cmd.tabnew()
+        local buf = vim.api.nvim_create_buf(false, true)
+        if comments == nil then
+          require("notify")("No comments found", "warn")
+        else
+          local lines = {}
+          for _, c in ipairs(comments) do
+            table.insert(lines, "")
+            table.insert(lines, "--------------------------------------")
+            table.insert(lines, "")
+            for bodyLine in c.body:gmatch("[^\n]+") do
+              table.insert(lines, bodyLine)
+            end
+            local line_count = vim.api.nvim_buf_line_count(buf)
+            vim.api.nvim_buf_set_lines(buf, 0, -1, true, lines)
+            vim.api.nvim_buf_set_lines(buf, line_count + 1, line_count + #lines + 3, false, lines)
+            vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+            vim.api.nvim_set_current_buf(buf)
+          end
+          vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+        end
+      end)
+    end,
+    on_stderr = printError,
+  }):start()
+end
+
 -- Approves the merge request
-M.approve = function()
+M.approve      = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,
@@ -126,7 +168,7 @@ M.approve = function()
 end
 
 -- Revokes approval for the current merge request
-M.revoke  = function()
+M.revoke       = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,

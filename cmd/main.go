@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	INFO    = "projectInfo"
-	SUMMARY = "summary"
-	APPROVE = "approve"
-	REVOKE  = "revoke"
-	COMMENT = "comment"
+	INFO          = "projectInfo"
+	SUMMARY       = "summary"
+	APPROVE       = "approve"
+	REVOKE        = "revoke"
+	COMMENT       = "comment"
+	LIST_COMMENTS = "listComments"
 )
 
 func main() {
@@ -44,6 +45,8 @@ func main() {
 			usage()
 		}
 		commands.MakeComment(projectId, lineNumber, fileName, comment)
+	case LIST_COMMENTS:
+		commands.ListComments(projectId)
 	default:
 		usage()
 	}
