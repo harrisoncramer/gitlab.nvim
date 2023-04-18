@@ -1,2 +1,2 @@
 compile: 
-	go build -o bin ./cmd/main.go
+	cd cmd && go build -o bin && mv bin ../bin

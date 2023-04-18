@@ -1,14 +1,12 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
-
-	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/commands"
 )
 
 const (
-	INFO          = "projectInfo"
+	STAR          = "star"
 	SUMMARY       = "summary"
 	APPROVE       = "approve"
 	REVOKE        = "revoke"
@@ -17,41 +15,38 @@ const (
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		usage()
-	}
 
-	command, projectId := os.Args[1], os.Args[2]
+	var c Client
+	errCheck(c.Init())
 
-	if projectId == "" {
-		usage()
-	}
-
-	switch command {
-	case INFO:
-		commands.GetProjectInfo()
+	switch c.command {
+	case STAR:
+		errCheck(c.Star())
 	case APPROVE:
-		commands.Approve(projectId)
-	case SUMMARY:
-		commands.Summary(projectId)
-	case REVOKE:
-		commands.Revoke(projectId)
-	case COMMENT:
-		if len(os.Args) < 6 {
-			usage()
-		}
-		lineNumber, fileName, comment := os.Args[3], os.Args[4], os.Args[5]
-		if lineNumber == "" || fileName == "" || comment == "" {
-			usage()
-		}
-		commands.MakeComment(projectId, lineNumber, fileName, comment)
-	case LIST_COMMENTS:
-		commands.ListComments(projectId)
-	default:
-		usage()
+		errCheck(c.Approve())
+		// case SUMMARY:
+		// 	commands.Summary(c.projectId)
+		// case REVOKE:
+		// 	commands.Revoke(c.projectId)
+		// case COMMENT:
+		// 	if len(os.Args) < 6 {
+		// 		c.Usage()
+		// 	}
+		// 	lineNumber, fileName, comment := os.Args[3], os.Args[4], os.Args[5]
+		// 	if lineNumber == "" || fileName == "" || comment == "" {
+		// 		c.Usage()
+		// 	}
+		// 	commands.MakeComment(c.projectId, lineNumber, fileName, comment)
+		// case LIST_COMMENTS:
+		// 	commands.ListComments(c.projectId)
+		// default:
+		// 	c.Usage()
 	}
 }
 
-func usage() {
-	log.Fatalf("Usage: gitlab-nvim <command> <project-id> <args?>")
+func errCheck(err error) {
+	if err != nil {
+		fmt.Printf("Failure: %v", err)
+		os.Exit(1)
+	}
 }
