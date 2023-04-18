@@ -24,6 +24,8 @@ func main() {
 		errCheck(c.Star())
 	case APPROVE:
 		errCheck(c.Approve())
+	case COMMENT:
+		errCheck(c.Comment())
 		// case SUMMARY:
 		// 	commands.Summary(c.projectId)
 		// case REVOKE:

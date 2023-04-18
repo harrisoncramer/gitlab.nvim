@@ -55,7 +55,8 @@ func (c *Client) Init() error {
 }
 
 func (c *Client) Usage() {
-	log.Fatalf("Usage: gitlab-nvim <command> <project-id> <args?>")
+	fmt.Printf("Usage: gitlab-nvim <command> <project-id> <args?>")
+	os.Exit(1)
 }
 
 /* Gets the current merge request ID from local Git */
