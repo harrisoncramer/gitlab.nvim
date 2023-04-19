@@ -67,7 +67,6 @@ local baseInvalid = function()
     require("notify")('No base branch. If this is a Gitlab repository, please check your setup function!', "error")
     return true
   end
-  print("done base branch")
 end
 
 local formatDate = function(date_string)

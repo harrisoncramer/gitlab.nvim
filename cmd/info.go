@@ -12,7 +12,8 @@ const mrUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%d"
 
 func (c *Client) Info() error {
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(mrUrl, c.projectId, c.mergeId), nil)
+	url := fmt.Sprintf(mrUrl, c.projectId, c.mergeId)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return fmt.Errorf("Failed to build read request: %w", err)

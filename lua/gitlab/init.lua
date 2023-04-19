@@ -8,7 +8,7 @@ local binPath = vim.fn.stdpath("data") .. "/lazy/gitlab"
 local bin     = binPath .. "/bin"
 
 M.PROJECT_ID  = nil
-M.projectInfo = {}
+M.info        = {}
 
 local function printSuccess(_, line)
   if line ~= nil and line ~= "" then
@@ -17,7 +17,6 @@ local function printSuccess(_, line)
 end
 
 local function printError(_, line)
-  print("error")
   if line ~= nil and line ~= "" then
     require("notify")(line, "error")
   end
@@ -56,7 +55,6 @@ M.setup           = function(args)
     command = bin,
     args = { "info", M.PROJECT_ID },
     on_stdout = function(_, line)
-      print(line)
       table.insert(projectData, line)
     end,
     on_stderr = printError,
@@ -66,7 +64,7 @@ M.setup           = function(args)
         if parsed == nil then
           require("notify")("Could not get project data", "error")
         else
-          M.projectInfo = parsed[1]
+          M.info = parsed
         end
       end
     end,
@@ -91,7 +89,7 @@ M.summary      = function()
   local currentBuffer = vim.api.nvim_get_current_buf()
   Job:new({
     command = bin,
-    args = { "summary", M.projectInfo.id },
+    args = { "summary", M.PROJECT_ID },
     on_stderr = printError,
     on_stdout = function(_, line)
       table.insert(mrData, line)
@@ -127,7 +125,7 @@ M.listComments = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,
-    args = { "listComments", M.projectInfo.id },
+    args = { "listComments", M.PROJECT_ID },
     on_stdout = function(_, line)
       local comments = vim.json.decode(line)
       M.comments = comments
@@ -177,7 +175,7 @@ M.approve      = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,
-    args = { "approve", M.projectInfo.id },
+    args = { "approve", M.PROJECT_ID },
     on_stdout = printSuccess,
     on_stderr = printError
   }):start()
@@ -188,7 +186,7 @@ M.revoke       = function()
   if u.baseInvalid() then return end
   Job:new({
     command = bin,
-    args = { "revoke", M.projectInfo.id },
+    args = { "revoke", M.PROJECT_ID },
     on_stdout = printSuccess,
     on_stderr = printError
   }):start()
@@ -218,7 +216,7 @@ M.sendComment = function(text)
     command = bin,
     args = {
       "comment",
-      M.projectInfo.id,
+      M.PROJECT_ID,
       current_line_number,
       relative_file_path,
       text,
