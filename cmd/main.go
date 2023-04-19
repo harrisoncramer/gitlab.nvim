@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	STAR          = "star"
-	INFO          = "info"
-	APPROVE       = "approve"
-	REVOKE        = "revoke"
-	COMMENT       = "comment"
-	LIST_COMMENTS = "listComments"
+	STAR    = "star"
+	INFO    = "info"
+	APPROVE = "approve"
+	REVOKE  = "revoke"
+	COMMENT = "comment"
+	// LIST_COMMENTS = "listComments"
 )
 
 func main() {
