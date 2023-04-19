@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 )
 
 const (
 	STAR          = "star"
-	SUMMARY       = "summary"
+	INFO          = "info"
 	APPROVE       = "approve"
 	REVOKE        = "revoke"
 	COMMENT       = "comment"
@@ -24,10 +24,12 @@ func main() {
 		errCheck(c.Star())
 	case APPROVE:
 		errCheck(c.Approve())
+	case REVOKE:
+		errCheck(c.Revoke())
 	case COMMENT:
 		errCheck(c.Comment())
-		// case SUMMARY:
-		// 	commands.Summary(c.projectId)
+	case INFO:
+		errCheck(c.Info())
 		// case REVOKE:
 		// 	commands.Revoke(c.projectId)
 		// case COMMENT:
@@ -48,7 +50,7 @@ func main() {
 
 func errCheck(err error) {
 	if err != nil {
-		fmt.Printf("Failure: %v", err)
+		log.Fatalf("Failure: %s", err)
 		os.Exit(1)
 	}
 }

@@ -17,6 +17,7 @@ local function printSuccess(_, line)
 end
 
 local function printError(_, line)
+  print("error")
   if line ~= nil and line ~= "" then
     require("notify")(line, "error")
   end
@@ -32,7 +33,7 @@ M.setup           = function(args)
   end
   local binExists = io.open(bin, "r")
   if not binExists or args.dev == true then
-    local command = string.format("cd %s && go build -o bin ./cmd/main.go", binPath)
+    local command = string.format("cd %s && make", binPath)
     local installCode = os.execute(command)
     if installCode ~= 0 then
       require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
@@ -53,8 +54,9 @@ M.setup           = function(args)
 
   Job:new({
     command = bin,
-    args = { "projectInfo", M.PROJECT_ID },
+    args = { "info", M.PROJECT_ID },
     on_stdout = function(_, line)
+      print(line)
       table.insert(projectData, line)
     end,
     on_stderr = printError,
