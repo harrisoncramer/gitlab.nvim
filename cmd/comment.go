@@ -54,14 +54,18 @@ func (c *Client) Comment() error {
 	err = json.Unmarshal(body, &diffVersionInfo)
 
 	time := time.Now()
+
 	options := gitlab.CreateMergeRequestDiscussionOptions{
 		Body:      &comment,
 		CreatedAt: &time,
 		Position: &gitlab.NotePosition{
-			BaseSHA: diffVersionInfo[0].BaseCommitSHA,
-			HeadSHA: diffVersionInfo[0].HeadCommitSHA,
-			NewPath: fileName,
-			NewLine: lineNumberInt,
+			PositionType: "text",
+			BaseSHA:      diffVersionInfo[0].BaseCommitSHA,
+			HeadSHA:      diffVersionInfo[0].HeadCommitSHA,
+			StartSHA:     diffVersionInfo[0].StartCommitSHA,
+			NewPath:      fileName,
+			OldPath:      fileName,
+			NewLine:      lineNumberInt,
 		},
 	}
 
@@ -71,9 +75,16 @@ func (c *Client) Comment() error {
 		return fmt.Errorf("Could not leave comment: %w", err)
 	}
 
-	fmt.Println("Left Comment: " + comment[0:25] + "...")
+	fmt.Println("Left Comment: " + comment[0:min(len(comment), 25)] + "...")
 
 	return nil
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 /* Gets the latest merge request revision data */
