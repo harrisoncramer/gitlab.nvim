@@ -22,7 +22,7 @@ local function printError(_, line)
   end
 end
 
--- Builds the Go binary, and initializes the plugin so that we can communicate with Gitlab's API
+-- Builds the Go binary, initializes the plugin, fetches MR info
 local projectData = {}
 M.setup           = function(args)
   if args.dev == true then
@@ -71,6 +71,28 @@ M.setup           = function(args)
   }):start()
 end
 
+-- Provides the description and title of the MR for reading (fetched immediately on setup)
+M.summary         = function()
+  if u.baseInvalid() then return end
+  summary:mount()
+  local currentBuffer = vim.api.nvim_get_current_buf()
+  local title = M.info.title
+  local description = M.info.description
+  local lines = {}
+  for line in description:gmatch("[^\n]+") do
+    table.insert(lines, line)
+    table.insert(lines, "")
+  end
+  vim.schedule(function()
+    vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
+    vim.api.nvim_buf_set_option(currentBuffer, "modifiable", false)
+    summary.border:set_text("top", title, "center")
+    vim.keymap.set('n', '<Esc>', function() exit(summary) end, { buffer = true })
+    vim.keymap.set('n', ':', '', { buffer = true })
+  end)
+end
+
+-- Opens diffview of the current MR
 M.review          = function()
   if u.baseInvalid() then return end
   vim.cmd.DiffviewOpen(M.BASE_BRANCH)
@@ -80,44 +102,6 @@ end
 local mrData      = {}
 local function exit(popup)
   popup:unmount()
-end
-
--- Provides the description and title of the MR for reading
-M.summary      = function()
-  if u.baseInvalid() then return end
-  summary:mount()
-  local currentBuffer = vim.api.nvim_get_current_buf()
-  Job:new({
-    command = bin,
-    args = { "summary", M.PROJECT_ID },
-    on_stderr = printError,
-    on_stdout = function(_, line)
-      table.insert(mrData, line)
-    end,
-    on_exit = function()
-      if mrData[1] ~= nil then
-        local parsed = vim.json.decode(mrData[1])
-        if parsed == nil then
-          require("notify")("Merge request description not found.", "error")
-          return
-        end
-        local title = parsed.title
-        local description = parsed.description
-        local lines = {}
-        for line in description:gmatch("[^\n]+") do
-          table.insert(lines, line)
-          table.insert(lines, "")
-        end
-        vim.schedule(function()
-          vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-          vim.api.nvim_buf_set_option(currentBuffer, "modifiable", false)
-          summary.border:set_text("top", title, "center")
-          vim.keymap.set('n', '<Esc>', function() exit(summary) end, { buffer = true })
-          vim.keymap.set('n', ':', '', { buffer = true })
-        end)
-      end
-    end,
-  }):start()
 end
 
 -- Places all of the comments into a readable list
@@ -170,7 +154,7 @@ M.listComments = function()
   }):start()
 end
 
--- Approves the merge request
+-- Approves the current merge request
 M.approve      = function()
   if u.baseInvalid() then return end
   Job:new({
@@ -192,23 +176,21 @@ M.revoke       = function()
   }):start()
 end
 
--- Opens the popup window
-local function send()
-  local text = u.get_buffer_text(comment.bufnr)
-  comment:unmount()
-  M.sendComment(text)
-end
-
-M.comment     = function()
+-- Opens the popup window to send a comment
+M.comment      = function()
   if u.baseInvalid() then return end
   comment:mount()
   vim.keymap.set('n', '<Esc>', function() exit(comment) end, { buffer = true })
   vim.keymap.set('n', ':', '', { buffer = true })
-  vim.keymap.set('n', '<leader>s', send, { buffer = true })
+  vim.keymap.set('n', '<leader>s', function()
+    local text = u.get_buffer_text(comment.bufnr)
+    comment:unmount()
+    M.sendComment(text)
+  end, { buffer = true })
 end
 
--- This function invokes our binary and sends the text to Gitlab. The text comes from the after/ftplugin/gitlab.lua file
-M.sendComment = function(text)
+-- Sends the comment to Gitlab
+M.sendComment  = function(text)
   if u.baseInvalid() then return end
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()

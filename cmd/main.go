@@ -30,21 +30,10 @@ func main() {
 		errCheck(c.Comment())
 	case INFO:
 		errCheck(c.Info())
-		// case REVOKE:
-		// 	commands.Revoke(c.projectId)
-		// case COMMENT:
-		// 	if len(os.Args) < 6 {
-		// 		c.Usage()
-		// 	}
-		// 	lineNumber, fileName, comment := os.Args[3], os.Args[4], os.Args[5]
-		// 	if lineNumber == "" || fileName == "" || comment == "" {
-		// 		c.Usage()
-		// 	}
-		// 	commands.MakeComment(c.projectId, lineNumber, fileName, comment)
-		// case LIST_COMMENTS:
-		// 	commands.ListComments(c.projectId)
-		// default:
-		// 	c.Usage()
+	// case LIST_COMMENTS:
+	// 	commands.ListComments(c.projectId)
+	default:
+		c.Usage()
 	}
 }
 
