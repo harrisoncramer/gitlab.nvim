@@ -22,6 +22,10 @@ local function printError(_, line)
   end
 end
 
+local function exit(popup)
+  popup:unmount()
+end
+
 -- Builds the Go binary, initializes the plugin, fetches MR info
 local projectData = {}
 M.setup           = function(args)
