@@ -15,6 +15,7 @@ https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-
 - Go
 - <a href="https://github.com/MunifTanjim/nui.nvim">nui.nvim</a>
 - <a href="https://github.com/rcarriga/nvim-notify">nvim-notify</a>
+- <a href="https://github.com/nvim-lua/plenary.nvim">plenary.nvim</a>
 
 ## Installation
 
@@ -31,7 +32,8 @@ return {
   "harrisoncramer/gitlab.nvim",
   dependencies = {
     "rcarriga/nvim-notify",
-    "MunifTanjim/nui.nvim"
+    "MunifTanjim/nui.nvim",
+    "nvim-lua/plenary.nvim"
   },
   config = function()
     local gitlab = require("gitlab")
