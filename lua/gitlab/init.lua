@@ -45,6 +45,16 @@ M.setup             = function(args, build_only)
     M.build(args)
   end
 
+  local binExists = io.open(state.BIN, "r")
+  if not binExists or args.dev == true then
+    local command = string.format("cd %s && make", state.BIN_PATH)
+    local installCode = os.execute(command .. "> /dev/null")
+    if installCode ~= 0 then
+      require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
+      return
+    end
+  end
+
   local binary_exists = vim.loop.fs_stat(state.BIN)
   if binary_exists == nil then
     return -- Ensure build function completes before initializing plugin
