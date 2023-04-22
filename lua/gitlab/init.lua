@@ -1,52 +1,58 @@
-local Job          = require("plenary.job")
-local state        = require("gitlab.state")
-local notify       = require("notify")
-local discussions  = require("gitlab.discussions")
-local summary      = require("gitlab.summary")
-local keymaps      = require("gitlab.keymaps")
-local comment      = require("gitlab.comment")
-local approve      = require("gitlab.approve")
-local revoke       = require("gitlab.revoke")
-local u            = require("gitlab.utils")
+local Job           = require("plenary.job")
+local state         = require("gitlab.state")
+local notify        = require("notify")
+local discussions   = require("gitlab.discussions")
+local summary       = require("gitlab.summary")
+local keymaps       = require("gitlab.keymaps")
+local comment       = require("gitlab.comment")
+local approve       = require("gitlab.approve")
+local revoke        = require("gitlab.revoke")
+local u             = require("gitlab.utils")
 
 -- Root Module Scope
-local M            = {}
-M.summary          = summary.summary
-M.approve          = approve.approve
-M.revoke           = revoke.revoke
-M.create_comment   = comment.create_comment
-M.list_discussions = discussions.list_discussions
-M.edit_comment     = comment.edit_comment
-M.delete_comment   = comment.delete_comment
-M.reply            = discussions.reply
+local M             = {}
+M.summary           = summary.summary
+M.approve           = approve.approve
+M.revoke            = revoke.revoke
+M.create_comment    = comment.create_comment
+M.list_discussions  = discussions.list_discussions
+M.edit_comment      = comment.edit_comment
+M.delete_comment    = comment.delete_comment
+M.reply             = discussions.reply
 
 -- Builds the Go binary, initializes the plugin, fetches MR info
-local projectData  = {}
-local function current_file_path()
-  local path = debug.getinfo(1, 'S').source:sub(2)
-  return vim.fn.fnamemodify(path, ':p')
+local projectData   = {}
+
+M.build             = function()
+  local command = string.format("cd %s && make", state.BIN_PATH)
+  local installCode = os.execute(command .. "> /dev/null")
+  if installCode ~= 0 then
+    notify("Could not install gitlab.nvim!", "error")
+    return
+  else
+    M.setup()
+  end
 end
 
-M.setup = function(args)
-  local file_path = current_file_path()
+M.setup             = function(args)
+  local file_path = M.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h")
-
   state.BIN_PATH = parent_dir
   state.BIN = parent_dir .. "/bin"
 
-  local binExists = io.open(state.BIN, "r")
-  if not binExists or args.dev == true then
-    local command = string.format("cd %s && make", state.BIN_PATH)
-    local installCode = os.execute(command .. "> /dev/null")
-    if installCode ~= 0 then
-      notify("Could not install gitlab.nvim! Do you have Go installed?", "error")
-      return
-    end
+  if args.dev == true then
+    M.build()
+  end
+
+  local binary_exists = vim.loop.fs_stat(state.BIN)
+  if binary_exists == nil then
+    return -- Ensure build function completes before initializing plugin
   end
 
   if args.project_id == nil then
     error("No project ID provided!")
   end
+
   state.PROJECT_ID = args.project_id
 
   if args.base_branch ~= nil then
@@ -75,6 +81,11 @@ M.setup = function(args)
   end
 
   keymaps.set_keymap_keys(args.keymaps)
+end
+
+M.current_file_path = function()
+  local path = debug.getinfo(1, 'S').source:sub(2)
+  return vim.fn.fnamemodify(path, ':p')
 end
 
 return M
