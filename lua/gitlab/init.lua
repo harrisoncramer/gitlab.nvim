@@ -24,6 +24,7 @@ M.reply             = discussions.reply
 local projectData   = {}
 
 M.build             = function(args)
+  if args == nil then args = {} end
   local command = string.format("cd %s && make", state.BIN_PATH)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
