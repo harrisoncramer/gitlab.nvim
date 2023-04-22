@@ -204,7 +204,16 @@ M.merge_tables = function(defaults, overrides)
   return result
 end
 
-
+function read_file(file_path)
+  local file = io.open(file_path, "r")
+  if file == nil then
+    return nil
+  end
+  local file_contents = file:read("*all")
+  file:close()
+  file_contents = string.gsub(file_contents, "\n", "")
+  return file_contents
+end
 
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
