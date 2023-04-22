@@ -23,14 +23,14 @@ M.reply             = discussions.reply
 -- Builds the Go binary, initializes the plugin, fetches MR info
 local projectData   = {}
 
-M.build             = function()
+M.build             = function(args)
   local command = string.format("cd %s && make", state.BIN_PATH)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
     notify("Could not install gitlab.nvim!", "error")
     return
   else
-    M.setup()
+    M.setup(args)
   end
 end
 
@@ -41,7 +41,7 @@ M.setup             = function(args)
   state.BIN = parent_dir .. "/bin"
 
   if args.dev == true then
-    M.build()
+    M.build(args)
   end
 
   local binary_exists = vim.loop.fs_stat(state.BIN)
