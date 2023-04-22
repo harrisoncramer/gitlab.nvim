@@ -1,5 +1,6 @@
 local Job          = require("plenary.job")
 local state        = require("gitlab.state")
+local notify       = require("notify")
 local discussions  = require("gitlab.discussions")
 local summary      = require("gitlab.summary")
 local keymaps      = require("gitlab.keymaps")
@@ -38,7 +39,7 @@ M.setup = function(args)
     local command = string.format("cd %s && make", state.BIN_PATH)
     local installCode = os.execute(command .. "> /dev/null")
     if installCode ~= 0 then
-      require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
+      notify("Could not install gitlab.nvim! Do you have Go installed?", "error")
       return
     end
   end
@@ -64,7 +65,7 @@ M.setup = function(args)
         if projectData[1] ~= nil then
           local parsed_ok, data = pcall(vim.json.decode, projectData[1])
           if parsed_ok ~= true then
-            require("notify")("Failed calling setup. Could not get project data.", "error")
+            notify("Failed calling setup. Could not get project data.", "error")
           else
             state.INFO = data
           end

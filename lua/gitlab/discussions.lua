@@ -1,5 +1,6 @@
 local u            = require("gitlab.utils")
 local NuiTree      = require("nui.tree")
+local notify       = require("notify")
 local state        = require("gitlab.state")
 local Job          = require("plenary.job")
 local Popup        = require("nui.popup")
@@ -27,7 +28,7 @@ M.send_reply       = function(text)
     on_stdout = function(_, line)
       local note = vim.json.decode(line)
       if note == nil then
-        require("notify")("There was an issue creating the note", "error")
+        notify("There was an issue creating the note", "error")
         return
       end
 
@@ -39,7 +40,7 @@ M.send_reply       = function(text)
         state.tree:render()
         local buf = vim.api.nvim_get_current_buf()
         u.darken_metadata(buf, '')
-        require("notify")("Sent reply!")
+        notify("Sent reply!")
       end)
     end,
     on_stderr = u.print_error
@@ -62,7 +63,7 @@ M.list_discussions = function()
         vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
         vim.api.nvim_set_current_buf(buf)
         if discussions == nil then
-          require("notify")("No discussions found for this MR", "warn")
+          notify("No discussions found for this MR", "warn")
         else
           local allDiscussions = {}
           for i, discussion in ipairs(discussions) do

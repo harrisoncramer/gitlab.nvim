@@ -1,5 +1,6 @@
 local Menu               = require("nui.menu")
 local NuiTree            = require("nui.tree")
+local notify             = require("notify")
 local Job                = require("plenary.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
@@ -93,7 +94,7 @@ M.delete_comment         = function()
           on_stdout = function(_, line)
             vim.schedule(function()
               if line ~= nil and line ~= "" then
-                require("notify")(line, "info")
+                notify(line, "info")
                 state.tree:remove_node("-" .. note_id)
                 local discussion_node = state.tree:get_node("-" .. discussion_id)
                 if not discussion_node:has_children() then
@@ -155,7 +156,7 @@ M.send_edits   = function(text)
     on_stdout = function(_, line)
       local note = vim.json.decode(line)
       if note == nil then
-        require("notify")("There was an issue editing the note", "error")
+        notify("There was an issue editing the note", "error")
         return
       end
 
@@ -177,7 +178,7 @@ M.send_edits   = function(text)
         state.tree:render()
         local buf = vim.api.nvim_get_current_buf()
         u.darken_metadata(buf, '')
-        require("notify")("Edited comment!")
+        notify("Edited comment!")
       end)
     end,
     on_stderr = u.print_error
