@@ -52,28 +52,26 @@ M.setup = function(args)
     state.BASE_BRANCH = args.base_branch
   end
 
-  if u.is_gitlab_repo() then
-    Job:new({
-      command = state.BIN,
-      args = { "info", state.PROJECT_ID },
-      on_stdout = function(_, line)
-        table.insert(projectData, line)
-      end,
-      on_stderr = u.print_error,
-      on_exit = function()
-        -- vim.schedule(function()
-        --   if projectData[1] ~= nil then
-        --     local parsed_ok, data = pcall(vim.json.decode, projectData[1])
-        --     if parsed_ok ~= true then
-        --       require("notify")("Failed calling setup. Could not get project data.", "error")
-        --     else
-        --       state.INFO = data
-        --     end
-        --   end
-        -- end)
-      end,
-    }):start()
-  end
+  -- if u.is_gitlab_repo() then
+  --   Job:new({
+  --     command = state.BIN,
+  --     args = { "info", state.PROJECT_ID },
+  --     on_stdout = function(_, line)
+  --       table.insert(projectData, line)
+  --     end,
+  --     on_stderr = u.print_error,
+  --     on_exit = function()
+  --       if projectData[1] ~= nil then
+  --         local parsed_ok, data = pcall(vim.json.decode, projectData[1])
+  --         if parsed_ok ~= true then
+  --           require("notify")("Failed calling setup. Could not get project data.", "error")
+  --         else
+  --           state.INFO = data
+  --         end
+  --       end
+  --     end,
+  --   }):start()
+  -- end
 
   keymaps.set_keymap_keys(args.keymaps)
 end
