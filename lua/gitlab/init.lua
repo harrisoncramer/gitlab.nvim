@@ -41,6 +41,7 @@ M.setup             = function(args, build_only)
   state.BIN_PATH = parent_dir
   state.BIN = parent_dir .. "/bin"
 
+  if args == nil then args = {} end
   if args.dev == true then
     M.build(args)
   end
