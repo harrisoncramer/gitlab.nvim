@@ -59,7 +59,7 @@ M.setup = function(args)
       -- on_stdout = function(_, line)
       --   table.insert(projectData, line)
       -- end,
-      -- on_stderr = u.print_error,
+      on_stderr = u.print_error,
       -- on_exit = function()
       --   if projectData[1] ~= nil then
       --     local parsed_ok, data = pcall(vim.json.decode, projectData[1])
