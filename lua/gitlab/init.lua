@@ -62,7 +62,15 @@ M.setup             = function(args, build_only)
 
   if build_only then return end
 
+  -- Override project_id in setup call if configuration file is present
+  local config_file_path = vim.fn.getcwd() .. "/.gitlab-nvim"
+  local config_file_content = read_file(config_file_path)
+  if config_file_content ~= nil then
+    args.project_id = config_file_content
+  end
+
   if args.project_id == nil then
+    args.project_id = u.read_file(state.BIN_PATH .. "/.gitlab/project_id")
     error("No project ID provided!")
   end
 
