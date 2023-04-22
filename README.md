@@ -38,6 +38,10 @@ return {
     "nvim-lua/plenary.nvim"
   },
   config = function()
+    -- These settings are required if you aren't already initializing notify
+    vim.opt.termguicolors = true
+    require("notify").setup({ background_colour = "#000000" })
+
     local gitlab = require("gitlab")
     gitlab.setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
   end,
