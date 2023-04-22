@@ -32,16 +32,17 @@ M.setup = function(args)
 
   state.BIN_PATH = parent_dir
   state.BIN = parent_dir .. "/bin"
-
-  local binExists = io.open(state.BIN, "r")
-  if not binExists or args.dev == true then
-    local command = string.format("cd %s && make", state.BIN_PATH)
-    local installCode = os.execute(command .. "> /dev/null")
-    if installCode ~= 0 then
-      require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
-      return
+  vim.schedule(function()
+    local binExists = io.open(state.BIN, "r")
+    if not binExists or args.dev == true then
+      local command = string.format("cd %s && make", state.BIN_PATH)
+      local installCode = os.execute(command .. "> /dev/null")
+      if installCode ~= 0 then
+        require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
+        return
+      end
     end
-  end
+  end)
 
   if args.project_id == nil then
     error("No project ID provided!")
