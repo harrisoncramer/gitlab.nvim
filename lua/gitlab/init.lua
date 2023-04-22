@@ -60,16 +60,16 @@ M.setup = function(args)
         table.insert(projectData, line)
       end,
       -- on_stderr = u.print_error,
-      -- on_exit = function()
-      --   if projectData[1] ~= nil then
-      --     local parsed_ok, data = pcall(vim.json.decode, projectData[1])
-      --     if parsed_ok ~= true then
-      --       require("notify")("Failed calling setup. Could not get project data.", "error")
-      --     else
-      --       state.INFO = data
-      --     end
-      --   end
-      -- end,
+      on_exit = function()
+        if projectData[1] ~= nil then
+          local parsed_ok, data = pcall(vim.json.decode, projectData[1])
+          if parsed_ok ~= true then
+            require("notify")("Failed calling setup. Could not get project data.", "error")
+          else
+            state.INFO = data
+          end
+        end
+      end,
     }):start()
   end
 
