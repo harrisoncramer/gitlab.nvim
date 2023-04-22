@@ -1,5 +1,7 @@
 # gitlab.nvim
 
+NOTE: THIS PROJECT IS NOT READY FOR PUBLIC CONSUMPTION AND IS STILL UNDER DEVELOPMENT.
+
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
 - Create, edit, and delete comments on an MR
