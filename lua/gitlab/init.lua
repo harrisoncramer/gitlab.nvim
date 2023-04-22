@@ -32,17 +32,16 @@ M.setup = function(args)
 
   state.BIN_PATH = parent_dir
   state.BIN = parent_dir .. "/bin"
-  vim.schedule(function()
-    local binExists = io.open(state.BIN, "r")
-    if not binExists or args.dev == true then
-      local command = string.format("cd %s && make", state.BIN_PATH)
-      local installCode = os.execute(command .. "> /dev/null")
-      if installCode ~= 0 then
-        require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
-        return
-      end
+
+  local binExists = io.open(state.BIN, "r")
+  if not binExists or args.dev == true then
+    local command = string.format("cd %s && make", state.BIN_PATH)
+    local installCode = os.execute(command .. "> /dev/null")
+    if installCode ~= 0 then
+      require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
+      return
     end
-  end)
+  end
 
   if args.project_id == nil then
     error("No project ID provided!")
@@ -62,14 +61,16 @@ M.setup = function(args)
       end,
       on_stderr = u.print_error,
       on_exit = function()
-        if projectData[1] ~= nil then
-          local parsed_ok, data = pcall(vim.json.decode, projectData[1])
-          if parsed_ok ~= true then
-            require("notify")("Failed calling setup. Could not get project data.", "error")
-          else
-            state.INFO = data
+        vim.schedule(function()
+          if projectData[1] ~= nil then
+            local parsed_ok, data = pcall(vim.json.decode, projectData[1])
+            if parsed_ok ~= true then
+              require("notify")("Failed calling setup. Could not get project data.", "error")
+            else
+              state.INFO = data
+            end
           end
-        end
+        end)
       end,
     }):start()
   end
