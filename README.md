@@ -37,9 +37,30 @@ return {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
   },
+  build = function () require("gitlab").build() end, -- Builds the Go binary
   config = function()
-    local gitlab = require("gitlab")
-    gitlab.setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
+    vim.opt.termguicolors = true -- This is required if you aren't already initializing notify
+    require("notify").setup({ background_colour = "#000000" })  -- This is required if you aren't already initializing notify
+    require("gitlab").setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
+  end,
+}
+```
+
+And with Packer:
+
+```lua
+use {
+  'harrisoncramer/gitlab.nvim',
+  requires = {
+    "rcarriga/nvim-notify",
+    "MunifTanjim/nui.nvim",
+    "nvim-lua/plenary.nvim"
+  },
+  run = function() require("gitlab").build() end,
+  config = function()
+    vim.opt.termguicolors = true -- This is required if you aren't already initializing notify
+    require("notify").setup({ background_colour = "#000000" })  -- This is required if you aren't already initializing notify
+    require("gitlab").setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
   end,
 }
 ```
@@ -50,11 +71,9 @@ By default, the tool will look for and interact with MRs against a "main" branch
 require('gitlab').setup({ project_id = 3, base_branch = 'master' })
 ```
 
-The first time you call the setup function the Go binary will be built.
-
 ## Usage
 
-First, check out the branch that you want to review locally.
+First, check out the branch that you want to review locally. Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration must match the project_id of the Gitlab project your terminal is inside of.
 
 The `summary` command will pull down the MR description into a buffer so that you can read it:
 
