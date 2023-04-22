@@ -65,10 +65,24 @@ use {
 }
 ```
 
+## Multiple Gitlab Repositories
+
 By default, the tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
 
 ```lua
 require('gitlab').setup({ project_id = 3, base_branch = 'master' })
+```
+
+By default, the plugin will read the `project_id` provided in the setup call. However, if you add a `.gitlab.nvim` file to the root of your directory, the plugin will read that and use it as the project_id instead. The file should only contain the ID of the project:
+
+```
+112415
+```
+
+Which is effectively like calling the setup function like this:
+
+```lua
+require('gitlab').setup({ project_id = 112415, base_branch = 'master' })
 ```
 
 ## Usage
