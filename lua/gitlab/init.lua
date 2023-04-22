@@ -31,11 +31,11 @@ M.build             = function(args)
     notify("Could not install gitlab.nvim!", "error")
     return
   else
-    M.setup(args)
+    M.setup(args, true)
   end
 end
 
-M.setup             = function(args)
+M.setup             = function(args, build_only)
   local file_path = M.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h")
   state.BIN_PATH = parent_dir
@@ -49,6 +49,8 @@ M.setup             = function(args)
   if binary_exists == nil then
     return -- Ensure build function completes before initializing plugin
   end
+
+  if build_only then return end
 
   if args.project_id == nil then
     error("No project ID provided!")
