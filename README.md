@@ -85,6 +85,12 @@ Which is effectively like calling the setup function like this:
 require('gitlab').setup({ project_id = 112415, base_branch = 'master' })
 ```
 
+If you are using `main` as your branch and you add a `.gitlab.nvim` configuration file, you can call an empty setup function and the plugin will work:
+
+```lua
+require('gitlab').setup()
+```
+
 ## Usage
 
 First, check out the branch that you want to review locally. Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration must match the project_id of the Gitlab project your terminal is inside of.
