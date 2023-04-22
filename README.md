@@ -37,10 +37,11 @@ return {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
   },
+  build = function () require("gitlab").build() end, -- Builds the Go binary
   config = function()
-    -- These settings are required if you aren't already initializing notify
-    vim.opt.termguicolors = true
-    require("notify").setup({ background_colour = "#000000" })
+
+    vim.opt.termguicolors = true -- These settings are required if you aren't already initializing notify
+    require("notify").setup({ background_colour = "#000000" })  -- These settings are required if you aren't already initializing notify
 
     local gitlab = require("gitlab")
     gitlab.setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
