@@ -204,7 +204,7 @@ M.merge_tables = function(defaults, overrides)
   return result
 end
 
-function read_file(file_path)
+local read_file = function(file_path)
   local file = io.open(file_path, "r")
   if file == nil then
     return nil
@@ -232,5 +232,6 @@ M.print_success = print_success
 M.print_error = print_error
 M.create_popup_state = create_popup_state
 M.exit = exit
+M.read_file = read_file
 M.P = P
 return M

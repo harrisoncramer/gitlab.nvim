@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/xanzy/go-gitlab"
@@ -55,24 +56,60 @@ func (c *Client) Comment() error {
 
 	time := time.Now()
 
-	options := gitlab.CreateMergeRequestDiscussionOptions{
-		Body:      &comment,
-		CreatedAt: &time,
-		Position: &gitlab.NotePosition{
-			PositionType: "text",
-			BaseSHA:      diffVersionInfo[0].BaseCommitSHA,
-			HeadSHA:      diffVersionInfo[0].HeadCommitSHA,
-			StartSHA:     diffVersionInfo[0].StartCommitSHA,
-			NewPath:      fileName,
-			OldPath:      fileName,
-			NewLine:      lineNumberInt,
-		},
+	/* This is necessary since we do not know whether the comment is on a line that
+	has been changed or not. Making all three of these API calls will let us leave
+	the comment regardless. See the Gitlab documentation: https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff */
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+
+	resultChannel := make(chan *gitlab.Discussion, 3)
+
+	for i := 0; i < 3; i++ {
+		ii := i
+		go func() {
+			defer wg.Done()
+			options := gitlab.CreateMergeRequestDiscussionOptions{
+				Body:      &comment,
+				CreatedAt: &time,
+				Position: &gitlab.NotePosition{
+					PositionType: "text",
+					BaseSHA:      diffVersionInfo[0].BaseCommitSHA,
+					HeadSHA:      diffVersionInfo[0].HeadCommitSHA,
+					StartSHA:     diffVersionInfo[0].StartCommitSHA,
+					NewPath:      fileName,
+					OldPath:      fileName,
+				},
+			}
+
+			if ii == 0 {
+				options.Position.NewLine = lineNumberInt
+			} else if ii == 1 {
+				options.Position.OldLine = lineNumberInt
+			} else {
+				options.Position.NewLine = lineNumberInt
+				options.Position.OldLine = lineNumberInt
+			}
+
+			discussion, _, _ := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &options)
+			resultChannel <- discussion
+
+		}()
 	}
 
-	_, _, err = c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &options)
+	go func() {
+		wg.Wait()
+		close(resultChannel)
+	}()
 
-	if err != nil {
-		return fmt.Errorf("Could not leave comment: %w", err)
+	var createdDiscussion *gitlab.Discussion
+	for discussion := range resultChannel {
+		if discussion != nil {
+			createdDiscussion = discussion
+		}
+	}
+
+	if createdDiscussion == nil {
+		return fmt.Errorf("Could not leave comment")
 	}
 
 	fmt.Println("Left Comment: " + comment[0:min(len(comment), 25)] + "...")

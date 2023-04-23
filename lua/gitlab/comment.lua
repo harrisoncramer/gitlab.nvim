@@ -11,6 +11,8 @@ local M                  = {}
 local commentPopup       = Popup(u.create_popup_state("Comment", "40%", "60%"))
 local editPopup          = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 
+M.line_status            = nil
+
 M.create_comment         = function()
   if u.base_invalid() then return end
   commentPopup:mount()
