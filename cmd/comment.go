@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 )
 
 const mrVersionsUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%d/versions"
-const commentUrl = "https://gitlab.com/api/v4/projects/%s/repository/commits/%s/comments"
 
 type MRVersion struct {
 	ID             int       `json:"id"`
@@ -118,33 +116,10 @@ func (c *Client) Comment() error {
 			return fmt.Errorf("Could not leave comment")
 		}
 	} else {
-		payload := &bytes.Buffer{}
-		writer := multipart.NewWriter(payload)
-		_ = writer.WriteField("note", comment)
-		_ = writer.WriteField("path", "README.md")
-		_ = writer.WriteField("line", "3")
-		_ = writer.WriteField("line_type", "old")
-		err := writer.Close()
+		err := c.CommentOnDeletion(lineNumber, fileName, comment, diffVersionInfo[0])
 		if err != nil {
-			return fmt.Errorf("Error making form data: %w", err)
+			return err
 		}
-
-		url := fmt.Sprintf(commentUrl, c.projectId, strings.TrimSpace(sha))
-		client := &http.Client{}
-		req, err := http.NewRequest(http.MethodPost, url, payload)
-
-		if err != nil {
-			return fmt.Errorf("Error building request: %w", err)
-		}
-
-		req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
-		req.Header.Set("Content-Type", writer.FormDataContentType())
-
-		res, err := client.Do(req)
-		if err != nil {
-			return fmt.Errorf("Error making request: %w", err)
-		}
-		defer res.Body.Close()
 	}
 
 	fmt.Println("Left Comment: " + comment[0:min(len(comment), 25)] + "...")
@@ -209,5 +184,43 @@ func (c *Client) OverviewComment() error {
 	}
 
 	fmt.Println("Left Overview Comment: " + comment[0:min(len(comment), 25)] + "...")
+	return nil
+}
+
+func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment string, diffVersionInfo MRVersion) error {
+
+	// https://gitlab.com/api/v4/projects/%s/merge_requests/%d/versions
+	deletionDiscussionUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%s/merge_requests/%d/discussions", c.projectId, c.mergeId)
+
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	_ = writer.WriteField("body", comment)
+	_ = writer.WriteField("position[base_sha]", diffVersionInfo.BaseCommitSHA)
+	_ = writer.WriteField("position[start_sha]", diffVersionInfo.StartCommitSHA)
+	_ = writer.WriteField("position[head_sha]", diffVersionInfo.HeadCommitSHA)
+	_ = writer.WriteField("position[position_type]", "text")
+	_ = writer.WriteField("position[old_path]", fileName)
+	_ = writer.WriteField("position[new_path]", fileName)
+	_ = writer.WriteField("position[old_line]", lineNumber)
+	err := writer.Close()
+	if err != nil {
+		return fmt.Errorf("Error making form data: %w", err)
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPost, deletionDiscussionUrl, payload)
+
+	if err != nil {
+		return fmt.Errorf("Error building request: %w", err)
+	}
+	req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	res, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Error making request: %w", err)
+	}
+
+	defer res.Body.Close()
 	return nil
 }
