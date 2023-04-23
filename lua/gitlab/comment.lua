@@ -49,12 +49,14 @@ M.confirm_create_comment = function(text)
   local is_base_file = relative_file_path:find(".git")
   if is_base_file then -- We are looking at a deletion.
     local _, path = u.split_diff_view_filename(relative_file_path)
+    relative_file_path = path
     sha = M.find_deletion_commit(path)
     if sha == "" then
       return
     end
   end
 
+  print(relative_file_path)
 
   Job:new({
     command = state.BIN,

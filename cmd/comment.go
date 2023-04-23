@@ -189,7 +189,6 @@ func (c *Client) OverviewComment() error {
 
 func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment string, diffVersionInfo MRVersion) error {
 
-	// https://gitlab.com/api/v4/projects/%s/merge_requests/%d/versions
 	deletionDiscussionUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%s/merge_requests/%d/discussions", c.projectId, c.mergeId)
 
 	payload := &bytes.Buffer{}
