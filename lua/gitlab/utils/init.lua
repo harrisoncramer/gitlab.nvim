@@ -215,6 +215,16 @@ local read_file = function(file_path)
   return file_contents
 end
 
+local split_diff_view_filename = function(filename)
+  local hash, path = filename:match("://%.git/(/?[0-9a-f]+)(/.*)$")
+  if hash and path then
+    path = path:gsub("%.git/", ""):gsub("^/", "")
+    hash = hash:gsub("^/", "")
+  end
+  return hash, path
+end
+
+
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text
@@ -233,5 +243,6 @@ M.print_error = print_error
 M.create_popup_state = create_popup_state
 M.exit = exit
 M.read_file = read_file
+M.split_diff_view_filename = split_diff_view_filename
 M.P = P
 return M

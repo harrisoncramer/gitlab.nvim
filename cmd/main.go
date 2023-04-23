@@ -14,6 +14,7 @@ const (
 	approve         = "approve"
 	revoke          = "revoke"
 	comment         = "comment"
+	overviewComment = "overviewComment"
 	deleteComment   = "deleteComment"
 	editComment     = "editComment"
 	reply           = "reply"
@@ -44,6 +45,8 @@ func main() {
 		errCheck(c.DeleteComment())
 	case editComment:
 		errCheck(c.EditComment())
+	case overviewComment:
+		errCheck(c.OverviewComment())
 	case info:
 		errCheck(c.Info())
 	case reply:
