@@ -111,7 +111,10 @@ func getMRVersions(projectId string, mergeId int) (e error, response *http.Respo
 	return nil, response
 }
 
-/* Creates a new merge request discussion https://docs.gitlab.com/ee/api/discussions.html#create-new-merge-request-thread */
+/*
+Creates a new merge request discussion https://docs.gitlab.com/ee/api/discussions.html#create-new-merge-request-thread
+The go-gitlab client was not working for this API specifically 😢
+*/
 func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment string, diffVersionInfo MRVersion, i int) (*http.Response, error) {
 
 	deletionDiscussionUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%s/merge_requests/%d/discussions", c.projectId, c.mergeId)
@@ -126,7 +129,6 @@ func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment s
 
 	/* We need to set these properties differently depending on whether we're commenting on a deleted line,
 	a modified line, an added line, or an unmodified line */
-
 	_ = writer.WriteField("position[old_path]", fileName)
 	_ = writer.WriteField("position[new_path]", fileName)
 	if i == 0 {
