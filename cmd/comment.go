@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/xanzy/go-gitlab"
@@ -55,43 +54,25 @@ func (c *Client) Comment() error {
 	}
 
 	/* This is necessary since we do not know whether the comment is on a line that
-	has been changed or not. Making all three of these API calls will let us leave
-	the comment regardless. See the Gitlab documentation: https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff */
-	wg := sync.WaitGroup{}
-	wg.Add(3)
+	   has been changed or not. Making all three of these API calls will let us leave
+	   the comment regardless. I ran these in sequence vai a Sync.WaitGroup, but
+	   it was successfully posting a comment to a modified twice, so now I'm running
+	   them in sequence.
 
-	resultChannel := make(chan *http.Response, 3)
+	   To clean this up we might try to detect more information about the change in our
+	   Lua code and pass it to the Go code.
 
+	   See the Gitlab documentation: https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff */
 	for i := 0; i < 3; i++ {
 		ii := i
-		go func() {
-			defer wg.Done()
-			response, err := c.CommentOnDeletion(lineNumber, fileName, comment, diffVersionInfo[0], ii)
-			if err != nil {
-				resultChannel <- nil
-			} else {
-				resultChannel <- response
-			}
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(resultChannel)
-	}()
-
-	var commentResponse *http.Response
-	for res := range resultChannel {
-		if res != nil {
-			commentResponse = res
+		_, err := c.CommentOnDeletion(lineNumber, fileName, comment, diffVersionInfo[0], ii)
+		if err == nil {
+			fmt.Println("Left Comment: " + comment[0:min(len(comment), 25)] + "...")
+			return nil
 		}
 	}
 
-	if commentResponse == nil {
-		return fmt.Errorf("Could not leave comment")
-	}
-	fmt.Println("Left Comment: " + comment[0:min(len(comment), 25)] + "...")
-	return nil
+	return fmt.Errorf("Could not leave comment")
 
 }
 
