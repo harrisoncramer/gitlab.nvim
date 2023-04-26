@@ -56,8 +56,6 @@ M.confirm_create_comment = function(text)
     end
   end
 
-  print(relative_file_path)
-
   Job:new({
     command = state.BIN,
     args = {

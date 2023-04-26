@@ -153,15 +153,17 @@ local function darken_metadata(bufnr, regex)
 end
 
 local function print_success(_, line)
-  if line ~= nil and line ~= "" then
-    notify(line, "info")
-  end
+  print(line)
+  -- if line ~= nil and line ~= "" then
+  --   notify(line, "info")
+  -- end
 end
 
 local function print_error(_, line)
-  if line ~= nil and line ~= "" then
-    notify(line, "error")
-  end
+  print(line)
+  -- if line ~= nil and line ~= "" then
+  --   notify(line, "error")
+  -- end
 end
 
 local function exit(popup)
