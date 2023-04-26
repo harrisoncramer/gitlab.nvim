@@ -192,12 +192,13 @@ M.build_note       = function(note)
   local noteHeader = "@" ..
       note.author.username .. " on " .. u.format_date(note.created_at)
 
+  local line_number = note.position.new_line or note.position.old_line
   local note_node = NuiTree.Node(
     {
       text = noteHeader,
       id = note.id,
       file_name = note.position.new_path,
-      line_number = note.position.new_line,
+      line_number = line_number,
       is_note = true
     }, noteTextNodes)
 
