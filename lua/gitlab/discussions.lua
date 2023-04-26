@@ -191,6 +191,7 @@ M.build_note       = function(note)
   end
   local noteHeader = "@" ..
       note.author.username .. " on " .. u.format_date(note.created_at)
+
   local note_node = NuiTree.Node(
     {
       text = noteHeader,

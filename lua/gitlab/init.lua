@@ -100,6 +100,7 @@ M.setup             = function(args, build_only)
   end
 
   keymaps.set_keymap_keys(args.keymaps)
+  keymaps.set_keymaps()
 end
 
 M.current_file_path = function()
