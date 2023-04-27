@@ -65,7 +65,7 @@ M.setup             = function(args, build_only)
 
   -- Override project_id in setup call if configuration file is present
   local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
-  local config_file_content = read_file(config_file_path)
+  local config_file_content = u.read_file(config_file_path)
   if config_file_content ~= nil then
     args.project_id = config_file_content
   end
@@ -103,6 +103,7 @@ M.setup             = function(args, build_only)
   end
 
   keymaps.set_keymap_keys(args.keymaps)
+  keymaps.set_keymaps()
 end
 
 M.current_file_path = function()

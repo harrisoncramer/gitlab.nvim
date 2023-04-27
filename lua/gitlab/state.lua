@@ -23,6 +23,9 @@ M.keymaps           = {
     focus_prev = { "k", "<Up>", "<S-Tab>" },
     close = { "<Esc>", "<C-c>" },
     submit = { "<CR>", "<Space>" },
+  },
+  review = {
+    toggle = "<leader>glt"
   }
 }
 

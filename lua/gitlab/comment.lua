@@ -11,10 +11,30 @@ local M                  = {}
 local commentPopup       = Popup(u.create_popup_state("Comment", "40%", "60%"))
 local editPopup          = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 
+M.line_status            = nil
+
 M.create_comment         = function()
   if u.base_invalid() then return end
   commentPopup:mount()
   keymaps.set_popup_keymaps(commentPopup, M.confirm_create_comment)
+end
+
+M.find_deletion_commit   = function(file)
+  local current_line = vim.api.nvim_get_current_line()
+  local command = string.format("git log -S '%s' %s", current_line, file)
+  local handle = io.popen(command)
+  local output = handle:read("*line")
+  if output == nil then
+    notify("Error reading SHA of deletion commit", "error")
+    return ""
+  end
+  handle:close()
+  local words = {}
+  for word in output:gmatch("%S+") do
+    table.insert(words, word)
+  end
+
+  return words[2]
 end
 
 -- Sends the comment to Gitlab
@@ -22,6 +42,20 @@ M.confirm_create_comment = function(text)
   if u.base_invalid() then return end
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
+  if relative_file_path == nil then return end
+
+  -- If leaving a comment on a deleted line, get hash value + proper filename
+  local sha = ""
+  local is_base_file = relative_file_path:find(".git")
+  if is_base_file then -- We are looking at a deletion.
+    local _, path = u.split_diff_view_filename(relative_file_path)
+    relative_file_path = path
+    sha = M.find_deletion_commit(path)
+    if sha == "" then
+      return
+    end
+  end
+
   Job:new({
     command = state.BIN,
     args = {
@@ -30,6 +64,7 @@ M.confirm_create_comment = function(text)
       current_line_number,
       relative_file_path,
       text,
+      sha
     },
     -- TODO: Render the tree after comment creation. Refresh?
     on_stdout = u.print_success,

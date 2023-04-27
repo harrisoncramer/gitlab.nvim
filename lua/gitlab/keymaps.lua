@@ -19,4 +19,30 @@ M.set_keymap_keys   = function(keyTable)
   state.keymaps = u.merge_tables(state.keymaps, keyTable)
 end
 
+M.set_keymaps       = function()
+  local ok, _ = pcall(require, "diffview")
+  vim.keymap.set("n", state.keymaps.review.toggle, function()
+    if not ok then
+      require("notify")("You must have diffview.nvim installed to use this command!", "error")
+      return
+    end
+    local isDiff = vim.fn.getwinvar(nil, "&diff")
+    local bufName = vim.api.nvim_buf_get_name(0)
+    local has_develop = u.branch_exists("main") -- TODO: Write this function
+    if not has_develop then
+      require("notify")('No ' .. state.BASE_BRANCH .. ' branch, cannot review.', "error")
+      return
+    end
+    if isDiff ~= 0 or u.string_starts(bufName, "diff") then
+      vim.cmd.tabclose()
+      vim.cmd.tabprev()
+    else
+      vim.cmd.DiffviewOpen(state.BASE_BRANCH)
+      u.press_enter()
+    end
+  end)
+end
+
+
+
 return M

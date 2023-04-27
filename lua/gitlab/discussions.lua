@@ -55,6 +55,10 @@ M.list_discussions = function()
     args = { "listDiscussions", state.PROJECT_ID },
     on_stdout = function(_, line)
       local discussions = vim.json.decode(line)
+      if (type(discussions) == 'userdata') then
+        notify("No discussions found for this MR", "warn")
+        return
+      end
       M.discussions = discussions
       vim.schedule(function()
         vim.cmd.tabnew()
@@ -62,41 +66,35 @@ M.list_discussions = function()
         vim.api.nvim_command("vsplit")
         vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
         vim.api.nvim_set_current_buf(buf)
-        if discussions == nil then
-          notify("No discussions found for this MR", "warn")
-        else
-          local allDiscussions = {}
-          for i, discussion in ipairs(discussions) do
-            local discussionChildren = {}
-            for _, note in ipairs(discussion.notes) do
-              local note_node = M.build_note(note)
-              if i == 1 then
-                note_node:expand()
-              end
-              table.insert(discussionChildren, note_node)
-            end
-            local discussionNode = NuiTree.Node({
-                text = discussion.id,
-                id = discussion.id,
-                is_discussion = true
-              },
-              discussionChildren)
+        local allDiscussions = {}
+        for i, discussion in ipairs(discussions) do
+          local discussionChildren = {}
+          for _, note in ipairs(discussion.notes) do
+            local note_node = M.build_note(note)
             if i == 1 then
-              discussionNode:expand()
+              note_node:expand()
             end
-            table.insert(allDiscussions, discussionNode)
+            table.insert(discussionChildren, note_node)
           end
-          state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
-
-          M.set_tree_keymaps(buf)
-
-          state.tree:render()
-          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-          u.darken_metadata(buf, '')
-          if not is_refresh then
-            M.jump_to_file()
+          local discussionNode = NuiTree.Node({
+              text = discussion.id,
+              id = discussion.id,
+              is_discussion = true
+            },
+            discussionChildren)
+          if i == 1 then
+            discussionNode:expand()
           end
+          table.insert(allDiscussions, discussionNode)
         end
+        state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
+
+        M.set_tree_keymaps(buf)
+
+        state.tree:render()
+        vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+        u.darken_metadata(buf, '')
+        M.jump_to_file()
       end)
     end,
     on_stderr = u.print_error,
@@ -193,12 +191,14 @@ M.build_note       = function(note)
   end
   local noteHeader = "@" ..
       note.author.username .. " on " .. u.format_date(note.created_at)
+
+  local line_number = note.position.new_line or note.position.old_line
   local note_node = NuiTree.Node(
     {
       text = noteHeader,
       id = note.id,
       file_name = note.position.new_path,
-      line_number = note.position.new_line,
+      line_number = line_number,
       is_note = true
     }, noteTextNodes)
 

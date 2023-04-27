@@ -10,6 +10,20 @@ local function get_git_root()
   end
 end
 
+local branch_exists = function(b)
+  local is_git_branch = io.popen("git rev-parse --is-inside-work-tree 2>/dev/null"):read("*a")
+  if is_git_branch == "true\n" then
+    for line in io.popen("git branch 2>/dev/null"):lines() do
+      line = line:gsub("%s+", "")
+      if line == b then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+
 local function get_relative_file_path()
   local git_root = get_git_root()
   if git_root ~= nil then
@@ -118,6 +132,7 @@ end
 
 
 local function jump_to_file(filename, line_number)
+  if line_number == nil then line_number = 1 end
   vim.api.nvim_command("wincmd l")
   local bufnr = vim.fn.bufnr(filename)
   if bufnr ~= -1 then
@@ -204,7 +219,7 @@ M.merge_tables = function(defaults, overrides)
   return result
 end
 
-function read_file(file_path)
+local read_file = function(file_path)
   local file = io.open(file_path, "r")
   if file == nil then
     return nil
@@ -213,6 +228,15 @@ function read_file(file_path)
   file:close()
   file_contents = string.gsub(file_contents, "\n", "")
   return file_contents
+end
+
+local split_diff_view_filename = function(filename)
+  local hash, path = filename:match("://%.git/(/?[0-9a-f]+)(/.*)$")
+  if hash and path then
+    path = path:gsub("%.git/", ""):gsub("^/", "")
+    hash = hash:gsub("^/", "")
+  end
+  return hash, path
 end
 
 M.get_relative_file_path = get_relative_file_path
@@ -232,5 +256,8 @@ M.print_success = print_success
 M.print_error = print_error
 M.create_popup_state = create_popup_state
 M.exit = exit
+M.read_file = read_file
+M.split_diff_view_filename = split_diff_view_filename
+M.branch_exists = branch_exists
 M.P = P
 return M
