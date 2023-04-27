@@ -16,6 +16,20 @@ type Client struct {
 	git       *gitlab.Client
 }
 
+type Logger struct {
+	Active bool
+}
+
+func (l Logger) Printf(s string, args ...interface{}) {
+	logString := fmt.Sprintf(s+"\n", args...)
+	file, err := os.OpenFile("./logs", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	_, err = file.Write([]byte(logString))
+}
+
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
 func (c *Client) Init(branchName string) error {
 
@@ -31,7 +45,9 @@ func (c *Client) Init(branchName string) error {
 		return errors.New("Must provide projectId")
 	}
 
-	git, err := gitlab.NewClient(os.Getenv("GITLAB_TOKEN"))
+	var l Logger
+	git, err := gitlab.NewClient(os.Getenv("GITLAB_TOKEN"), gitlab.WithCustomLogger(l))
+
 	if err != nil {
 		return fmt.Errorf("Failed to create client: %v", err)
 	}
