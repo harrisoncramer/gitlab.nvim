@@ -33,16 +33,15 @@ func (l Logger) Printf(s string, args ...interface{}) {
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
 func (c *Client) Init(branchName string) error {
 
-	if len(os.Args) < 3 {
-		return errors.New("Must provide command and projectId")
+	if len(os.Args) < 2 {
+		return errors.New("Must provide project ID!")
 	}
 
-	command, projectId := os.Args[1], os.Args[2]
-	c.command = command
+	projectId := os.Args[1]
 	c.projectId = projectId
 
 	if projectId == "" {
-		return errors.New("Must provide projectId")
+		return errors.New("Project ID cannot be empty")
 	}
 
 	var l Logger

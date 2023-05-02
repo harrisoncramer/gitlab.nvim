@@ -84,27 +84,42 @@ M.setup             = function(args, build_only)
   if u.is_gitlab_repo() then
     Job:new({
       command = state.BIN,
-      args = { "info", state.PROJECT_ID },
+      args = { "start", state.PROJECT_ID },
       on_stdout = function(_, line)
-        table.insert(projectData, line)
+        print("PID: ", line)
       end,
-      on_stderr = u.print_error,
+      on_stderr = function(_, line)
+        print("Oof: ", line)
+      end,
       on_exit = function()
-        if projectData[1] ~= nil then
-          local parsed_ok, data = pcall(vim.json.decode, projectData[1])
-          if parsed_ok ~= true then
-            notify("Failed calling setup. Could not get project data.", "error")
-          else
-            state.INFO = data
-          end
-        end
-      end,
-    }):start()
+        print("Exit")
+      end
+    })
   end
 
   keymaps.set_keymap_keys(args.keymaps)
   keymaps.set_keymaps()
 end
+
+-- Job:new({
+--   command = state.BIN,
+--   args = { "info", state.PROJECT_ID },
+--   on_stdout = function(_, line)
+--     print("")
+--     table.insert(projectData, line)
+--   end,
+--   on_stderr = u.print_error,
+--   on_exit = function()
+--     if projectData[1] ~= nil then
+--       local parsed_ok, data = pcall(vim.json.decode, projectData[1])
+--       if parsed_ok ~= true then
+--         notify("Failed calling setup. Could not get project data.", "error")
+--       else
+--         state.INFO = data
+--       end
+--     end
+--   end,
+-- }):start()
 
 M.current_file_path = function()
   local path = debug.getinfo(1, 'S').source:sub(2)
