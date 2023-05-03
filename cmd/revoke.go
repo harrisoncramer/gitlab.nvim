@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
 func (c *Client) Revoke() (string, error) {
 
+	log.Println("Revoking")
 	_, err := c.git.MergeRequestApprovals.UnapproveMergeRequest(c.projectId, c.mergeId, nil, nil)
 
 	if err != nil {

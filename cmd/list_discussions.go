@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 
 	"encoding/json"
@@ -26,7 +27,7 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func (c *Client) ListDiscussions() error {
+func (c *Client) ListDiscussions() ([]byte, error) {
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
@@ -35,7 +36,7 @@ func (c *Client) ListDiscussions() error {
 	discussions, _, err := c.git.Discussions.ListMergeRequestDiscussions(c.projectId, c.mergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
-		return fmt.Errorf("Listing discussions failed: %w", err)
+		return nil, fmt.Errorf("Listing discussions failed: %w", err)
 	}
 
 	var realDiscussions []*gitlab.Discussion
@@ -54,7 +55,21 @@ func (c *Client) ListDiscussions() error {
 
 	discussionsOutput, err := json.Marshal(sortedDiscussions)
 
-	fmt.Println(string(discussionsOutput))
+	return discussionsOutput, nil
+}
 
-	return nil
+func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+	msg, err := c.ListDiscussions()
+	if err != nil {
+		errResp := map[string]string{"message": err.Error()}
+		w.WriteHeader(http.StatusInternalServerError)
+		response, _ := json.MarshalIndent(errResp, "", "  ")
+		w.Write(response)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(msg)
 }
