@@ -22,18 +22,18 @@ func main() {
 	var c Client
 	errCheck(c.Init(branchName))
 
+	/* TODO: Check method types */
 	m := http.NewServeMux()
 	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
 	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
 	m.Handle("/star", withGitlabContext(http.HandlerFunc(StarHandler), c))
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
-	m.Handle("/discussions/list", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
+	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
+	m.Handle("/comment", withGitlabContext(http.HandlerFunc(PostCommentHandler), c))
 
 	http.ListenAndServe(":8081", m)
 
 	// switch c.command {
-	// case comment:
-	// 	errCheck(c.Comment())
 	// case deleteComment:
 	// 	errCheck(c.DeleteComment())
 	// case editComment:
