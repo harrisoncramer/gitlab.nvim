@@ -59,6 +59,11 @@ func (c *Client) ListDiscussions() ([]byte, error) {
 }
 
 func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	c := r.Context().Value("client").(Client)
 	msg, err := c.ListDiscussions()

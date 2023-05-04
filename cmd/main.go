@@ -29,17 +29,11 @@ func main() {
 	m.Handle("/star", withGitlabContext(http.HandlerFunc(StarHandler), c))
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
 	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
-	m.Handle("/comment", withGitlabContext(http.HandlerFunc(PostCommentHandler), c))
+	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
 
 	http.ListenAndServe(":8081", m)
 
 	// switch c.command {
-	// case deleteComment:
-	// 	errCheck(c.DeleteComment())
-	// case editComment:
-	// 	errCheck(c.EditComment())
-	// case overviewComment:
-	// 	errCheck(c.OverviewComment())
 	// case reply:
 	// 	errCheck(c.Reply())
 	// default:

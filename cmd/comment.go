@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/xanzy/go-gitlab"
@@ -29,13 +28,175 @@ type MRVersion struct {
 	RealSize       string    `json:"real_size"`
 }
 
-type CommentRequest struct {
+type PostCommentRequest struct {
 	LineNumber int    `json:"line_number"`
 	FileName   string `json:"file_name"`
 	Comment    string `json:"comment"`
 }
 
-func (c *Client) Comment(cr CommentRequest) (*http.Response, error) {
+type DeleteCommentRequest struct {
+	NoteId       int    `json:"note_id"`
+	DiscussionId string `json:"discussion_id"`
+}
+
+type EditCommentRequest struct {
+	Comment      string `json:"comment"`
+	NoteId       int    `json:"note_id"`
+	DiscussionId string `json:"discussion_id"`
+}
+
+func CommentHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodDelete:
+		DeleteComment(w, r)
+	case http.MethodPost:
+		PostComment(w, r)
+	case http.MethodPatch:
+		EditComment(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func DeleteComment(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read request body"}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var deleteCommentRequest DeleteCommentRequest
+	err = json.Unmarshal(body, &deleteCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read JSON from request"}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	res, err := c.git.Discussions.DeleteMergeRequestDiscussionNote(c.projectId, c.mergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf(`{"message": "Failed to delete comment: %s"}`, err.Error())))
+		return
+	}
+
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		w.WriteHeader(res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Comment deleted successfully"}`))
+}
+
+func PostComment(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read request body"}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var postCommentRequest PostCommentRequest
+	err = json.Unmarshal(body, &postCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	res, err := c.PostComment(postCommentRequest)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": err.Error()}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	for k, v := range res.Header {
+		w.Header().Set(k, v[0])
+	}
+
+	w.WriteHeader(res.StatusCode)
+	io.Copy(w, res.Body)
+
+}
+
+func EditComment(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read request body"}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var editCommentRequest EditCommentRequest
+	err = json.Unmarshal(body, &editCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
+		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		w.Write(jsonMsg)
+		return
+	}
+
+	err = c.EditComment(editCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf(`{"message": "Failed to edit comment: %s"}`, err.Error())))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Comment edited successfully"}`))
+
+}
+
+func (c *Client) EditComment(editCommentRequest EditCommentRequest) error {
+
+	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+		Body: gitlab.String(editCommentRequest.Comment),
+	}
+
+	_, _, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) PostComment(cr PostCommentRequest) (*http.Response, error) {
 
 	err, response := getMRVersions(c.projectId, c.mergeId)
 	if err != nil {
@@ -156,74 +317,4 @@ func (c *Client) CommentOnDeletion(lineNumber int, fileName string, comment stri
 	res, err := client.Do(req)
 
 	return res, err
-}
-
-func (c *Client) OverviewComment() error {
-	lineNumber, fileName, comment, sha := os.Args[3], os.Args[4], os.Args[5], os.Args[6]
-	if lineNumber == "" || fileName == "" || comment == "" {
-		c.Usage("comment")
-	}
-
-	lineNumberInt, err := strconv.Atoi(lineNumber)
-	if err != nil {
-		return fmt.Errorf("Not a valid line number: %w", err)
-	}
-
-	postCommitCommentOptions := gitlab.PostCommitCommentOptions{
-		Note:     gitlab.String(comment),
-		Path:     gitlab.String(fileName),
-		Line:     &lineNumberInt,
-		LineType: gitlab.String("old"),
-	}
-	_, _, err = c.git.Commits.PostCommitComment(c.projectId, sha, &postCommitCommentOptions)
-	if err != nil {
-		return fmt.Errorf("Error leaving overview comment: %w", err)
-	}
-
-	fmt.Println("Left Overview Comment: " + comment[0:min(len(comment), 25)] + "...")
-	return nil
-}
-
-func PostCommentHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
-		w.Write(jsonMsg)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var comment CommentRequest
-	err = json.Unmarshal(body, &comment)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
-		w.Write(jsonMsg)
-		return
-	}
-
-	res, err := c.Comment(comment)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": err.Error()}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
-		w.Write(jsonMsg)
-		return
-	}
-
-	for k, v := range res.Header {
-		w.Header().Set(k, v[0])
-	}
-
-	w.WriteHeader(res.StatusCode)
-	io.Copy(w, res.Body)
-
 }

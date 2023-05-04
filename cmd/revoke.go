@@ -21,6 +21,11 @@ func (c *Client) Revoke() (string, error) {
 }
 
 func RevokeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	client := r.Context().Value("client").(Client)
 	msg, err := client.Revoke()
