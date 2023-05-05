@@ -22,7 +22,6 @@ func main() {
 	var c Client
 	errCheck(c.Init(branchName))
 
-	/* TODO: Check method types */
 	m := http.NewServeMux()
 	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
 	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
@@ -30,15 +29,9 @@ func main() {
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
 	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
+	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 
 	http.ListenAndServe(":8081", m)
-
-	// switch c.command {
-	// case reply:
-	// 	errCheck(c.Reply())
-	// default:
-	// 	c.Usage("command")
-	// }
 }
 
 type ResponseError struct {
