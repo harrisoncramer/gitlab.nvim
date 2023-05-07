@@ -1,5 +1,6 @@
 local u            = require("gitlab.utils")
 local NuiTree      = require("nui.tree")
+local job          = require("gitlab.job")
 local notify       = require("notify")
 local state        = require("gitlab.state")
 local Job          = require("plenary.job")
@@ -16,35 +17,20 @@ M.reply            = function()
   keymaps.set_popup_keymaps(replyPopup, M.send_reply)
 end
 
-M.send_reply       = function(text)
-  Job:new({
-    command = state.BIN,
-    args = {
-      "reply",
-      state.PROJECT_ID,
-      state.ACTIVE_DISCUSSION,
-      text,
-    },
-    on_stdout = function(_, line)
-      local note = vim.json.decode(line)
-      if note == nil then
-        notify("There was an issue creating the note", "error")
-        return
-      end
+M.send_reply       = function(body)
+  local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, body)
+  job.run_job("reply", json, function(data)
+    local note_node = M.build_note(data.note)
+    note_node:expand()
 
-      local note_node = M.build_note(note)
-      note_node:expand()
-
-      state.tree:add_node(note_node, "-" .. state.ACTIVE_DISCUSSION)
-      vim.schedule(function()
-        state.tree:render()
-        local buf = vim.api.nvim_get_current_buf()
-        u.darken_metadata(buf, '')
-        notify("Sent reply!")
-      end)
-    end,
-    on_stderr = u.print_error
-  }):start()
+    state.tree:add_node(note_node, "-" .. state.ACTIVE_DISCUSSION)
+    vim.schedule(function()
+      state.tree:render()
+      local buf = vim.api.nvim_get_current_buf()
+      u.darken_metadata(buf, '')
+      notify("Sent reply!")
+    end)
+  end)
 end
 
 -- Places all of the discussions into a readable list

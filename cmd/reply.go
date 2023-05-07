@@ -15,7 +15,12 @@ type ReplyRequest struct {
 	Reply        string `json:"reply"`
 }
 
-func (c *Client) Reply(r ReplyRequest) (*gitlab.Note, error) {
+type ReplyResponse struct {
+	SuccessResponse
+	Note *gitlab.Note `json:"note"`
+}
+
+func (c *Client) Reply(r ReplyRequest) (*gitlab.Note, int, error) {
 
 	now := time.Now()
 	options := gitlab.AddMergeRequestDiscussionNoteOptions{
@@ -23,13 +28,13 @@ func (c *Client) Reply(r ReplyRequest) (*gitlab.Note, error) {
 		CreatedAt: &now,
 	}
 
-	note, _, err := c.git.Discussions.AddMergeRequestDiscussionNote(c.projectId, c.mergeId, r.DiscussionId, &options)
+	note, res, err := c.git.Discussions.AddMergeRequestDiscussionNote(c.projectId, c.mergeId, r.DiscussionId, &options)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not leave reply: %w", err)
+		return nil, res.Response.StatusCode, fmt.Errorf("Could not leave reply: %w", err)
 	}
 
-	return note, nil
+	return note, http.StatusOK, nil
 }
 
 func ReplyHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,21 +67,25 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	note, err := c.Reply(replyRequest)
+	note, status, err := c.Reply(replyRequest)
+	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
-		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.Marshal(errResp)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(response)
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  status,
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`{"message": "Replied: %s"}`, note.Body)))
-
-	// Flush any buffered data to the client
-	if flusher, ok := w.(http.Flusher); ok {
-		flusher.Flush()
+	response := ReplyResponse{
+		SuccessResponse: SuccessResponse{
+			Message: fmt.Sprintf("Replied: %s", note.Body),
+			Status:  http.StatusOK,
+		},
+		Note: note,
 	}
+
+	json.NewEncoder(w).Encode(response)
 }
