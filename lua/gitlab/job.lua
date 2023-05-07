@@ -2,13 +2,13 @@ local notify = require("notify")
 local Job    = require("plenary.job")
 local M      = {}
 
-M.run_job    = function(endpoint, body, callback)
-  local args = { "-s", "-X", "POST", "localhost:8081/" .. endpoint }
+M.run_job    = function(endpoint, method, body, callback)
+  local args = { "-s", "-X", (method or "POST"), "localhost:8081/" .. endpoint }
+
   if body ~= nil then
     table.insert(args, 1, "-d")
     table.insert(args, 2, body)
   end
-
   Job:new({
     command = "curl",
     args = args,
@@ -34,12 +34,12 @@ end
 
 -- Approves the current merge request
 M.approve    = function()
-  M.run_job("approve")
+  M.run_job("approve", "POST")
 end
 
 -- Revokes approval for the current merge request
 M.revoke     = function()
-  M.run_job("revoke")
+  M.run_job("revoke", "POST")
 end
 
 

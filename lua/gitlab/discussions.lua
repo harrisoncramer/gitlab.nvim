@@ -19,7 +19,7 @@ end
 
 M.send_reply       = function(body)
   local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, body)
-  job.run_job("reply", json, function(data)
+  job.run_job("reply", "POST", json, function(data)
     local note_node = M.build_note(data.note)
     note_node:expand()
 

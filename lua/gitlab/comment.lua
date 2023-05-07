@@ -2,6 +2,7 @@ local Menu               = require("nui.menu")
 local NuiTree            = require("nui.tree")
 local notify             = require("notify")
 local Job                = require("plenary.job")
+local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
 local keymaps            = require("gitlab.keymaps")
@@ -107,29 +108,18 @@ M.delete_comment         = function()
         local discussion_id = node:get_id()
         discussion_id = string.sub(discussion_id, 2) -- Remove the "-" at the start
         note_id = string.sub(note_id, 2)             -- Remove the "-" at the start
-        Job:new({
-          command = state.BIN,
-          args = {
-            "deleteComment",
-            state.PROJECT_ID,
-            discussion_id,
-            note_id,
-          },
-          on_stdout = function(_, line)
-            vim.schedule(function()
-              if line ~= nil and line ~= "" then
-                notify(line, "info")
-                state.tree:remove_node("-" .. note_id)
-                local discussion_node = state.tree:get_node("-" .. discussion_id)
-                if not discussion_node:has_children() then
-                  state.tree:remove_node("-" .. discussion_id)
-                end
-                state.tree:render()
-              end
-            end)
-          end,
-          on_stderr = u.print_error
-        }):start()
+
+
+        local json = string.format('{"discussion_id": "%s", "note_id": %d}', discussion_id, note_id)
+        job.run_job("comment", "DELETE", json, function(data)
+          notify(data.message, "success")
+          state.tree:remove_node("-" .. note_id)
+          local discussion_node = state.tree:get_node("-" .. discussion_id)
+          if not discussion_node:has_children() then
+            state.tree:remove_node("-" .. discussion_id)
+          end
+          state.tree:render()
+        end)
       end
     end,
   })
@@ -168,45 +158,31 @@ M.edit_comment = function()
 end
 
 M.send_edits   = function(text)
-  Job:new({
-    command = state.BIN,
-    args = {
-      "editComment",
-      state.PROJECT_ID,
-      state.ACTIVE_DISCUSSION,
-      state.ACTIVE_NOTE,
-      text,
-    },
-    on_stdout = function(_, line)
-      local note = vim.json.decode(line)
-      if note == nil then
-        notify("There was an issue editing the note", "error")
-        return
+  local escapedText = string.gsub(text, "\n", "\\n")
+  local json = string.format('{"discussion_id": "%s", "note_id": %s, "comment": "%s"}', state.ACTIVE_DISCUSSION,
+    state.ACTIVE_NOTE, escapedText)
+
+  job.run_job("comment", "PATCH", json, function()
+    vim.schedule(function()
+      local node = state.tree:get_node("-" .. state.ACTIVE_NOTE)
+      local childrenIds = node:get_child_ids()
+      for _, value in ipairs(childrenIds) do
+        state.tree:remove_node(value)
       end
 
-      vim.schedule(function()
-        local node = state.tree:get_node("-" .. state.ACTIVE_NOTE)
+      local newNoteTextNodes = {}
+      for bodyLine in text:gmatch("[^\n]+") do
+        table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
+      end
 
-        local childrenIds = node:get_child_ids()
-        for _, value in ipairs(childrenIds) do
-          state.tree:remove_node(value)
-        end
+      state.tree:set_nodes(newNoteTextNodes, "-" .. state.ACTIVE_NOTE)
 
-        local newNoteTextNodes = {}
-        for bodyLine in note.body:gmatch("[^\n]+") do
-          table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
-        end
-
-        state.tree:set_nodes(newNoteTextNodes, "-" .. state.ACTIVE_NOTE)
-
-        state.tree:render()
-        local buf = vim.api.nvim_get_current_buf()
-        u.darken_metadata(buf, '')
-        notify("Edited comment!")
-      end)
-    end,
-    on_stderr = u.print_error
-  }):start()
+      state.tree:render()
+      local buf = vim.api.nvim_get_current_buf()
+      u.darken_metadata(buf, '')
+      notify("Edited comment!")
+    end)
+  end)
 end
 
 return M

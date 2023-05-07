@@ -85,19 +85,23 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 
 	res, err := c.git.Discussions.DeleteMergeRequestDiscussionNote(c.projectId, c.mergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
+	w.WriteHeader(res.Response.StatusCode)
+
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf(`{"message": "Failed to delete comment: %s"}`, err.Error())))
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  res.Response.StatusCode,
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		w.WriteHeader(res.StatusCode)
-		return
+	response := SuccessResponse{
+		Message: "Comment deleted succesfully",
+		Status:  http.StatusOK,
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Comment deleted successfully"}`))
+	json.NewEncoder(w).Encode(response)
 }
 
 func PostComment(w http.ResponseWriter, r *http.Request) {
@@ -176,31 +180,31 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.EditComment(editCommentRequest)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf(`{"message": "Failed to edit comment: %s"}`, err.Error())))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Comment edited successfully"}`))
-
-}
-
-func (c *Client) EditComment(editCommentRequest EditCommentRequest) error {
-
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
 		Body: gitlab.String(editCommentRequest.Comment),
 	}
 
-	_, _, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+	_, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
-	if err != nil {
-		return err
+	for k, v := range res.Header {
+		w.Header().Set(k, v[0])
 	}
 
-	return nil
+	if err != nil {
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  res.StatusCode,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := SuccessResponse{
+		Message: "Comment edited succesfully",
+		Status:  http.StatusOK,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 func (c *Client) PostComment(cr PostCommentRequest) (*http.Response, error) {
