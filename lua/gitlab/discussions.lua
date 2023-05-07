@@ -51,53 +51,59 @@ end
 M.list_discussions = function()
   if u.base_invalid() then return end
   Job:new({
-    command = state.BIN,
-    args = { "listDiscussions", state.PROJECT_ID },
-    on_stdout = function(_, line)
-      local discussions = vim.json.decode(line)
-      if (type(discussions) == 'userdata') then
-        notify("No discussions found for this MR", "warn")
-        return
-      end
-      M.discussions = discussions
-      vim.schedule(function()
-        vim.cmd.tabnew()
-        local buf = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_command("vsplit")
-        vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-        vim.api.nvim_set_current_buf(buf)
-        local allDiscussions = {}
-        for i, discussion in ipairs(discussions) do
-          local discussionChildren = {}
-          for _, note in ipairs(discussion.notes) do
-            local note_node = M.build_note(note)
-            if i == 1 then
-              note_node:expand()
-            end
-            table.insert(discussionChildren, note_node)
-          end
-          local discussionNode = NuiTree.Node({
-              text = discussion.id,
-              id = discussion.id,
-              is_discussion = true
-            },
-            discussionChildren)
-          if i == 1 then
-            discussionNode:expand()
-          end
-          table.insert(allDiscussions, discussionNode)
+    command = "curl",
+    args = { "-s", "localhost:8081/" .. "discussions" },
+    on_stdout = function(_, output)
+      local data_ok, data = pcall(vim.json.decode, output)
+      if data_ok and data ~= nil then
+        local status = (data.status >= 200 and data.status < 300) and "success" or "error"
+        if status == "error" then
+          notify("Could not fetch discussions!", "error")
+          return
         end
-        state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
+        M.discussions = data.discussions
+        vim.schedule(function()
+          vim.cmd.tabnew()
+          local buf = vim.api.nvim_create_buf(false, true)
+          vim.api.nvim_command("vsplit")
+          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+          vim.api.nvim_set_current_buf(buf)
+          local allDiscussions = {}
+          for i, discussion in ipairs(data.discussions) do
+            local discussionChildren = {}
+            for _, note in ipairs(discussion.notes) do
+              local note_node = M.build_note(note)
+              if i == 1 then
+                note_node:expand()
+              end
+              table.insert(discussionChildren, note_node)
+            end
+            local discussionNode = NuiTree.Node({
+                text = discussion.id,
+                id = discussion.id,
+                is_discussion = true
+              },
+              discussionChildren)
+            if i == 1 then
+              discussionNode:expand()
+            end
+            table.insert(allDiscussions, discussionNode)
+          end
+          state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
 
-        M.set_tree_keymaps(buf)
+          M.set_tree_keymaps(buf)
 
-        state.tree:render()
-        vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-        u.darken_metadata(buf, '')
-        M.jump_to_file()
-      end)
+          state.tree:render()
+          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+          u.darken_metadata(buf, '')
+          M.jump_to_file()
+        end)
+      end
     end,
-    on_stderr = u.print_error,
+    on_stderr = function(_, output)
+      notify("Could not run approve command!", "error")
+      error(output)
+    end,
   }):start()
 end
 

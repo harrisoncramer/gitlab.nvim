@@ -1,14 +1,11 @@
-local u      = require("gitlab.utils")
 local notify = require("notify")
 local Job    = require("plenary.job")
 local M      = {}
 
--- Approves the current merge request
-M.approve    = function()
-  if u.base_invalid() then return end
+M.run_job    = function(endpoint)
   Job:new({
     command = "curl",
-    args = { "-s", "-X", "POST", "localhost:8081/approve" },
+    args = { "-s", "-X", "POST", "localhost:8081/" .. endpoint },
     on_stdout = function(_, output)
       local data_ok, data = pcall(vim.json.decode, output)
       if data_ok and data ~= nil then
@@ -25,5 +22,14 @@ M.approve    = function()
   }):start()
 end
 
+-- Approves the current merge request
+M.approve    = function()
+  M.run_job("approve")
+end
+
+-- Revokes approval for the current merge request
+M.revoke     = function()
+  M.run_job("revoke")
+end
 
 return M

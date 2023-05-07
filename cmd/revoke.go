@@ -3,20 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 )
 
-func (c *Client) Revoke() (string, error) {
+func (c *Client) Revoke() (string, int, error) {
 
-	log.Println("Revoking")
-	_, err := c.git.MergeRequestApprovals.UnapproveMergeRequest(c.projectId, c.mergeId, nil, nil)
+	res, err := c.git.MergeRequestApprovals.UnapproveMergeRequest(c.projectId, c.mergeId, nil, nil)
 
 	if err != nil {
-		return "", fmt.Errorf("Revoking approval failed: %w", err)
+		return "", res.Response.StatusCode, fmt.Errorf("Revoking approval failed: %w", err)
 	}
 
-	return "Success! Revoked MR approval.", nil
+	return "Success! Revoked MR approval.", http.StatusOK, nil
 
 }
 
@@ -28,16 +26,22 @@ func RevokeHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	client := r.Context().Value("client").(Client)
-	msg, err := client.Revoke()
+	msg, status, err := client.Revoke()
+	w.WriteHeader(status)
+
 	if err != nil {
-		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.Marshal(errResp)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(response)
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  status,
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	response := map[string]string{"message": msg}
+	response := SuccessResponse{
+		Message: msg,
+		Status:  http.StatusOK,
+	}
+
 	json.NewEncoder(w).Encode(response)
 }
