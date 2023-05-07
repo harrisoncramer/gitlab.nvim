@@ -126,21 +126,28 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := c.PostComment(postCommentRequest)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": err.Error()}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
-		return
-	}
-
 	for k, v := range res.Header {
 		w.Header().Set(k, v[0])
 	}
 
-	w.WriteHeader(res.StatusCode)
-	io.Copy(w, res.Body)
+	if err != nil {
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  res.StatusCode,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := SuccessResponse{
+		Message: "Comment created succesfully",
+		Status:  http.StatusOK,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
+	// w.WriteHeader(res.StatusCode)
+	// io.Copy(w, res.Body)
 
 }
 

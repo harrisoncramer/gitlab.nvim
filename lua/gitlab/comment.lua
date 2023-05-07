@@ -56,20 +56,9 @@ M.confirm_create_comment = function(text)
     end
   end
 
-  Job:new({
-    command = state.BIN,
-    args = {
-      "comment",
-      state.PROJECT_ID,
-      current_line_number,
-      relative_file_path,
-      text,
-      sha
-    },
-    -- TODO: Render the tree after comment creation. Refresh?
-    on_stdout = u.print_success,
-    on_stderr = u.print_error
-  }):start()
+  local json = string.format('{ "line_number": %d, "file_name": "%s", "comment": "%s" }', current_line_number,
+    relative_file_path, text)
+  job.run_job("comment", "POST", json)
 end
 
 M.delete_comment         = function()
