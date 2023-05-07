@@ -31,7 +31,18 @@ func main() {
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
 	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 
-	http.ListenAndServe(":8081", m)
+	server := &http.Server{
+		Addr:    ":8081",
+		Handler: m,
+	}
+
+	done := make(chan bool)
+	go server.ListenAndServe()
+
+	/* This print is detected by the Lua code and used to fetch project information */
+	fmt.Println("Server started.")
+
+	<-done
 }
 
 type ResponseError struct {

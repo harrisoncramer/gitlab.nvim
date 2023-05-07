@@ -1,4 +1,4 @@
-local Job           = require("plenary.job")
+local curl          = require("plenary.curl")
 local state         = require("gitlab.state")
 local notify        = require("notify")
 local discussions   = require("gitlab.discussions")
@@ -81,8 +81,29 @@ M.setup             = function(args, build_only)
     state.BASE_BRANCH = args.base_branch
   end
 
+  local error_message = "Failed to set up gitlab.nvim, could not get project information."
   if u.is_gitlab_repo() then
-    vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID)
+    vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID, {
+      on_stdout = function(job_id)
+        if job_id <= 0 then
+          notify(error_message, "error")
+          return
+        end
+
+        local response = curl.get("localhost:8081/info")
+        if response == nil then
+          notify(error_message, "error")
+          return
+        end
+        local body = response.body
+        local parsed_ok, data = pcall(vim.json.decode, body)
+        if parsed_ok ~= true then
+          notify(error_message, "error")
+          return
+        end
+        state.INFO = data
+      end
+    })
     keymaps.set_keymap_keys(args.keymaps)
     keymaps.set_keymaps()
   end
