@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) Star() (string, error) {
-	project, _, err := c.git.Projects.StarProject(c.projectId)
+func (c *Client) Star() (*gitlab.Project, int, error) {
+	project, res, err := c.git.Projects.StarProject(c.projectId)
 	if err != nil {
-		return "", fmt.Errorf("Starring project failed: %w", err)
+		return nil, res.Response.StatusCode, fmt.Errorf("Starring project failed: %w", err)
 	}
 
-	return fmt.Sprintf("Starred project %s successfully!", project.Name), nil
+	return project, http.StatusOK, nil
 
 }
 
@@ -23,16 +25,22 @@ func StarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	client := r.Context().Value("client").(Client)
-	msg, err := client.Star()
+	project, status, err := client.Star()
+
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.Marshal(errResp)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(response)
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  status,
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	response := map[string]string{"message": msg}
+	response := SuccessResponse{
+		Message: fmt.Sprintf("Starred project %s successfully!", project.Name),
+		Status:  http.StatusOK,
+	}
+
 	json.NewEncoder(w).Encode(response)
 }
