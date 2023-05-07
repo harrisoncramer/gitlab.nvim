@@ -17,8 +17,9 @@ M.reply            = function()
   keymaps.set_popup_keymaps(replyPopup, M.send_reply)
 end
 
-M.send_reply       = function(body)
-  local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, body)
+M.send_reply       = function(text)
+  local escapedText = string.gsub(text, "\n", "\\n")
+  local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, escapedText)
   job.run_job("reply", "POST", json, function(data)
     local note_node = M.build_note(data.note)
     note_node:expand()
