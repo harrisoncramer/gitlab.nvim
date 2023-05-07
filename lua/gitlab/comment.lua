@@ -1,7 +1,6 @@
 local Menu               = require("nui.menu")
 local NuiTree            = require("nui.tree")
 local notify             = require("notify")
-local Job                = require("plenary.job")
 local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
