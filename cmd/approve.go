@@ -6,15 +6,15 @@ import (
 	"net/http"
 )
 
-func (c *Client) Approve() (string, error) {
+func (c *Client) Approve() (string, int, error) {
 
-	_, _, err := c.git.MergeRequestApprovals.ApproveMergeRequest(c.projectId, c.mergeId, nil, nil)
+	_, res, err := c.git.MergeRequestApprovals.ApproveMergeRequest(c.projectId, c.mergeId, nil, nil)
 
 	if err != nil {
-		return "", fmt.Errorf("Approving MR failed: %w", err)
+		return "", res.Response.StatusCode, fmt.Errorf("Approving MR failed: %w", err)
 	}
 
-	return "Success! Approved MR.", nil
+	return "Success! Approved MR.", http.StatusOK, nil
 }
 
 func ApproveHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,16 +25,22 @@ func ApproveHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	client := r.Context().Value("client").(Client)
-	msg, err := client.Approve()
+	msg, status, err := client.Approve()
+	w.WriteHeader(status)
+
 	if err != nil {
-		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.MarshalIndent(errResp, "", "  ")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(response)
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  status,
+		}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	response := map[string]string{"message": msg}
+	response := SuccessResponse{
+		Message: msg,
+		Status:  http.StatusOK,
+	}
+
 	json.NewEncoder(w).Encode(response)
 }

@@ -21,8 +21,6 @@ M.delete_comment    = comment.delete_comment
 M.reply             = discussions.reply
 
 -- Builds the Go binary, initializes the plugin, fetches MR info
-local projectData   = {}
-
 M.build             = function(args)
   if args == nil then args = {} end
   local command = string.format("cd %s && make", state.BIN_PATH)
@@ -90,11 +88,12 @@ M.setup             = function(args, build_only)
           return
         end
 
-        local response = curl.get("localhost:8081/info")
-        if response == nil then
+        local response_ok, response = pcall(curl.get, "localhost:" .. (args.port or "8081") .. "/info", { timeout = 750 })
+        if response == nil or not response_ok then
           notify(error_message, "error")
           return
         end
+
         local body = response.body
         local parsed_ok, data = pcall(vim.json.decode, body)
         if parsed_ok ~= true then
@@ -108,26 +107,6 @@ M.setup             = function(args, build_only)
     keymaps.set_keymaps()
   end
 end
-
--- Job:new({
---   command = state.BIN,
---   args = { "info", state.PROJECT_ID },
---   on_stdout = function(_, line)
---     print("")
---     table.insert(projectData, line)
---   end,
---   on_stderr = u.print_error,
---   on_exit = function()
---     if projectData[1] ~= nil then
---       local parsed_ok, data = pcall(vim.json.decode, projectData[1])
---       if parsed_ok ~= true then
---         notify("Failed calling setup. Could not get project data.", "error")
---       else
---         state.INFO = data
---       end
---     end
---   end,
--- }):start()
 
 M.current_file_path = function()
   local path = debug.getinfo(1, 'S').source:sub(2)

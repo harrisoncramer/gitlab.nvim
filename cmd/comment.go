@@ -66,7 +66,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -78,7 +78,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not read JSON from request"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -108,7 +108,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -120,7 +120,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -130,7 +130,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": err.Error()}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -152,7 +152,7 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -164,7 +164,7 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}

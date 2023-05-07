@@ -70,7 +70,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errResp := map[string]string{"message": err.Error()}
 		w.WriteHeader(http.StatusInternalServerError)
-		response, _ := json.MarshalIndent(errResp, "", "  ")
+		response, _ := json.Marshal(errResp)
 		w.Write(response)
 		return
 	}

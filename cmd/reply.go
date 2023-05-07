@@ -45,7 +45,7 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -57,7 +57,7 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		errMsg := map[string]string{"message": "Could not read JSON from request"}
-		jsonMsg, _ := json.MarshalIndent(errMsg, "", "  ")
+		jsonMsg, _ := json.Marshal(errMsg)
 		w.Write(jsonMsg)
 		return
 	}
@@ -66,7 +66,7 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.MarshalIndent(errResp, "", "  ")
+		response, _ := json.Marshal(errResp)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(response)
 		return

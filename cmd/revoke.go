@@ -31,7 +31,7 @@ func RevokeHandler(w http.ResponseWriter, r *http.Request) {
 	msg, err := client.Revoke()
 	if err != nil {
 		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.MarshalIndent(errResp, "", "  ")
+		response, _ := json.Marshal(errResp)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(response)
 		return
