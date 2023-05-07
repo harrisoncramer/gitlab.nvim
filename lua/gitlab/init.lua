@@ -82,23 +82,10 @@ M.setup             = function(args, build_only)
   end
 
   if u.is_gitlab_repo() then
-    Job:new({
-      command = state.BIN,
-      args = { "start", state.PROJECT_ID },
-      on_stdout = function(_, line)
-        print("PID: ", line)
-      end,
-      on_stderr = function(_, line)
-        print("Oof: ", line)
-      end,
-      on_exit = function()
-        print("Exit")
-      end
-    })
+    vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID)
+    keymaps.set_keymap_keys(args.keymaps)
+    keymaps.set_keymaps()
   end
-
-  keymaps.set_keymap_keys(args.keymaps)
-  keymaps.set_keymaps()
 end
 
 -- Job:new({
