@@ -24,44 +24,51 @@ const (
 func main() {
 
 	branchName, err := getCurrentBranch()
-	errCheck(err)
+
+    if err != nil {
+        log.Fatalf("Failure: Failed to get current branch: %v", err)
+    }
+
 	if branchName == "main" || branchName == "master" {
 		return
 	}
 
 	var c Client
-	errCheck(c.Init(branchName))
 
-	switch c.command {
-	case star:
-		errCheck(c.Star())
-	case approve:
-		errCheck(c.Approve())
-	case revoke:
-		errCheck(c.Revoke())
-	case comment:
-		errCheck(c.Comment())
-	case deleteComment:
-		errCheck(c.DeleteComment())
-	case editComment:
-		errCheck(c.EditComment())
-	case overviewComment:
-		errCheck(c.OverviewComment())
-	case info:
-		errCheck(c.Info())
-	case reply:
-		errCheck(c.Reply())
-	case listDiscussions:
-		errCheck(c.ListDiscussions())
-	default:
-		c.Usage("command")
-	}
+    if err := c.Init(branchName); err != nil {
+        log.Fatalf("Failure: Failed to iniialize client: %v", err)
+    }
+
+    if err := executeCommand(c); err != nil {
+        log.Fatalf("Failure: Command execution failed: %v", err)
+    }
 }
 
-func errCheck(err error) {
-	if err != nil {
-		log.Fatalf("Failure: %s", err)
-		os.Exit(1)
+func executeCommand(c Client) error {
+	switch c.command {
+	case star:
+		return c.Star()
+	case approve:
+		return c.Approve()
+	case revoke:
+		return c.Revoke()
+	case comment:
+		return c.Comment()
+	case deleteComment:
+		return c.DeleteComment()
+	case editComment:
+		return c.EditComment()
+	case overviewComment:
+		return c.OverviewComment()
+	case info:
+		return c.Info()
+	case reply:
+		return c.Reply()
+	case listDiscussions:
+		return c.ListDiscussions()
+	default:
+		c.Usage("command")
+        return nil
 	}
 }
 

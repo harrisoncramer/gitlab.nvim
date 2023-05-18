@@ -23,14 +23,24 @@ M.reply             = discussions.reply
 -- Builds the Go binary, initializes the plugin, fetches MR info
 local projectData   = {}
 
-M.build             = function(args)
-  if args == nil then args = {} end
+local function build_binary(args, notify_on_failure)
+  if args == nil then
+    args = {}
+  end
   local command = string.format("cd %s && make", state.BIN_PATH)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
-    notify("Could not install gitlab.nvim!", "error")
-    return
-  else
+    if notify_on_failure then
+      notify("Could not install gitlab.nvim!", "error")
+    end
+    return false
+  end
+  return true
+end
+
+
+M.build             = function(args)
+  if build_binary(args, true) then
     M.setup(args, true)
   end
 end
@@ -43,13 +53,9 @@ M.setup             = function(args, build_only)
 
   if args == nil then args = {} end
 
-  local binExists = io.open(state.BIN, "r")
-  if not binExists or args.dev == true then
-    local command = string.format("cd %s && make", state.BIN_PATH)
-    local installCode = os.execute(command .. "> /dev/null")
-    if installCode ~= 0 then
-      require("notify")("Could not install gitlab.nvim! Do you have Go installed?", "error")
-      return
+  local binExists = vim.loop.fs_stat(state.BIN)
+    if not build_binary(args, true) then
+        return
     end
   end
 
@@ -69,7 +75,10 @@ M.setup             = function(args, build_only)
 
   if args.project_id == nil then
     args.project_id = u.read_file(state.BIN_PATH .. "/.gitlab/project_id")
-    error("No project ID provided!")
+    if args.project_id == nil then
+      error("No project ID provided!")
+      return
+    end
   end
 
   state.PROJECT_ID = args.project_id
