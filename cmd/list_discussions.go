@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"sort"
 
 	"encoding/json"
@@ -10,6 +11,11 @@ import (
 )
 
 type SortableDiscussions []*gitlab.Discussion
+
+type DiscussionsResponse struct {
+	SuccessResponse
+	Discussions []*gitlab.Discussion `json:"discussions"`
+}
 
 func (n SortableDiscussions) Len() int {
 	return len(n)
@@ -26,16 +32,16 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func (c *Client) ListDiscussions() error {
+func (c *Client) ListDiscussions() ([]*gitlab.Discussion, int, error) {
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
 		PerPage: 250,
 	}
-	discussions, _, err := c.git.Discussions.ListMergeRequestDiscussions(c.projectId, c.mergeId, &mergeRequestDiscussionOptions, nil)
+	discussions, res, err := c.git.Discussions.ListMergeRequestDiscussions(c.projectId, c.mergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
-		return fmt.Errorf("Listing discussions failed: %w", err)
+		return nil, res.Response.StatusCode, fmt.Errorf("Listing discussions failed: %w", err)
 	}
 
 	var realDiscussions []*gitlab.Discussion
@@ -52,9 +58,35 @@ func (c *Client) ListDiscussions() error {
 	sortedDiscussions := SortableDiscussions(realDiscussions)
 	sort.Sort(sortedDiscussions)
 
-	discussionsOutput, err := json.Marshal(sortedDiscussions)
+	return sortedDiscussions, http.StatusOK, nil
+}
 
-	fmt.Println(string(discussionsOutput))
+func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
-	return nil
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+	msg, status, err := c.ListDiscussions()
+
+	if err != nil {
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  status,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := DiscussionsResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Discussions successfully fetched.",
+			Status:  http.StatusOK,
+		},
+		Discussions: msg,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
