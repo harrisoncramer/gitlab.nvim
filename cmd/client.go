@@ -76,8 +76,3 @@ func (c *Client) Init(branchName string) error {
 
 	return nil
 }
-
-func (c *Client) Usage(command string) {
-	fmt.Printf("Usage: gitlab-nvim %s <project-id> ...args", command)
-	os.Exit(1)
-}
