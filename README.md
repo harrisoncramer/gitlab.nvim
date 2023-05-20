@@ -65,13 +65,7 @@ use {
 }
 ```
 
-## Multiple Gitlab Repositories
-
-By default, the tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
-
-```lua
-require('gitlab').setup({ base_branch = 'master' })
-```
+## Configuring per Gitlab Repository
 
 By default, the plugin will not connect to a gitlab repository. You must add a `.gitlab.nvim` file to the root of your directory. The plugin will read that file and use it as the project ID. The file should only contain the ID of the project:
 
@@ -79,10 +73,44 @@ By default, the plugin will not connect to a gitlab repository. You must add a `
 112415
 ```
 
+The tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
+
+```lua
+require('gitlab').setup({ base_branch = 'master' })
+```
+
 If you are using `main` as your branch and you add a `.gitlab.nvim` configuration file, you can call an empty setup function and the plugin will work:
 
 ```lua
 require('gitlab').setup()
+```
+
+Here is the default setup function:
+
+```lua
+require("gitlab").setup({
+  base_branch = "main",
+  port = 20136, -- The port of the Go server, which runs in the background
+  keymaps = {
+    popup = { -- The popup for comment creation, editing, and replying
+      exit = "<Esc>",
+      perform_action = "<leader>s", -- Once in normal mode, does action
+    },
+    discussion_tree = { -- The discussion tree that holds all comments
+      jump_to_location = "o",
+      edit_comment = "e",
+      delete_comment = "dd",
+      reply_to_comment = "r",
+      toggle_node = "t",
+    },
+    dialogue = { -- The confirmation dialogue for deleting comments
+      focus_next = { "j", "<Down>", "<Tab>" },
+      focus_prev = { "k", "<Up>", "<S-Tab>" },
+      close = { "<Esc>", "<C-c>" },
+      submit = { "<CR>", "<Space>" },
+    }
+  }
+})
 ```
 
 ## Usage
@@ -128,46 +156,6 @@ require("gitlab").reply()
 ```
 
 ## Keybindings
-
-This plugin does not create any keybindings outside of the plugin-specific buffers by default. These are the default keybindings in those plugin buffers:
-
-```lua
-{
-  popup = { -- The popup for comment creation, editing, and replying
-    exit = "<Esc>",
-    perform_action = "<leader>s", -- Once in normal mode, does action
-  },
-  discussion_tree = { -- The discussion tree that holds all comments
-    jump_to_location = "o",
-    edit_comment = "e",
-    delete_comment = "dd",
-    reply_to_comment = "r",
-    toggle_node = "t",
-  },
-  dialogue = { -- The confirmation dialogue for deleting comments
-    focus_next = { "j", "<Down>", "<Tab>" },
-    focus_prev = { "k", "<Up>", "<S-Tab>" },
-    close = { "<Esc>", "<C-c>" },
-    submit = { "<CR>", "<Space>" },
-  }
-}
-```
-
-To override the defaults, pass a keymaps table into the setup function with any keybindings you'd like to change:
-
-```lua
-local gitlab = require("gitlab")
-gitlab.setup({
-  keymaps = {
-    popup = {
-      exit = "q"
-    },
-    discussion_tree = {
-      reply_to_comment = "<leader>r"
-    }
-  }
-})
-```
 
 The plugin does not set up any keybindings outside of these buffers, you need to set them up yourself. Here's what I'm using:
 
