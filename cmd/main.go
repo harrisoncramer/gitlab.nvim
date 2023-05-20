@@ -40,7 +40,7 @@ func main() {
 	go server.ListenAndServe()
 
 	/* This print is detected by the Lua code and used to fetch project information */
-	// fmt.Println("Server started.")
+	fmt.Println("Server started.")
 
 	<-done
 }

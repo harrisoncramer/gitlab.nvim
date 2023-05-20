@@ -85,25 +85,25 @@ M.setup             = function(args, build_only)
         if job_id <= 0 then
           notify(error_message, "error")
           return
+        else
+          local response_ok, response = pcall(curl.get, "localhost:" .. (args.port or "8081") .. "/info",
+            { timeout = 750 })
+          if response == nil or not response_ok then
+            notify(error_message, "error")
+            return
+          end
+          local body = response.body
+          local parsed_ok, data = pcall(vim.json.decode, body)
+          if parsed_ok ~= true then
+            notify(error_message, "error")
+            return
+          end
+          state.INFO = data
+          keymaps.set_keymap_keys(args.keymaps)
+          keymaps.set_keymaps()
         end
-
-        local response_ok, response = pcall(curl.get, "localhost:" .. (args.port or "8081") .. "/info", { timeout = 750 })
-        if response == nil or not response_ok then
-          notify(error_message, "error")
-          return
-        end
-
-        local body = response.body
-        local parsed_ok, data = pcall(vim.json.decode, body)
-        if parsed_ok ~= true then
-          notify(error_message, "error")
-          return
-        end
-        state.INFO = data
       end
     })
-    keymaps.set_keymap_keys(args.keymaps)
-    keymaps.set_keymaps()
   end
 end
 
