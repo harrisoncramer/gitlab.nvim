@@ -30,6 +30,7 @@ local function build_binary()
   return true
 end
 
+M.build = build_binary
 
 -- Setups up the binary (if not built), starts the Go server, and calls the /info endpoint,
 -- which sets the Gitlab project's information in gitlab.nvim's state module
