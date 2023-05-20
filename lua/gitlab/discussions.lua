@@ -39,7 +39,7 @@ M.list_discussions = function()
   if u.base_invalid() then return end
   Job:new({
     command = "curl",
-    args = { "-s", "localhost:8081/" .. "discussions" },
+    args = { "-s", string.format("localhost:%s/discussions", state.PORT) },
     on_stdout = function(_, output)
       local data_ok, data = pcall(vim.json.decode, output)
       if data_ok and data ~= nil then

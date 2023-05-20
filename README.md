@@ -41,7 +41,7 @@ return {
   config = function()
     vim.opt.termguicolors = true -- This is required if you aren't already initializing notify
     require("notify").setup({ background_colour = "#000000" })  -- This is required if you aren't already initializing notify
-    require("gitlab").setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
+    require("gitlab").setup()
   end,
 }
 ```
@@ -58,9 +58,9 @@ use {
   },
   run = function() require("gitlab").build() end,
   config = function()
-    vim.opt.termguicolors = true -- This is required if you aren't already initializing notify
-    require("notify").setup({ background_colour = "#000000" })  -- This is required if you aren't already initializing notify
-    require("gitlab").setup({ project_id = 3 }) -- This can be found under the project details section of your Gitlab repository.
+    vim.opt.termguicolors = true
+    require("notify").setup({ background_colour = "#000000" })
+    require("gitlab").setup() -- This can be found under the project details section of your Gitlab repository.
   end,
 }
 ```
@@ -70,19 +70,13 @@ use {
 By default, the tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
 
 ```lua
-require('gitlab').setup({ project_id = 3, base_branch = 'master' })
+require('gitlab').setup({ base_branch = 'master' })
 ```
 
-By default, the plugin will read the `project_id` provided in the setup call. However, if you add a `.gitlab.nvim` file to the root of your directory, the plugin will read that and use it as the project_id instead. The file should only contain the ID of the project:
+By default, the plugin will not connect to a gitlab repository. You must add a `.gitlab.nvim` file to the root of your directory. The plugin will read that file and use it as the project ID. The file should only contain the ID of the project:
 
 ```
 112415
-```
-
-Which is effectively like calling the setup function like this:
-
-```lua
-require('gitlab').setup({ project_id = 112415, base_branch = 'master' })
 ```
 
 If you are using `main` as your branch and you add a `.gitlab.nvim` configuration file, you can call an empty setup function and the plugin will work:
@@ -93,9 +87,7 @@ require('gitlab').setup()
 
 ## Usage
 
-First, check out the branch that you want to review locally. Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration must match the project_id of the Gitlab project your terminal is inside of.
-
-The `summary` command will pull down the MR description into a buffer so that you can read it:
+First, check out the branch that you want to review locally. Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. The `summary` command will pull down the MR description into a buffer so that you can read it:
 
 ```lua
 require("gitlab").summary()
@@ -166,7 +158,6 @@ To override the defaults, pass a keymaps table into the setup function with any 
 ```lua
 local gitlab = require("gitlab")
 gitlab.setup({
-  project_id = 36091024,
   keymaps = {
     popup = {
       exit = "q"

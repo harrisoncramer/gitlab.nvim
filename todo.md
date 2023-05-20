@@ -10,3 +10,4 @@
 - [x] Fix gitlab.nvim vs. gitlab namespacing issue
 - [x] Allow customization of keybindings
 - [ ] Add logging functionality for all API calls
+- [ ] Delete should refresh the tree
