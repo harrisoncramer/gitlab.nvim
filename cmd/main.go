@@ -11,16 +11,22 @@ import (
 )
 
 func main() {
-
 	branchName, err := getCurrentBranch()
-	errCheck(err)
+
+	if err != nil {
+		log.Fatalf("Failure: Failed to get current branch: %v", err)
+	}
+
 	if branchName == "main" || branchName == "master" {
 		log.Fatalf("Cannot run on %s branch", branchName)
 	}
 
 	/* Initialize Gitlab client */
 	var c Client
-	errCheck(c.Init(branchName))
+
+	if err := c.Init(branchName); err != nil {
+		log.Fatalf("Failure: Failed to iniialize client: %v", err)
+	}
 
 	m := http.NewServeMux()
 	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
@@ -45,22 +51,11 @@ func main() {
 	<-done
 }
 
-type ResponseError struct {
-	message string
-}
-
 func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(context.Background(), "client", c)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func errCheck(err error) {
-	if err != nil {
-		log.Fatalf("Failure: %s", err)
-		os.Exit(1)
-	}
 }
 
 /* Gets the current branch */
@@ -73,5 +68,4 @@ func getCurrentBranch() (res string, e error) {
 	}
 
 	return strings.TrimSpace(string(output)), nil
-
 }

@@ -239,6 +239,12 @@ local split_diff_view_filename = function(filename)
   return hash, path
 end
 
+local current_file_path = function()
+  local path = debug.getinfo(1, 'S').source:sub(2)
+  return vim.fn.fnamemodify(path, ':p')
+end
+
+
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text
@@ -259,5 +265,6 @@ M.exit = exit
 M.read_file = read_file
 M.split_diff_view_filename = split_diff_view_filename
 M.branch_exists = branch_exists
+M.current_file_path = current_file_path
 M.P = P
 return M
