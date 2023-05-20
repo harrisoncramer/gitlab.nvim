@@ -80,7 +80,7 @@ M.setup             = function(args, build_only)
 
   local error_message = "Failed to set up gitlab.nvim, could not get project information."
   if u.is_gitlab_repo() then
-    local port = args.port or 8081
+    local port = args.port or 21036
     vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID .. " " .. port, {
       on_stdout = function(job_id)
         if job_id <= 0 then
