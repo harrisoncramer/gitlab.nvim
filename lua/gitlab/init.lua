@@ -80,14 +80,14 @@ M.setup             = function(args, build_only)
 
   local error_message = "Failed to set up gitlab.nvim, could not get project information."
   if u.is_gitlab_repo() then
-    local port = args.port or 21036
-    vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID .. " " .. port, {
+    state.PORT = args.port or 21036
+    vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID .. " " .. state.PORT, {
       on_stdout = function(job_id)
         if job_id <= 0 then
           notify(error_message, "error")
           return
         else
-          local response_ok, response = pcall(curl.get, "localhost:" .. port .. "/info",
+          local response_ok, response = pcall(curl.get, "localhost:" .. state.PORT .. "/info",
             { timeout = 750 })
           if response == nil or not response_ok then
             notify(error_message, "error")
