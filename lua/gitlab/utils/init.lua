@@ -239,7 +239,6 @@ local split_diff_view_filename = function(filename)
   return hash, path
 end
 
-
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text

@@ -1,24 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
-)
-
-const (
-	star            = "star"
-	info            = "info"
-	approve         = "approve"
-	revoke          = "revoke"
-	comment         = "comment"
-	overviewComment = "overviewComment"
-	deleteComment   = "deleteComment"
-	editComment     = "editComment"
-	reply           = "reply"
-	listDiscussions = "listDiscussions"
 )
 
 func main() {
@@ -26,36 +15,45 @@ func main() {
 	branchName, err := getCurrentBranch()
 	errCheck(err)
 	if branchName == "main" || branchName == "master" {
-		return
+		log.Fatalf("Cannot run on %s branch", branchName)
 	}
 
+	/* Initialize Gitlab client */
 	var c Client
 	errCheck(c.Init(branchName))
 
-	switch c.command {
-	case star:
-		errCheck(c.Star())
-	case approve:
-		errCheck(c.Approve())
-	case revoke:
-		errCheck(c.Revoke())
-	case comment:
-		errCheck(c.Comment())
-	case deleteComment:
-		errCheck(c.DeleteComment())
-	case editComment:
-		errCheck(c.EditComment())
-	case overviewComment:
-		errCheck(c.OverviewComment())
-	case info:
-		errCheck(c.Info())
-	case reply:
-		errCheck(c.Reply())
-	case listDiscussions:
-		errCheck(c.ListDiscussions())
-	default:
-		c.Usage("command")
+	m := http.NewServeMux()
+	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
+	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
+	m.Handle("/star", withGitlabContext(http.HandlerFunc(StarHandler), c))
+	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
+	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
+	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
+	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", os.Args[2]),
+		Handler: m,
 	}
+
+	done := make(chan bool)
+	go server.ListenAndServe()
+
+	/* This print is detected by the Lua code and used to fetch project information */
+	fmt.Println("Server started.")
+
+	<-done
+}
+
+type ResponseError struct {
+	message string
+}
+
+func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(context.Background(), "client", c)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func errCheck(err error) {

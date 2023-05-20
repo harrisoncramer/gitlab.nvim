@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/xanzy/go-gitlab"
@@ -29,20 +28,192 @@ type MRVersion struct {
 	RealSize       string    `json:"real_size"`
 }
 
-func (c *Client) Comment() error {
-	if len(os.Args) < 6 {
-		c.Usage("comment")
+type PostCommentRequest struct {
+	LineNumber int    `json:"line_number"`
+	FileName   string `json:"file_name"`
+	Comment    string `json:"comment"`
+}
+
+type DeleteCommentRequest struct {
+	NoteId       int    `json:"note_id"`
+	DiscussionId string `json:"discussion_id"`
+}
+
+type EditCommentRequest struct {
+	Comment      string `json:"comment"`
+	NoteId       int    `json:"note_id"`
+	DiscussionId string `json:"discussion_id"`
+}
+
+func CommentHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodDelete:
+		DeleteComment(w, r)
+	case http.MethodPost:
+		PostComment(w, r)
+	case http.MethodPatch:
+		EditComment(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func DeleteComment(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read request body"}
+		jsonMsg, _ := json.Marshal(errMsg)
+		w.Write(jsonMsg)
+		return
 	}
 
-	lineNumber, fileName, comment := os.Args[3], os.Args[4], os.Args[5]
-	if lineNumber == "" || fileName == "" || comment == "" {
-		c.Usage("comment")
+	defer r.Body.Close()
+
+	var deleteCommentRequest DeleteCommentRequest
+	err = json.Unmarshal(body, &deleteCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read JSON from request"}
+		jsonMsg, _ := json.Marshal(errMsg)
+		w.Write(jsonMsg)
+		return
 	}
+
+	res, err := c.git.Discussions.DeleteMergeRequestDiscussionNote(c.projectId, c.mergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+
+	w.WriteHeader(res.Response.StatusCode)
+
+	if err != nil {
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  res.Response.StatusCode,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := SuccessResponse{
+		Message: "Comment deleted succesfully",
+		Status:  http.StatusOK,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func PostComment(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read request body"}
+		jsonMsg, _ := json.Marshal(errMsg)
+		w.Write(jsonMsg)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var postCommentRequest PostCommentRequest
+	err = json.Unmarshal(body, &postCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
+		jsonMsg, _ := json.Marshal(errMsg)
+		w.Write(jsonMsg)
+		return
+	}
+
+	res, err := c.PostComment(postCommentRequest)
+	for k, v := range res.Header {
+		w.Header().Set(k, v[0])
+	}
+
+	if err != nil {
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  res.StatusCode,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := SuccessResponse{
+		Message: "Comment created succesfully",
+		Status:  http.StatusOK,
+	}
+
+	json.NewEncoder(w).Encode(response)
+
+	// w.WriteHeader(res.StatusCode)
+	// io.Copy(w, res.Body)
+
+}
+
+func EditComment(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not read request body"}
+		jsonMsg, _ := json.Marshal(errMsg)
+		w.Write(jsonMsg)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var editCommentRequest EditCommentRequest
+	err = json.Unmarshal(body, &editCommentRequest)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
+		jsonMsg, _ := json.Marshal(errMsg)
+		w.Write(jsonMsg)
+		return
+	}
+
+	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+		Body: gitlab.String(editCommentRequest.Comment),
+	}
+
+	_, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+
+	for k, v := range res.Header {
+		w.Header().Set(k, v[0])
+	}
+
+	if err != nil {
+		response := ErrorResponse{
+			Message: err.Error(),
+			Status:  res.StatusCode,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response := SuccessResponse{
+		Message: "Comment edited succesfully",
+		Status:  http.StatusOK,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func (c *Client) PostComment(cr PostCommentRequest) (*http.Response, error) {
 
 	err, response := getMRVersions(c.projectId, c.mergeId)
 	if err != nil {
-		log.Fatalf("Error making diff thread: %s", err)
+		return nil, fmt.Errorf("Error making diff thread: %e", err)
 	}
+
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
@@ -50,7 +221,7 @@ func (c *Client) Comment() error {
 	var diffVersionInfo []MRVersion
 	err = json.Unmarshal(body, &diffVersionInfo)
 	if err != nil {
-		return fmt.Errorf("Error unmarshalling version info JSON: %w", err)
+		return nil, fmt.Errorf("Error unmarshalling version info JSON: %w", err)
 	}
 
 	/* This is necessary since we do not know whether the comment is on a line that
@@ -65,14 +236,14 @@ func (c *Client) Comment() error {
 	   See the Gitlab documentation: https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff */
 	for i := 0; i < 3; i++ {
 		ii := i
-		_, err := c.CommentOnDeletion(lineNumber, fileName, comment, diffVersionInfo[0], ii)
-		if err == nil {
-			fmt.Println("Left Comment: " + comment[0:min(len(comment), 25)] + "...")
-			return nil
+		res, err := c.CommentOnDeletion(cr.LineNumber, cr.FileName, cr.Comment, diffVersionInfo[0], ii)
+
+		if err == nil && res.StatusCode >= 200 && res.StatusCode <= 299 {
+			return res, nil
 		}
 	}
 
-	return fmt.Errorf("Could not leave comment")
+	return nil, fmt.Errorf("Could not leave comment")
 
 }
 
@@ -115,7 +286,7 @@ func getMRVersions(projectId string, mergeId int) (e error, response *http.Respo
 Creates a new merge request discussion https://docs.gitlab.com/ee/api/discussions.html#create-new-merge-request-thread
 The go-gitlab client was not working for this API specifically 😢
 */
-func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment string, diffVersionInfo MRVersion, i int) (*http.Response, error) {
+func (c *Client) CommentOnDeletion(lineNumber int, fileName string, comment string, diffVersionInfo MRVersion, i int) (*http.Response, error) {
 
 	deletionDiscussionUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%s/merge_requests/%d/discussions", c.projectId, c.mergeId)
 
@@ -132,12 +303,12 @@ func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment s
 	_ = writer.WriteField("position[old_path]", fileName)
 	_ = writer.WriteField("position[new_path]", fileName)
 	if i == 0 {
-		_ = writer.WriteField("position[old_line]", lineNumber)
+		_ = writer.WriteField("position[old_line]", fmt.Sprintf("%d", lineNumber))
 	} else if i == 1 {
-		_ = writer.WriteField("position[new_line]", lineNumber)
+		_ = writer.WriteField("position[new_line]", fmt.Sprintf("%d", lineNumber))
 	} else {
-		_ = writer.WriteField("position[old_line]", lineNumber)
-		_ = writer.WriteField("position[new_line]", lineNumber)
+		_ = writer.WriteField("position[old_line]", fmt.Sprintf("%d", lineNumber))
+		_ = writer.WriteField("position[new_line]", fmt.Sprintf("%d", lineNumber))
 	}
 
 	err := writer.Close()
@@ -152,39 +323,9 @@ func (c *Client) CommentOnDeletion(lineNumber string, fileName string, comment s
 		return nil, fmt.Errorf("Error building request: %w", err)
 	}
 	req.Header.Add("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
-
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
 	res, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Error making request: %w", err)
-	}
 
-	defer res.Body.Close()
-	return res, nil
-}
-
-func (c *Client) OverviewComment() error {
-	lineNumber, fileName, comment, sha := os.Args[3], os.Args[4], os.Args[5], os.Args[6]
-	if lineNumber == "" || fileName == "" || comment == "" {
-		c.Usage("comment")
-	}
-
-	lineNumberInt, err := strconv.Atoi(lineNumber)
-	if err != nil {
-		return fmt.Errorf("Not a valid line number: %w", err)
-	}
-
-	postCommitCommentOptions := gitlab.PostCommitCommentOptions{
-		Note:     gitlab.String(comment),
-		Path:     gitlab.String(fileName),
-		Line:     &lineNumberInt,
-		LineType: gitlab.String("old"),
-	}
-	_, _, err = c.git.Commits.PostCommitComment(c.projectId, sha, &postCommitCommentOptions)
-	if err != nil {
-		return fmt.Errorf("Error leaving overview comment: %w", err)
-	}
-
-	fmt.Println("Left Overview Comment: " + comment[0:min(len(comment), 25)] + "...")
-	return nil
+	return res, err
 }

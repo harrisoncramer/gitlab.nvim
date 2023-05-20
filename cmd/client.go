@@ -16,22 +16,37 @@ type Client struct {
 	git       *gitlab.Client
 }
 
+type Logger struct {
+	Active bool
+}
+
+func (l Logger) Printf(s string, args ...interface{}) {
+	logString := fmt.Sprintf(s+"\n", args...)
+	file, err := os.OpenFile("./logs", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	_, err = file.Write([]byte(logString))
+}
+
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
 func (c *Client) Init(branchName string) error {
 
-	if len(os.Args) < 3 {
-		return errors.New("Must provide command and projectId")
+	if len(os.Args) < 2 {
+		return errors.New("Must provide project ID!")
 	}
 
-	command, projectId := os.Args[1], os.Args[2]
-	c.command = command
+	projectId := os.Args[1]
 	c.projectId = projectId
 
 	if projectId == "" {
-		return errors.New("Must provide projectId")
+		return errors.New("Project ID cannot be empty")
 	}
 
-	git, err := gitlab.NewClient(os.Getenv("GITLAB_TOKEN"))
+	var l Logger
+	git, err := gitlab.NewClient(os.Getenv("GITLAB_TOKEN"), gitlab.WithCustomLogger(l))
+
 	if err != nil {
 		return fmt.Errorf("Failed to create client: %v", err)
 	}
@@ -60,9 +75,4 @@ func (c *Client) Init(branchName string) error {
 	c.git = git
 
 	return nil
-}
-
-func (c *Client) Usage(command string) {
-	fmt.Printf("Usage: gitlab-nvim %s <project-id> ...args", command)
-	os.Exit(1)
 }
