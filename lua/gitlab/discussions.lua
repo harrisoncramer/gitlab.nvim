@@ -52,7 +52,7 @@ M.list_discussions = function()
         vim.schedule(function()
           vim.cmd.tabnew()
           local buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_command("vsplit")
+          vim.api.nvim_command("aboveleft vsplit")
           vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
           vim.api.nvim_set_current_buf(buf)
           local allDiscussions = {}
