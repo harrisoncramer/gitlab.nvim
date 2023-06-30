@@ -1,6 +1,5 @@
 local Menu               = require("nui.menu")
 local NuiTree            = require("nui.tree")
-local notify             = require("notify")
 local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
@@ -25,7 +24,7 @@ M.find_deletion_commit   = function(file)
   local handle = io.popen(command)
   local output = handle:read("*line")
   if output == nil then
-    notify("Error reading SHA of deletion commit", "error")
+    vim.notify("Error reading SHA of deletion commit", vim.log.levels.ERROR)
     return ""
   end
   handle:close()
@@ -56,8 +55,9 @@ M.confirm_create_comment = function(text)
     end
   end
 
-  local json = string.format('{ "line_number": %d, "file_name": "%s", "comment": "%s" }', current_line_number,
-    relative_file_path, text)
+  local jsonTable = { line_number = current_line_number, file_name = relative_file_path, comment = text }
+  local json = vim.json.encode(jsonTable)
+
   job.run_job("comment", "POST", json)
 end
 
@@ -106,12 +106,13 @@ M.delete_comment         = function()
         end
         local discussion_id = node:get_id()
         discussion_id = string.sub(discussion_id, 2) -- Remove the "-" at the start
-        note_id = string.sub(note_id, 2)             -- Remove the "-" at the start
+        note_id = tonumber(string.sub(note_id, 2))   -- Remove the "-" at the start
 
+        local jsonTable = { discussion_id = discussion_id, note_id = note_id }
+        local json = vim.json.encode(jsonTable)
 
-        local json = string.format('{"discussion_id": "%s", "note_id": %d}', discussion_id, note_id)
         job.run_job("comment", "DELETE", json, function(data)
-          notify(data.message, "success")
+          vim.notify(data.message, vim.log.levels.INFO)
           state.tree:remove_node("-" .. note_id)
           local discussion_node = state.tree:get_node("-" .. discussion_id)
           if not discussion_node:has_children() then
@@ -137,9 +138,9 @@ M.edit_comment = function()
 
   editPopup:mount()
 
-  local note_id = string.sub(node:get_id(), 2) -- Remove the "-" at the start
+  local note_id = tonumber(string.sub(node:get_id(), 2)) -- Remove the "-" at the start
   local discussion_id = node:get_parent_id()
-  discussion_id = string.sub(discussion_id, 2) -- Remove the "-" at the start
+  discussion_id = string.sub(discussion_id, 2)           -- Remove the "-" at the start
 
   state.ACTIVE_DISCUSSION = discussion_id
   state.ACTIVE_NOTE = note_id
@@ -158,8 +159,9 @@ end
 
 M.send_edits   = function(text)
   local escapedText = string.gsub(text, "\n", "\\n")
-  local json = string.format('{"discussion_id": "%s", "note_id": %s, "comment": "%s"}', state.ACTIVE_DISCUSSION,
-    state.ACTIVE_NOTE, escapedText)
+
+  local jsonTable = { discussion_id = state.ACTIVE_DISCUSSION, note_id = state.ACTIVE_NOTE, comment = escapedText }
+  local json = vim.json.encode(jsonTable)
 
   job.run_job("comment", "PATCH", json, function()
     vim.schedule(function()
@@ -179,7 +181,7 @@ M.send_edits   = function(text)
       state.tree:render()
       local buf = vim.api.nvim_get_current_buf()
       u.darken_metadata(buf, '')
-      notify("Edited comment!")
+      vim.notify("Edited comment!", vim.log.levels.INFO)
     end)
   end)
 end

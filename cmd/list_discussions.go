@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -62,24 +63,23 @@ func (c *Client) ListDiscussions() ([]*gitlab.Discussion, int, error) {
 }
 
 func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
 	msg, status, err := c.ListDiscussions()
 
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  status,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not list discussions", http.StatusBadRequest)
 		return
 	}
 
+	/* TODO: Check for non-200 statuses */
+	w.WriteHeader(status)
 	response := DiscussionsResponse{
 		SuccessResponse: SuccessResponse{
 			Message: "Discussions successfully fetched.",

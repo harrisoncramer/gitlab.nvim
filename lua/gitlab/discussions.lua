@@ -1,7 +1,6 @@
 local u            = require("gitlab.utils")
 local NuiTree      = require("nui.tree")
 local job          = require("gitlab.job")
-local notify       = require("notify")
 local state        = require("gitlab.state")
 local Job          = require("plenary.job")
 local Popup        = require("nui.popup")
@@ -19,7 +18,10 @@ end
 
 M.send_reply       = function(text)
   local escapedText = string.gsub(text, "\n", "\\n")
-  local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, escapedText)
+
+  local jsonTable = { discussion_id = state.ACTIVE_DISCUSSION, reply = escapedText }
+  local json = vim.json.encode(jsonTable)
+
   job.run_job("reply", "POST", json, function(data)
     local note_node = M.build_note(data.note)
     note_node:expand()
@@ -29,7 +31,7 @@ M.send_reply       = function(text)
       state.tree:render()
       local buf = vim.api.nvim_get_current_buf()
       u.darken_metadata(buf, '')
-      notify("Sent reply!")
+      vim.notify("Sent reply!", vim.log.levels.INFO)
     end)
   end)
 end
@@ -45,11 +47,16 @@ M.list_discussions = function()
       if data_ok and data ~= nil then
         local status = (data.status >= 200 and data.status < 300) and "success" or "error"
         if status == "error" then
-          notify("Could not fetch discussions!", "error")
+          vim.notify("Could not fetch discussions!", vim.log.levels.ERROR)
           return
         end
         M.discussions = data.discussions
         vim.schedule(function()
+          if type(data.discussions) ~= "table" then
+            vim.notify("No discussions for this MR")
+            return
+          end
+
           vim.cmd.tabnew()
           local buf = vim.api.nvim_create_buf(false, true)
           vim.api.nvim_command("aboveleft vsplit")
@@ -88,7 +95,7 @@ M.list_discussions = function()
       end
     end,
     on_stderr = function(_, output)
-      notify("Could not run approve command!", "error")
+      vim.notify("Could not run approve command!", vim.log.levels.ERROR)
       error(output)
     end,
   }):start()
