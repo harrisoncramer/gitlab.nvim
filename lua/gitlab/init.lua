@@ -1,6 +1,5 @@
 local curl         = require("plenary.curl")
 local state        = require("gitlab.state")
-local notify       = require("notify")
 local discussions  = require("gitlab.discussions")
 local summary      = require("gitlab.summary")
 local keymaps      = require("gitlab.keymaps")
@@ -24,7 +23,7 @@ local function build_binary()
   local command = string.format("cd %s && make", state.BIN_PATH)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
-    notify("Could not install gitlab.nvim!", "error")
+    vim.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
     return false
   end
   return true
@@ -115,7 +114,7 @@ M.setup = function(args)
       {
         on_stdout = function(job_id)
           if job_id <= 0 then
-            notify("Could not start gitlab.nvim binary", "error")
+            vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
             return
           else
             local response_ok, response = pcall(
@@ -124,14 +123,15 @@ M.setup = function(args)
               { timeout = 750 }
             )
             if response == nil or not response_ok then
-              notify("The gitlab.nvim server did not respond", "error")
+              vim.notify("The gitlab.nvim server did not respond", vim.log.levels.ERROR)
               print("Ran command: " .. command)
               return
             end
             local body = response.body
             local parsed_ok, data = pcall(vim.json.decode, body)
             if parsed_ok ~= true then
-              notify("The gitlab.nvim server returned an invalid response to the /info endpoint", "error")
+              vim.notify("The gitlab.nvim server returned an invalid response to the /info endpoint",
+              vim.log.levels.ERROR)
               return
             end
             state.INFO = data

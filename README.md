@@ -14,7 +14,6 @@ https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-
 
 - Go
 - <a href="https://github.com/MunifTanjim/nui.nvim">nui.nvim</a>
-- <a href="https://github.com/rcarriga/nvim-notify">nvim-notify</a>
 - <a href="https://github.com/nvim-lua/plenary.nvim">plenary.nvim</a>
 
 ## Installation
@@ -25,14 +24,11 @@ With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 return {
   "harrisoncramer/gitlab.nvim",
   dependencies = {
-    "rcarriga/nvim-notify",
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
   },
   build = function () require("gitlab").build() end, -- Builds the Go binary
   config = function()
-    vim.opt.termguicolors = true -- This is required if you aren't already initializing notify
-    require("notify").setup({ background_colour = "#000000" })  -- This is required if you aren't already initializing notify
     require("gitlab").setup()
   end,
 }
@@ -44,15 +40,12 @@ And with Packer:
 use {
   'harrisoncramer/gitlab.nvim',
   requires = {
-    "rcarriga/nvim-notify",
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
   },
   run = function() require("gitlab").build() end,
   config = function()
-    vim.opt.termguicolors = true
-    require("notify").setup({ background_colour = "#000000" })
-    require("gitlab").setup() -- This can be found under the project details section of your Gitlab repository.
+    require("gitlab").setup()
   end,
 }
 ```

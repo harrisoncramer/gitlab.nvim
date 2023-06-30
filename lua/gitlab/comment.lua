@@ -1,6 +1,5 @@
 local Menu               = require("nui.menu")
 local NuiTree            = require("nui.tree")
-local notify             = require("notify")
 local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
@@ -25,7 +24,7 @@ M.find_deletion_commit   = function(file)
   local handle = io.popen(command)
   local output = handle:read("*line")
   if output == nil then
-    notify("Error reading SHA of deletion commit", "error")
+    vim.notify("Error reading SHA of deletion commit", vim.log.levels.ERROR)
     return ""
   end
   handle:close()
@@ -111,7 +110,7 @@ M.delete_comment         = function()
 
         local json = string.format('{"discussion_id": "%s", "note_id": %d}', discussion_id, note_id)
         job.run_job("comment", "DELETE", json, function(data)
-          notify(data.message, "success")
+          vim.notify(data.message, vim.log.levels.INFO)
           state.tree:remove_node("-" .. note_id)
           local discussion_node = state.tree:get_node("-" .. discussion_id)
           if not discussion_node:has_children() then
@@ -179,7 +178,7 @@ M.send_edits   = function(text)
       state.tree:render()
       local buf = vim.api.nvim_get_current_buf()
       u.darken_metadata(buf, '')
-      notify("Edited comment!")
+      vim.notify("Edited comment!", vim.log.levels.INFO)
     end)
   end)
 end
