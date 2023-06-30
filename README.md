@@ -185,3 +185,22 @@ Which looks like this in my editor:
 <img width="1727" alt="Screenshot 2023-04-21 at 6 37 39 PM" src="https://user-images.githubusercontent.com/32515581/233744560-0d718c92-f810-4fde-b40d-8b6f42eb6f0e.png">
 
 This is useful if you plan to leave comments on the diff, because this plugin currently only supports leaving comments on lines that have been added or modified. I'm currenly working on adding functionality to allow users to leave comments on any lines, including those that have been deleted or untouched.
+
+
+## Debugging
+
+This plugin is built on top of a Golang server. If you want to specifically debug that server, you can run it independently of Neovim. For instance, to start it up in a certain project, navigate to your plugin directory, and build the binary:
+
+```bash
+$ cd ~/.local/share/nvim/lazy/gitlab.nvim
+$ cd cmd
+$ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
+```
+
+Next you can run the server directly in your project (passing in the project_id, the root URL, the port for the server, and your gitlab token):
+
+```bash
+$ ./bin 45357706 https://www.gitlab.com 3000 glpla-xsadlqopxxyS2rP2yy2Md 
+```
+
+And attach to the process with a debugger like Delve. You can send JSON to it like you would any other REST server.
