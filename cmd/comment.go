@@ -14,7 +14,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-const mrVersionsUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%d/versions"
+const mrVersionsUrl = "%s/api/v4/projects/%s/merge_requests/%d/versions"
 
 type MRVersion struct {
 	ID             int       `json:"id"`
@@ -255,8 +255,7 @@ func min(a int, b int) int {
 
 /* Gets the latest merge request revision data */
 func getMRVersions(gitlabInstance string, projectId string, mergeId int, authToken string) (e error, response *http.Response) {
-	const mrVersionsUrl = "%s/api/v4/projects/%s/merge_requests/%d/versions"
-	url := fmt.Sprintf(gitlabInstance, mrVersionsUrl, projectId, mergeId)
+	url := fmt.Sprintf(mrVersionsUrl, gitlabInstance, projectId, mergeId)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
