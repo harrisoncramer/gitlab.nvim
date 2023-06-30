@@ -19,13 +19,7 @@ https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-
 
 ## Installation
 
-You'll need to have an environment variable available in your shell that you use to authenticate with Gitlab's API. It should look like this:
-
-```bash
-export GITLAB_TOKEN="your_gitlab_token"
-```
-
-Then install the plugin. Here's what it looks like with <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
+With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 
 ```lua
 return {
@@ -65,19 +59,28 @@ use {
 
 ## Configuring per Gitlab Repository
 
-By default, the plugin will not connect to a gitlab repository. You must add a `.gitlab.nvim` file to the root of your directory. The plugin will read that file and use it as the project ID. The file should only contain the ID of the project:
+By default, the plugin will not connect to a gitlab repository. You must add a `.gitlab.nvim` file to the root of your directory, and provide the project ID of your project. The file might look like this:
 
 ```
-112415
+project_id=112415
+auth_token=your_gitlab_token
 ```
 
-The tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
+You'll need to have an Gitlab variable to authenticate authenticate with Gitlab's API. If you don't want to write this into a dotfile in your project, you can also provide this as a shell variable, for instance in your `.bashrc` or `.zshrc` file:
+
+```bash
+export AUTH_TOKEN="your_gitlab_token"
+```
+
+## Configuring the Plugin
+
+By default, the plugin will interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option to the setup function:
 
 ```lua
 require('gitlab').setup({ base_branch = 'master' })
 ```
 
-If you are using `main` as your branch and you add a `.gitlab.nvim` configuration file, you can call an empty setup function and the plugin will work:
+If you are using `main` as your branch, you can call an empty setup function:
 
 ```lua
 require('gitlab').setup()
