@@ -25,7 +25,7 @@ func main() {
 	var c Client
 
 	if err := c.Init(branchName); err != nil {
-		log.Fatalf("Failure: Failed to iniialize client: %v", err)
+		log.Fatalf("Failure: Failed to initialize client: %v", err)
 	}
 
 	m := http.NewServeMux()
@@ -37,8 +37,9 @@ func main() {
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
 	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 
+	port := fmt.Sprintf(":%s", os.Args[3])
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", os.Args[2]),
+		Addr:    port,
 		Handler: m,
 	}
 

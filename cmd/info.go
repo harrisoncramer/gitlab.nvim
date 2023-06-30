@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
-const mrUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%d"
+const mrUrl = "%s/api/v4/projects/%s/merge_requests/%d"
 
 func (c *Client) Info() ([]byte, error) {
 
-	url := fmt.Sprintf(mrUrl, c.projectId, c.mergeId)
+	url := fmt.Sprintf(mrUrl, c.gitlabInstance, c.projectId, c.mergeId)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to build read request: %w", err)
 	}
 
-	req.Header.Set("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
+	req.Header.Set("PRIVATE-TOKEN", c.authToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
