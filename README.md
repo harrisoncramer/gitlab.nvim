@@ -189,18 +189,14 @@ This is useful if you plan to leave comments on the diff, because this plugin cu
 
 ## Debugging
 
-This plugin is built on top of a Golang server. If you want to specifically debug that server, you can run it independently of Neovim. For instance, to start it up in a certain project, navigate to your plugin directory, and build the binary:
+This plugin is built on top of a Golang server. If you want to debug that server, you can run it independently of Neovim. For instance, to start it up in a certain project, navigate to your plugin directory, and build the binary:
 
 ```bash
 $ cd ~/.local/share/nvim/lazy/gitlab.nvim
 $ cd cmd
 $ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
+$ cd ~/path-to-your-project
+$ dlv exec ./bin -- 41057709 https://www.gitlab.com 21036 your-gitlab-token
 ```
 
-Next you can run the server directly in your project (passing in the project_id, the root URL, the port for the server, and your gitlab token):
-
-```bash
-$ ./bin 45357706 https://www.gitlab.com 3000 glpla-xsadlqopxxyS2rP2yy2Md 
-```
-
-And attach to the process with a debugger like Delve. You can send JSON to it like you would any other REST server.
+You can send JSON to it like you would any other REST server.
