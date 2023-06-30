@@ -39,7 +39,7 @@ M.list_discussions = function()
   if u.base_invalid() then return end
   Job:new({
     command = "curl",
-    args = { "-s", "localhost:8081/" .. "discussions" },
+    args = { "-s", string.format("localhost:%s/discussions", state.PORT) },
     on_stdout = function(_, output)
       local data_ok, data = pcall(vim.json.decode, output)
       if data_ok and data ~= nil then
@@ -52,7 +52,7 @@ M.list_discussions = function()
         vim.schedule(function()
           vim.cmd.tabnew()
           local buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_command("vsplit")
+          vim.api.nvim_command("aboveleft vsplit")
           vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
           vim.api.nvim_set_current_buf(buf)
           local allDiscussions = {}

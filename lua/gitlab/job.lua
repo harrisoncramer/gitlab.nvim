@@ -1,9 +1,10 @@
 local notify = require("notify")
 local Job    = require("plenary.job")
+local state  = require("gitlab.state")
 local M      = {}
 
 M.run_job    = function(endpoint, method, body, callback)
-  local args = { "-s", "-X", (method or "POST"), "localhost:8081/" .. endpoint }
+  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.PORT) .. endpoint }
 
   if body ~= nil then
     table.insert(args, 1, "-d")
