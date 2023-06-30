@@ -1,9 +1,8 @@
-local notify = require("notify")
-local Job    = require("plenary.job")
-local state  = require("gitlab.state")
-local M      = {}
+local Job   = require("plenary.job")
+local state = require("gitlab.state")
+local M     = {}
 
-M.run_job    = function(endpoint, method, body, callback)
+M.run_job   = function(endpoint, method, body, callback)
   local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.PORT) .. endpoint }
 
   if body ~= nil then
@@ -20,26 +19,26 @@ M.run_job    = function(endpoint, method, body, callback)
         if callback ~= nil then
           callback(data)
         else
-          notify(data.message, status)
+          vim.notify(data.message, vim.log.levels.DEBUG)
         end
       else
-        notify("Could not parse command output!", "error")
+        vim.notify("Could not parse command output!", vim.log.levels.ERROR)
       end
     end,
     on_stderr = function(_, output)
-      notify("Could not run command!", "error")
+      vim.notify("Could not run command!", vim.log.levels.ERROR)
       error(output)
     end
   }):start()
 end
 
 -- Approves the current merge request
-M.approve    = function()
+M.approve   = function()
   M.run_job("approve", "POST")
 end
 
 -- Revokes approval for the current merge request
-M.revoke     = function()
+M.revoke    = function()
   M.run_job("revoke", "POST")
 end
 

@@ -1,5 +1,4 @@
 local state = require("gitlab.state")
-local notify = require("notify")
 
 local function get_git_root()
   local output = vim.fn.system('git rev-parse --show-toplevel 2>/dev/null')
@@ -81,14 +80,14 @@ local base_invalid = function()
   local current_branch = string.gsub(current_branch_raw, "\n", "")
 
   if current_branch == "main" or current_branch == "master" then
-    notify('On ' .. current_branch .. ' branch, no MRs available', "error")
+    vim.notify('On ' .. current_branch .. ' branch, no MRs available', vim.log.levels.ERROR)
     return true
   end
 
   local base = state.BASE_BRANCH
   local hasBaseBranch = feature_branch_exists(base)
   if not hasBaseBranch then
-    notify('No base branch. If this is a Gitlab repository, please check your setup function!', "error")
+    vim.notify('No base branch. If this is a Gitlab repository, please check your setup function!', vim.log.levels.ERROR)
     return true
   end
 end
@@ -169,13 +168,13 @@ end
 
 local function print_success(_, line)
   if line ~= nil and line ~= "" then
-    notify(line, "info")
+    vim.notify(line, vim.log.levels.INFO)
   end
 end
 
 local function print_error(_, line)
   if line ~= nil and line ~= "" then
-    notify(line, "error")
+    vim.notify(line, vim.log.levels.ERROR)
   end
 end
 
