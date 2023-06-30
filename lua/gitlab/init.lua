@@ -40,7 +40,9 @@ M.setup = function(args)
   state.BIN_PATH = parent_dir
   state.BIN = parent_dir .. "/bin"
 
-  if args == nil then args = {} end
+  if args == nil then
+    args = {}
+  end
 
   local binary_exists = vim.loop.fs_stat(state.BIN)
   if binary_exists == nil then
@@ -53,45 +55,92 @@ M.setup = function(args)
     return
   end
 
-  state.PROJECT_ID = config_file_content
+  local file = assert(io.open(config_file_path, "r"))
+  local property = {}
+  for line in file:lines() do
+    for key, value in string.gmatch(line, "(.-)=(.-)$") do
+      property[key] = value
+    end
+  end
+  local project_id = property["project_id"]
+  local gitlab_url = property["gitlab_url"]
+  if gitlab_url == nil then
+    gitlab_url = "https://gitlab.com"
+  end
+
+  local auth_token = property["auth_token"]
+  if auth_token == nil then
+    auth_token = os.getenv("GITLAB_TOKEN")
+  end
+
+  if project_id == nil or gitlab_url == nil or auth_token == nil then
+    error("Incomplete or invalid configuration file!")
+  end
+
+  state.PROJECT_ID = project_id
+  state.GITLAB_URL = gitlab_url
+  state.AUTH_TOKEN = auth_token
+
   if state.PROJECT_ID == nil then
     error("No project ID provided!")
   end
 
-  if type(tonumber(state.PROJECT_ID)) ~= 'number' then
-    error("The .gitlab.nvim project file may only contain a project number")
+  if type(tonumber(state.PROJECT_ID)) ~= "number" then
+    error("The .gitlab.nvim project file's 'project_id' must be number")
+  end
+
+  if state.AUTH_TOKEN == nil then
+    error("No auth token found, in project file or environment")
   end
 
   if args.base_branch ~= nil then
     state.BASE_BRANCH = args.base_branch
   end
 
+  state.PORT = args.port or 21036
+
   if u.is_gitlab_repo() then
-    state.PORT = args.port or 21036
-    vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID .. " " .. state.PORT, {
-      on_stdout = function(job_id)
-        if job_id <= 0 then
-          notify("Could not start gitlab.nvim binary", "error")
-          return
-        else
-          local response_ok, response = pcall(curl.get, "localhost:" .. state.PORT .. "/info",
-            { timeout = 750 })
-          if response == nil or not response_ok then
-            notify("The gitlab.nvim server did not respond", "error")
+    local command = state.BIN
+        .. " "
+        .. state.PROJECT_ID
+        .. " "
+        .. state.GITLAB_URL
+        .. " "
+        .. state.PORT
+        .. " "
+        .. state.AUTH_TOKEN
+
+    vim.fn.jobstart(
+      command,
+      {
+        on_stdout = function(job_id)
+          if job_id <= 0 then
+            notify("Could not start gitlab.nvim binary", "error")
             return
+          else
+            local response_ok, response = pcall(
+              curl.get,
+              "localhost:" .. state.PORT .. "/info",
+              { timeout = 750 }
+            )
+            if response == nil or not response_ok then
+              notify("The gitlab.nvim server did not respond", "error")
+              print("Ran command: " .. command)
+              return
+            end
+            local body = response.body
+            local parsed_ok, data = pcall(vim.json.decode, body)
+            if parsed_ok ~= true then
+              notify("The gitlab.nvim server returned an invalid response to the /info endpoint", "error")
+              return
+            end
+            state.INFO = data
+            keymaps.set_keymap_keys(args.keymaps)
+            keymaps.set_keymaps()
           end
-          local body = response.body
-          local parsed_ok, data = pcall(vim.json.decode, body)
-          if parsed_ok ~= true then
-            notify("The gitlab.nvim server returned an invalid response to the /info endpoint", "error")
-            return
-          end
-          state.INFO = data
-          keymaps.set_keymap_keys(args.keymaps)
-          keymaps.set_keymaps()
-        end
-      end
-    })
+        end,
+      }
+    )
   end
 end
 
