@@ -50,16 +50,17 @@ use {
 }
 ```
 
-## Configuring per Gitlab Repository
+## Configuration
 
-By default, the plugin will not connect to a gitlab repository. You must add a `.gitlab.nvim` file to the root of your directory, and provide the project ID of your project. The file might look like this:
+This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, used for self-hosted instances):
 
 ```
 project_id=112415
 auth_token=your_gitlab_token
+gitlab_url=https://my-personal-gitlab-instance.com
 ```
 
-You'll need to have an Gitlab variable to authenticate authenticate with Gitlab's API. If you don't want to write this into a dotfile in your project, you can also provide this as a shell variable, for instance in your `.bashrc` or `.zshrc` file:
+If you don't want to write your authentication token into a dotfile, you may provide it as a shell variable. For instance in your `.bashrc` or `.zshrc` file:
 
 ```bash
 export AUTH_TOKEN="your_gitlab_token"

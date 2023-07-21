@@ -107,29 +107,6 @@ local add_comment_sign = function(line_number)
   vim.fn.sign_place(0, "piet", "piet", bufnr, { lnum = line_number })
 end
 
-local function is_gitlab_repo()
-  local current_dir = vim.fn.getcwd()
-
-  -- check if it contains a .git folder
-  local git_dir = current_dir .. "/.git"
-  if vim.fn.isdirectory(git_dir) == 0 then
-    return false
-  end
-
-  local git_cmd = 'git remote get-url origin'
-  local handle = io.popen(git_cmd)
-  local result = handle:read("*a")
-  handle:close()
-
-  -- check if the remote URL is a Gitlab URL
-  if string.match(result, "gitlab%.com") then
-    return true
-  else
-    return false
-  end
-end
-
-
 local function jump_to_file(filename, line_number)
   if line_number == nil then line_number = 1 end
   vim.api.nvim_command("wincmd l")
@@ -255,7 +232,6 @@ M.format_date = format_date
 M.add_comment_sign = add_comment_sign
 M.jump_to_file = jump_to_file
 M.find_value_by_id = find_value_by_id
-M.is_gitlab_repo = is_gitlab_repo
 M.darken_metadata = darken_metadata
 M.print_success = print_success
 M.print_error = print_error
