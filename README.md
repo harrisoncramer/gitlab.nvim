@@ -66,25 +66,22 @@ If you don't want to write your authentication token into a dotfile, you may pro
 export AUTH_TOKEN="your_gitlab_token"
 ```
 
+By default, the plugin will interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option to the `.gitlab.nvim` configuration file for your project.
+
+```
+project_id=112415
+auth_token=your_gitlab_token
+gitlab_url=https://my-personal-gitlab-instance.com
+base_branch=master
+```
+
 ## Configuring the Plugin
 
-By default, the plugin will interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option to the setup function:
-
-```lua
-require('gitlab').setup({ base_branch = 'master' })
-```
-
-If you are using `main` as your branch, you can call an empty setup function:
-
-```lua
-require('gitlab').setup()
-```
 
 Here is the default setup function:
 
 ```lua
 require("gitlab").setup({
-  base_branch = "main",
   port = 20136, -- The port of the Go server, which runs in the background
   keymaps = {
     popup = { -- The popup for comment creation, editing, and replying

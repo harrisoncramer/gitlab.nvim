@@ -48,6 +48,8 @@ M.setup = function(args)
     build_binary()
   end
 
+  -- Project-specific configuration, like base url, gitlab url,
+  -- base branch (main, master, etc) and authentication token
   local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
   local config_file_content = u.read_file(config_file_path)
   if config_file_content == nil then
@@ -61,41 +63,30 @@ M.setup = function(args)
       property[key] = value
     end
   end
+
   local project_id = property["project_id"]
   local gitlab_url = property["gitlab_url"]
-  if gitlab_url == nil then
-    gitlab_url = "https://gitlab.com"
-  end
-
+  local base_branch = property["base_branch"]
   local auth_token = property["auth_token"]
-  if auth_token == nil then
-    auth_token = os.getenv("GITLAB_TOKEN")
-  end
-
-  if project_id == nil or gitlab_url == nil or auth_token == nil then
-    error("Incomplete or invalid configuration file!")
-  end
 
   state.PROJECT_ID = project_id
-  state.GITLAB_URL = gitlab_url
-  state.AUTH_TOKEN = auth_token
+  state.AUTH_TOKEN = auth_token or os.getenv("GITLAB_TOKEN")
+  state.GITLAB_URL = gitlab_url or "https://gitlab.com"
+  state.BASE_BRANCH = base_branch or "main"
+
+  if state.AUTH_TOKEN == nil then
+    error("Missing authentication token for Gitlab")
+  end
 
   if state.PROJECT_ID == nil then
-    error("No project ID provided!")
+    error("Missing project ID in .gitlab.nvim file.")
   end
 
   if type(tonumber(state.PROJECT_ID)) ~= "number" then
     error("The .gitlab.nvim project file's 'project_id' must be number")
   end
 
-  if state.AUTH_TOKEN == nil then
-    error("No auth token found, in project file or environment")
-  end
-
-  if args.base_branch ~= nil then
-    state.BASE_BRANCH = args.base_branch
-  end
-
+  -- Configuration for the plugin, such as port of server
   state.PORT = args.port or 21036
 
   local command = state.BIN
