@@ -87,7 +87,9 @@ local base_invalid = function()
   local base = state.BASE_BRANCH
   local hasBaseBranch = feature_branch_exists(base)
   if not hasBaseBranch then
-    vim.notify('No base branch. If this is a Gitlab repository, please check your setup function!', vim.log.levels.ERROR)
+    vim.notify(
+      'Could not fetch feature branch. Please check that you have the correct base_branch value set in your .gitlab.nvim configuration file',
+      vim.log.levels.ERROR)
     return true
   end
 end
