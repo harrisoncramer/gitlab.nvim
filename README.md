@@ -106,7 +106,13 @@ require("gitlab").setup({
 
 ## Usage
 
-First, check out the branch that you want to review locally. Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. The `summary` command will pull down the MR description into a buffer so that you can read it:
+First, check out the branch that you want to review locally. 
+
+```
+git checkout feature-branch
+```
+
+Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. The `summary` command will pull down the MR description into a buffer so that you can read it:
 
 ```lua
 require("gitlab").summary()
