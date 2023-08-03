@@ -74,6 +74,14 @@ M.setup = function(args)
   state.GITLAB_URL = gitlab_url or "https://gitlab.com"
   state.BASE_BRANCH = base_branch or "main"
 
+  local current_branch_raw = io.popen("git rev-parse --abbrev-ref HEAD"):read("*a")
+  local current_branch = string.gsub(current_branch_raw, "\n", "")
+
+  if current_branch == state.BASE_BRANCH then
+    return
+  end
+
+
   if state.AUTH_TOKEN == nil then
     error("Missing authentication token for Gitlab")
   end
