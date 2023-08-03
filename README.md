@@ -83,6 +83,7 @@ Here is the default setup function:
 ```lua
 require("gitlab").setup({
   port = 20136, -- The port of the Go server, which runs in the background
+  log_path = vim.fn.stdpath("cache"), -- Log path for the Go server
   keymaps = {
     popup = { -- The popup for comment creation, editing, and replying
       exit = "<Esc>",

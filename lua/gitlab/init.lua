@@ -96,6 +96,7 @@ M.setup = function(args)
 
   -- Configuration for the plugin, such as port of server
   state.PORT = args.port or 21036
+  state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
 
   local command = state.BIN
       .. " "
@@ -106,6 +107,8 @@ M.setup = function(args)
       .. state.PORT
       .. " "
       .. state.AUTH_TOKEN
+      .. " "
+      .. state.LOG_PATH
 
   vim.fn.jobstart(
     command,

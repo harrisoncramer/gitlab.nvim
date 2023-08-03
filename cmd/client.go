@@ -24,7 +24,9 @@ type Logger struct {
 
 func (l Logger) Printf(s string, args ...interface{}) {
 	logString := fmt.Sprintf(s+"\n", args...)
-	file, err := os.OpenFile("./logs", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logPath := os.Args[len(os.Args)-1]
+
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
