@@ -19,15 +19,20 @@ M.run_job   = function(endpoint, method, body, callback)
         if callback ~= nil then
           callback(data)
         else
-          vim.notify(data.message, vim.log.levels.DEBUG)
+          vim.defer_fn(function()
+            vim.notify(data.message, vim.log.levels.DEBUG)
+          end, 0)
         end
       else
-        vim.notify("Could not parse command output!", vim.log.levels.ERROR)
+        vim.defer_fn(function()
+          vim.notify("Could not parse command output!", vim.log.levels.ERROR)
+        end, 0)
       end
     end,
     on_stderr = function(_, output)
-      vim.notify("Could not run command!", vim.log.levels.ERROR)
-      error(output)
+      vim.defer_fn(function()
+        vim.notify("Could not run command!", vim.log.levels.ERROR)
+      end, 0)
     end
   }):start()
 end
