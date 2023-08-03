@@ -52,6 +52,7 @@ func (c *Client) Init(branchName string) error {
 	}
 
 	options := gitlab.ListMergeRequestsOptions{
+		Scope:        gitlab.String("all"),
 		State:        gitlab.String("opened"),
 		SourceBranch: &branchName,
 	}
