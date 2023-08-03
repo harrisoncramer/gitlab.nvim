@@ -65,6 +65,13 @@ M.setup = function(args)
     state.BASE_BRANCH = args.base_branch
   end
 
+  local current_branch_raw = io.popen("git rev-parse --abbrev-ref HEAD"):read("*a")
+  local current_branch = string.gsub(current_branch_raw, "\n", "")
+
+  if current_branch == state.BASE_BRANCH then
+    return
+  end
+
   if u.is_gitlab_repo() then
     state.PORT = args.port or 21036
     vim.fn.jobstart(state.BIN .. " " .. state.PROJECT_ID .. " " .. state.PORT, {
