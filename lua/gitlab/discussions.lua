@@ -1,22 +1,22 @@
-local u            = require("gitlab.utils")
-local NuiTree      = require("nui.tree")
-local job          = require("gitlab.job")
-local state        = require("gitlab.state")
-local Job          = require("plenary.job")
-local Popup        = require("nui.popup")
-local keymaps      = require("gitlab.keymaps")
+local u          = require("gitlab.utils")
+local NuiTree    = require("nui.tree")
+local job        = require("gitlab.job")
+local state      = require("gitlab.state")
+local Job        = require("plenary.job")
+local Popup      = require("nui.popup")
+local keymaps    = require("gitlab.keymaps")
 
-local M            = {}
+local M          = {}
 
-local replyPopup   = Popup(u.create_popup_state("Reply", "80%", "80%"))
+local replyPopup = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
-M.reply            = function()
+M.reply          = function()
   if u.base_invalid() then return end
   replyPopup:mount()
   keymaps.set_popup_keymaps(replyPopup, M.send_reply)
 end
 
-M.send_reply       = function(text)
+M.send_reply     = function(text)
   local escapedText = string.gsub(text, "\n", "\\n")
   local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, escapedText)
   job.run_job("reply", "POST", json, function(data)
@@ -31,6 +31,15 @@ M.send_reply       = function(text)
       vim.notify("Sent reply!", vim.log.levels.INFO)
     end)
   end)
+end
+
+-- Adds node to discussion tree
+local function addToDiscussionTree(i, note, discussionChildren)
+  local note_node = M.build_note(note)
+  if i == 1 then
+    note_node:expand()
+  end
+  table.insert(discussionChildren, note_node)
 end
 
 -- Places all of the discussions into a readable list
@@ -63,11 +72,10 @@ M.list_discussions = function()
           for i, discussion in ipairs(data.discussions) do
             local discussionChildren = {}
             for _, note in ipairs(discussion.notes) do
-              local note_node = M.build_note(note)
-              if i == 1 then
-                note_node:expand()
+              if note.position then
+                addToDiscussionTree(i, note, discussionChildren)
+              else
               end
-              table.insert(discussionChildren, note_node)
             end
             local discussionNode = NuiTree.Node({
                 text = discussion.id,
@@ -87,7 +95,6 @@ M.list_discussions = function()
           state.tree:render()
           vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
           u.darken_metadata(buf, '')
-          M.jump_to_file()
         end)
       end
     end,
@@ -97,6 +104,7 @@ M.list_discussions = function()
     end,
   }):start()
 end
+
 
 M.jump_to_file     = function()
   local node = state.tree:get_node()
@@ -189,14 +197,22 @@ M.build_note       = function(note)
   local noteHeader = "@" ..
       note.author.username .. " on " .. u.format_date(note.created_at)
 
-  local line_number = note.position.new_line or note.position.old_line
+  local file_name
+  local line_number
+  if (type(note.position) == 'table') then
+    line_number = note.position.new_line or note.position.old_line
+    file_name = note.position.new_path
+  end
+
+
   local note_node = NuiTree.Node(
     {
       text = noteHeader,
       id = note.id,
-      file_name = note.position.new_path,
+      file_name = file_name,
       line_number = line_number,
-      is_note = true
+      is_note = true,
+      is_code_comment = type(note.position) == 'table'
     }, noteTextNodes)
 
   return note_node
