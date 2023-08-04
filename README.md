@@ -12,7 +12,8 @@ https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-
 
 ## Requirements
 
-- Go
+- <a href="https://go.dev/">Go</a>
+- <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
 - <a href="https://github.com/MunifTanjim/nui.nvim">nui.nvim</a>
 - <a href="https://github.com/nvim-lua/plenary.nvim">plenary.nvim</a>
 
