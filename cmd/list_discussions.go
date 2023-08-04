@@ -44,18 +44,18 @@ func (c *Client) ListDiscussions() ([]*gitlab.Discussion, int, error) {
 		return nil, res.Response.StatusCode, fmt.Errorf("Listing discussions failed: %w", err)
 	}
 
-	var diffNotes []*gitlab.Discussion
+	var realDiscussions []*gitlab.Discussion
 	for i := 0; i < len(discussions); i++ {
 		notes := discussions[i].Notes
 		for j := 0; j < len(notes); j++ {
-			if !notes[j].System {
-				diffNotes = append(diffNotes, discussions[i])
+			if notes[j].Type == gitlab.NoteTypeValue("DiffNote") {
+				realDiscussions = append(realDiscussions, discussions[i])
 				break
 			}
 		}
 	}
 
-	sortedDiscussions := SortableDiscussions(diffNotes)
+	sortedDiscussions := SortableDiscussions(realDiscussions)
 	sort.Sort(sortedDiscussions)
 
 	return sortedDiscussions, http.StatusOK, nil
