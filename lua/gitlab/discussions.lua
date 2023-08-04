@@ -49,6 +49,11 @@ M.list_discussions = function()
         end
         M.discussions = data.discussions
         vim.schedule(function()
+          if type(data.discussions) ~= "table" then
+            vim.notify("No discussions for this MR")
+            return
+          end
+
           vim.cmd.tabnew()
           local buf = vim.api.nvim_create_buf(false, true)
           vim.api.nvim_command("aboveleft vsplit")
