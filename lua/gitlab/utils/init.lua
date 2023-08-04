@@ -131,7 +131,7 @@ end
 
 
 local function jump_to_file(filename, line_number)
-  if line_number == nil then line_number = 1 end
+  if line_number == nil or filename == nil then return end
   vim.api.nvim_command("wincmd l")
   local bufnr = vim.fn.bufnr(filename)
   if bufnr ~= -1 then
