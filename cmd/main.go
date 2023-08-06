@@ -24,21 +24,21 @@ func main() {
 	/* Initialize Gitlab client */
 	var c Client
 
-	if err := c.Init(branchName); err != nil {
-		log.Fatalf("Failure: Failed to iniialize client: %v", err)
+	if err := c.init(branchName); err != nil {
+		log.Fatalf("Failure: Failed to initialize client: %v", err)
 	}
 
 	m := http.NewServeMux()
 	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
 	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
-	m.Handle("/star", withGitlabContext(http.HandlerFunc(StarHandler), c))
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
 	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
 	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 
+	port := fmt.Sprintf(":%s", os.Args[3])
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", os.Args[2]),
+		Addr:    port,
 		Handler: m,
 	}
 
