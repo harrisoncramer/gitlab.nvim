@@ -87,7 +87,9 @@ local base_invalid = function()
   local base = state.BASE_BRANCH
   local hasBaseBranch = feature_branch_exists(base)
   if not hasBaseBranch then
-    vim.notify('No base branch. If this is a Gitlab repository, please check your setup function!', vim.log.levels.ERROR)
+    vim.notify(
+      'Could not fetch feature branch. Please check that you have the correct base_branch value set in your .gitlab.nvim configuration file',
+      vim.log.levels.ERROR)
     return true
   end
 end
@@ -106,29 +108,6 @@ local add_comment_sign = function(line_number)
   vim.cmd("sign define piet text= texthl=Substitute")
   vim.fn.sign_place(0, "piet", "piet", bufnr, { lnum = line_number })
 end
-
-local function is_gitlab_repo()
-  local current_dir = vim.fn.getcwd()
-
-  -- check if it contains a .git folder
-  local git_dir = current_dir .. "/.git"
-  if vim.fn.isdirectory(git_dir) == 0 then
-    return false
-  end
-
-  local git_cmd = 'git remote get-url origin'
-  local handle = io.popen(git_cmd)
-  local result = handle:read("*a")
-  handle:close()
-
-  -- check if the remote URL is a Gitlab URL
-  if string.match(result, "gitlab%.com") then
-    return true
-  else
-    return false
-  end
-end
-
 
 local function jump_to_file(filename, line_number)
   if line_number == nil then line_number = 1 end
@@ -255,7 +234,6 @@ M.format_date = format_date
 M.add_comment_sign = add_comment_sign
 M.jump_to_file = jump_to_file
 M.find_value_by_id = find_value_by_id
-M.is_gitlab_repo = is_gitlab_repo
 M.darken_metadata = darken_metadata
 M.print_success = print_success
 M.print_error = print_error

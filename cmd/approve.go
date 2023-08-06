@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -18,25 +19,22 @@ func (c *Client) Approve() (string, int, error) {
 }
 
 func ApproveHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	client := r.Context().Value("client").(Client)
-	msg, status, err := client.Approve()
-	w.WriteHeader(status)
+	msg, status, err := c.Approve()
 
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  status,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not approve MR", http.StatusBadRequest)
 		return
 	}
 
+	/* TODO: Check for non-200 status codes */
+	w.WriteHeader(status)
 	response := SuccessResponse{
 		Message: msg,
 		Status:  http.StatusOK,

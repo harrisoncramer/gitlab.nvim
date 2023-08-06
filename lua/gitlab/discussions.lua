@@ -18,7 +18,10 @@ end
 
 M.send_reply       = function(text)
   local escapedText = string.gsub(text, "\n", "\\n")
-  local json = string.format('{"discussion_id": "%s", "reply": "%s"}', state.ACTIVE_DISCUSSION, escapedText)
+
+  local jsonTable = { discussion_id = state.ACTIVE_DISCUSSION, reply = escapedText }
+  local json = vim.json.encode(jsonTable)
+
   job.run_job("reply", "POST", json, function(data)
     local note_node = M.build_note(data.note)
     note_node:expand()

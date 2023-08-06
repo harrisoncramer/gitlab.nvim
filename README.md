@@ -19,13 +19,7 @@ https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-
 
 ## Installation
 
-You'll need to have an environment variable available in your shell that you use to authenticate with Gitlab's API. It should look like this:
-
-```bash
-export GITLAB_TOKEN="your_gitlab_token"
-```
-
-Then install the plugin. Here's what it looks like with <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
+With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 
 ```lua
 return {
@@ -57,32 +51,40 @@ use {
 }
 ```
 
-## Configuring per Gitlab Repository
+## Configuration
 
-By default, the plugin will not connect to a gitlab repository. You must add a `.gitlab.nvim` file to the root of your directory. The plugin will read that file and use it as the project ID. The file should only contain the ID of the project:
+This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, used for self-hosted instances):
 
 ```
-112415
+project_id=112415
+auth_token=your_gitlab_token
+gitlab_url=https://my-personal-gitlab-instance.com
 ```
 
-The tool will look for and interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option:
+If you don't want to write your authentication token into a dotfile, you may provide it as a shell variable. For instance in your `.bashrc` or `.zshrc` file:
 
-```lua
-require('gitlab').setup({ base_branch = 'master' })
+```bash
+export AUTH_TOKEN="your_gitlab_token"
 ```
 
-If you are using `main` as your branch and you add a `.gitlab.nvim` configuration file, you can call an empty setup function and the plugin will work:
+By default, the plugin will interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option to the `.gitlab.nvim` configuration file for your project.
 
-```lua
-require('gitlab').setup()
 ```
+project_id=112415
+auth_token=your_gitlab_token
+gitlab_url=https://my-personal-gitlab-instance.com
+base_branch=master
+```
+
+## Configuring the Plugin
+
 
 Here is the default setup function:
 
 ```lua
 require("gitlab").setup({
-  base_branch = "main",
   port = 20136, -- The port of the Go server, which runs in the background
+  log_path = vim.fn.stdpath("cache"), -- Log path for the Go server
   keymaps = {
     popup = { -- The popup for comment creation, editing, and replying
       exit = "<Esc>",
@@ -189,3 +191,18 @@ Which looks like this in my editor:
 <img width="1727" alt="Screenshot 2023-04-21 at 6 37 39 PM" src="https://user-images.githubusercontent.com/32515581/233744560-0d718c92-f810-4fde-b40d-8b6f42eb6f0e.png">
 
 This is useful if you plan to leave comments on the diff, because this plugin currently only supports leaving comments on lines that have been added or modified. I'm currenly working on adding functionality to allow users to leave comments on any lines, including those that have been deleted or untouched.
+
+
+## Debugging
+
+This plugin is built on top of a Golang server. If you want to debug that server, you can run it independently of Neovim. For instance, to start it up in a certain project, navigate to your plugin directory, and build the binary:
+
+```bash
+$ cd ~/.local/share/nvim/lazy/gitlab.nvim
+$ cd cmd
+$ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
+$ cd ~/path-to-your-project
+$ dlv exec ./bin -- 41057709 https://www.gitlab.com 21036 your-gitlab-token
+```
+
+You can send JSON to it like you would any other REST server.

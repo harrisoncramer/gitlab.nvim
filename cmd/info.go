@@ -1,26 +1,24 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
-const mrUrl = "https://gitlab.com/api/v4/projects/%s/merge_requests/%d"
+const mrUrl = "%s/api/v4/projects/%s/merge_requests/%d"
 
 func (c *Client) Info() ([]byte, error) {
 
-	url := fmt.Sprintf(mrUrl, c.projectId, c.mergeId)
+	url := fmt.Sprintf(mrUrl, c.gitlabInstance, c.projectId, c.mergeId)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to build read request: %w", err)
 	}
 
-	req.Header.Set("PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN"))
+	req.Header.Set("PRIVATE-TOKEN", c.authToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
@@ -46,19 +44,17 @@ func (c *Client) Info() ([]byte, error) {
 }
 
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	client := r.Context().Value("client").(Client)
-	msg, err := client.Info()
+	msg, err := c.Info()
 	if err != nil {
-		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.Marshal(errResp)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(response)
+		c.handleError(w, err, "Could not get info", http.StatusBadRequest)
 		return
 	}
 
