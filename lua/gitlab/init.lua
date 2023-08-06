@@ -52,7 +52,7 @@ M.setup            = function(args)
         return
       else
         job.run_job("info", "GET", nil, function(data)
-          state.INFO = data
+          state.INFO = data.info
           keymaps.set_keymap_keys(args.keymaps)
           keymaps.set_keymaps()
         end)

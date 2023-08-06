@@ -1,13 +1,21 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 const mrUrl = "%s/api/v4/projects/%s/merge_requests/%d"
+
+type InfoResponse struct {
+	SuccessResponse
+	Info *gitlab.MergeRequest `json:"info"`
+}
 
 func (c *Client) Info() ([]byte, error) {
 
@@ -58,6 +66,21 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var mergeRequest *gitlab.MergeRequest
+	err = json.Unmarshal(msg, &mergeRequest)
+	if err != nil {
+		c.handleError(w, err, "Could not unmarshal data from merge requests", http.StatusBadRequest)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(msg)
+	response := InfoResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Merge requests retrieved",
+			Status:  http.StatusOK,
+		},
+		Info: mergeRequest,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

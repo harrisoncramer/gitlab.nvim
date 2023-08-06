@@ -20,7 +20,7 @@ M.run_job   = function(endpoint, method, body, callback)
       vim.defer_fn(function()
         local data_ok, data = pcall(vim.json.decode, output)
         if data_ok and data ~= nil then
-          local status = (data.status >= 200 and data.status < 300) and "success" or "error"
+          local status = (tonumber(data.status) >= 200 and tonumber(data.status) < 300) and "success" or "error"
           if status == "success" and callback ~= nil then
             callback(data)
           elseif status == "success" then
