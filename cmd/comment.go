@@ -63,10 +63,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -75,26 +72,20 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	var deleteCommentRequest DeleteCommentRequest
 	err = json.Unmarshal(body, &deleteCommentRequest)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read JSON from request"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
 	res, err := c.git.Discussions.DeleteMergeRequestDiscussionNote(c.projectId, c.mergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
-	w.WriteHeader(res.Response.StatusCode)
-
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  res.Response.StatusCode,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not delete comment", res.StatusCode)
 		return
 	}
 
+	w.WriteHeader(res.StatusCode)
+
+	/* TODO: Check status code */
 	response := SuccessResponse{
 		Message: "Comment deleted succesfully",
 		Status:  http.StatusOK,
@@ -109,10 +100,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -121,10 +109,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	var postCommentRequest PostCommentRequest
 	err = json.Unmarshal(body, &postCommentRequest)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -134,24 +119,19 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  res.StatusCode,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not post comment", res.StatusCode)
 		return
 	}
 
+	w.WriteHeader(res.StatusCode)
+
+	/* TODO: Check for bad status codes */
 	response := SuccessResponse{
 		Message: "Comment created succesfully",
 		Status:  http.StatusOK,
 	}
 
 	json.NewEncoder(w).Encode(response)
-
-	// w.WriteHeader(res.StatusCode)
-	// io.Copy(w, res.Body)
-
 }
 
 func EditComment(w http.ResponseWriter, r *http.Request) {
@@ -160,10 +140,7 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -172,10 +149,7 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	var editCommentRequest EditCommentRequest
 	err = json.Unmarshal(body, &editCommentRequest)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not unmarshal data from request body"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -190,11 +164,7 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  res.StatusCode,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not edit comment", res.StatusCode)
 		return
 	}
 

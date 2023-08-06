@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -19,25 +20,23 @@ func (c *Client) Revoke() (string, int, error) {
 }
 
 func RevokeHandler(w http.ResponseWriter, r *http.Request) {
+	c := r.Context().Value("client").(Client)
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodPost {
+		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	client := r.Context().Value("client").(Client)
-	msg, status, err := client.Revoke()
-	w.WriteHeader(status)
+	msg, status, err := c.Revoke()
 
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  status,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not revoke approval", http.StatusBadRequest)
 		return
 	}
 
+	w.WriteHeader(status)
 	response := SuccessResponse{
 		Message: msg,
 		Status:  http.StatusOK,

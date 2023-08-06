@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 
@@ -35,7 +37,7 @@ func (l Logger) Printf(s string, args ...interface{}) {
 }
 
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
-func (c *Client) Init(branchName string) error {
+func (c *Client) init(branchName string) error {
 
 	if len(os.Args) < 5 {
 		return errors.New("Must provide project ID, gitlab instance, port, and auth token!")
@@ -95,4 +97,13 @@ func (c *Client) Init(branchName string) error {
 	c.git = git
 
 	return nil
+}
+
+func (c *Client) handleError(w http.ResponseWriter, err error, message string, status int) {
+	w.WriteHeader(status)
+	response := ErrorResponse{
+		Message: message,
+		Details: err.Error(),
+	}
+	json.NewEncoder(w).Encode(response)
 }

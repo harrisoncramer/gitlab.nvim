@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -45,19 +44,17 @@ func (c *Client) Info() ([]byte, error) {
 }
 
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(Client)
+
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	client := r.Context().Value("client").(Client)
-	msg, err := client.Info()
+	msg, err := c.Info()
 	if err != nil {
-		errResp := map[string]string{"message": err.Error()}
-		response, _ := json.Marshal(errResp)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(response)
+		c.handleError(w, err, "Could not get info", http.StatusBadRequest)
 		return
 	}
 

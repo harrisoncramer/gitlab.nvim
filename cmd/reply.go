@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,20 +39,17 @@ func (c *Client) Reply(r ReplyRequest) (*gitlab.Note, int, error) {
 }
 
 func ReplyHandler(w http.ResponseWriter, r *http.Request) {
+	c := r.Context().Value("client").(Client)
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read request body"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -60,25 +58,18 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &replyRequest)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		errMsg := map[string]string{"message": "Could not read JSON from request"}
-		jsonMsg, _ := json.Marshal(errMsg)
-		w.Write(jsonMsg)
+		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
 	note, status, err := c.Reply(replyRequest)
-	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
-		response := ErrorResponse{
-			Message: err.Error(),
-			Status:  status,
-		}
-		json.NewEncoder(w).Encode(response)
+		c.handleError(w, err, "Could not send reply", status)
 		return
 	}
 
+	w.WriteHeader(status)
 	response := ReplyResponse{
 		SuccessResponse: SuccessResponse{
 			Message: fmt.Sprintf("Replied: %s", note.Body),
