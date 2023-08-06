@@ -54,7 +54,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := c.Info()
 	if err != nil {
-		c.handleError(w, err, "Could not get info", http.StatusBadRequest)
+		c.handleError(w, err, "Could not get project info and initialize gitlab.nvim plugin", http.StatusBadRequest)
 		return
 	}
 

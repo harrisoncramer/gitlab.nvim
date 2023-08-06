@@ -44,38 +44,21 @@ M.setup            = function(args)
       .. " "
       .. state.LOG_PATH
 
-  vim.fn.jobstart(
-    command,
-    {
-      on_stdout = function(job_id)
-        if job_id <= 0 then
-          vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
-          return
-        else
-          local response_ok, response = pcall(
-            curl.get,
-            "localhost:" .. state.PORT .. "/info",
-            { timeout = 750 }
-          )
-          if response == nil or not response_ok then
-            vim.notify("The gitlab.nvim server did not respond", vim.log.levels.ERROR)
-            print("Ran command: " .. command)
-            return
-          end
-          local body = response.body
-          local parsed_ok, data = pcall(vim.json.decode, body)
-          if parsed_ok ~= true then
-            vim.notify("The gitlab.nvim server returned an invalid response to the /info endpoint",
-              vim.log.levels.ERROR)
-            return
-          end
+
+  vim.fn.jobstart(command, {
+    on_stdout = function(job_id)
+      if job_id <= 0 then
+        vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+        return
+      else
+        job.run_job("info", "GET", nil, function(data)
           state.INFO = data
           keymaps.set_keymap_keys(args.keymaps)
           keymaps.set_keymaps()
-        end
-      end,
-    }
-  )
+        end)
+      end
+    end,
+  })
 end
 
 -- Builds the Go binary

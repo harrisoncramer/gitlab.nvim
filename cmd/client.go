@@ -104,6 +104,7 @@ func (c *Client) handleError(w http.ResponseWriter, err error, message string, s
 	response := ErrorResponse{
 		Message: message,
 		Details: err.Error(),
+		Status:  status,
 	}
 	json.NewEncoder(w).Encode(response)
 }
