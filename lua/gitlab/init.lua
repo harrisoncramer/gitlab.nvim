@@ -44,7 +44,6 @@ M.setup            = function(args)
       .. " "
       .. state.LOG_PATH
 
-
   vim.fn.jobstart(command, {
     on_stdout = function(job_id)
       if job_id <= 0 then
@@ -58,6 +57,9 @@ M.setup            = function(args)
         end)
       end
     end,
+    on_stderr = function(_, error)
+      vim.notify(error[1], vim.log.levels.ERROR)
+    end
   })
 end
 
