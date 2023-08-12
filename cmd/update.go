@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -16,7 +17,7 @@ type UpdateRequest struct {
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPut {
 		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -36,11 +37,16 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mergeRequestOptions := gitlab.UpdateMergeRequestOptions{
-		Description: gitlab.String(updateRequest.Description),
+	/* TODO: The go-gitlab library really doesn't like setting a custom base URL
+	   with this PUT call, for some reason it breaks redirects. This API call
+	   will fail for anyone with a self-hosted Gitlab instance, see this issue
+	   on the go-gitlab library: https://github.com/xanzy/go-gitlab/issues/1771 😢 */
+	git, err := gitlab.NewClient(c.authToken)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
 	}
 
-	_, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &mergeRequestOptions)
+	_, res, err := git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{Description: &updateRequest.Description})
 
 	if err != nil {
 		c.handleError(w, err, "Could not edit merge request", http.StatusBadRequest)
@@ -52,7 +58,6 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* TODO: Check for non 200 codes */
 	w.WriteHeader(http.StatusOK)
 
 	response := SuccessResponse{
