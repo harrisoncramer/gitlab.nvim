@@ -14,6 +14,11 @@ type UpdateRequest struct {
 	Description string `json:"description"`
 }
 
+type UpdateResponse struct {
+	SuccessResponse
+	MergeRequest *gitlab.MergeRequest `json:"mr"`
+}
+
 func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
@@ -46,7 +51,7 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 
-	_, res, err := git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{Description: &updateRequest.Description})
+	mr, res, err := git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{Description: &updateRequest.Description})
 
 	if err != nil {
 		c.handleError(w, err, "Could not edit merge request", http.StatusBadRequest)
@@ -60,9 +65,12 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	response := SuccessResponse{
-		Message: "Merge request updated",
-		Status:  http.StatusOK,
+	response := UpdateResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Merge request updated",
+			Status:  http.StatusOK,
+		},
+		MergeRequest: mr,
 	}
 
 	json.NewEncoder(w).Encode(response)

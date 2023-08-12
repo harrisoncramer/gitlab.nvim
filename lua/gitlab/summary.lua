@@ -25,14 +25,11 @@ M.summary          = function()
 end
 
 M.edit_summary     = function(text)
-  local escapedText = string.gsub(text, "\n", "\\n")
-  local jsonTable = { description = escapedText }
+  local jsonTable = { description = text }
   local json = vim.json.encode(jsonTable)
   job.run_job("mr", "PUT", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
-    job.run_job("info", "GET", nil, function(data) -- Refresh state after PUT
-      state.INFO = data.info
-    end)
+    state.INFO.description = data.mr.description
   end)
 end
 
