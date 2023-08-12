@@ -1,4 +1,3 @@
-local curl         = require("plenary.curl")
 local state        = require("gitlab.state")
 local discussions  = require("gitlab.discussions")
 local summary      = require("gitlab.summary")
@@ -128,6 +127,7 @@ M.setPluginState   = function(args)
   -- Configuration for the plugin, such as port of server
   state.PORT = args.port or 21036
   state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
+  -- state.AUTHOR = args.author -- This property is optional, but recommended
 
   return true
 end

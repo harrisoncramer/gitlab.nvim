@@ -1,3 +1,4 @@
+local job          = require("gitlab.job")
 local state        = require("gitlab.state")
 local Popup        = require("nui.popup")
 local u            = require("gitlab.utils")
@@ -18,10 +19,16 @@ M.summary          = function()
   end
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-    vim.api.nvim_buf_set_option(currentBuffer, "modifiable", false)
     summaryPopup.border:set_text("top", title, "center")
-    keymaps.set_popup_keymaps(summaryPopup)
+    keymaps.set_popup_keymaps(summaryPopup, M.edit_summary)
   end)
+end
+
+M.edit_summary     = function(text)
+  local escapedText = string.gsub(text, "\n", "\\n")
+  local jsonTable = { description = escapedText }
+  local json = vim.json.encode(jsonTable)
+  job.run_job("mr", "PUT", json)
 end
 
 return M
