@@ -2,11 +2,9 @@
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
-- Create, edit, and delete comments on an MR
-- Reply to exisiting comments
-- Read MR summaries
-- Approve an MR
-- Revoke approval for an MR
+- Create, edit, delete, and reply to comments on an MR
+- Read and Edit an MR description
+- Approve/Revoke Approval for an MR
 
 https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-9d2d-5e875ab2fb40.mp4
 
@@ -115,10 +113,10 @@ First, check out the branch that you want to review locally.
 git checkout feature-branch
 ```
 
-Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. The `summary` command will pull down the MR description into a buffer so that you can read it:
+Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. The `description` command will pull down the MR description into a buffer so that you can read it:
 
 ```lua
-require("gitlab").summary()
+require("gitlab").description()
 ```
 
 The `approve` command will approve the merge request for the current branch:
@@ -161,7 +159,7 @@ The plugin does not set up any keybindings outside of these buffers, you need to
 
 ```lua
 local gitlab = require("gitlab")
-vim.keymap.set("n", "<leader>gls", gitlab.summary)
+vim.keymap.set("n", "<leader>gls", gitlab.descriptio)
 vim.keymap.set("n", "<leader>glA", gitlab.approve)
 vim.keymap.set("n", "<leader>glR", gitlab.revoke)
 vim.keymap.set("n", "<leader>glc", gitlab.create_comment)

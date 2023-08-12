@@ -1,6 +1,6 @@
 local state        = require("gitlab.state")
 local discussions  = require("gitlab.discussions")
-local summary      = require("gitlab.summary")
+local description  = require("gitlab.description")
 local keymaps      = require("gitlab.keymaps")
 local comment      = require("gitlab.comment")
 local job          = require("gitlab.job")
@@ -8,7 +8,7 @@ local u            = require("gitlab.utils")
 
 -- Root Module Scope
 local M            = {}
-M.summary          = summary.summary
+M.description      = description.description
 M.approve          = job.approve
 M.revoke           = job.revoke
 M.create_comment   = comment.create_comment
