@@ -17,6 +17,7 @@ M.list_discussions = discussions.list_discussions
 M.edit_comment     = comment.edit_comment
 M.delete_comment   = comment.delete_comment
 M.reply            = discussions.reply
+M.state            = state
 
 -- Builds the binary (if not built); starts the Go server; calls the /info endpoint,
 -- which sets the Gitlab project's information in gitlab.nvim's INFO module
