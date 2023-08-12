@@ -162,7 +162,7 @@ The plugin does not set up any keybindings outside of these buffers, you need to
 
 ```lua
 local gitlab = require("gitlab")
-vim.keymap.set("n", "<leader>gls", gitlab.descriptio)
+vim.keymap.set("n", "<leader>gls", gitlab.description)
 vim.keymap.set("n", "<leader>glA", gitlab.approve)
 vim.keymap.set("n", "<leader>glR", gitlab.revoke)
 vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
