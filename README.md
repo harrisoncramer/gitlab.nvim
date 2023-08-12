@@ -96,6 +96,9 @@ require("gitlab").setup({
       delete_comment = "dd",
       reply_to_comment = "r",
       toggle_node = "t",
+      position = "left", -- "top", "right", "bottom" or "left"
+      size = "20%", -- Size of split
+      relative = "editor" -- Position relative to "editor" or "window"
     },
     dialogue = { -- The confirmation dialogue for deleting comments
       focus_next = { "j", "<Down>", "<Tab>" },

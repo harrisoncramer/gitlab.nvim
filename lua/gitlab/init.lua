@@ -134,9 +134,14 @@ M.setPluginConfiguration = function(args)
     error("The .gitlab.nvim project file's 'project_id' must be number")
   end
 
-  -- Configuration for the plugin, such as port of server
+  -- Configuration for the plugin, such as port of server, layout, etc
   state.PORT = args.port or 21036
   state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
+  state.DISCUSSION_SPLIT = {
+    relative = args.discussion_tree and args.discussion_tree.relative or "editor",
+    position = args.discussion_tree and args.discussion_tree.position or "left",
+    size = args.discussion_tree and args.discussion_tree.size or "20%",
+  }
 
   return true
 end

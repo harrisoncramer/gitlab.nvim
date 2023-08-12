@@ -1,5 +1,6 @@
 local u            = require("gitlab.utils")
 local NuiTree      = require("nui.tree")
+local NuiSplit     = require("nui.split")
 local job          = require("gitlab.job")
 local state        = require("gitlab.state")
 local Job          = require("plenary.job")
@@ -57,11 +58,12 @@ M.list_discussions = function()
             return
           end
 
-          vim.cmd.tabnew()
-          local buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_command("aboveleft vsplit")
-          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-          vim.api.nvim_set_current_buf(buf)
+          local splitState = state.DISCUSSION_SPLIT
+          splitState.buf_options = { modifiable = false }
+          local split = NuiSplit(splitState)
+          split:mount()
+
+          local buf = split.bufnr
           local allDiscussions = {}
           for i, discussion in ipairs(data.discussions) do
             local discussionChildren = {}
@@ -90,7 +92,6 @@ M.list_discussions = function()
           state.tree:render()
           vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
           u.darken_metadata(buf, '')
-          M.jump_to_file()
         end)
       end
     end,
@@ -104,6 +105,14 @@ end
 M.jump_to_file     = function()
   local node = state.tree:get_node()
   if node == nil then return end
+
+  local wins = vim.api.nvim_list_wins()
+  local discussion_win = vim.api.nvim_get_current_win()
+  for _, winId in ipairs(wins) do
+    if winId ~= discussion_win then
+      vim.api.nvim_set_current_win(winId)
+    end
+  end
 
   local childrenIds = node:get_child_ids()
   -- We have selected a note node
