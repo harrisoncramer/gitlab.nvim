@@ -1,4 +1,3 @@
-local curl         = require("plenary.curl")
 local state        = require("gitlab.state")
 local discussions  = require("gitlab.discussions")
 local summary      = require("gitlab.summary")
@@ -7,16 +6,30 @@ local comment      = require("gitlab.comment")
 local job          = require("gitlab.job")
 local u            = require("gitlab.utils")
 
+-- Ensures the plugin's state is initialized prior to running other calls. This state contains the basic information about the current merge request, like description, author, etc
+local ensureState  = function(callback)
+  return function()
+    if type(state.INFO) ~= "table" then
+      job.run_job("info", "GET", nil, function(data)
+        state.INFO = data.info
+        callback()
+      end)
+    else
+      callback()
+    end
+  end
+end
+
 -- Root Module Scope
 local M            = {}
-M.summary          = summary.summary
-M.approve          = job.approve
-M.revoke           = job.revoke
-M.create_comment   = comment.create_comment
-M.list_discussions = discussions.list_discussions
-M.edit_comment     = comment.edit_comment
-M.delete_comment   = comment.delete_comment
-M.reply            = discussions.reply
+M.summary          = ensureState(summary.summary)
+M.approve          = ensureState(job.approve)
+M.revoke           = ensureState(job.revoke)
+M.create_comment   = ensureState(comment.create_comment)
+M.list_discussions = ensureState(discussions.list_discussions)
+M.edit_comment     = ensureState(comment.edit_comment)
+M.delete_comment   = ensureState(comment.delete_comment)
+M.reply            = ensureState(discussions.reply)
 M.state            = state
 
 -- Builds the binary (if not built); starts the Go server; calls the /info endpoint,
@@ -51,11 +64,8 @@ M.setup            = function(args)
         vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
         return
       else
-        job.run_job("info", "GET", nil, function(data)
-          state.INFO = data.info
-          keymaps.set_keymap_keys(args.keymaps)
-          keymaps.set_keymaps()
-        end)
+        keymaps.set_keymap_keys(args.keymaps)
+        keymaps.set_keymaps()
       end
     end,
     on_stderr = function(_, error)
