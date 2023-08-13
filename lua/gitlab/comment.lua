@@ -1,11 +1,11 @@
 local Menu               = require("nui.menu")
 local NuiTree            = require("nui.tree")
+local Popup              = require("nui.popup")
 local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
 local discussions        = require("gitlab.discussions")
 local keymaps            = require("gitlab.keymaps")
-local Popup              = require("nui.popup")
 local M                  = {}
 
 local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
@@ -40,7 +40,10 @@ M.confirm_create_comment = function(text)
   local jsonTable = { line_number = current_line_number, file_name = relative_file_path, comment = text }
   local json = vim.json.encode(jsonTable)
 
-  job.run_job("comment", "POST", json)
+  job.run_job("comment", "POST", json, function()
+    vim.notify("Comment created")
+    discussions.refresh_tree()
+  end)
 end
 
 -- Function to open the deletion popup
@@ -85,11 +88,11 @@ M.send_deletion          = function(item)
     local note_node = discussions.get_note_node(current_node)
     local root_node = discussions.get_root_node(current_node)
 
-    local jsonTable = { discussion_id = root_node.id, note_id = note_node.id }
+    local jsonTable = { discussion_id = root_node.id, note_id = root_node.root_note_id or note_node.id }
     local json = vim.json.encode(jsonTable)
 
     job.run_job("comment", "DELETE", json, function(data)
-      print("Here")
+      M.delete_node()
     end)
   end
 end
@@ -174,6 +177,5 @@ M.redraw_node            = function(text)
   u.darken_metadata(buf, '')
   vim.notify("Edited comment!", vim.log.levels.INFO)
 end
-
 
 return M
