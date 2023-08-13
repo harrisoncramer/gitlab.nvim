@@ -98,9 +98,19 @@ local format_date = function(date_string)
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 
-  -- Format date into human-readable string without leading zeros
-  local formatted_date = os.date("%A, %B %e at %l:%M %p", date)
-  return formatted_date
+  local current_time = os.time()
+  local time_diff = current_time - date
+
+  if time_diff < 60 then
+    return time_diff .. " seconds ago"
+  elseif time_diff < 3600 then
+    return math.floor(time_diff / 60) .. " minutes ago"
+  elseif time_diff < 86400 then
+    return math.floor(time_diff / 3600) .. " hours ago"
+  else
+    local formatted_date = os.date("%A, %B %e at %l:%M %p", date)
+    return formatted_date
+  end
 end
 
 local add_comment_sign = function(line_number)
