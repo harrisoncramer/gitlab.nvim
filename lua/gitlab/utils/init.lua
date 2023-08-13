@@ -107,6 +107,8 @@ local format_date = function(date_string)
     return math.floor(time_diff / 60) .. " minutes ago"
   elseif time_diff < 86400 then
     return math.floor(time_diff / 3600) .. " hours ago"
+  elseif time_diff < 2592000 then
+    return math.floor(time_diff / 86400) .. " days ago"
   else
     local formatted_date = os.date("%A, %B %e at %l:%M %p", date)
     return formatted_date
