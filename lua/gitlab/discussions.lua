@@ -3,7 +3,6 @@ local NuiTree      = require("nui.tree")
 local NuiSplit     = require("nui.split")
 local job          = require("gitlab.job")
 local state        = require("gitlab.state")
-local Job          = require("plenary.job")
 local Popup        = require("nui.popup")
 local keymaps      = require("gitlab.keymaps")
 
@@ -18,16 +17,12 @@ M.reply            = function()
 end
 
 M.send_reply       = function(text)
-  local escapedText = string.gsub(text, "\n", "\\n")
-
-  local jsonTable = { discussion_id = state.ACTIVE_DISCUSSION, reply = escapedText }
+  local jsonTable = { discussion_id = tostring(state.ACTIVE_DISCUSSION), reply = text }
   local json = vim.json.encode(jsonTable)
-
   job.run_job("reply", "POST", json, function(data)
     local note_node = M.build_note(data.note)
     note_node:expand()
-
-    state.tree:add_node(note_node, "-" .. state.ACTIVE_DISCUSSION)
+    state.tree:add_node(note_node, "-" .. tostring(state.ACTIVE_DISCUSSION))
     vim.schedule(function()
       state.tree:render()
       local buf = vim.api.nvim_get_current_buf()
@@ -47,7 +42,7 @@ M.list_discussions = function()
         return
       end
 
-      M.discussions = data.discussions
+      state.discussions = data.discussions
 
       local splitState = state.DISCUSSION_SPLIT
       splitState.buf_options = { modifiable = false }
@@ -55,38 +50,47 @@ M.list_discussions = function()
       split:mount()
 
       local buf = split.bufnr
-      local allDiscussions = {}
-      for _, discussion in ipairs(M.discussions) do
-        local discussionChildren = {}
+      local all_nodes = {}
+      for _, discussion in ipairs(state.discussions) do
+        local discussion_children = {}
 
-        local header_note_text = ''
-        local header_position = 0
-        local header_file = ''
-        local text_nodes = {}
+        -- These properties are filled in by the first note
+        local root_text = ''
+        local root_note_id = ''
+        local root_line_number = 0
+        local root_file_name = ''
+        local root_id = 0
+        local root_text_nodes = {}
+
         for j, note in ipairs(discussion.notes) do
-          if j == 1 then -- If it's the first note...
-            __, header_note_text, text_nodes = M.build_note(note)
-          else           -- Otherwise insert it as a child node...
+          if j == 1 then
+            __, root_text, root_text_nodes = M.build_note(note)
+            root_file_name = note.position.new_path
+            root_line_number = note.position.new_line or note.position.old_line
+            root_id = discussion.id
+            root_note_id = note.id
+          else -- Otherwise insert it as a child node...
             local note_node = M.build_note(note)
-            table.insert(discussionChildren, note_node)
+            table.insert(discussion_children, note_node)
           end
         end
 
-        -- Creates the first node in the discussion, with it's text body
-        -- and any child nodes
-        local body = u.join_tables(text_nodes, discussionChildren)
-        local discussionNode = NuiTree.Node({
-          text = header_note_text,
-          id = discussion.id,
-          is_discussion = true,
-          file_name = header_file,
-          line_number = header_position,
+        -- Creates the first node in the discussion, and attaches children
+        local body = u.join_tables(root_text_nodes, discussion_children)
+        local root_node = NuiTree.Node({
+          text = root_text,
+          is_note = true,
+          is_root = true,
+          id = root_id,
+          root_note_id = root_note_id,
+          file_name = root_file_name,
+          line_number = root_line_number,
         }, body)
 
-        table.insert(allDiscussions, discussionNode)
+        table.insert(all_nodes, root_node)
       end
 
-      state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
+      state.tree = NuiTree({ nodes = all_nodes, bufnr = buf })
       M.set_tree_keymaps(buf)
 
       state.tree:render()
@@ -108,20 +112,8 @@ M.jump_to_file     = function()
     end
   end
 
-  local childrenIds = node:get_child_ids()
-  -- We have selected a note node
-  if node.file_name ~= nil then
-    u.jump_to_file(node.file_name, node.line_number)
-  elseif node.is_body then
-    local parentId = node:get_parent_id()
-    local parent = state.tree:get_node(parentId)
-    if parent == nil then return end
-    u.jump_to_file(parent.file_name, parent.line_number)
-  else
-    local firstChild = state.tree:get_node(childrenIds[1])
-    if firstChild == nil then return end
-    u.jump_to_file(firstChild.file_name, firstChild.line_number)
-  end
+  local discussion_node = M.get_root_node(node)
+  u.jump_to_file(discussion_node.file_name, discussion_node.line_number)
 end
 
 M.set_tree_keymaps = function(buf)
@@ -165,26 +157,29 @@ M.set_tree_keymaps = function(buf)
   vim.keymap.set('n', 'r', function()
     local node = state.tree:get_node()
     if node == nil then return end
-
-    -- Get closest discussion parent
-    if node.is_body then
-      local parentId = node:get_parent_id()
-      local parent = state.tree:get_node(parentId)
-      if parent == nil then return end
-      parentId = parent:get_parent_id()
-      parent = state.tree:get_node(parentId)
-      if parent == nil then return end
-      node = parent
-    elseif node.is_note then
-      local parentId = node:get_parent_id()
-      local parent = state.tree:get_node(parentId)
-      if parent == nil then return end
-      node = parent
-    end
-
-    state.ACTIVE_DISCUSSION = node.id
+    local discussion_node = M.get_root_node(node)
+    state.ACTIVE_DISCUSSION = discussion_node.id
     M.reply()
   end, { buffer = true })
+end
+
+M.get_root_node    = function(node)
+  if (not node.is_root) then
+    local parent_id = node:get_parent_id()
+    return M.get_root_node(state.tree:get_node(parent_id))
+  else
+    return node
+  end
+end
+
+M.get_note_node    = function(node)
+  if (not node.is_note) then
+    local parent_id = node:get_parent_id()
+    if parent_id == nil then return node end
+    return M.get_note_node(state.tree:get_node(parent_id))
+  else
+    return node
+  end
 end
 
 M.build_note_body  = function(note)

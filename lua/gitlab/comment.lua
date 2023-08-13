@@ -3,40 +3,22 @@ local NuiTree            = require("nui.tree")
 local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
+local discussions        = require("gitlab.discussions")
 local keymaps            = require("gitlab.keymaps")
 local Popup              = require("nui.popup")
 local M                  = {}
 
-local commentPopup       = Popup(u.create_popup_state("Comment", "40%", "60%"))
-local editPopup          = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
+local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
+local edit_popup         = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 
-M.line_status            = nil
-
+-- Function that fires to open the comment popup
 M.create_comment         = function()
   if u.base_invalid() then return end
-  commentPopup:mount()
-  keymaps.set_popup_keymaps(commentPopup, M.confirm_create_comment)
+  comment_popup:mount()
+  keymaps.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end
 
-M.find_deletion_commit   = function(file)
-  local current_line = vim.api.nvim_get_current_line()
-  local command = string.format("git log -S '%s' %s", current_line, file)
-  local handle = io.popen(command)
-  local output = handle:read("*line")
-  if output == nil then
-    vim.notify("Error reading SHA of deletion commit", vim.log.levels.ERROR)
-    return ""
-  end
-  handle:close()
-  local words = {}
-  for word in output:gmatch("%S+") do
-    table.insert(words, word)
-  end
-
-  return words[2]
-end
-
--- Sends the comment to Gitlab
+-- Actually sends the comment to Gitlab
 M.confirm_create_comment = function(text)
   if u.base_invalid() then return end
   local relative_file_path = u.get_relative_file_path()
@@ -61,6 +43,7 @@ M.confirm_create_comment = function(text)
   job.run_job("comment", "POST", json)
 end
 
+-- Function to open the deletion popup
 M.delete_comment         = function()
   local menu = Menu({
     position = "50%",
@@ -89,101 +72,108 @@ M.delete_comment         = function()
       close = state.keymaps.dialogue.close,
       submit = state.keymaps.dialogue.submit,
     },
-    on_submit = function(item)
-      if item.text == "Confirm" then
-        local note_id
-        local node = state.tree:get_node()
-        if node.is_note then
-          note_id = node:get_id()
-        end
-        local parentId = node:get_parent_id()
-        while (parentId ~= nil) do
-          node = state.tree:get_node(parentId)
-          parentId = node:get_parent_id()
-          if node.is_note then
-            note_id = node:get_id()
-          end
-        end
-        local discussion_id = node:get_id()
-        discussion_id = string.sub(discussion_id, 2) -- Remove the "-" at the start
-        note_id = tonumber(string.sub(note_id, 2))   -- Remove the "-" at the start
-
-        local jsonTable = { discussion_id = discussion_id, note_id = note_id }
-        local json = vim.json.encode(jsonTable)
-
-        job.run_job("comment", "DELETE", json, function(data)
-          vim.notify(data.message, vim.log.levels.INFO)
-          state.tree:remove_node("-" .. note_id)
-          local discussion_node = state.tree:get_node("-" .. discussion_id)
-          if not discussion_node:has_children() then
-            state.tree:remove_node("-" .. discussion_id)
-          end
-          state.tree:render()
-        end)
-      end
-    end,
+    on_submit = M.send_deletion
   })
   menu:mount()
 end
 
+-- Function to actually send the deletion to Gitlab
+M.send_deletion          = function(item)
+  if item.text == "Confirm" then
+    local current_node = state.tree:get_node()
 
-M.edit_comment = function()
-  if u.base_invalid() then return end
-  local node = state.tree:get_node()
-  if node.is_discussion then return end
-  if node.is_body then
-    local parentId = node:get_parent_id()
-    node = state.tree:get_node(parentId) -- Get the node for the comment
+    local note_node = discussions.get_note_node(current_node)
+    local root_node = discussions.get_root_node(current_node)
+
+    local jsonTable = { discussion_id = root_node.id, note_id = note_node.id }
+    local json = vim.json.encode(jsonTable)
+
+    job.run_job("comment", "DELETE", json, function(data)
+      print("Here")
+    end)
   end
+end
 
-  editPopup:mount()
+-- Function that opens the edit popup from the discussion tree
+M.edit_comment           = function()
+  if u.base_invalid() then return end
+  local current_node = state.tree:get_node()
+  local note_node = discussions.get_note_node(current_node)
+  local root_node = discussions.get_root_node(current_node)
 
-  local note_id = tonumber(string.sub(node:get_id(), 2)) -- Remove the "-" at the start
-  local discussion_id = node:get_parent_id()
-  discussion_id = string.sub(discussion_id, 2)           -- Remove the "-" at the start
+  edit_popup:mount()
 
-  state.ACTIVE_DISCUSSION = discussion_id
-  state.ACTIVE_NOTE = note_id
-
-  local lines = {}
-  local childrenIds = node:get_child_ids()
-  for _, value in ipairs(childrenIds) do
-    local line = state.tree:get_node(value).text
-    table.insert(lines, line)
+  local lines = {} -- Gather all lines from immediate children that aren't note nodes
+  local children_ids = note_node:get_child_ids()
+  for _, child_id in ipairs(children_ids) do
+    local child_node = state.tree:get_node(child_id)
+    if (not child_node:has_children()) then
+      local line = state.tree:get_node(child_id).text
+      table.insert(lines, line)
+    end
   end
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-  keymaps.set_popup_keymaps(editPopup, M.send_edits)
+  keymaps.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
 end
 
-M.send_edits   = function(text)
-  local escapedText = string.gsub(text, "\n", "\\n")
-
-  local jsonTable = { discussion_id = state.ACTIVE_DISCUSSION, note_id = state.ACTIVE_NOTE, comment = escapedText }
-  local json = vim.json.encode(jsonTable)
-
-  job.run_job("comment", "PATCH", json, function()
-    vim.schedule(function()
-      local node = state.tree:get_node("-" .. state.ACTIVE_NOTE)
-      local childrenIds = node:get_child_ids()
-      for _, value in ipairs(childrenIds) do
-        state.tree:remove_node(value)
-      end
-
-      local newNoteTextNodes = {}
-      for bodyLine in text:gmatch("[^\n]+") do
-        table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
-      end
-
-      state.tree:set_nodes(newNoteTextNodes, "-" .. state.ACTIVE_NOTE)
-
-      state.tree:render()
-      local buf = vim.api.nvim_get_current_buf()
-      u.darken_metadata(buf, '')
-      vim.notify("Edited comment!", vim.log.levels.INFO)
+-- Function that actually makes the API call
+M.send_edits             = function(discussion_id, note_id)
+  return function(text)
+    local json_table = {
+      discussion_id = discussion_id,
+      note_id = note_id,
+      comment = text
+    }
+    local json = vim.json.encode(json_table)
+    job.run_job("comment", "PATCH", json, function(data)
+      vim.notify(data.message, vim.log.levels.INFO)
+      M.redraw_node(text)
     end)
-  end)
+  end
 end
+
+-- Helpers
+M.find_deletion_commit   = function(file)
+  local current_line = vim.api.nvim_get_current_line()
+  local command = string.format("git log -S '%s' %s", current_line, file)
+  local handle = io.popen(command)
+  local output = handle:read("*line")
+  if output == nil then
+    vim.notify("Error reading SHA of deletion commit", vim.log.levels.ERROR)
+    return ""
+  end
+  handle:close()
+  local words = {}
+  for word in output:gmatch("%S+") do
+    table.insert(words, word)
+  end
+
+  return words[2]
+end
+
+M.redraw_node            = function(text)
+  local current_node = state.tree:get_node()
+  local note_node = discussions.get_note_node(current_node)
+
+  local childrenIds = note_node:get_child_ids()
+  for _, value in ipairs(childrenIds) do
+    state.tree:remove_node(value)
+  end
+
+  local newNoteTextNodes = {}
+  for bodyLine in text:gmatch("[^\n]+") do
+    table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
+  end
+
+  state.tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
+
+  state.tree:render()
+  local buf = vim.api.nvim_get_current_buf()
+  u.darken_metadata(buf, '')
+  vim.notify("Edited comment!", vim.log.levels.INFO)
+end
+
 
 return M

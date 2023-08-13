@@ -1,5 +1,4 @@
 local state = require("gitlab.state")
-math.randomseed(os.time())
 
 local function get_git_root()
   local output = vim.fn.system('git rev-parse --show-toplevel 2>/dev/null')
@@ -234,8 +233,6 @@ local current_file_path = function()
   local path = debug.getinfo(1, 'S').source:sub(2)
   return vim.fn.fnamemodify(path, ':p')
 end
-
-local charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
 -- Function to join two tables
 function join_tables(table1, table2)
