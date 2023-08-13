@@ -40,66 +40,60 @@ end
 -- Places all of the discussions into a readable list
 M.list_discussions = function()
   if u.base_invalid() then return end
-  Job:new({
-    command = "curl",
-    args = { "-s", string.format("localhost:%s/discussions", state.PORT) },
-    on_stdout = function(_, output)
-      local data_ok, data = pcall(vim.json.decode, output)
-      if data_ok and data ~= nil then
-        local status = (data.status >= 200 and data.status < 300) and "success" or "error"
-        if status == "error" then
-          vim.notify("Could not fetch discussions!", vim.log.levels.ERROR)
-          return
-        end
-        M.discussions = data.discussions
-        vim.schedule(function()
-          if type(data.discussions) ~= "table" then
-            vim.notify("No discussions for this MR")
-            return
-          end
-
-          local splitState = state.DISCUSSION_SPLIT
-          splitState.buf_options = { modifiable = false }
-          local split = NuiSplit(splitState)
-          split:mount()
-
-          local buf = split.bufnr
-          local allDiscussions = {}
-          for i, discussion in ipairs(data.discussions) do
-            local discussionChildren = {}
-            for _, note in ipairs(discussion.notes) do
-              local note_node = M.build_note(note)
-              if i == 1 then
-                note_node:expand()
-              end
-              table.insert(discussionChildren, note_node)
-            end
-            local discussionNode = NuiTree.Node({
-                text = discussion.id,
-                id = discussion.id,
-                is_discussion = true
-              },
-              discussionChildren)
-            if i == 1 then
-              discussionNode:expand()
-            end
-            table.insert(allDiscussions, discussionNode)
-          end
-          state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
-
-          M.set_tree_keymaps(buf)
-
-          state.tree:render()
-          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-          u.darken_metadata(buf, '')
-        end)
+  job.run_job("discussions", "GET", nil, function(data)
+    vim.schedule(function()
+      if type(data.discussions) ~= "table" then
+        vim.notify("No discussions for this MR")
+        return
       end
-    end,
-    on_stderr = function(_, output)
-      vim.notify("Could not run approve command!", vim.log.levels.ERROR)
-      error(output)
-    end,
-  }):start()
+
+      M.discussions = data.discussions
+
+      local splitState = state.DISCUSSION_SPLIT
+      splitState.buf_options = { modifiable = false }
+      local split = NuiSplit(splitState)
+      split:mount()
+
+      local buf = split.bufnr
+      local allDiscussions = {}
+      for _, discussion in ipairs(M.discussions) do
+        local discussionChildren = {}
+
+        local header_note_text = ''
+        local header_position = 0
+        local header_file = ''
+        local text_nodes = {}
+        for j, note in ipairs(discussion.notes) do
+          if j == 1 then -- If it's the first note...
+            __, header_note_text, text_nodes = M.build_note(note)
+          else           -- Otherwise insert it as a child node...
+            local note_node = M.build_note(note)
+            table.insert(discussionChildren, note_node)
+          end
+        end
+
+        -- Creates the first node in the discussion, with it's text body
+        -- and any child nodes
+        local body = u.join_tables(text_nodes, discussionChildren)
+        local discussionNode = NuiTree.Node({
+          text = header_note_text,
+          id = discussion.id,
+          is_discussion = true,
+          file_name = header_file,
+          line_number = header_position,
+        }, body)
+
+        table.insert(allDiscussions, discussionNode)
+      end
+
+      state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
+      M.set_tree_keymaps(buf)
+
+      state.tree:render()
+      vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+      u.darken_metadata(buf, '')
+    end)
+  end)
 end
 
 M.jump_to_file     = function()
@@ -193,25 +187,30 @@ M.set_tree_keymaps = function(buf)
   end, { buffer = true })
 end
 
-M.build_note       = function(note)
-  local noteTextNodes = {}
+M.build_note_body  = function(note)
+  local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
-    table.insert(noteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
+    table.insert(text_nodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
   end
   local noteHeader = "@" ..
-      note.author.username .. " on " .. u.format_date(note.created_at)
+      note.author.username .. " " .. u.format_date(note.created_at)
 
+  return noteHeader, text_nodes
+end
+
+M.build_note       = function(note)
+  local text, text_nodes = M.build_note_body(note)
   local line_number = note.position.new_line or note.position.old_line
   local note_node = NuiTree.Node(
     {
-      text = noteHeader,
+      text = text,
       id = note.id,
       file_name = note.position.new_path,
       line_number = line_number,
       is_note = true
-    }, noteTextNodes)
+    }, text_nodes)
 
-  return note_node
+  return note_node, text, text_nodes
 end
 
 return M
