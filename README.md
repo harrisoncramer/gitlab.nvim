@@ -196,9 +196,19 @@ Which looks like this in my editor:
 This is useful if you plan to leave comments on the diff, because this plugin currently only supports leaving comments on lines that have been added or modified. I'm currenly working on adding functionality to allow users to leave comments on any lines, including those that have been deleted or untouched.
 
 
-## Debugging
+## Troubleshooting
 
-This plugin is built on top of a Golang server. If you want to debug that server, you can run it independently of Neovim. For instance, to start it up in a certain project, navigate to your plugin directory, and build the binary:
+This plugin uses a Golang server to reach out to Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. The server will start up when you open Neovim with a MR branch. You can curl it directly:
+
+```
+curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
+```
+
+This is the API call that is happening from within Neovim when you run the `:lua require("gitlab").summary()` command.
+
+This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab. 
+
+If the Golang server is not starting up correctly, please check your `.gitlab.nvim` file and your setup function. You can, however, try running the Golang server independently of Neovim. For instance, to start it up for a certain project, navigate to your plugin directory, and build the binary (these are instructions for Lazy) and move that binary to your project. You can then try running the binary directly, or even with a debugger like Delve:
 
 ```bash
 $ cd ~/.local/share/nvim/lazy/gitlab.nvim
@@ -207,5 +217,3 @@ $ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
 $ cd ~/path-to-your-project
 $ dlv exec ./bin -- 41057709 https://www.gitlab.com 21036 your-gitlab-token
 ```
-
-You can send JSON to it like you would any other REST server.
