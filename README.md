@@ -8,7 +8,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - Approve an MR
 - Revoke approval for an MR
 
-https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-9d2d-5e875ab2fb40.mp4
+https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43-8d2f-489df0745822
 
 ## Requirements
 
