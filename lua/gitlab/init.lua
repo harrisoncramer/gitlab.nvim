@@ -58,8 +58,6 @@ M.setup                  = function(args)
       .. " "
       .. state.LOG_PATH
 
-  print(command)
-
   vim.fn.jobstart(command, {
     on_stdout = function(job_id)
       if job_id <= 0 then
