@@ -6,7 +6,7 @@ local keymaps          = require("gitlab.keymaps")
 local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
 local M                = {}
 
-M.description          = function()
+M.summary              = function()
   if u.base_invalid() then return end
   descriptionPopup:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()

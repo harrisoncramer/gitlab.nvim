@@ -1,127 +1,76 @@
-local u            = require("gitlab.utils")
-local NuiTree      = require("nui.tree")
-local job          = require("gitlab.job")
-local state        = require("gitlab.state")
-local Job          = require("plenary.job")
-local Popup        = require("nui.popup")
-local keymaps      = require("gitlab.keymaps")
+local u                    = require("gitlab.utils")
+local NuiTree              = require("nui.tree")
+local NuiSplit             = require("nui.split")
+local job                  = require("gitlab.job")
+local state                = require("gitlab.state")
+local Popup                = require("nui.popup")
+local keymaps              = require("gitlab.keymaps")
 
-local M            = {}
+local M                    = {}
 
-local replyPopup   = Popup(u.create_popup_state("Reply", "80%", "80%"))
+local replyPopup           = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
-M.reply            = function()
+M.reply                    = function(discussion_id)
   if u.base_invalid() then return end
   replyPopup:mount()
-  keymaps.set_popup_keymaps(replyPopup, M.send_reply)
+  keymaps.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
 end
 
-M.send_reply       = function(text)
-  local escapedText = string.gsub(text, "\n", "\\n")
-
-  local jsonTable = { discussion_id = state.ACTIVE_DISCUSSION, reply = escapedText }
-  local json = vim.json.encode(jsonTable)
-
-  job.run_job("reply", "POST", json, function(data)
-    local note_node = M.build_note(data.note)
-    note_node:expand()
-
-    state.tree:add_node(note_node, "-" .. state.ACTIVE_DISCUSSION)
-    vim.schedule(function()
-      state.tree:render()
-      local buf = vim.api.nvim_get_current_buf()
-      u.darken_metadata(buf, '')
-      vim.notify("Sent reply!", vim.log.levels.INFO)
+M.send_reply               = function(discussion_id)
+  return function(text)
+    local jsonTable = { discussion_id = discussion_id, reply = text }
+    local json = vim.json.encode(jsonTable)
+    job.run_job("reply", "POST", json, function(data)
+      M.add_note_to_tree(data.note, discussion_id)
     end)
-  end)
-end
-
--- Places all of the discussions into a readable list
-M.list_discussions = function()
-  if u.base_invalid() then return end
-  Job:new({
-    command = "curl",
-    args = { "-s", string.format("localhost:%s/discussions", state.PORT) },
-    on_stdout = function(_, output)
-      local data_ok, data = pcall(vim.json.decode, output)
-      if data_ok and data ~= nil then
-        local status = (data.status >= 200 and data.status < 300) and "success" or "error"
-        if status == "error" then
-          vim.notify("Could not fetch discussions!", vim.log.levels.ERROR)
-          return
-        end
-        M.discussions = data.discussions
-        vim.schedule(function()
-          if type(data.discussions) ~= "table" then
-            vim.notify("No discussions for this MR")
-            return
-          end
-
-          vim.cmd.tabnew()
-          local buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_command("aboveleft vsplit")
-          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-          vim.api.nvim_set_current_buf(buf)
-          local allDiscussions = {}
-          for i, discussion in ipairs(data.discussions) do
-            local discussionChildren = {}
-            for _, note in ipairs(discussion.notes) do
-              local note_node = M.build_note(note)
-              if i == 1 then
-                note_node:expand()
-              end
-              table.insert(discussionChildren, note_node)
-            end
-            local discussionNode = NuiTree.Node({
-                text = discussion.id,
-                id = discussion.id,
-                is_discussion = true
-              },
-              discussionChildren)
-            if i == 1 then
-              discussionNode:expand()
-            end
-            table.insert(allDiscussions, discussionNode)
-          end
-          state.tree = NuiTree({ nodes = allDiscussions, bufnr = buf })
-
-          M.set_tree_keymaps(buf)
-
-          state.tree:render()
-          vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-          u.darken_metadata(buf, '')
-          M.jump_to_file()
-        end)
-      end
-    end,
-    on_stderr = function(_, output)
-      vim.notify("Could not run approve command!", vim.log.levels.ERROR)
-      error(output)
-    end,
-  }):start()
-end
-
-M.jump_to_file     = function()
-  local node = state.tree:get_node()
-  if node == nil then return end
-
-  local childrenIds = node:get_child_ids()
-  -- We have selected a note node
-  if node.file_name ~= nil then
-    u.jump_to_file(node.file_name, node.line_number)
-  elseif node.is_body then
-    local parentId = node:get_parent_id()
-    local parent = state.tree:get_node(parentId)
-    if parent == nil then return end
-    u.jump_to_file(parent.file_name, parent.line_number)
-  else
-    local firstChild = state.tree:get_node(childrenIds[1])
-    if firstChild == nil then return end
-    u.jump_to_file(firstChild.file_name, firstChild.line_number)
   end
 end
 
-M.set_tree_keymaps = function(buf)
+-- Places all of the discussions into a readable list
+M.list_discussions         = function()
+  if u.base_invalid() then return end
+  job.run_job("discussions", "GET", nil, function(data)
+    if type(data.discussions) ~= "table" then
+      vim.notify("No discussions for this MR")
+      return
+    end
+
+    local splitState = state.DISCUSSION_SPLIT
+    splitState.buf_options = { modifiable = false }
+    local split = NuiSplit(splitState)
+    split:mount()
+
+    local buf = split.bufnr
+    state.SPLIT_BUF = buf
+
+    local tree_nodes = M.add_discussions_to_table(data.discussions)
+
+    state.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
+    M.set_tree_keymaps(buf)
+
+    state.tree:render()
+    vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+    u.darken_metadata(buf, '')
+  end)
+end
+
+M.jump_to_file             = function()
+  local node = state.tree:get_node()
+  if node == nil then return end
+
+  local wins = vim.api.nvim_list_wins()
+  local discussion_win = vim.api.nvim_get_current_win()
+  for _, winId in ipairs(wins) do
+    if winId ~= discussion_win then
+      vim.api.nvim_set_current_win(winId)
+    end
+  end
+
+  local discussion_node = M.get_root_node(node)
+  u.jump_to_file(discussion_node.file_name, discussion_node.line_number)
+end
+
+M.set_tree_keymaps         = function(buf)
   -- Jump to file location where comment was left
   vim.keymap.set('n', state.keymaps.discussion_tree.jump_to_location, function()
     M.jump_to_file()
@@ -133,7 +82,7 @@ M.set_tree_keymaps = function(buf)
 
   vim.keymap.set('n', state.keymaps.discussion_tree.delete_comment, function()
     require("gitlab.comment").delete_comment()
-  end)
+  end, { buffer = true })
 
   -- Expand/collapse the current node
   vim.keymap.set('n', state.keymaps.discussion_tree.toggle_node, function()
@@ -153,7 +102,6 @@ M.set_tree_keymaps = function(buf)
         node:expand()
       end
 
-
       state.tree:render()
       u.darken_metadata(buf, '')
     end,
@@ -162,47 +110,132 @@ M.set_tree_keymaps = function(buf)
   vim.keymap.set('n', 'r', function()
     local node = state.tree:get_node()
     if node == nil then return end
-
-    -- Get closest discussion parent
-    if node.is_body then
-      local parentId = node:get_parent_id()
-      local parent = state.tree:get_node(parentId)
-      if parent == nil then return end
-      parentId = parent:get_parent_id()
-      parent = state.tree:get_node(parentId)
-      if parent == nil then return end
-      node = parent
-    elseif node.is_note then
-      local parentId = node:get_parent_id()
-      local parent = state.tree:get_node(parentId)
-      if parent == nil then return end
-      node = parent
-    end
-
-    state.ACTIVE_DISCUSSION = node.id
-    M.reply()
+    local discussion_node = M.get_root_node(node)
+    M.reply(tostring(discussion_node.id))
   end, { buffer = true })
 end
 
-M.build_note       = function(note)
-  local noteTextNodes = {}
+M.get_root_node            = function(node)
+  if (not node.is_root) then
+    local parent_id = node:get_parent_id()
+    return M.get_root_node(state.tree:get_node(parent_id))
+  else
+    return node
+  end
+end
+
+M.get_note_node            = function(node)
+  if (not node.is_note) then
+    local parent_id = node:get_parent_id()
+    if parent_id == nil then return node end
+    return M.get_note_node(state.tree:get_node(parent_id))
+  else
+    return node
+  end
+end
+
+M.build_note_body          = function(note)
+  local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
-    table.insert(noteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
+    table.insert(text_nodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
   end
   local noteHeader = "@" ..
-      note.author.username .. " on " .. u.format_date(note.created_at)
+      note.author.username .. " " .. u.format_date(note.created_at)
 
+  return noteHeader, text_nodes
+end
+
+M.build_note               = function(note)
+  local text, text_nodes = M.build_note_body(note)
   local line_number = note.position.new_line or note.position.old_line
   local note_node = NuiTree.Node(
     {
-      text = noteHeader,
+      text = text,
       id = note.id,
       file_name = note.position.new_path,
       line_number = line_number,
       is_note = true
-    }, noteTextNodes)
+    }, text_nodes)
 
-  return note_node
+  return note_node, text, text_nodes
+end
+
+M.add_note_to_tree         = function(note, discussion_id)
+  local note_node = M.build_note(note)
+  note_node:expand()
+  state.tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
+  state.tree:render()
+  local buf = vim.api.nvim_get_current_buf()
+  u.darken_metadata(buf, '')
+  vim.notify("Sent reply!", vim.log.levels.INFO)
+end
+
+M.refresh_tree             = function()
+  job.run_job("discussions", "GET", nil, function(data)
+    if type(data.discussions) ~= "table" then
+      vim.notify("No discussions for this MR")
+      return
+    end
+
+    if not state.SPLIT_BUF then return end
+
+    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'modifiable', true)
+    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'readonly', false)
+    vim.api.nvim_buf_set_lines(state.SPLIT_BUF, 0, -1, false, {})
+    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'readonly', true)
+    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'modifiable', false)
+
+    local tree_nodes = M.add_discussions_to_table(data.discussions)
+    state.tree = NuiTree({ nodes = tree_nodes, bufnr = state.SPLIT_BUF })
+    M.set_tree_keymaps(state.SPLIT_BUF)
+    state.tree:render()
+    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'filetype', 'markdown')
+    u.darken_metadata(state.SPLIT_BUF, '')
+  end)
+end
+
+M.add_discussions_to_table = function(discussions)
+  local t = {}
+  for _, discussion in ipairs(discussions) do
+    local discussion_children = {}
+
+    -- These properties are filled in by the first note
+    local root_text = ''
+    local root_note_id = ''
+    local root_line_number = 0
+    local root_file_name = ''
+    local root_id = 0
+    local root_text_nodes = {}
+
+    for j, note in ipairs(discussion.notes) do
+      if j == 1 then
+        __, root_text, root_text_nodes = M.build_note(note)
+        root_file_name = note.position.new_path
+        root_line_number = note.position.new_line or note.position.old_line
+        root_id = discussion.id
+        root_note_id = note.id
+      else -- Otherwise insert it as a child node...
+        local note_node = M.build_note(note)
+        table.insert(discussion_children, note_node)
+      end
+    end
+
+    -- Creates the first node in the discussion, and attaches children
+    local body = u.join_tables(root_text_nodes, discussion_children)
+    local root_node = NuiTree.Node({
+      text = root_text,
+      is_note = true,
+      is_root = true,
+      id = root_id,
+      root_note_id = root_note_id,
+      file_name = root_file_name,
+      line_number = root_line_number,
+    }, body)
+
+    table.insert(t, root_node)
+  end
+
+  return t
 end
 
 return M

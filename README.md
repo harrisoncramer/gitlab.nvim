@@ -6,7 +6,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - Read and Edit an MR description
 - Approve/Revoke Approval for an MR
 
-https://user-images.githubusercontent.com/32515581/233739969-216dad6e-fa77-417f-9d2d-5e875ab2fb40.mp4
+https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43-8d2f-489df0745822
 
 ## Requirements
 
@@ -51,7 +51,7 @@ use {
 
 ## Configuration
 
-This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, used for self-hosted instances):
+This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, use only for self-hosted instances):
 
 ```
 project_id=112415
@@ -77,12 +77,12 @@ base_branch=master
 ## Configuring the Plugin
 
 
-Here is the default setup function:
+Here is the default setup function. All of these values are optional, and if you call this function with no values the defaults will be used:
 
 ```lua
 require("gitlab").setup({
   port = 20136, -- The port of the Go server, which runs in the background
-  log_path = vim.fn.stdpath("cache"), -- Log path for the Go server
+  log_path = vim.fn.stdpath("cache") .. "gitlab.nvim.log", -- Log path for the Go server
   keymaps = {
     popup = { -- The popup for comment creation, editing, and replying
       exit = "<Esc>",
@@ -94,6 +94,9 @@ require("gitlab").setup({
       delete_comment = "dd",
       reply_to_comment = "r",
       toggle_node = "t",
+      position = "left", -- "top", "right", "bottom" or "left"
+      size = "20%", -- Size of split
+      relative = "editor" -- Position relative to "editor" or "window"
     },
     dialogue = { -- The confirmation dialogue for deleting comments
       focus_next = { "j", "<Down>", "<Tab>" },
@@ -115,10 +118,10 @@ git checkout feature-branch
 
 Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
 
-The `description` command will pull down the MR description into a buffer so that you can read it. To edit the description, edit the buffer and press the `perform_action` keybinding when in normal mode (it's `<leader>s` by default):
+The `summary` command will pull down the MR description into a buffer so that you can read it. To edit the description, edit the buffer and press the `perform_action` keybinding when in normal mode (it's `<leader>s` by default):
 
 ```lua
-require("gitlab").description()
+require("gitlab").summary()
 ```
 
 
@@ -162,41 +165,26 @@ The plugin does not set up any keybindings outside of these buffers, you need to
 
 ```lua
 local gitlab = require("gitlab")
-vim.keymap.set("n", "<leader>gls", gitlab.description)
+vim.keymap.set("n", "<leader>gls", gitlab.summary)
 vim.keymap.set("n", "<leader>glA", gitlab.approve)
 vim.keymap.set("n", "<leader>glR", gitlab.revoke)
 vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
 vim.keymap.set("n", "<leader>gld", gitlab.list_discussions)
 ```
 
-## Diff Views
+## Troubleshooting
 
-This plugin does not provide you with a diff view out of the box for viewing changes. That is already handled by other plugins. I highly recommend using Diffview to see which files have changed in an MR. This is the function that I'm using to accomplish this:
+This plugin uses a Golang server to reach out to Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. The server will start up when you open Neovim with a MR branch. You can curl it directly:
 
-```lua
--- Review changes against develop (will break if no develop branch present)
-vim.keymap.set("n", "<leader>gR", function()
-  local isDiff = vim.fn.getwinvar(nil, "&diff")
-  local bufName = vim.api.nvim_buf_get_name(0)
-  if isDiff ~= 0 or u.string_starts(bufName, "diff") then
-    vim.cmd.tabclose()
-    vim.cmd.tabprev()
-  else
-    vim.cmd.DiffviewOpen("main")
-  end
-end)
+```
+curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
 ```
 
-Which looks like this in my editor:
+This is the API call that is happening from within Neovim when you run the `:lua require("gitlab").summary()` command.
 
-<img width="1727" alt="Screenshot 2023-04-21 at 6 37 39 PM" src="https://user-images.githubusercontent.com/32515581/233744560-0d718c92-f810-4fde-b40d-8b6f42eb6f0e.png">
+This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab. 
 
-This is useful if you plan to leave comments on the diff, because this plugin currently only supports leaving comments on lines that have been added or modified. I'm currenly working on adding functionality to allow users to leave comments on any lines, including those that have been deleted or untouched.
-
-
-## Debugging
-
-This plugin is built on top of a Golang server. If you want to debug that server, you can run it independently of Neovim. For instance, to start it up in a certain project, navigate to your plugin directory, and build the binary:
+If the Golang server is not starting up correctly, please check your `.gitlab.nvim` file and your setup function. You can, however, try running the Golang server independently of Neovim. For instance, to start it up for a certain project, navigate to your plugin directory, and build the binary (these are instructions for Lazy) and move that binary to your project. You can then try running the binary directly, or even with a debugger like Delve:
 
 ```bash
 $ cd ~/.local/share/nvim/lazy/gitlab.nvim
@@ -205,5 +193,3 @@ $ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
 $ cd ~/path-to-your-project
 $ dlv exec ./bin -- 41057709 https://www.gitlab.com 21036 your-gitlab-token
 ```
-
-You can send JSON to it like you would any other REST server.
