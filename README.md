@@ -53,7 +53,7 @@ use {
 
 ## Configuration
 
-This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, used for self-hosted instances):
+This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, use only for self-hosted instances):
 
 ```
 project_id=112415
