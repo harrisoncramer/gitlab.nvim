@@ -175,7 +175,6 @@ M.redraw_node            = function(text)
   state.tree:render()
   local buf = vim.api.nvim_get_current_buf()
   u.darken_metadata(buf, '')
-  vim.notify("Edited comment!", vim.log.levels.INFO)
 end
 
 return M
