@@ -171,31 +171,6 @@ vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
 vim.keymap.set("n", "<leader>gld", gitlab.list_discussions)
 ```
 
-## Diff Views
-
-This plugin does not provide you with a diff view out of the box for viewing changes. That is already handled by other plugins. I highly recommend using Diffview to see which files have changed in an MR. This is the function that I'm using to accomplish this:
-
-```lua
--- Review changes against develop (will break if no develop branch present)
-vim.keymap.set("n", "<leader>gR", function()
-  local isDiff = vim.fn.getwinvar(nil, "&diff")
-  local bufName = vim.api.nvim_buf_get_name(0)
-  if isDiff ~= 0 or u.string_starts(bufName, "diff") then
-    vim.cmd.tabclose()
-    vim.cmd.tabprev()
-  else
-    vim.cmd.DiffviewOpen("main")
-  end
-end)
-```
-
-Which looks like this in my editor:
-
-<img width="1727" alt="Screenshot 2023-04-21 at 6 37 39 PM" src="https://user-images.githubusercontent.com/32515581/233744560-0d718c92-f810-4fde-b40d-8b6f42eb6f0e.png">
-
-This is useful if you plan to leave comments on the diff, because this plugin currently only supports leaving comments on lines that have been added or modified. I'm currenly working on adding functionality to allow users to leave comments on any lines, including those that have been deleted or untouched.
-
-
 ## Troubleshooting
 
 This plugin uses a Golang server to reach out to Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. The server will start up when you open Neovim with a MR branch. You can curl it directly:
