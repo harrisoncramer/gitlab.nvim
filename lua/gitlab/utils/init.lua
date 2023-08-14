@@ -95,11 +95,20 @@ local base_invalid = function()
 end
 
 local format_date = function(date_string)
+  local date_table = os.date("!*t")
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 
-  local current_time = os.time()
-  local time_diff = current_time - date
+  local current_date = os.time({
+    year = date_table.year,
+    month = date_table.month,
+    day = date_table.day,
+    hour = date_table.hour,
+    min = date_table.min,
+    sec = date_table.sec
+  })
+
+  local time_diff = current_date - date
 
   if time_diff < 60 then
     return time_diff .. " seconds ago"
