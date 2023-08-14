@@ -42,10 +42,6 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* TODO: The go-gitlab library really doesn't like setting a custom base URL
-	   with this PUT call, for some reason it breaks redirects. This API call
-	   will fail for anyone with a self-hosted Gitlab instance, see this issue
-	   on the go-gitlab library: https://github.com/xanzy/go-gitlab/issues/1771 😢 */
 	git, err := gitlab.NewClient(c.authToken)
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
