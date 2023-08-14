@@ -79,7 +79,7 @@ base_branch=master
 ## Configuring the Plugin
 
 
-Here is the default setup function:
+Here is the default setup function. All of these values are optional, and if you call this function with no values the defaults will be used:
 
 ```lua
 require("gitlab").setup({
