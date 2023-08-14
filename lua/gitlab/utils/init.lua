@@ -95,12 +95,33 @@ local base_invalid = function()
 end
 
 local format_date = function(date_string)
+  local date_table = os.date("!*t")
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 
-  -- Format date into human-readable string without leading zeros
-  local formatted_date = os.date("%A, %B %e at %l:%M %p", date)
-  return formatted_date
+  local current_date = os.time({
+    year = date_table.year,
+    month = date_table.month,
+    day = date_table.day,
+    hour = date_table.hour,
+    min = date_table.min,
+    sec = date_table.sec
+  })
+
+  local time_diff = current_date - date
+
+  if time_diff < 60 then
+    return time_diff .. " seconds ago"
+  elseif time_diff < 3600 then
+    return math.floor(time_diff / 60) .. " minutes ago"
+  elseif time_diff < 86400 then
+    return math.floor(time_diff / 3600) .. " hours ago"
+  elseif time_diff < 2592000 then
+    return math.floor(time_diff / 86400) .. " days ago"
+  else
+    local formatted_date = os.date("%A, %B %e", date)
+    return formatted_date
+  end
 end
 
 local add_comment_sign = function(line_number)
@@ -222,7 +243,16 @@ local current_file_path = function()
   return vim.fn.fnamemodify(path, ':p')
 end
 
+-- Function to join two tables
+function join_tables(table1, table2)
+  for _, value in ipairs(table2) do
+    table.insert(table1, value)
+  end
 
+  return table1
+end
+
+M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text

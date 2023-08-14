@@ -44,6 +44,11 @@ type EditCommentRequest struct {
 	DiscussionId string `json:"discussion_id"`
 }
 
+type CommentResponse struct {
+	SuccessResponse
+	Comment *gitlab.Note `json:"note"`
+}
+
 func CommentHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodDelete:
@@ -157,20 +162,25 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 		Body: gitlab.String(editCommentRequest.Comment),
 	}
 
-	_, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
-
-	for k, v := range res.Header {
-		w.Header().Set(k, v[0])
-	}
+	note, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
 		c.handleError(w, err, "Could not edit comment", res.StatusCode)
 		return
 	}
 
-	response := SuccessResponse{
-		Message: "Comment edited succesfully",
-		Status:  http.StatusOK,
+	w.WriteHeader(res.StatusCode)
+
+	if res.StatusCode != http.StatusOK {
+		c.handleError(w, errors.New("Non-200 status code recieved"), "Could not edit comment", res.StatusCode)
+	}
+
+	response := CommentResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Comment edited succesfully",
+			Status:  http.StatusOK,
+		},
+		Comment: note,
 	}
 
 	json.NewEncoder(w).Encode(response)
