@@ -87,8 +87,9 @@ M.send_deletion          = function(item)
 
     local note_node = discussions.get_note_node(current_node)
     local root_node = discussions.get_root_node(current_node)
+    local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-    local jsonTable = { discussion_id = root_node.id, note_id = root_node.root_note_id or note_node.id }
+    local jsonTable = { discussion_id = root_node.id, note_id = note_id }
     local json = vim.json.encode(jsonTable)
 
     job.run_job("comment", "DELETE", json, function(data)
