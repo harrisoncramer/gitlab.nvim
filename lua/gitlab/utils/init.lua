@@ -187,6 +187,7 @@ local create_popup_state = function(title, width, height)
     buf_options = {
       filetype = 'markdown'
     },
+    relative = "editor",
     enter = true,
     focusable = true,
     border = {
