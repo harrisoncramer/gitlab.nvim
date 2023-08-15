@@ -88,9 +88,9 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(res.StatusCode)
-
 	/* TODO: Check status code */
+	w.WriteHeader(http.StatusOK)
+
 	response := SuccessResponse{
 		Message: "Comment deleted succesfully",
 		Status:  http.StatusOK,

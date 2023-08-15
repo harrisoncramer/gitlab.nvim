@@ -40,7 +40,7 @@ M.confirm_create_comment = function(text)
   local jsonTable = { line_number = current_line_number, file_name = relative_file_path, comment = text }
   local json = vim.json.encode(jsonTable)
 
-  job.run_job("comment", "POST", json, function()
+  job.run_job("comment", "POST", json, function(data)
     vim.notify("Comment created")
     discussions.refresh_tree()
   end)
@@ -93,7 +93,17 @@ M.send_deletion          = function(item)
     local json = vim.json.encode(jsonTable)
 
     job.run_job("comment", "DELETE", json, function(data)
-      M.delete_node()
+      vim.notify(data.message, vim.log.levels.INFO)
+      if not note_node.is_root then
+        state.tree:remove_node("-" .. note_id)
+        state.tree:render()
+      else
+        -- We are removing the root node of the discussion,
+        -- we need to move all the children around, the easiest way
+        -- to do this is to just re-render the whole tree 🤷
+        discussions.refresh_tree()
+        note_node:expand()
+      end
     end)
   end
 end
