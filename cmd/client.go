@@ -72,13 +72,13 @@ func (c *Client) init(branchName string) error {
 		return fmt.Errorf("Failed to create client: %v", err)
 	}
 
-	options := gitlab.ListMergeRequestsOptions{
+	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.String("all"),
 		State:        gitlab.String("opened"),
 		SourceBranch: &branchName,
 	}
 
-	mergeRequests, _, err := git.MergeRequests.ListMergeRequests(&options)
+	mergeRequests, _, err := git.MergeRequests.ListProjectMergeRequests(c.projectId, &options)
 	if err != nil {
 		return fmt.Errorf("Failed to list merge requests: %w", err)
 	}
