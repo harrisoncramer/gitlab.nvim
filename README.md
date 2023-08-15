@@ -180,7 +180,7 @@ This plugin uses a Golang server to reach out to Gitlab. The Golang server runs 
 curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
 ```
 
-This is the API call that is happening from within Neovim when you run the `:lua require("gitlab").summary()` command.
+This is the API call that is happening from within Neovim when you run the `summary` command.
 
 This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab. 
 
