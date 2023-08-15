@@ -2,11 +2,9 @@
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
-- Create, edit, and delete comments on an MR
-- Reply to exisiting comments
-- Read MR summaries
-- Approve an MR
-- Revoke approval for an MR
+- Create, edit, delete, and reply to comments on an MR
+- Read and Edit an MR description
+- Approve/Revoke Approval for an MR
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43-8d2f-489df0745822
 
@@ -58,7 +56,7 @@ This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab direc
 ```
 project_id=112415
 auth_token=your_gitlab_token
-gitlab_url=https://my-personal-gitlab-instance.com
+gitlab_url=https://my-personal-gitlab-instance.com/
 ```
 
 If you don't want to write your authentication token into a dotfile, you may provide it as a shell variable. For instance in your `.bashrc` or `.zshrc` file:
@@ -72,7 +70,7 @@ By default, the plugin will interact with MRs against a "main" branch. You can c
 ```
 project_id=112415
 auth_token=your_gitlab_token
-gitlab_url=https://my-personal-gitlab-instance.com
+gitlab_url=https://my-personal-gitlab-instance.com/
 base_branch=master
 ```
 
@@ -88,7 +86,7 @@ require("gitlab").setup({
   keymaps = {
     popup = { -- The popup for comment creation, editing, and replying
       exit = "<Esc>",
-      perform_action = "<leader>s", -- Once in normal mode, does action
+      perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
     },
     discussion_tree = { -- The discussion tree that holds all comments
       jump_to_location = "o",
@@ -118,11 +116,14 @@ First, check out the branch that you want to review locally.
 git checkout feature-branch
 ```
 
-Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. The `summary` command will pull down the MR description into a buffer so that you can read it:
+Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
+
+The `summary` command will pull down the MR description into a buffer so that you can read it. To edit the description, edit the buffer and press the `perform_action` keybinding when in normal mode (it's `<leader>s` by default):
 
 ```lua
 require("gitlab").summary()
 ```
+
 
 The `approve` command will approve the merge request for the current branch:
 

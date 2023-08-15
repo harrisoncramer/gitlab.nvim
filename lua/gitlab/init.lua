@@ -45,6 +45,7 @@ M.setup                  = function(args)
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
 
+
   local command = state.BIN
       .. " "
       .. state.PROJECT_ID
