@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -42,12 +41,7 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	git, err := gitlab.NewClient(c.authToken)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-
-	mr, res, err := git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{Description: &updateRequest.Description})
+	mr, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{Description: &updateRequest.Description})
 
 	if err != nil {
 		c.handleError(w, err, "Could not edit merge request", http.StatusBadRequest)
