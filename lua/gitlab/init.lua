@@ -38,7 +38,7 @@ M.setup                  = function(args)
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
   state.BIN_PATH = parent_dir
-  state.BIN = parent_dir .. "/bin"
+  state.BIN = parent_dir .. u.get_path_seperator() .."bin"
 
   local binary_exists = vim.loop.fs_stat(state.BIN)
   if binary_exists == nil then M.build() end
@@ -77,7 +77,10 @@ end
 -- Builds the Go binary
 M.build                  = function()
   local command = string.format("cd %s && make", state.BIN_PATH)
+  vim.notify("BIN_PATH " ..  state.BIN_PATH , vim.log.levels.INFO )
+  vim.notify("execute " ..  command , vim.log.levels.INFO )
   local installCode = os.execute(command .. "> /dev/null")
+
   if installCode ~= 0 then
     vim.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
     return false
@@ -88,7 +91,7 @@ end
 -- Initializes state for the project based on the arguments
 -- provided in the `.gitlab.nvim` file per project, and the args provided in the setup function
 M.setPluginConfiguration = function(args)
-  local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
+  local config_file_path = vim.fn.getcwd() .. u.get_path_seperator() .. ".gitlab.nvim"
   local config_file_content = u.read_file(config_file_path)
   if config_file_content == nil then
     return false
@@ -137,7 +140,7 @@ M.setPluginConfiguration = function(args)
 
   -- Configuration for the plugin, such as port of server, layout, etc
   state.PORT = args.port or 21036
-  state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
+  state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. u.get_path_seperator() .. "gitlab.nvim.log")
   state.DISCUSSION_SPLIT = {
     relative = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.relative or "editor",
     position = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.position or "left",

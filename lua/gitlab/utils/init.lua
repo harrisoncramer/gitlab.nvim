@@ -9,6 +9,13 @@ local function get_git_root()
   end
 end
 
+local function get_path_seperator()
+    if vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1 then
+        return "\\"
+    end
+    return "/"
+end
+
 local branch_exists = function(b)
   local is_git_branch = io.popen("git rev-parse --is-inside-work-tree 2>/dev/null"):read("*a")
   if is_git_branch == "true\n" then
@@ -27,7 +34,7 @@ local function get_relative_file_path()
   local git_root = get_git_root()
   if git_root ~= nil then
     local current_file = vim.fn.expand('%:p')
-    return vim.fn.substitute(current_file, git_root .. '/', '', '')
+    return vim.fn.substitute(current_file, git_root .. get_path_seperator() , '', '')
   else
     return nil
   end
@@ -255,6 +262,7 @@ end
 
 M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
+M.get_path_seperator = get_path_seperator
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text
 M.feature_branch_exists = feature_branch_exists
