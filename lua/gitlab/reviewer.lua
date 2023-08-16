@@ -3,9 +3,9 @@ local job          = require("gitlab.job")
 local state        = require("gitlab.state")
 local M            = {}
 
-M.add_reviewer  = function()
-  local eligible_assignees = M.filter_reviewers(state.PROJECT_MEMBERS, state.INFO.reviewers)
-  vim.ui.select(eligible_assignees, {
+M.add_reviewer     = function()
+  local eligible_reviewers = M.filter_reviewers(state.PROJECT_MEMBERS, state.INFO.reviewers)
+  vim.ui.select(eligible_reviewers, {
     prompt = 'Choose Reviewer To Add',
     format_item = function(user)
       return user.username .. " (" .. user.name .. ")"
