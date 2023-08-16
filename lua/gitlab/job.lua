@@ -30,8 +30,6 @@ M.run_job   = function(endpoint, method, body, callback)
             local message = string.format("%s: %s", data.message, data.details)
             vim.notify(message, vim.log.levels.ERROR)
           end
-        else
-          vim.notify(output, vim.log.levels.ERROR)
         end
       end, 0)
     end,
