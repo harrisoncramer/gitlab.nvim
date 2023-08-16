@@ -137,8 +137,14 @@ end
 M.build_note_body          = function(note)
   local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
-    table.insert(text_nodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
+    local line = u.attach_uuid(bodyLine)
+    table.insert(text_nodes, NuiTree.Node({
+      text = line.text,
+      id = line.id,
+      is_body = true
+    }, {}))
   end
+
   local noteHeader = "@" ..
       note.author.username .. " " .. u.format_date(note.created_at)
 
