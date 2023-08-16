@@ -62,7 +62,7 @@ gitlab_url=https://my-personal-gitlab-instance.com/
 If you don't want to write your authentication token into a dotfile, you may provide it as a shell variable. For instance in your `.bashrc` or `.zshrc` file:
 
 ```bash
-export AUTH_TOKEN="your_gitlab_token"
+export GITLAB_TOKEN="your_gitlab_token"
 ```
 
 By default, the plugin will interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option to the `.gitlab.nvim` configuration file for your project.
