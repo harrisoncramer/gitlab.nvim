@@ -16,7 +16,12 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
 
-	projectMemberOptions := gitlab.ListProjectMembersOptions{}
+	projectMemberOptions := gitlab.ListProjectMembersOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 100,
+		},
+	}
+
 	projectMembers, res, err := c.git.ProjectMembers.ListAllProjectMembers(c.projectId, &projectMemberOptions)
 	if err != nil {
 		c.handleError(w, err, "Could not fetch project users", res.StatusCode)

@@ -244,8 +244,7 @@ local current_file_path = function()
   return vim.fn.fnamemodify(path, ':p')
 end
 
--- Function to join two tables
-function join_tables(table1, table2)
+local join_tables = function(table1, table2)
   for _, value in ipairs(table2) do
     table.insert(table1, value)
   end
@@ -253,6 +252,28 @@ function join_tables(table1, table2)
   return table1
 end
 
+local contains = function(array, search_value)
+  for _, value in ipairs(array) do
+    if value == search_value then
+      return true
+    end
+  end
+  return false
+end
+
+local extract = function(t, property)
+  local resultTable = {}
+  for _, value in ipairs(t) do
+    if value[property] then
+      table.insert(resultTable, value[property])
+    end
+  end
+  return resultTable
+end
+
+
+M.extract = extract
+M.contains = contains
 M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number

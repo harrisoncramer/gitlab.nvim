@@ -47,8 +47,8 @@ M.create_comment           = ensureState(comment.create_comment)
 M.list_discussions         = ensureState(discussions.list_discussions)
 M.edit_comment             = ensureState(comment.edit_comment)
 M.delete_comment           = ensureState(comment.delete_comment)
-M.assign_reviewer          = ensureProjectMembers(reviewer.assign_reviewer)
-M.remove_reviewer          = ensureProjectMembers(reviewer.remove_reviewer)
+M.assign_reviewer          = ensureProjectMembers(ensureState(reviewer.assign_reviewer))
+M.remove_reviewer          = ensureProjectMembers(ensureState(reviewer.remove_reviewer))
 M.reply                    = ensureState(discussions.reply)
 M.state                    = state
 
