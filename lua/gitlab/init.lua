@@ -1,18 +1,18 @@
-local state              = require("gitlab.state")
-local discussions        = require("gitlab.discussions")
-local summary            = require("gitlab.summary")
-local assignments        = require("gitlab.assignments")
-local keymaps            = require("gitlab.keymaps")
-local comment            = require("gitlab.comment")
-local job                = require("gitlab.job")
-local u                  = require("gitlab.utils")
+local state                = require("gitlab.state")
+local discussions          = require("gitlab.discussions")
+local summary              = require("gitlab.summary")
+local reviewer             = require("gitlab.reviewer")
+local keymaps              = require("gitlab.keymaps")
+local comment              = require("gitlab.comment")
+local job                  = require("gitlab.job")
+local u                    = require("gitlab.utils")
 
 -- Function names prefixed with "ensure" will ensure the plugin's state
 -- is initialized prior to running other calls. These functions run
 -- API calls if the state isn't initialized, which will set state containing
 -- information that's necessary for other API calls, like description,
--- author, reviewers, etc.
-local ensureState        = function(callback)
+-- author, reviewer, etc.
+local ensureState          = function(callback)
   return function()
     if type(state.INFO) ~= "table" then
       job.run_job("info", "GET", nil, function(data)
@@ -25,11 +25,11 @@ local ensureState        = function(callback)
   end
 end
 
-local ensureReviewers    = function(callback)
+local ensureProjectMembers = function(callback)
   return function()
-    if type(state.REVIEWERS) ~= "table" then
-      job.run_job("reviewers", "GET", nil, function(data)
-        state.REVIEWERS = data.reviewers
+    if type(state.PROJECT_MEMBERS) ~= "table" then
+      job.run_job("members", "GET", nil, function(data)
+        state.PROJECT_MEMBERS = data.ProjectMembers
         callback()
       end)
     else
@@ -39,21 +39,21 @@ local ensureReviewers    = function(callback)
 end
 
 -- Root Module Scope
-local M                  = {}
-M.summary                = ensureState(summary.summary)
-M.approve                = ensureState(job.approve)
-M.revoke                 = ensureState(job.revoke)
-M.create_comment         = ensureState(comment.create_comment)
-M.list_discussions       = ensureState(discussions.list_discussions)
-M.edit_comment           = ensureState(comment.edit_comment)
-M.delete_comment         = ensureState(comment.delete_comment)
-M.assign_reviewer        = ensureReviewers(assignments.assign_reviewer)
-M.remove_reviewer        = ensureReviewers(assignments.remove_reviewer)
-M.reply                  = ensureState(discussions.reply)
-M.state                  = state
+local M                    = {}
+M.summary                  = ensureState(summary.summary)
+M.approve                  = ensureState(job.approve)
+M.revoke                   = ensureState(job.revoke)
+M.create_comment           = ensureState(comment.create_comment)
+M.list_discussions         = ensureState(discussions.list_discussions)
+M.edit_comment             = ensureState(comment.edit_comment)
+M.delete_comment           = ensureState(comment.delete_comment)
+M.assign_reviewer          = ensureProjectMembers(reviewer.assign_reviewer)
+M.remove_reviewer          = ensureProjectMembers(reviewer.remove_reviewer)
+M.reply                    = ensureState(discussions.reply)
+M.state                    = state
 
 -- Builds the binary (if not built); starts the Go server; sets the keymaps
-M.setup                  = function(args)
+M.setup                    = function(args)
   if args == nil then args = {} end
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
@@ -95,7 +95,7 @@ M.setup                  = function(args)
 end
 
 -- Builds the Go binary
-M.build                  = function()
+M.build                    = function()
   local command = string.format("cd %s && make", state.BIN_PATH)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
@@ -107,7 +107,7 @@ end
 
 -- Initializes state for the project based on the arguments
 -- provided in the `.gitlab.nvim` file per project, and the args provided in the setup function
-M.setPluginConfiguration = function(args)
+M.setPluginConfiguration   = function(args)
   local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
   local config_file_content = u.read_file(config_file_path)
   if config_file_content == nil then
