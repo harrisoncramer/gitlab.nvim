@@ -9,7 +9,7 @@ import (
 )
 
 type ReviewerUpdateRequest struct {
-	Id int `json:"id"`
+	Ids []int `json:"ids"`
 }
 
 type ReviewerUpdateResponse struct {
@@ -22,23 +22,7 @@ type ReviewersRequestResponse struct {
 	Reviewers []int `json:"reviewers"`
 }
 
-func ReviewerHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodDelete:
-		DeleteReviewer(w, r)
-	case http.MethodPut:
-		AddReviewer(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	}
-}
-
-func DeleteReviewer(w http.ResponseWriter, r *http.Request) {
-	// c := r.Context().Value("client").(Client)
-	// w.Header().Set("Content-Type", "application/json")
-}
-
-func AddReviewer(w http.ResponseWriter, r *http.Request) {
+func ReviewersHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -57,23 +41,17 @@ func AddReviewer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err != nil {
-		c.handleError(w, err, "Could not convert ID of reviewer to integer", http.StatusBadRequest)
-		return
-	}
-
-	reviewerIds := &[]int{reviewerUpdateRequest.Id}
 	mr, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{
-		ReviewerIDs: reviewerIds,
+		ReviewerIDs: &reviewerUpdateRequest.Ids,
 	})
 
 	if err != nil {
-		c.handleError(w, err, "Could not edit merge request reviewer", http.StatusBadRequest)
+		c.handleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
-		c.handleError(w, err, "Could not edit merge request reviewer", http.StatusBadRequest)
+		c.handleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
 		return
 	}
 
@@ -81,7 +59,7 @@ func AddReviewer(w http.ResponseWriter, r *http.Request) {
 
 	response := ReviewerUpdateResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Reviewer updated",
+			Message: "Reviewers updated",
 			Status:  http.StatusOK,
 		},
 		Reviewers: mr.Reviewers,

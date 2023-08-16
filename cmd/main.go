@@ -30,7 +30,7 @@ func main() {
 
 	m := http.NewServeMux()
 	m.Handle("/mr/description", withGitlabContext(http.HandlerFunc(DescriptionHandler), c))
-	m.Handle("/mr/reviewer", withGitlabContext(http.HandlerFunc(ReviewerHandler), c))
+	m.Handle("/mr/reviewer", withGitlabContext(http.HandlerFunc(ReviewersHandler), c))
 	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
 	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
