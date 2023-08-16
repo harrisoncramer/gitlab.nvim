@@ -1,17 +1,35 @@
 local state              = require("gitlab.state")
 local discussions        = require("gitlab.discussions")
 local summary            = require("gitlab.summary")
+local assignments        = require("gitlab.assignments")
 local keymaps            = require("gitlab.keymaps")
 local comment            = require("gitlab.comment")
 local job                = require("gitlab.job")
 local u                  = require("gitlab.utils")
 
--- Ensures the plugin's state is initialized prior to running other calls. This state contains the basic information about the current merge request, like description, author, etc
+-- Function names prefixed with "ensure" will ensure the plugin's state
+-- is initialized prior to running other calls. These functions run
+-- API calls if the state isn't initialized, which will set state containing
+-- information that's necessary for other API calls, like description,
+-- author, reviewers, etc.
 local ensureState        = function(callback)
   return function()
     if type(state.INFO) ~= "table" then
       job.run_job("info", "GET", nil, function(data)
         state.INFO = data.info
+        callback()
+      end)
+    else
+      callback()
+    end
+  end
+end
+
+local ensureReviewers    = function(callback)
+  return function()
+    if type(state.REVIEWERS) ~= "table" then
+      job.run_job("reviewers", "GET", nil, function(data)
+        state.REVIEWERS = data.reviewers
         callback()
       end)
     else
@@ -29,6 +47,8 @@ M.create_comment         = ensureState(comment.create_comment)
 M.list_discussions       = ensureState(discussions.list_discussions)
 M.edit_comment           = ensureState(comment.edit_comment)
 M.delete_comment         = ensureState(comment.delete_comment)
+M.assign_reviewer        = ensureReviewers(assignments.assign_reviewer)
+M.remove_reviewer        = ensureReviewers(assignments.remove_reviewer)
 M.reply                  = ensureState(discussions.reply)
 M.state                  = state
 
