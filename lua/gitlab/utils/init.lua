@@ -262,11 +262,11 @@ local function uuid()
   end)
 end
 
-local clean_comment_body = function(str)
+local attach_uuid = function(str)
   return { text = str, id = uuid() }
 end
 
-M.clean_comment_body = clean_comment_body
+M.attach_uuid = attach_uuid
 M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number

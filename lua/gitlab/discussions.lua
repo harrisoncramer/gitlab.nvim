@@ -137,7 +137,7 @@ end
 M.build_note_body          = function(note)
   local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
-    local line = u.clean_comment_body(bodyLine)
+    local line = u.attach_uuid(bodyLine)
     table.insert(text_nodes, NuiTree.Node({
       text = line.text,
       id = line.id,
