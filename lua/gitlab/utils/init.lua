@@ -245,7 +245,7 @@ local current_file_path = function()
 end
 
 -- Function to join two tables
-function join_tables(table1, table2)
+local function join_tables(table1, table2)
   for _, value in ipairs(table2) do
     table.insert(table1, value)
   end
@@ -253,6 +253,20 @@ function join_tables(table1, table2)
   return table1
 end
 
+local random = math.random
+local function uuid()
+  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+  return string.gsub(template, '[xy]', function(c)
+    local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+    return string.format('%x', v)
+  end)
+end
+
+local clean_comment_body = function(str)
+  return { text = str, id = uuid() }
+end
+
+M.clean_comment_body = clean_comment_body
 M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
