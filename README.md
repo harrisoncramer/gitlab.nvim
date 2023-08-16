@@ -140,7 +140,7 @@ require("gitlab").revoke()
 The `comment` command will open up a NUI popover that will allow you to create a Gitlab comment on the current line. To send the comment, use `<leader>s` while the comment popup is open:
 
 ```lua
-require("gitlab").comment()
+require("gitlab").create_comment()
 ```
 
 ### Discussions

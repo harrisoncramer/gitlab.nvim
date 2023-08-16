@@ -244,6 +244,19 @@ local current_file_path = function()
   return vim.fn.fnamemodify(path, ':p')
 end
 
+local random = math.random
+local function uuid()
+  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+  return string.gsub(template, '[xy]', function(c)
+    local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
+    return string.format('%x', v)
+  end)
+end
+
+local attach_uuid = function(str)
+  return { text = str, id = uuid() }
+end
+
 local join_tables = function(table1, table2)
   for _, value in ipairs(table2) do
     table.insert(table1, value)
@@ -274,6 +287,7 @@ end
 
 M.extract = extract
 M.contains = contains
+M.attach_uuid = attach_uuid
 M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number

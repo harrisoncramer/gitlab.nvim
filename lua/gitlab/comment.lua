@@ -42,7 +42,7 @@ M.confirm_create_comment = function(text)
 
   job.run_job("comment", "POST", json, function(data)
     vim.notify("Comment created")
-    discussions.list_discussions()
+    discussions.refresh_tree()
   end)
 end
 
@@ -101,7 +101,7 @@ M.send_deletion          = function(item)
         -- We are removing the root node of the discussion,
         -- we need to move all the children around, the easiest way
         -- to do this is to just re-render the whole tree 🤷
-        discussions.list_discussions()
+        discussions.refresh_tree()
         note_node:expand()
       end
     end)
