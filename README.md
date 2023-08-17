@@ -71,17 +71,7 @@ If you don't want to write your authentication token into a dotfile, you may pro
 export GITLAB_TOKEN="your_gitlab_token"
 ```
 
-By default, the plugin will interact with MRs against a "main" branch. You can configure this by passing in the `base_branch` option to the `.gitlab.nvim` configuration file for your project.
-
-```
-project_id=112415
-auth_token=your_gitlab_token
-gitlab_url=https://my-personal-gitlab-instance.com/
-base_branch=master
-```
-
 ## Configuring the Plugin
-
 
 Here is the default setup function. All of these values are optional, and if you call this function with no values the defaults will be used:
 

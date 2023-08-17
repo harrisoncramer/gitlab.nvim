@@ -11,7 +11,6 @@ local M                    = {}
 local replyPopup           = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
 M.reply                    = function(discussion_id)
-  if u.base_invalid() then return end
   replyPopup:mount()
   keymaps.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
 end
@@ -28,7 +27,6 @@ end
 
 -- Places all of the discussions into a readable list
 M.list_discussions         = function()
-  if u.base_invalid() then return end
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR")

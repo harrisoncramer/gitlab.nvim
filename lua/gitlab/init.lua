@@ -58,7 +58,6 @@ M.ensureState                 = function(callback)
           return
         else
           keymaps.set_keymap_keys(state.args.keymaps)
-          keymaps.set_keymaps()
 
           -- Once the Go binary has started, call the info endpoint
           -- to set global state for other commands
@@ -73,11 +72,13 @@ M.ensureState                 = function(callback)
         end
       end,
       on_stderr = function(_, errors)
+        local err_msg = ''
         for _, err in ipairs(errors) do
           if err ~= "" and err ~= nil then
-            vim.notify(err, vim.log.levels.ERROR)
+            err_msg = err_msg .. err .. "\n"
           end
         end
+        vim.notify(err_msg, vim.log.levels.ERROR)
       end
     })
   end
@@ -126,20 +127,14 @@ M.setPluginConfiguration      = function(args)
 
   local project_id = property["project_id"]
   local gitlab_url = property["gitlab_url"]
-  local base_branch = property["base_branch"]
   local auth_token = property["auth_token"]
 
   state.PROJECT_ID = project_id
   state.AUTH_TOKEN = auth_token or os.getenv("GITLAB_TOKEN")
   state.GITLAB_URL = gitlab_url or "https://gitlab.com"
-  state.BASE_BRANCH = base_branch or "main"
 
   local current_branch_raw = io.popen("git rev-parse --abbrev-ref HEAD"):read("*a")
   local current_branch = string.gsub(current_branch_raw, "\n", "")
-
-  if current_branch == state.BASE_BRANCH then
-    return false
-  end
 
   if state.AUTH_TOKEN == nil then
     error("Missing authentication token for Gitlab")
