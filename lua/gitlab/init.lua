@@ -135,9 +135,6 @@ M.setPluginConfiguration      = function(args)
   state.AUTH_TOKEN = auth_token or os.getenv("GITLAB_TOKEN")
   state.GITLAB_URL = gitlab_url or "https://gitlab.com"
 
-  local current_branch_raw = io.popen("git rev-parse --abbrev-ref HEAD"):read("*a")
-  local current_branch = string.gsub(current_branch_raw, "\n", "")
-
   if state.AUTH_TOKEN == nil then
     error("Missing authentication token for Gitlab")
   end
