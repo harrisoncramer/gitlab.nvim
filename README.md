@@ -107,6 +107,10 @@ require("gitlab").setup({
       close = { "<Esc>", "<C-c>" },
       submit = { "<CR>", "<Space>" },
     }
+  },
+  symbols = {  
+    resolved = '✓',
+    unresolved = '✖',
   }
 })
 ```

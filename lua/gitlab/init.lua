@@ -160,10 +160,17 @@ M.setPluginConfiguration      = function(args)
   -- Configuration for the plugin, such as port of server, layout, etc
   state.PORT = args.port or 21036
   state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
-  state.DISCUSSION_SPLIT = {
-    relative = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.relative or "editor",
-    position = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.position or "left",
-    size = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.size or "20%",
+  state.DISCUSSION = {
+    SPLIT = {
+      relative = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.relative or "editor",
+      position = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.position or "left",
+      size = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.size or "20%",
+    }
+  }
+
+  state.SYMBOLS = {
+    resolved = (args.symbols and args.symbols.resolved or '✓'),
+    unresolved = (args.symbols and args.symbols.unresolved or '')
   }
 
   return true

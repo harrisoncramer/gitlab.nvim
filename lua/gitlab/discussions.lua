@@ -35,7 +35,7 @@ M.list_discussions         = function()
       return
     end
 
-    local splitState = state.DISCUSSION_SPLIT
+    local splitState = state.DISCUSSION.SPLIT
     splitState.buf_options = { modifiable = false }
     local split = NuiSplit(splitState)
     split:mount()
@@ -43,6 +43,7 @@ M.list_discussions         = function()
     local buf = split.bufnr
     state.SPLIT_BUF = buf
 
+    state.DISCUSSIONS = data.discussions
     local tree_nodes = M.add_discussions_to_table(data.discussions)
 
     state.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
@@ -134,7 +135,7 @@ M.get_note_node            = function(node)
   end
 end
 
-M.build_note_body          = function(note)
+M.build_note_body          = function(note, resolve_info)
   local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
     local line = u.attach_uuid(bodyLine)
@@ -145,14 +146,18 @@ M.build_note_body          = function(note)
     }, {}))
   end
 
-  local noteHeader = "@" ..
-      note.author.username .. " " .. u.format_date(note.created_at)
+  local resolve_symbol = ''
+  if resolve_info ~= nil and resolve_info.resolvable then
+    resolve_symbol = resolve_info.resolved and state.SYMBOLS.resolved or state.SYMBOLS.unresolved
+  end
+
+  local noteHeader = resolve_symbol .. ' ' .. "@" .. note.author.username .. " " .. u.format_date(note.created_at)
 
   return noteHeader, text_nodes
 end
 
-M.build_note               = function(note)
-  local text, text_nodes = M.build_note_body(note)
+M.build_note               = function(note, resolve_info)
+  local text, text_nodes = M.build_note_body(note, resolve_info)
   local line_number = note.position.new_line or note.position.old_line
   local note_node = NuiTree.Node(
     {
@@ -215,7 +220,7 @@ M.add_discussions_to_table = function(discussions)
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        __, root_text, root_text_nodes = M.build_note(note)
+        __, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
         root_file_name = note.position.new_path
         root_line_number = note.position.new_line or note.position.old_line
         root_id = discussion.id
