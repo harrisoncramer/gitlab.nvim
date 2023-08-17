@@ -9,20 +9,6 @@ local function get_git_root()
   end
 end
 
-local branch_exists = function(b)
-  local is_git_branch = io.popen("git rev-parse --is-inside-work-tree 2>/dev/null"):read("*a")
-  if is_git_branch == "true\n" then
-    for line in io.popen("git branch 2>/dev/null"):lines() do
-      line = line:gsub("%s+", "")
-      if line == b then
-        return true
-      end
-    end
-  end
-  return false
-end
-
-
 local function get_relative_file_path()
   local git_root = get_git_root()
   if git_root ~= nil then
@@ -283,7 +269,6 @@ M.create_popup_state = create_popup_state
 M.exit = exit
 M.read_file = read_file
 M.split_diff_view_filename = split_diff_view_filename
-M.branch_exists = branch_exists
 M.current_file_path = current_file_path
 M.P = P
 return M
