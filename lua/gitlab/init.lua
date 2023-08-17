@@ -7,55 +7,10 @@ local comment                 = require("gitlab.comment")
 local job                     = require("gitlab.job")
 local u                       = require("gitlab.utils")
 
--- Function names prefixed with "ensure" will ensure the plugin's state
--- is initialized prior to running other calls. These functions run
--- API calls if the state isn't initialized, which will set state containing
--- information that's necessary for other API calls, like description,
--- author, reviewer, etc.
-local ensureState             = function(callback)
-  return function()
-    if type(state.INFO) ~= "table" then
-      job.run_job("info", "GET", nil, function(data)
-        state.INFO = data.info
-        callback()
-      end)
-    else
-      callback()
-    end
-  end
-end
-
-local ensureProjectMembers    = function(callback)
-  return function()
-    if type(state.PROJECT_MEMBERS) ~= "table" then
-      job.run_job("members", "GET", nil, function(data)
-        state.PROJECT_MEMBERS = data.ProjectMembers
-        callback()
-      end)
-    else
-      callback()
-    end
-  end
-end
-
--- Root Module Scope
 local M                       = {}
-M.summary                     = ensureState(summary.summary)
-M.approve                     = ensureState(job.approve)
-M.revoke                      = ensureState(job.revoke)
-M.list_discussions            = ensureState(discussions.list_discussions)
-M.create_comment              = ensureState(comment.create_comment)
-M.edit_comment                = ensureState(comment.edit_comment)
-M.delete_comment              = ensureState(comment.delete_comment)
-M.toggle_resolved             = ensureState(comment.toggle_resolved)
-M.add_reviewer                = ensureProjectMembers(ensureState(assignees_and_reviewers.add_reviewer))
-M.delete_reviewer             = ensureProjectMembers(ensureState(assignees_and_reviewers.delete_reviewer))
-M.add_assignee                = ensureProjectMembers(ensureState(assignees_and_reviewers.add_assignee))
-M.delete_assignee             = ensureProjectMembers(ensureState(assignees_and_reviewers.delete_assignee))
-M.reply                       = ensureState(discussions.reply)
-M.state                       = state
+M.args                        = nil
 
--- Builds the binary (if not built); starts the Go server; sets the keymaps
+-- Builds the binary (if not built) and sets the plugin arguments
 M.setup                       = function(args)
   if args == nil then args = {} end
   local file_path = u.current_file_path()
@@ -67,34 +22,81 @@ M.setup                       = function(args)
   if binary_exists == nil then M.build() end
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
+  M.args = args                                         -- The  ensureState function won't start without args
+end
 
+-- Function names prefixed with "ensure" will ensure the plugin's state
+-- is initialized prior to running other calls. These functions run
+-- API calls if the state isn't initialized, which will set state containing
+-- information that's necessary for other API calls, like description,
+-- author, reviewer, etc.
 
-  local command = state.BIN
-      .. " "
-      .. state.PROJECT_ID
-      .. " "
-      .. state.GITLAB_URL
-      .. " "
-      .. state.PORT
-      .. " "
-      .. state.AUTH_TOKEN
-      .. " "
-      .. state.LOG_PATH
-
-  vim.fn.jobstart(command, {
-    on_stdout = function(job_id)
-      if job_id <= 0 then
-        vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
-        return
-      else
-        keymaps.set_keymap_keys(args.keymaps)
-        keymaps.set_keymaps()
-      end
-    end,
-    on_stderr = function(_, error)
-      vim.notify(error[1], vim.log.levels.ERROR)
+-- This plugin will start the Go server and will call the "info"
+-- endpoint and set the state of the MR.
+M.go_server_running           = false
+M.ensureState                 = function(callback)
+  return function()
+    if not M.args then
+      vim.notify("The gitlab.nvim state was not set. Do you have a .gitlab.nvim file configured?", vim.log.levels.ERROR)
+      return
     end
-  })
+
+    if M.go_server_running then
+      callback()
+      return
+    end
+
+    local command = state.BIN
+        .. " "
+        .. state.PROJECT_ID
+        .. " "
+        .. state.GITLAB_URL
+        .. " "
+        .. state.PORT
+        .. " "
+        .. state.AUTH_TOKEN
+        .. " "
+        .. state.LOG_PATH
+
+    vim.fn.jobstart(command, {
+      on_stdout = function(job_id)
+        if job_id <= 0 then
+          vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+          return
+        else
+          -- Once the Go binary has go_server_running, call the info endpoint to set global state
+          keymaps.set_keymap_keys(M.args.keymaps)
+          M.go_server_running = true
+          job.run_job("info", "GET", nil, function(data)
+            state.INFO = data.info
+            callback()
+          end)
+        end
+      end,
+      on_stderr = function(_, errors)
+        local err_msg = ''
+        for _, err in ipairs(errors) do
+          if err ~= "" and err ~= nil then
+            err_msg = err_msg .. err .. "\n"
+          end
+        end
+        vim.notify(err_msg, vim.log.levels.ERROR)
+      end
+    })
+  end
+end
+
+M.ensureProjectMembers        = function(callback)
+  return function()
+    if type(state.PROJECT_MEMBERS) ~= "table" then
+      job.run_job("members", "GET", nil, function(data)
+        state.PROJECT_MEMBERS = data.ProjectMembers
+        callback()
+      end)
+    else
+      callback()
+    end
+  end
 end
 
 -- Builds the Go binary
@@ -127,20 +129,14 @@ M.setPluginConfiguration      = function(args)
 
   local project_id = property["project_id"]
   local gitlab_url = property["gitlab_url"]
-  local base_branch = property["base_branch"]
   local auth_token = property["auth_token"]
 
   state.PROJECT_ID = project_id
   state.AUTH_TOKEN = auth_token or os.getenv("GITLAB_TOKEN")
   state.GITLAB_URL = gitlab_url or "https://gitlab.com"
-  state.BASE_BRANCH = base_branch or "main"
 
   local current_branch_raw = io.popen("git rev-parse --abbrev-ref HEAD"):read("*a")
   local current_branch = string.gsub(current_branch_raw, "\n", "")
-
-  if current_branch == state.BASE_BRANCH then
-    return false
-  end
 
   if state.AUTH_TOKEN == nil then
     error("Missing authentication token for Gitlab")
@@ -176,5 +172,21 @@ M.setPluginConfiguration      = function(args)
 
   return true
 end
+
+-- Root Module Scope
+M.summary                     = M.ensureState(summary.summary)
+M.approve                     = M.ensureState(job.approve)
+M.revoke                      = M.ensureState(job.revoke)
+M.list_discussions            = M.ensureState(discussions.list_discussions)
+M.create_comment              = M.ensureState(comment.create_comment)
+M.edit_comment                = M.ensureState(comment.edit_comment)
+M.delete_comment              = M.ensureState(comment.delete_comment)
+M.toggle_resolved             = M.ensureState(comment.toggle_resolved)
+M.reply                       = M.ensureState(discussions.reply)
+M.add_reviewer                = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.add_reviewer))
+M.delete_reviewer             = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.delete_reviewer))
+M.add_assignee                = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.add_assignee))
+M.delete_assignee             = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.delete_assignee))
+M.state                       = state
 
 return M

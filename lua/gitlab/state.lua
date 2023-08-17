@@ -5,7 +5,6 @@ M.BIN               = nil
 M.PROJECT_ID        = nil
 M.ACTIVE_DISCUSSION = nil
 M.ACTIVE_NOTE       = nil
-M.BASE_BRANCH       = "main"
 M.keymaps           = {
   popup = {
     exit = "<Esc>",

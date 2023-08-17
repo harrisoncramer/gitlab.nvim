@@ -54,44 +54,12 @@ local function get_buffer_text(bufnr)
   return text
 end
 
-local feature_branch_exists = function(base_branch)
-  local is_git_branch = io.popen("git rev-parse --is-inside-work-tree 2>/dev/null"):read("*a")
-  if is_git_branch == "true\n" then
-    for line in io.popen("git branch 2>/dev/null"):lines() do
-      line = line:gsub("%s+", "")
-      if line == base_branch then
-        return true
-      end
-    end
-  end
-  return false
-end
-
 local string_starts = function(str, start)
   return str:sub(1, #start) == start
 end
 
 local press_enter = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
-end
-
-local base_invalid = function()
-  local current_branch_raw = io.popen("git rev-parse --abbrev-ref HEAD"):read("*a")
-  local current_branch = string.gsub(current_branch_raw, "\n", "")
-
-  if current_branch == "main" or current_branch == "master" then
-    vim.notify('On ' .. current_branch .. ' branch, no MRs available', vim.log.levels.ERROR)
-    return true
-  end
-
-  local base = state.BASE_BRANCH
-  local hasBaseBranch = feature_branch_exists(base)
-  if not hasBaseBranch then
-    vim.notify(
-      'Could not fetch feature branch. Please check that you have the correct base_branch value set in your .gitlab.nvim configuration file',
-      vim.log.levels.ERROR)
-    return true
-  end
 end
 
 local format_date = function(date_string)
@@ -302,10 +270,8 @@ M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
 M.get_buffer_text = get_buffer_text
-M.feature_branch_exists = feature_branch_exists
 M.press_enter = press_enter
 M.string_starts = string_starts
-M.base_invalid = base_invalid
 M.format_date = format_date
 M.add_comment_sign = add_comment_sign
 M.jump_to_file = jump_to_file

@@ -13,14 +13,12 @@ local edit_popup         = Popup(u.create_popup_state("Edit Comment", "80%", "80
 
 -- Function that fires to open the comment popup
 M.create_comment         = function()
-  if u.base_invalid() then return end
   comment_popup:mount()
   keymaps.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end
 
 -- Actually sends the comment to Gitlab
 M.confirm_create_comment = function(text)
-  if u.base_invalid() then return end
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
   if relative_file_path == nil then return end
@@ -110,7 +108,6 @@ end
 
 -- Function that opens the edit popup from the discussion tree
 M.edit_comment           = function()
-  if u.base_invalid() then return end
   local current_node = state.tree:get_node()
   local note_node = discussions.get_note_node(current_node)
   local root_node = discussions.get_root_node(current_node)

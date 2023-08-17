@@ -7,7 +7,6 @@ local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "8
 local M                = {}
 
 M.summary              = function()
-  if u.base_invalid() then return end
   descriptionPopup:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
   local title = state.INFO.title
