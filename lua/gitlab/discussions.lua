@@ -43,7 +43,6 @@ M.list_discussions         = function()
     local buf = split.bufnr
     state.SPLIT_BUF = buf
 
-    state.DISCUSSIONS = data.discussions
     local tree_nodes = M.add_discussions_to_table(data.discussions)
 
     state.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
