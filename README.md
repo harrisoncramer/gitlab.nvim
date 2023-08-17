@@ -6,6 +6,9 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - Read and Edit an MR description
 - Approve/Revoke Approval for an MR
 - Add or remove reviewers and assignees
+- Resolve/unresolve discussion threads
+
+And a lot more!
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43-8d2f-489df0745822
 
@@ -54,7 +57,7 @@ use {
 
 ## Configuration
 
-This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, use only for self-hosted instances):
+This plugin requires a `.gitlab.nvim` file in the root of the local Gitlab directory. Provide this file with values required to connect to your gitlab instance (gitlab_url is optional, use ONLY for self-hosted instances):
 
 ```
 project_id=112415
@@ -92,14 +95,15 @@ require("gitlab").setup({
       perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
     },
     discussion_tree = { -- The discussion tree that holds all comments
-      jump_to_location = "o",
-      edit_comment = "e",
-      delete_comment = "dd",
-      reply_to_comment = "r",
-      toggle_node = "t",
+      jump_to_location = "o", -- Jump to comment location in file
+      edit_comment = "e", -- Edit coment
+      delete_comment = "dd", -- Delete comment
+      reply_to_comment = "r", -- Reply to comment
+      toggle_resolved = "p" -- Toggles the resolved status of the discussion
+      toggle_node = "t", -- Opens or closes the discussion
       position = "left", -- "top", "right", "bottom" or "left"
+      relative = "editor" -- Position of tree split relative to "editor" or "window"
       size = "20%", -- Size of split
-      relative = "editor" -- Position relative to "editor" or "window"
     },
     dialogue = { -- The confirmation dialogue for deleting comments
       focus_next = { "j", "<Down>", "<Tab>" },
@@ -109,8 +113,8 @@ require("gitlab").setup({
     }
   },
   symbols = {  
-    resolved = '✓',
-    unresolved = '✖',
+    resolved = '✓', -- Symbol to show next to resolved discussions
+    unresolved = '✖', -- Symbol to show next to unresolved discussions
   }
 })
 ```
@@ -183,6 +187,7 @@ Within the discussion tree, there are several functions that you can call, howev
 require("gitlab").delete_comment()
 require("gitlab").edit_comment()
 require("gitlab").reply()
+require("gitlab").toggle_resolved()
 ```
 
 ## Keybindings
