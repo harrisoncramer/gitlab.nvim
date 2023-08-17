@@ -8,29 +8,26 @@ local M                    = {
 
 M.assignee.add_assignee    = function()
   local type = 'assignee'
-  local plural = 'assignees'
-  M.add_popup(type, plural)
+  M.add_popup(type)
 end
 
 M.assignee.delete_assignee = function()
   local type = 'assignee'
-  local plural = 'assignees'
-  M.delete_popup(type, plural)
+  M.delete_popup(type)
 end
 
 M.reviewer.add_reviewer    = function()
   local type = 'reviewer'
-  local plural = 'reviewers'
-  M.add_popup(type, plural)
+  M.add_popup(type)
 end
 
 M.reviewer.delete_reviewer = function()
   local type = 'reviewer'
-  local plural = 'reviewers'
-  M.delete_popup(type, plural)
+  M.delete_popup(type)
 end
 
-M.add_popup                = function(type, plural)
+M.add_popup                = function(type)
+  local plural = type .. 's'
   local current = state.INFO[plural]
   local eligible = M.filter_eligible(state.PROJECT_MEMBERS, current)
   vim.ui.select(eligible, {
@@ -50,10 +47,10 @@ M.add_popup                = function(type, plural)
   end)
 end
 
-M.delete_popup             = function(type, plural)
+M.delete_popup             = function(type)
+  local plural = type .. 's'
   local current = state.INFO[plural]
-  local eligible_removals = state.INFO[plural]
-  vim.ui.select(eligible_removals, {
+  vim.ui.select(current, {
     prompt = 'Choose ' .. type .. ' to delete',
     format_item = function(user)
       return user.username .. " (" .. user.name .. ")"
