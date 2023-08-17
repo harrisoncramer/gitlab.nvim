@@ -284,7 +284,17 @@ local extract = function(t, property)
   return resultTable
 end
 
+local remove_last_chunk = function(sentence)
+  local words = {}
+  for word in sentence:gmatch("%S+") do
+    table.insert(words, word)
+  end
+  table.remove(words, #words)
+  local sentence_without_last = table.concat(words, " ")
+  return sentence_without_last
+end
 
+M.remove_last_chunk = remove_last_chunk
 M.extract = extract
 M.contains = contains
 M.attach_uuid = attach_uuid

@@ -17,6 +17,7 @@ M.keymaps           = {
     delete_comment = "dd",
     reply_to_comment = "r",
     toggle_node = "t",
+    toggle_resolved = "p"
   },
   dialogue = {
     focus_next = { "j", "<Down>", "<Tab>" },

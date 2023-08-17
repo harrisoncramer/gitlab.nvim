@@ -84,6 +84,10 @@ M.set_tree_keymaps         = function(buf)
     require("gitlab.comment").delete_comment()
   end, { buffer = true })
 
+  vim.keymap.set('n', state.keymaps.discussion_tree.toggle_resolved, function()
+    require("gitlab.comment").toggle_resolved()
+  end, { buffer = true })
+
   -- Expand/collapse the current node
   vim.keymap.set('n', state.keymaps.discussion_tree.toggle_node, function()
       local node = state.tree:get_node()
@@ -150,7 +154,7 @@ M.build_note_body          = function(note, resolve_info)
     resolve_symbol = resolve_info.resolved and state.SYMBOLS.resolved or state.SYMBOLS.unresolved
   end
 
-  local noteHeader = resolve_symbol .. ' ' .. "@" .. note.author.username .. " " .. u.format_date(note.created_at)
+  local noteHeader = "@" .. note.author.username .. " " .. u.format_date(note.created_at) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end
