@@ -27,7 +27,7 @@ end
 M.edit_description     = function(text)
   local jsonTable = { description = text }
   local json = vim.json.encode(jsonTable)
-  job.run_job("mr", "PUT", json, function(data)
+  job.run_job("mr/description", "PUT", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
   end)

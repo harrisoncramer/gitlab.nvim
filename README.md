@@ -24,7 +24,9 @@ return {
   "harrisoncramer/gitlab.nvim",
   dependencies = {
     "MunifTanjim/nui.nvim",
-    "nvim-lua/plenary.nvim"
+    "nvim-lua/plenary.nvim",
+    "stevearc/dressing.nvim" -- Recommended but not required. Better UI for pickers.
+    enabled = true,
   },
   build = function () require("gitlab").build() end, -- Builds the Go binary
   config = function()
@@ -143,6 +145,24 @@ The `comment` command will open up a NUI popover that will allow you to create a
 require("gitlab").create_comment()
 ```
 
+The `add_reviewer` and `delete_reviewer` commands, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
+
+```lua
+require("gitlab").add_reviewer()
+require("gitlab").delete_reviewer()
+require("gitlab").add_assignee()
+require("gitlab").delete_assignee()
+```
+
+These commands use Neovim's built in picker, which is much nicer if you install <a href="https://github.com/stevearc/dressing.nvim">dressing</a>. If you use Dressing, please enable it:
+
+```lua
+require("dressing").setup({
+    input = {
+        enabled = true
+    }
+})
+
 ### Discussions
 
 Gitlab groups threads of notes together into "disucssions." To get a list of all the discussions for the current MR, use the `list_discussions` command. This command will open up a split view of all the comments on the current merge request. You can jump to the comment location by using the `o` key in the tree buffer, and you can reply to a thread by using the `r` keybinding in the tree buffer:
@@ -170,6 +190,10 @@ vim.keymap.set("n", "<leader>glA", gitlab.approve)
 vim.keymap.set("n", "<leader>glR", gitlab.revoke)
 vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
 vim.keymap.set("n", "<leader>gld", gitlab.list_discussions)
+vim.keymap.set("n", "<leader>glaa", gitlab.add_assignee)
+vim.keymap.set("n", "<leader>glad", gitlab.delete_assignee)
+vim.keymap.set("n", "<leader>glra", gitlab.add_reviewer)
+vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
 ```
 
 ## Troubleshooting
