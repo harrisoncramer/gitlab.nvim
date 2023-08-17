@@ -7,6 +7,23 @@ local comment                 = require("gitlab.comment")
 local job                     = require("gitlab.job")
 local u                       = require("gitlab.utils")
 
+local M                       = {}
+
+-- Builds the binary (if not built) and sets the plugin arguments
+M.setup                       = function(args)
+  if args == nil then args = {} end
+  local file_path = u.current_file_path()
+  local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
+  state.BIN_PATH = parent_dir
+  state.BIN = parent_dir .. "/bin"
+
+  local binary_exists = vim.loop.fs_stat(state.BIN)
+  if binary_exists == nil then M.build() end
+
+  if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
+  state.args = args                                     -- The  ensureState function won't start without args
+end
+
 -- Function names prefixed with "ensure" will ensure the plugin's state
 -- is initialized prior to running other calls. These functions run
 -- API calls if the state isn't initialized, which will set state containing
@@ -15,8 +32,13 @@ local u                       = require("gitlab.utils")
 
 -- This plugin will start the Go server and will call the "info"
 -- endpoint and set the state of the MR.
-local ensureState             = function(callback)
+M.ensureState                 = function(callback)
   return function()
+    if not state.args then
+      vim.notify("The gitlab.nvim state was not set. Do you have a .gitlab.nvim file configured?", vim.log.levels.ERROR)
+      return
+    end
+
     local command = state.BIN
         .. " "
         .. state.PROJECT_ID
@@ -40,15 +62,13 @@ local ensureState             = function(callback)
 
           -- Once the Go binary has started, call the info endpoint
           -- to set global state for other commands
-          return function()
-            if type(state.INFO) ~= "table" then
-              job.run_job("info", "GET", nil, function(data)
-                state.INFO = data.info
-                callback()
-              end)
-            else
+          if type(state.INFO) ~= "table" then
+            job.run_job("info", "GET", nil, function(data)
+              state.INFO = data.info
               callback()
-            end
+            end)
+          else
+            callback()
           end
         end
       end,
@@ -63,7 +83,7 @@ local ensureState             = function(callback)
   end
 end
 
-local ensureProjectMembers    = function(callback)
+M.ensureProjectMembers        = function(callback)
   return function()
     if type(state.PROJECT_MEMBERS) ~= "table" then
       job.run_job("members", "GET", nil, function(data)
@@ -74,38 +94,6 @@ local ensureProjectMembers    = function(callback)
       callback()
     end
   end
-end
-
--- Root Module Scope
-local M                       = {}
-M.summary                     = ensureState(summary.summary)
-M.approve                     = ensureState(job.approve)
-M.revoke                      = ensureState(job.revoke)
-M.list_discussions            = ensureState(discussions.list_discussions)
-M.create_comment              = ensureState(comment.create_comment)
-M.edit_comment                = ensureState(comment.edit_comment)
-M.delete_comment              = ensureState(comment.delete_comment)
-M.toggle_resolved             = ensureState(comment.toggle_resolved)
-M.add_reviewer                = ensureProjectMembers(ensureState(assignees_and_reviewers.add_reviewer))
-M.delete_reviewer             = ensureProjectMembers(ensureState(assignees_and_reviewers.delete_reviewer))
-M.add_assignee                = ensureProjectMembers(ensureState(assignees_and_reviewers.add_assignee))
-M.delete_assignee             = ensureProjectMembers(ensureState(assignees_and_reviewers.delete_assignee))
-M.reply                       = ensureState(discussions.reply)
-M.state                       = state
-
--- Builds the binary (if not built); starts the Go server; sets the keymaps
-M.setup                       = function(args)
-  if args == nil then args = {} end
-  local file_path = u.current_file_path()
-  local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
-  state.BIN_PATH = parent_dir
-  state.BIN = parent_dir .. "/bin"
-
-  local binary_exists = vim.loop.fs_stat(state.BIN)
-  if binary_exists == nil then M.build() end
-
-  if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
-  state.args = args
 end
 
 -- Builds the Go binary
@@ -187,5 +175,21 @@ M.setPluginConfiguration      = function(args)
 
   return true
 end
+
+-- Root Module Scope
+M.summary                     = M.ensureState(summary.summary)
+M.approve                     = M.ensureState(job.approve)
+M.revoke                      = M.ensureState(job.revoke)
+M.list_discussions            = M.ensureState(discussions.list_discussions)
+M.create_comment              = M.ensureState(comment.create_comment)
+M.edit_comment                = M.ensureState(comment.edit_comment)
+M.delete_comment              = M.ensureState(comment.delete_comment)
+M.toggle_resolved             = M.ensureState(comment.toggle_resolved)
+M.reply                       = M.ensureState(discussions.reply)
+M.add_reviewer                = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.add_reviewer))
+M.delete_reviewer             = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.delete_reviewer))
+M.add_assignee                = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.add_assignee))
+M.delete_assignee             = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.delete_assignee))
+M.state                       = state
 
 return M

@@ -25,7 +25,7 @@ func main() {
 	var c Client
 
 	if err := c.init(branchName); err != nil {
-		log.Fatalf("Failure: Failed to initialize client: %v", err)
+		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
 	m := http.NewServeMux()
