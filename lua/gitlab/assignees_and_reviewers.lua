@@ -4,23 +4,19 @@ local state       = require("gitlab.state")
 local M           = {}
 
 M.add_assignee    = function()
-  local type = 'assignee'
-  M.add_popup(type)
+  M.add_popup('assignee')
 end
 
 M.delete_assignee = function()
-  local type = 'assignee'
-  M.delete_popup(type)
+  M.delete_popup('assignee')
 end
 
 M.add_reviewer    = function()
-  local type = 'reviewer'
-  M.add_popup(type)
+  M.add_popup('reviewer')
 end
 
 M.delete_reviewer = function()
-  local type = 'reviewer'
-  M.delete_popup(type)
+  M.delete_popup('reviewer')
 end
 
 M.add_popup       = function(type)
