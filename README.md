@@ -199,7 +199,14 @@ vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
 
 ## Troubleshooting
 
-This plugin uses a Golang server to reach out to Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. The server will start up when you open Neovim with a MR branch. You can curl it directly:
+This plugin uses a Golang server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
+
+```
+:lua require("gitlab").build()
+:lua require("gitlab").start_server()
+```
+
+You can directly interact with the Go server like any other process:
 
 ```
 curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info

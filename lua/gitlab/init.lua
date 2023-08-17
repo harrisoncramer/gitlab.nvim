@@ -30,10 +30,6 @@ end
 -- API calls if the state isn't initialized, which will set state containing
 -- information that's necessary for other API calls, like description,
 -- author, reviewer, etc.
-
--- This plugin will start the Go server and will call the "info"
--- endpoint and set the state of the MR.
-M.go_server_running           = false
 M.ensureState                 = function(callback)
   return function()
     if not M.args then
@@ -46,47 +42,56 @@ M.ensureState                 = function(callback)
       return
     end
 
-    local command = state.BIN
-        .. " "
-        .. state.PROJECT_ID
-        .. " "
-        .. state.GITLAB_URL
-        .. " "
-        .. state.PORT
-        .. " "
-        .. state.AUTH_TOKEN
-        .. " "
-        .. state.LOG_PATH
-
-    vim.fn.jobstart(command, {
-      on_stdout = function(job_id)
-        if job_id <= 0 then
-          vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
-          return
-        else
-          -- Once the Go binary has go_server_running, call the info endpoint to set global state
-          keymaps.set_keymap_keys(M.args.keymaps)
-          M.go_server_running = true
-          job.run_job("info", "GET", nil, function(data)
-            state.INFO = data.info
-            callback()
-          end)
-        end
-      end,
-      on_stderr = function(_, errors)
-        local err_msg = ''
-        for _, err in ipairs(errors) do
-          if err ~= "" and err ~= nil then
-            err_msg = err_msg .. err .. "\n"
-          end
-        end
-        vim.notify(err_msg, vim.log.levels.ERROR)
-      end
-    })
+    -- Once the Go binary has go_server_running, call the info endpoint to set global state
+    M.start_server(function()
+      keymaps.set_keymap_keys(M.args.keymaps)
+      M.go_server_running = true
+      job.run_job("info", "GET", nil, function(data)
+        state.INFO = data.info
+        callback()
+      end)
+    end)
   end
 end
 
-M.ensureProjectMembers        = function(callback)
+-- This will start the Go server and call the callback provided
+M.go_server_running           = false
+M.start_server                = function(callback)
+  local command = state.BIN
+      .. " "
+      .. state.PROJECT_ID
+      .. " "
+      .. state.GITLAB_URL
+      .. " "
+      .. state.PORT
+      .. " "
+      .. state.AUTH_TOKEN
+      .. " "
+      .. state.LOG_PATH
+
+  vim.fn.jobstart(command, {
+    on_stdout = function(job_id)
+      if job_id <= 0 then
+        vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+        return
+      elseif callback ~= nil then
+        callback()
+      end
+    end,
+    on_stderr = function(_, errors)
+      local err_msg = ''
+      for _, err in ipairs(errors) do
+        if err ~= "" and err ~= nil then
+          err_msg = err_msg .. err .. "\n"
+        end
+      end
+      vim.notify(err_msg, vim.log.levels.ERROR)
+    end
+  })
+end
+
+
+M.ensureProjectMembers   = function(callback)
   return function()
     if type(state.PROJECT_MEMBERS) ~= "table" then
       job.run_job("members", "GET", nil, function(data)
@@ -100,7 +105,7 @@ M.ensureProjectMembers        = function(callback)
 end
 
 -- Builds the Go binary
-M.build                       = function()
+M.build                  = function()
   local command = string.format("cd %s && make", state.BIN_PATH)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
@@ -112,7 +117,7 @@ end
 
 -- Initializes state for the project based on the arguments
 -- provided in the `.gitlab.nvim` file per project, and the args provided in the setup function
-M.setPluginConfiguration      = function(args)
+M.setPluginConfiguration = function(args)
   local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
   local config_file_content = u.read_file(config_file_path)
   if config_file_content == nil then
@@ -171,19 +176,19 @@ M.setPluginConfiguration      = function(args)
 end
 
 -- Root Module Scope
-M.summary                     = M.ensureState(summary.summary)
-M.approve                     = M.ensureState(job.approve)
-M.revoke                      = M.ensureState(job.revoke)
-M.list_discussions            = M.ensureState(discussions.list_discussions)
-M.create_comment              = M.ensureState(comment.create_comment)
-M.edit_comment                = M.ensureState(comment.edit_comment)
-M.delete_comment              = M.ensureState(comment.delete_comment)
-M.toggle_resolved             = M.ensureState(comment.toggle_resolved)
-M.reply                       = M.ensureState(discussions.reply)
-M.add_reviewer                = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.add_reviewer))
-M.delete_reviewer             = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.delete_reviewer))
-M.add_assignee                = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.add_assignee))
-M.delete_assignee             = M.ensureProjectMembers(M.ensureState(assignees_and_reviewers.delete_assignee))
-M.state                       = state
+M.summary                = M.ensureState(summary.summary)
+M.approve                = M.ensureState(job.approve)
+M.revoke                 = M.ensureState(job.revoke)
+M.list_discussions       = M.ensureState(discussions.list_discussions)
+M.create_comment         = M.ensureState(comment.create_comment)
+M.edit_comment           = M.ensureState(comment.edit_comment)
+M.delete_comment         = M.ensureState(comment.delete_comment)
+M.toggle_resolved        = M.ensureState(comment.toggle_resolved)
+M.reply                  = M.ensureState(discussions.reply)
+M.add_reviewer           = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.add_reviewer))
+M.delete_reviewer        = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.delete_reviewer))
+M.add_assignee           = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.add_assignee))
+M.delete_assignee        = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.delete_assignee))
+M.state                  = state
 
 return M
