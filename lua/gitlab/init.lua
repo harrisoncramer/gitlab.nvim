@@ -12,16 +12,54 @@ local u                       = require("gitlab.utils")
 -- API calls if the state isn't initialized, which will set state containing
 -- information that's necessary for other API calls, like description,
 -- author, reviewer, etc.
+
+-- This plugin will start the Go server and will call the "info"
+-- endpoint and set the state of the MR.
 local ensureState             = function(callback)
   return function()
-    if type(state.INFO) ~= "table" then
-      job.run_job("info", "GET", nil, function(data)
-        state.INFO = data.info
-        callback()
-      end)
-    else
-      callback()
-    end
+    local command = state.BIN
+        .. " "
+        .. state.PROJECT_ID
+        .. " "
+        .. state.GITLAB_URL
+        .. " "
+        .. state.PORT
+        .. " "
+        .. state.AUTH_TOKEN
+        .. " "
+        .. state.LOG_PATH
+
+    vim.fn.jobstart(command, {
+      on_stdout = function(job_id)
+        if job_id <= 0 then
+          vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+          return
+        else
+          keymaps.set_keymap_keys(state.args.keymaps)
+          keymaps.set_keymaps()
+
+          -- Once the Go binary has started, call the info endpoint
+          -- to set global state for other commands
+          return function()
+            if type(state.INFO) ~= "table" then
+              job.run_job("info", "GET", nil, function(data)
+                state.INFO = data.info
+                callback()
+              end)
+            else
+              callback()
+            end
+          end
+        end
+      end,
+      on_stderr = function(_, errors)
+        for _, err in ipairs(errors) do
+          if err ~= "" and err ~= nil then
+            vim.notify(err, vim.log.levels.ERROR)
+          end
+        end
+      end
+    })
   end
 end
 
@@ -67,34 +105,7 @@ M.setup                       = function(args)
   if binary_exists == nil then M.build() end
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
-
-
-  local command = state.BIN
-      .. " "
-      .. state.PROJECT_ID
-      .. " "
-      .. state.GITLAB_URL
-      .. " "
-      .. state.PORT
-      .. " "
-      .. state.AUTH_TOKEN
-      .. " "
-      .. state.LOG_PATH
-
-  vim.fn.jobstart(command, {
-    on_stdout = function(job_id)
-      if job_id <= 0 then
-        vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
-        return
-      else
-        keymaps.set_keymap_keys(args.keymaps)
-        keymaps.set_keymaps()
-      end
-    end,
-    on_stderr = function(_, error)
-      vim.notify(error[1], vim.log.levels.ERROR)
-    end
-  })
+  state.args = args
 end
 
 -- Builds the Go binary
