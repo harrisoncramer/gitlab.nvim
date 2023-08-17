@@ -1,32 +1,29 @@
-local u                    = require("gitlab.utils")
-local job                  = require("gitlab.job")
-local state                = require("gitlab.state")
-local M                    = {
-  assignee = {},
-  reviewer = {}
-}
+local u           = require("gitlab.utils")
+local job         = require("gitlab.job")
+local state       = require("gitlab.state")
+local M           = {}
 
-M.assignee.add_assignee    = function()
+M.add_assignee    = function()
   local type = 'assignee'
   M.add_popup(type)
 end
 
-M.assignee.delete_assignee = function()
+M.delete_assignee = function()
   local type = 'assignee'
   M.delete_popup(type)
 end
 
-M.reviewer.add_reviewer    = function()
+M.add_reviewer    = function()
   local type = 'reviewer'
   M.add_popup(type)
 end
 
-M.reviewer.delete_reviewer = function()
+M.delete_reviewer = function()
   local type = 'reviewer'
   M.delete_popup(type)
 end
 
-M.add_popup                = function(type)
+M.add_popup       = function(type)
   local plural = type .. 's'
   local current = state.INFO[plural]
   local eligible = M.filter_eligible(state.PROJECT_MEMBERS, current)
@@ -47,7 +44,7 @@ M.add_popup                = function(type)
   end)
 end
 
-M.delete_popup             = function(type)
+M.delete_popup    = function(type)
   local plural = type .. 's'
   local current = state.INFO[plural]
   vim.ui.select(current, {
@@ -66,7 +63,7 @@ M.delete_popup             = function(type)
   end)
 end
 
-M.filter_eligible          = function(current, to_remove)
+M.filter_eligible = function(current, to_remove)
   local ids = u.extract(to_remove, 'id')
   local res = {}
   for _, member in ipairs(current) do
