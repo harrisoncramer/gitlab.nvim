@@ -11,6 +11,7 @@ assignees: ''
 
 - [ ] The "Troubleshooting" section of the README did not help
 - [ ] I've installed the required dependencies
+- [ ] I'm on the latest version of the plugin
 
 ## Bug Description
 
