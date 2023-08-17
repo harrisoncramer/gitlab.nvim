@@ -8,6 +8,7 @@ local job                     = require("gitlab.job")
 local u                       = require("gitlab.utils")
 
 local M                       = {}
+M.args                        = nil
 
 -- Builds the binary (if not built) and sets the plugin arguments
 M.setup                       = function(args)
@@ -21,7 +22,7 @@ M.setup                       = function(args)
   if binary_exists == nil then M.build() end
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
-  state.args = args                                     -- The  ensureState function won't start without args
+  M.args = args                                         -- The  ensureState function won't start without args
 end
 
 -- Function names prefixed with "ensure" will ensure the plugin's state
@@ -32,10 +33,16 @@ end
 
 -- This plugin will start the Go server and will call the "info"
 -- endpoint and set the state of the MR.
+M.go_server_running           = false
 M.ensureState                 = function(callback)
   return function()
-    if not state.args then
+    if not M.args then
       vim.notify("The gitlab.nvim state was not set. Do you have a .gitlab.nvim file configured?", vim.log.levels.ERROR)
+      return
+    end
+
+    if M.go_server_running then
+      callback()
       return
     end
 
@@ -57,18 +64,13 @@ M.ensureState                 = function(callback)
           vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
           return
         else
-          keymaps.set_keymap_keys(state.args.keymaps)
-
-          -- Once the Go binary has started, call the info endpoint
-          -- to set global state for other commands
-          if type(state.INFO) ~= "table" then
-            job.run_job("info", "GET", nil, function(data)
-              state.INFO = data.info
-              callback()
-            end)
-          else
+          -- Once the Go binary has go_server_running, call the info endpoint to set global state
+          keymaps.set_keymap_keys(M.args.keymaps)
+          M.go_server_running = true
+          job.run_job("info", "GET", nil, function(data)
+            state.INFO = data.info
             callback()
-          end
+          end)
         end
       end,
       on_stderr = function(_, errors)
