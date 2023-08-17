@@ -42,6 +42,7 @@ type EditCommentRequest struct {
 	Comment      string `json:"comment"`
 	NoteId       int    `json:"note_id"`
 	DiscussionId string `json:"discussion_id"`
+	Resolved     bool   `json:"resolved"`
 }
 
 type CommentResponse struct {
@@ -158,26 +159,34 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
-		Body: gitlab.String(editCommentRequest.Comment),
+	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
+
+	/* The PATCH can either be to the resolved status of
+	the discussion or or the text of the comment */
+	msg := "edit comment"
+	if editCommentRequest.Comment == "" {
+		options.Resolved = &editCommentRequest.Resolved
+		msg = "update discussion status"
+	} else {
+		options.Body = gitlab.String(editCommentRequest.Comment)
 	}
 
 	note, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
-		c.handleError(w, err, "Could not edit comment", res.StatusCode)
+		c.handleError(w, err, "Could not "+msg, res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(res.StatusCode)
 
 	if res.StatusCode != http.StatusOK {
-		c.handleError(w, errors.New("Non-200 status code recieved"), "Could not edit comment", res.StatusCode)
+		c.handleError(w, errors.New("Non-200 status code recieved"), "Could not "+msg, res.StatusCode)
 	}
 
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment edited succesfully",
+			Message: "Comment updated succesfully",
 			Status:  http.StatusOK,
 		},
 		Comment: note,

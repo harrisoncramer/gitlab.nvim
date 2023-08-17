@@ -158,14 +158,13 @@ end
 M.build_note               = function(note, resolve_info)
   local text, text_nodes = M.build_note_body(note, resolve_info)
   local line_number = note.position.new_line or note.position.old_line
-  local note_node = NuiTree.Node(
-    {
-      text = text,
-      id = note.id,
-      file_name = note.position.new_path,
-      line_number = line_number,
-      is_note = true
-    }, text_nodes)
+  local note_node = NuiTree.Node({
+    text = text,
+    id = note.id,
+    file_name = note.position.new_path,
+    line_number = line_number,
+    is_note = true,
+  }, text_nodes)
 
   return note_node, text, text_nodes
 end
@@ -216,6 +215,8 @@ M.add_discussions_to_table = function(discussions)
     local root_file_name = ''
     local root_id = 0
     local root_text_nodes = {}
+    local resolvable = false
+    local resolved = false
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
@@ -224,6 +225,8 @@ M.add_discussions_to_table = function(discussions)
         root_line_number = note.position.new_line or note.position.old_line
         root_id = discussion.id
         root_note_id = note.id
+        resolvable = note.resolvable
+        resolved = note.resolved
       else -- Otherwise insert it as a child node...
         local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
@@ -240,6 +243,8 @@ M.add_discussions_to_table = function(discussions)
       root_note_id = root_note_id,
       file_name = root_file_name,
       line_number = root_line_number,
+      resolvable = resolvable,
+      resolved = resolved
     }, body)
 
     table.insert(t, root_node)

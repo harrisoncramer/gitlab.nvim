@@ -148,6 +148,39 @@ M.send_edits             = function(discussion_id, note_id)
   end
 end
 
+M.mark_resolved          = function()
+  local note = state.tree:get_node()
+  if not note.resolvable or note.resolved then return end
+
+  local json_table = {
+    discussion_id = note.id,
+    note_id = note.root_note_id,
+    resolved = true
+  }
+
+  local json = vim.json.encode(json_table)
+  job.run_job("comment", "PATCH", json, function(data)
+    vim.notify(data.message, vim.log.levels.INFO)
+    M.redraw_node(note.text, true)
+  end)
+end
+
+M.mark_unresolved        = function()
+  local note = state.tree:get_node()
+  if not note.resolvable or not note.resolved then return end
+  local json_table = {
+    discussion_id = note.id,
+    note_id = note.root_note_id,
+    resolved = false
+  }
+
+  local json = vim.json.encode(json_table)
+  job.run_job("comment", "PATCH", json, function(data)
+    vim.notify(data.message, vim.log.levels.INFO)
+    M.redraw_node(note.text, false)
+  end)
+end
+
 -- Helpers
 M.find_deletion_commit   = function(file)
   local current_line = vim.api.nvim_get_current_line()
