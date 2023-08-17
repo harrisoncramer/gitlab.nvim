@@ -143,9 +143,26 @@ M.send_edits             = function(discussion_id, note_id)
     local json = vim.json.encode(json_table)
     job.run_job("comment", "PATCH", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
-      M.redraw_node(text)
+      M.redraw_text(text)
     end)
   end
+end
+
+M.toggle_resolved        = function()
+  local note = state.tree:get_node()
+  if not note.resolvable then return end
+
+  local json_table = {
+    discussion_id = note.id,
+    note_id = note.root_note_id,
+    resolved = not note.resolved,
+  }
+
+  local json = vim.json.encode(json_table)
+  job.run_job("comment", "PATCH", json, function(data)
+    vim.notify(data.message, vim.log.levels.INFO)
+    M.update_resolved_status(note, not note.resolved)
+  end)
 end
 
 -- Helpers
@@ -167,7 +184,35 @@ M.find_deletion_commit   = function(file)
   return words[2]
 end
 
-M.redraw_node            = function(text)
+M.update_resolved_status = function(note, mark_resolved)
+  local current_text = state.tree.nodes.by_id["-" .. note.id].text
+  local target = mark_resolved and 'resolved' or 'unresolved'
+  local current = mark_resolved and 'unresolved' or 'resolved'
+
+  local function set_property(key, val)
+    state.tree.nodes.by_id["-" .. note.id][key] = val
+  end
+
+  local has_symbol = function(s)
+    return state.SYMBOLS[s] ~= nil and state.SYMBOLS[s] ~= ''
+  end
+
+  set_property('resolved', mark_resolved)
+
+  if not has_symbol(current) and not has_symbol(target) then return end
+
+  if not has_symbol(current) and has_symbol(target) then
+    set_property('text', (current_text .. " " .. state.SYMBOLS[target]))
+  elseif has_symbol(current) and not has_symbol(target) then
+    set_property('text', u.remove_last_chunk(current_text))
+  else
+    set_property('text', (u.remove_last_chunk(current_text) .. " " .. state.SYMBOLS[target]))
+  end
+
+  state.tree:render()
+end
+
+M.redraw_text            = function(text)
   local current_node = state.tree:get_node()
   local note_node = discussions.get_note_node(current_node)
 

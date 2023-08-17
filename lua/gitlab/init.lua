@@ -43,10 +43,11 @@ local M                       = {}
 M.summary                     = ensureState(summary.summary)
 M.approve                     = ensureState(job.approve)
 M.revoke                      = ensureState(job.revoke)
-M.create_comment              = ensureState(comment.create_comment)
 M.list_discussions            = ensureState(discussions.list_discussions)
+M.create_comment              = ensureState(comment.create_comment)
 M.edit_comment                = ensureState(comment.edit_comment)
 M.delete_comment              = ensureState(comment.delete_comment)
+M.toggle_resolved             = ensureState(comment.toggle_resolved)
 M.add_reviewer                = ensureProjectMembers(ensureState(assignees_and_reviewers.add_reviewer))
 M.delete_reviewer             = ensureProjectMembers(ensureState(assignees_and_reviewers.delete_reviewer))
 M.add_assignee                = ensureProjectMembers(ensureState(assignees_and_reviewers.add_assignee))
@@ -160,10 +161,17 @@ M.setPluginConfiguration      = function(args)
   -- Configuration for the plugin, such as port of server, layout, etc
   state.PORT = args.port or 21036
   state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
-  state.DISCUSSION_SPLIT = {
-    relative = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.relative or "editor",
-    position = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.position or "left",
-    size = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.size or "20%",
+  state.DISCUSSION = {
+    SPLIT = {
+      relative = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.relative or "editor",
+      position = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.position or "left",
+      size = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.size or "20%",
+    }
+  }
+
+  state.SYMBOLS = {
+    resolved = (args.symbols and args.symbols.resolved or '✓'),
+    unresolved = (args.symbols and args.symbols.unresolved or '')
   }
 
   return true
