@@ -167,6 +167,8 @@ M.setPluginConfiguration = function(args)
 end
 
 -- Root Module Scope
+-- These functions are exposed when you call require("gitlab").some_function() from Neovim
+-- and are bound to keymaps provided in the setup function
 M.summary                = M.ensureState(summary.summary)
 M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
 M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)

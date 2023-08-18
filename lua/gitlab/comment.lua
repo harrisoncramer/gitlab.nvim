@@ -11,13 +11,13 @@ local M                  = {}
 local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
 local edit_popup         = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 
--- Function that fires to open the comment popup
+-- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
 M.create_comment         = function()
   comment_popup:mount()
   keymaps.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end
 
--- Actually sends the comment to Gitlab
+-- This function (keymaps.popup.perform_action) will send the comment to the Go server
 M.confirm_create_comment = function(text)
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
@@ -44,7 +44,7 @@ M.confirm_create_comment = function(text)
   end)
 end
 
--- Function to open the deletion popup
+-- This function (keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
 M.delete_comment         = function()
   local menu = Menu({
     position = "50%",
@@ -78,7 +78,8 @@ M.delete_comment         = function()
   menu:mount()
 end
 
--- Function to actually send the deletion to Gitlab
+-- This function will actually send the deletion to Gitlab
+-- when you make a selection
 M.send_deletion          = function(item)
   if item.text == "Confirm" then
     local current_node = state.tree:get_node()
@@ -106,7 +107,7 @@ M.send_deletion          = function(item)
   end
 end
 
--- Function that opens the edit popup from the discussion tree
+-- This function (keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment           = function()
   local current_node = state.tree:get_node()
   local note_node = discussions.get_note_node(current_node)
@@ -129,7 +130,7 @@ M.edit_comment           = function()
   keymaps.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
 end
 
--- Function that actually makes the API call
+-- This function sends the edited comment to the Go server
 M.send_edits             = function(discussion_id, note_id)
   return function(text)
     local json_table = {
@@ -145,6 +146,7 @@ M.send_edits             = function(discussion_id, note_id)
   end
 end
 
+-- This comment (keymaps.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
 M.toggle_resolved        = function()
   local note = state.tree:get_node()
   if not note.resolvable then return end

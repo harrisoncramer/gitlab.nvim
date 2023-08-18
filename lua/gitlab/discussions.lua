@@ -8,24 +8,8 @@ local keymaps              = require("gitlab.keymaps")
 
 local M                    = {}
 
-local replyPopup           = Popup(u.create_popup_state("Reply", "80%", "80%"))
-
-M.reply                    = function(discussion_id)
-  replyPopup:mount()
-  keymaps.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
-end
-
-M.send_reply               = function(discussion_id)
-  return function(text)
-    local jsonTable = { discussion_id = discussion_id, reply = text }
-    local json = vim.json.encode(jsonTable)
-    job.run_job("reply", "POST", json, function(data)
-      M.add_note_to_tree(data.note, discussion_id)
-    end)
-  end
-end
-
--- Places all of the discussions into a readable list
+-- Places all of the discussions into a readable tree
+-- in a split window
 M.list_discussions         = function()
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
@@ -52,6 +36,26 @@ M.list_discussions         = function()
   end)
 end
 
+-- The reply popup will mount in a window when you trigger it (keymaps.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
+local replyPopup           = Popup(u.create_popup_state("Reply", "80%", "80%"))
+M.reply                    = function(discussion_id)
+  replyPopup:mount()
+  keymaps.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
+end
+
+-- This function will send the reply to the Go API
+M.send_reply               = function(discussion_id)
+  return function(text)
+    local jsonTable = { discussion_id = discussion_id, reply = text }
+    local json = vim.json.encode(jsonTable)
+    job.run_job("reply", "POST", json, function(data)
+      M.add_note_to_tree(data.note, discussion_id)
+    end)
+  end
+end
+
+-- This function (keymaps.discussion_tree.jump_to_location) will
+-- jump you to the file and line where the comment was left
 M.jump_to_file             = function()
   local node = state.tree:get_node()
   if node == nil then return end
@@ -69,7 +73,6 @@ M.jump_to_file             = function()
 end
 
 M.set_tree_keymaps         = function(buf)
-  -- Jump to file location where comment was left
   vim.keymap.set('n', state.keymaps.discussion_tree.jump_to_location, function()
     M.jump_to_file()
   end, { buffer = true })
@@ -86,7 +89,7 @@ M.set_tree_keymaps         = function(buf)
     require("gitlab.comment").toggle_resolved()
   end, { buffer = true })
 
-  -- Expand/collapse the current node
+  -- Expands/collapses the current node
   vim.keymap.set('n', state.keymaps.discussion_tree.toggle_node, function()
       local node = state.tree:get_node()
       if node == nil then return end
@@ -116,6 +119,10 @@ M.set_tree_keymaps         = function(buf)
     M.reply(tostring(discussion_node.id))
   end, { buffer = true })
 end
+
+--
+-- 🌲 Helper Functions
+--
 
 M.get_root_node            = function(node)
   if (not node.is_root) then

@@ -6,6 +6,7 @@ local keymaps          = require("gitlab.keymaps")
 local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
 local M                = {}
 
+-- The MR description will mount in a popup when this funciton is called
 M.summary              = function()
   descriptionPopup:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
@@ -23,6 +24,7 @@ M.summary              = function()
   end)
 end
 
+-- This function will PUT the new description to the Go server
 M.edit_description     = function(text)
   local jsonTable = { description = text }
   local json = vim.json.encode(jsonTable)
