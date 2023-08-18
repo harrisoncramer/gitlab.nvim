@@ -165,7 +165,7 @@ require("dressing").setup({
 
 ### Discussions
 
-Gitlab groups threads of notes together into "disucssions." To get a list of all the discussions for the current MR, use the `list_discussions` command. This command will open up a split view of all the comments on the current merge request. You can jump to the comment location by using the `o` key in the tree buffer, and you can reply to a thread by using the `r` keybinding in the tree buffer:
+Gitlab groups threads of notes together into "discussions." To get a list of all the discussions for the current MR, use the `list_discussions` command. This command will open up a split view of all the comments on the current merge request. You can jump to the comment location by using the `o` key in the tree buffer, and you can reply to a thread by using the `r` keybinding in the tree buffer:
 
 ```lua
 require("gitlab").list_discussions()
