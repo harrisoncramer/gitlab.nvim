@@ -227,3 +227,7 @@ $ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
 $ cd ~/path-to-your-project
 $ dlv exec ./bin -- 41057709 https://www.gitlab.com 21036 your-gitlab-token
 ```
+
+## Extra Goodies
+
+If you are like me and want to quickly switch between recent branches and recent merge request reviews and assignments, check out the git scripts contained <a href="https://github.com/harrisoncramer/.dotfiles/blob/main/scripts/bin/git-reviews">here</a> and <a href="https://github.com/harrisoncramer/.dotfiles/blob/main/scripts/bin/git-authored">here</a> for inspiration.
