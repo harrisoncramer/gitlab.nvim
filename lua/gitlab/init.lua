@@ -73,7 +73,6 @@ M.start_server                = function(callback)
     on_stdout = function(job_id)
       if job_id <= 0 then
         vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
-        return
       elseif callback ~= nil then
         callback()
       end
@@ -125,24 +124,16 @@ M.setPluginConfiguration = function(args)
   end
 
   local file = assert(io.open(config_file_path, "r"))
-  local property = {}
+  local properties = {}
   for line in file:lines() do
     for key, value in string.gmatch(line, "(.-)=(.-)$") do
-      property[key] = value
+      properties[key] = value
     end
   end
 
-  local project_id = property["project_id"]
-  local gitlab_url = property["gitlab_url"]
-  local auth_token = property["auth_token"]
-
-  state.PROJECT_ID = project_id
-  state.AUTH_TOKEN = auth_token or os.getenv("GITLAB_TOKEN")
-  state.GITLAB_URL = gitlab_url or "https://gitlab.com"
-
-  if state.AUTH_TOKEN == nil then
-    error("Missing authentication token for Gitlab")
-  end
+  state.PROJECT_ID = properties.project_id
+  state.AUTH_TOKEN = properties.auth_token or os.getenv("GITLAB_TOKEN")
+  state.GITLAB_URL = properties.gitlab_url or "https://gitlab.com"
 
   if state.AUTH_TOKEN == nil then
     error("Missing authentication token for Gitlab")
@@ -177,8 +168,8 @@ end
 
 -- Root Module Scope
 M.summary                = M.ensureState(summary.summary)
-M.approve                = M.ensureState(job.approve)
-M.revoke                 = M.ensureState(job.revoke)
+M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
+M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)
 M.list_discussions       = M.ensureState(discussions.list_discussions)
 M.create_comment         = M.ensureState(comment.create_comment)
 M.edit_comment           = M.ensureState(comment.edit_comment)

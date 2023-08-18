@@ -41,15 +41,4 @@ M.run_job   = function(endpoint, method, body, callback)
   }):start()
 end
 
--- Approves the current merge request
-M.approve   = function()
-  M.run_job("approve", "POST")
-end
-
--- Revokes approval for the current merge request
-M.revoke    = function()
-  M.run_job("revoke", "POST")
-end
-
-
 return M
