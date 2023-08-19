@@ -106,7 +106,6 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/* TODO: Include options from requets into this API call */
 	position := &gitlab.NotePosition{
 		PositionType: "text",
 		StartSHA:     postCommentRequest.StartCommitSHA,
@@ -116,6 +115,8 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		OldPath:      postCommentRequest.FileName,
 	}
 
+	/* TODO: This switch statement relates to #25, for now we are just sending both
+	the old line and new line but we will eventually have to fix this */
 	switch postCommentRequest.Type {
 	case "addition":
 		position.NewLine = postCommentRequest.LineNumber
