@@ -35,8 +35,10 @@ M.confirm_create_comment = function(text)
     end
   end
 
-  -- Get revisions data from revision state
-  -- TODO: How do we know which revision to choose if we have multiple?
+  -- TODO: How can we know whether to specify that the comment is on a line that has been modified,
+  -- added, or deleted? Additionally, how will we know which line number to send?
+  -- We need an intelligent way of getting this information so that we can send it to the comment
+  -- creation endpoint, relates to Issue #25: https://github.com/harrisoncramer/gitlab.nvim/issues/25
 
   local revision = state.MR_REVISIONS[1]
   local jsonTable = {
