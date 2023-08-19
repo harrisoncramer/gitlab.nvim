@@ -195,7 +195,7 @@ M.refresh_tree             = function()
       return
     end
 
-    if not state.SPLIT_BUF then return end
+    if not state.SPLIT_BUF or (vim.fn.bufwinid(state.SPLIT_BUF) == -1) then return end
 
     vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'modifiable', true)
     vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'readonly', false)
