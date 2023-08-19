@@ -18,6 +18,7 @@ type PostCommentRequest struct {
 	HeadCommitSHA  string `json:"head_commit_sha"`
 	BaseCommitSHA  string `json:"base_commit_sha"`
 	StartCommitSHA string `json:"start_commit_sha"`
+	Type           string `json:"type"`
 }
 
 type DeleteCommentRequest struct {
@@ -106,19 +107,32 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/* TODO: Include options from requets into this API call */
-	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &gitlab.CreateMergeRequestDiscussionOptions{
-		Body: &postCommentRequest.Comment,
-		Position: &gitlab.NotePosition{
-			PositionType: "text",
-			StartSHA:     postCommentRequest.StartCommitSHA,
-			HeadSHA:      postCommentRequest.HeadCommitSHA,
-			BaseSHA:      postCommentRequest.BaseCommitSHA,
-			NewPath:      postCommentRequest.FileName,
-			OldPath:      postCommentRequest.FileName,
-			NewLine:      postCommentRequest.LineNumber,
-			OldLine:      postCommentRequest.LineNumber,
-		},
-	})
+	position := &gitlab.NotePosition{
+		PositionType: "text",
+		StartSHA:     postCommentRequest.StartCommitSHA,
+		HeadSHA:      postCommentRequest.HeadCommitSHA,
+		BaseSHA:      postCommentRequest.BaseCommitSHA,
+		NewPath:      postCommentRequest.FileName,
+		OldPath:      postCommentRequest.FileName,
+	}
+
+	switch postCommentRequest.Type {
+	case "addition":
+		position.NewLine = postCommentRequest.LineNumber
+	case "subtraction":
+		position.OldLine = postCommentRequest.LineNumber
+	case "modification":
+		position.NewLine = postCommentRequest.LineNumber
+		position.OldLine = postCommentRequest.LineNumber
+	}
+
+	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
+		c.projectId,
+		c.mergeId,
+		&gitlab.CreateMergeRequestDiscussionOptions{
+			Body:     &postCommentRequest.Comment,
+			Position: position,
+		})
 
 	if err != nil {
 		c.handleError(w, err, "Could not create comment", http.StatusBadRequest)
