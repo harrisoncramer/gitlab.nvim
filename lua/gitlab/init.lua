@@ -103,6 +103,19 @@ M.ensureProjectMembers   = function(callback)
   end
 end
 
+M.ensureRevisions        = function(callback)
+  return function()
+    if type(state.MR_REVISIONS) ~= "table" then
+      job.run_job("mr/revisions", "GET", nil, function(data)
+        state.MR_REVISIONS = data.Revisions
+        callback()
+      end)
+    else
+      callback()
+    end
+  end
+end
+
 -- Builds the Go binary
 M.build                  = function()
   local command = string.format("cd %s && make", state.BIN_PATH)
@@ -173,7 +186,7 @@ M.summary                = M.ensureState(summary.summary)
 M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
 M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)
 M.list_discussions       = M.ensureState(discussions.list_discussions)
-M.create_comment         = M.ensureState(comment.create_comment)
+M.create_comment         = M.ensureState(M.ensureRevisions(comment.create_comment))
 M.edit_comment           = M.ensureState(comment.edit_comment)
 M.delete_comment         = M.ensureState(comment.delete_comment)
 M.toggle_resolved        = M.ensureState(comment.toggle_resolved)

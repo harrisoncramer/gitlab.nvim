@@ -35,7 +35,19 @@ M.confirm_create_comment = function(text)
     end
   end
 
-  local jsonTable = { line_number = current_line_number, file_name = relative_file_path, comment = text }
+  -- Get revisions data from revision state
+  -- TODO: How do we know which revision to choose if we have multiple?
+
+  local revision = state.MR_REVISIONS[1]
+  local jsonTable = {
+    comment = text,
+    file_name = relative_file_path,
+    line_number = current_line_number,
+    base_commmit_sha = revision.base_commmit_sha,
+    start_commit_sha = revision.start_commit_sha,
+    head_commit_sha = revision.head_commit_sha,
+  }
+
   local json = vim.json.encode(jsonTable)
 
   job.run_job("comment", "POST", json, function(data)
