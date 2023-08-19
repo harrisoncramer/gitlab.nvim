@@ -1,16 +1,7 @@
-local M      = {}
-
--- This is the global state that can be set from
--- various places in the plugin. It all begins as
--- uninitialized and is set by the setup/ensure function calls
-
-M.BIN_PATH   = nil -- Directory of the Go binary
-M.BIN        = nil -- Full path to the Go binary
-M.PROJECT_ID = nil -- Gitlab Project ID, set in .gitlab.nvim file
-M.INFO       = nil -- The basic information about the MR, set from "/info" endpoint
+local M   = {}
 
 -- These are the default keymaps for the plugin
-M.keymaps    = {
+M.keymaps = {
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",

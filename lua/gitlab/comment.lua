@@ -35,7 +35,22 @@ M.confirm_create_comment = function(text)
     end
   end
 
-  local jsonTable = { line_number = current_line_number, file_name = relative_file_path, comment = text }
+  -- TODO: How can we know whether to specify that the comment is on a line that has been modified,
+  -- added, or deleted? Additionally, how will we know which line number to send?
+  -- We need an intelligent way of getting this information so that we can send it to the comment
+  -- creation endpoint, relates to Issue #25: https://github.com/harrisoncramer/gitlab.nvim/issues/25
+
+  local revision = state.MR_REVISIONS[1]
+  local jsonTable = {
+    comment = text,
+    file_name = relative_file_path,
+    line_number = current_line_number,
+    base_commit_sha = revision.base_commit_sha,
+    start_commit_sha = revision.start_commit_sha,
+    head_commit_sha = revision.head_commit_sha,
+    type = "modification"
+  }
+
   local json = vim.json.encode(jsonTable)
 
   job.run_job("comment", "POST", json, function(data)

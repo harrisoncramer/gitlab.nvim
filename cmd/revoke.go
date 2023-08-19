@@ -3,21 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 )
-
-func (c *Client) Revoke() (string, int, error) {
-
-	res, err := c.git.MergeRequestApprovals.UnapproveMergeRequest(c.projectId, c.mergeId, nil, nil)
-
-	if err != nil {
-		return "", res.Response.StatusCode, fmt.Errorf("Revoking approval failed: %w", err)
-	}
-
-	return "Success! Revoked MR approval.", http.StatusOK, nil
-
-}
 
 func RevokeHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
@@ -29,16 +16,17 @@ func RevokeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, status, err := c.Revoke()
+	res, err := c.git.MergeRequestApprovals.UnapproveMergeRequest(c.projectId, c.mergeId, nil, nil)
 
 	if err != nil {
 		c.handleError(w, err, "Could not revoke approval", http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(status)
+	/* TODO: Check for non-200 status codes */
+	w.WriteHeader(res.StatusCode)
 	response := SuccessResponse{
-		Message: msg,
+		Message: "Success! Revoked MR approval.",
 		Status:  http.StatusOK,
 	}
 
