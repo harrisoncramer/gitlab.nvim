@@ -126,6 +126,32 @@ The `summary` command will pull down the MR description into a buffer so that yo
 require("gitlab").summary()
 ```
 
+The `review` command will open up a diff view of all the changes that have been made in this MR, and will open up any discussions that have been created as part of the MR in a split view.
+
+```lua
+require("gitlab").review()
+```
+
+Within the review view, you can leave comments, reply to others, mark discussions as completed, and more. 
+
+Once in the review view, the `create_comment` command will create a Gitlab comment on the currently active line in the diff. To send the comment, use `<leader>s` while the comment popup is open:
+
+```lua
+require("gitlab").create_comment()
+```
+
+Gitlab groups threads of comments together into "discussions." The list of discussions for the current MR will be displayed in a split window in the review view. You can jump to the comment's location in the diff view by using the `o` key when hovering over the line in the tree. 
+
+Within the discussion tree, there are several functions that you can call. These are also configurable via keybindings provided in the setup function:
+
+```lua
+require("gitlab").delete_comment()
+require("gitlab").edit_comment()
+require("gitlab").reply()
+require("gitlab").toggle_resolved()
+```
+
+### Other Commands
 
 The `approve` command will approve the merge request for the current branch:
 
@@ -137,12 +163,6 @@ The `revoke` command will revoke approval for the merge request for the current 
 
 ```lua
 require("gitlab").revoke()
-```
-
-The `comment` command will open up a NUI popover that will allow you to create a Gitlab comment on the current line. To send the comment, use `<leader>s` while the comment popup is open:
-
-```lua
-require("gitlab").create_comment()
 ```
 
 The `add_reviewer` and `delete_reviewer` commands, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
@@ -162,23 +182,6 @@ require("dressing").setup({
         enabled = true
     }
 })
-```
-
-### Discussions
-
-Gitlab groups threads of notes together into "discussions." To get a list of all the discussions for the current MR, use the `list_discussions` command. This command will open up a split view of all the comments on the current merge request. You can jump to the comment location by using the `o` key in the tree buffer, and you can reply to a thread by using the `r` keybinding in the tree buffer:
-
-```lua
-require("gitlab").list_discussions()
-```
-
-Within the discussion tree, there are several functions that you can call, however, it's better to use the keybindings provided in the setup function. If you want to call them manually, they are:
-
-```lua
-require("gitlab").delete_comment()
-require("gitlab").edit_comment()
-require("gitlab").reply()
-require("gitlab").toggle_resolved()
 ```
 
 ## Keybindings
