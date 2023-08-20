@@ -1,5 +1,3 @@
-local state = require("gitlab.state")
-
 local function get_git_root()
   local output = vim.fn.system('git rev-parse --show-toplevel 2>/dev/null')
   if vim.v.shell_error == 0 then
@@ -21,6 +19,12 @@ end
 
 local get_current_line_number = function()
   return vim.api.nvim_call_function('line', { '.' })
+end
+
+local has_delta = function()
+  local delta = os.execute("delta --version")
+  if delta ~= 0 then return false end
+  return true
 end
 
 function P(...)
@@ -269,6 +273,7 @@ M.create_popup_state = create_popup_state
 M.exit = exit
 M.read_file = read_file
 M.split_diff_view_filename = split_diff_view_filename
+M.has_delta = has_delta
 M.current_file_path = current_file_path
 M.P = P
 return M

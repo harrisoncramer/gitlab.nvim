@@ -18,6 +18,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43
 - <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
 - <a href="https://github.com/MunifTanjim/nui.nvim">nui.nvim</a>
 - <a href="https://github.com/nvim-lua/plenary.nvim">plenary.nvim</a>
+- <a href"https://github.com/dandavison/delta">delta</a>
 
 ## Installation
 

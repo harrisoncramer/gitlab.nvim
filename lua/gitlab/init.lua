@@ -13,6 +13,12 @@ M.args                        = nil
 -- Builds the binary (if not built) and sets the plugin arguments
 M.setup                       = function(args)
   if args == nil then args = {} end
+
+  if not u.has_delta() then
+    vim.notify("Please install delta to use gitlab.nvim!", vim.log.levels.ERROR)
+    return
+  end
+
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
   state.BIN_PATH = parent_dir
