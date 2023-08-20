@@ -5,9 +5,13 @@ local M           = {}
 
 M.open            = function()
   vim.cmd.tabnew()
-  vim.fn.termopen(
-    "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --diff-so-fancy --file-added-label  --file-removed-label  --file-modified-label ' git diff --cached " ..
-    state.INFO.target_branch)
+
+  local term_command_template =
+  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --diff-so-fancy --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff --cached %s"
+
+  local term_command = string.format(term_command_template, "", "", "", state.INFO.target_branch)
+  vim.fn.termopen(term_command)
+
   vim.keymap.set('n', state.keymaps.review.toggle_discussions, function()
     if not discussions.split then return end
     if discussions.split_visible then
