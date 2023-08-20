@@ -2,11 +2,11 @@ local u             = require("gitlab.utils")
 local state         = require("gitlab.state")
 local M             = {}
 
--- Sets the keymaps for the popup window that's used for replies, the summary, etc
+-- Sets the settings for the popup window that's used for replies, the summary, etc
 M.set_popup_keymaps = function(popup, action)
-  vim.keymap.set('n', state.keymaps.popup.exit, function() u.exit(popup) end, { buffer = true })
+  vim.keymap.set('n', state.settings.popup.exit, function() u.exit(popup) end, { buffer = true })
   if action ~= nil then
-    vim.keymap.set('n', state.keymaps.popup.perform_action, function()
+    vim.keymap.set('n', state.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
       popup:unmount()
       action(text)
@@ -14,9 +14,9 @@ M.set_popup_keymaps = function(popup, action)
   end
 end
 
-M.set_keymap_keys   = function(keyTable)
+M.merge_settings    = function(keyTable)
   if keyTable == nil then return end
-  state.keymaps = u.merge_tables(state.keymaps, keyTable)
+  state.settings = u.merge_tables(state.settings, keyTable)
 end
 
 return M

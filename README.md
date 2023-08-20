@@ -80,32 +80,28 @@ Here is the default setup function. All of these values are optional, and if you
 require("gitlab").setup({
   port = 20136, -- The port of the Go server, which runs in the background
   log_path = vim.fn.stdpath("cache") .. "gitlab.nvim.log", -- Log path for the Go server
-  keymaps = {
-    popup = { -- The popup for comment creation, editing, and replying
-      exit = "<Esc>",
-      perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
-    },
-    discussion_tree = { -- The discussion tree that holds all comments
-      jump_to_location = "o", -- Jump to comment location in file
-      edit_comment = "e", -- Edit coment
-      delete_comment = "dd", -- Delete comment
-      reply_to_comment = "r", -- Reply to comment
-      toggle_resolved = "p" -- Toggles the resolved status of the discussion
-      toggle_node = "t", -- Opens or closes the discussion
-      position = "left", -- "top", "right", "bottom" or "left"
-      relative = "editor" -- Position of tree split relative to "editor" or "window"
-      size = "20%", -- Size of split
-    },
-    dialogue = { -- The confirmation dialogue for deleting comments
-      focus_next = { "j", "<Down>", "<Tab>" },
-      focus_prev = { "k", "<Up>", "<S-Tab>" },
-      close = { "<Esc>", "<C-c>" },
-      submit = { "<CR>", "<Space>" },
-    }
+  popup = { -- The popup for comment creation, editing, and replying
+    exit = "<Esc>",
+    perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
   },
-  symbols = {  
+  discussion_tree = { -- The discussion tree that holds all comments
+    jump_to_location = "o", -- Jump to comment location in file
+    edit_comment = "e", -- Edit coment
+    delete_comment = "dd", -- Delete comment
+    reply_to_comment = "r", -- Reply to comment
+    toggle_resolved = "p", -- Toggles the resolved status of the discussion
+    toggle_node = "t", -- Opens or closes the discussion
+    position = "left", -- "top", "right", "bottom" or "left"
+    relative = "editor", -- Position of tree split relative to "editor" or "window"
+    size = "20%", -- Size of split
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
+  },
+  dialogue = { -- The confirmation dialogue for deleting comments
+    focus_next = { "j", "<Down>", "<Tab>" },
+    focus_prev = { "k", "<Up>", "<S-Tab>" },
+    close = { "<Esc>", "<C-c>" },
+    submit = { "<CR>", "<Space>" },
   }
 })
 ```

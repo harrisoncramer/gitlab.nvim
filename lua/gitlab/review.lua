@@ -1,5 +1,4 @@
 local discussions = require("gitlab.discussions")
-local u           = require("gitlab.utils")
 local state       = require("gitlab.state")
 local M           = {}
 
@@ -12,7 +11,7 @@ M.open            = function()
   local term_command = string.format(term_command_template, "", "", "", state.INFO.target_branch)
   vim.fn.termopen(term_command)
 
-  vim.keymap.set('n', state.keymaps.review.toggle_discussions, function()
+  vim.keymap.set('n', state.settings.review.toggle_discussions, function()
     if not discussions.split then return end
     if discussions.split_visible then
       discussions.split:hide()

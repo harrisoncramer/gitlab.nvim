@@ -3,7 +3,7 @@ local discussions             = require("gitlab.discussions")
 local review                  = require("gitlab.review")
 local summary                 = require("gitlab.summary")
 local assignees_and_reviewers = require("gitlab.assignees_and_reviewers")
-local keymaps                 = require("gitlab.keymaps")
+local settings                = require("gitlab.settings")
 local comment                 = require("gitlab.comment")
 local job                     = require("gitlab.job")
 local u                       = require("gitlab.utils")
@@ -29,6 +29,7 @@ M.setup                       = function(args)
   if binary_exists == nil then M.build() end
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
+  settings.merge_settings(args)                         -- Sets keymaps and other settings or uses fallback from state.lua
   M.args = args                                         -- The  ensureState function won't start without args
 end
 
@@ -51,7 +52,6 @@ M.ensureState                 = function(callback)
 
     -- Once the Go binary has go_server_running, call the info endpoint to set global state
     M.start_server(function()
-      keymaps.set_keymap_keys(M.args.keymaps)
       M.go_server_running = true
       job.run_job("info", "GET", nil, function(data)
         state.INFO = data.info
@@ -172,15 +172,10 @@ M.setPluginConfiguration = function(args)
   state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
   state.DISCUSSION = {
     SPLIT = {
-      relative = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.relative or "editor",
-      position = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.position or "left",
-      size = args.keymaps and args.keymaps.discussion_tree and args.keymaps.discussion_tree.size or "20%",
+      relative = state.settings.discussion_tree.relative,
+      position = state.settings.discussion_tree.position,
+      size = state.settings.discussion_tree.size,
     }
-  }
-
-  state.SYMBOLS = {
-    resolved = (args.symbols and args.symbols.resolved or '✓'),
-    unresolved = (args.symbols and args.symbols.unresolved or '')
   }
 
   return true
@@ -188,7 +183,7 @@ end
 
 -- Root Module Scope
 -- These functions are exposed when you call require("gitlab").some_function() from Neovim
--- and are bound to keymaps provided in the setup function
+-- and are bound to settings provided in the setup function
 M.summary                = M.ensureState(summary.summary)
 M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
 M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)

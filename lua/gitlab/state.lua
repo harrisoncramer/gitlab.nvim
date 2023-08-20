@@ -1,7 +1,7 @@
-local M   = {}
+local M    = {}
 
--- These are the default keymaps for the plugin
-M.keymaps = {
+-- These are the default settings for the plugin
+M.settings = {
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
@@ -12,7 +12,12 @@ M.keymaps = {
     delete_comment = "dd",
     reply_to_comment = "r",
     toggle_node = "t",
-    toggle_resolved = "p"
+    toggle_resolved = "p",
+    relative = "editor",
+    position = "left",
+    size = "20%",
+    resolved = '✓',
+    unresolved = ''
   },
   dialogue = {
     focus_next = { "j", "<Down>", "<Tab>" },
@@ -23,7 +28,7 @@ M.keymaps = {
   review = {
     open = "<leader>glr",
     toggle_discussions = "<leader>d"
-  }
+  },
 }
 
 return M

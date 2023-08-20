@@ -4,7 +4,7 @@ local NuiSplit             = require("nui.split")
 local job                  = require("gitlab.job")
 local state                = require("gitlab.state")
 local Popup                = require("nui.popup")
-local keymaps              = require("gitlab.keymaps")
+local settings             = require("gitlab.settings")
 
 local M                    = {}
 
@@ -41,11 +41,11 @@ M.list_discussions         = function()
   end)
 end
 
--- The reply popup will mount in a window when you trigger it (keymaps.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
+-- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
 local replyPopup           = Popup(u.create_popup_state("Reply", "80%", "80%"))
 M.reply                    = function(discussion_id)
   replyPopup:mount()
-  keymaps.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
+  settings.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
 end
 
 -- This function will send the reply to the Go API
@@ -59,7 +59,7 @@ M.send_reply               = function(discussion_id)
   end
 end
 
--- This function (keymaps.discussion_tree.jump_to_location) will
+-- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
 M.jump_to_file             = function()
   local node = state.tree:get_node()
@@ -78,24 +78,24 @@ M.jump_to_file             = function()
 end
 
 M.set_tree_keymaps         = function(buf)
-  vim.keymap.set('n', state.keymaps.discussion_tree.jump_to_location, function()
+  vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, function()
     M.jump_to_file()
   end, { buffer = true })
 
-  vim.keymap.set('n', state.keymaps.discussion_tree.edit_comment, function()
+  vim.keymap.set('n', state.settings.discussion_tree.edit_comment, function()
     require("gitlab.comment").edit_comment()
   end, { buffer = true })
 
-  vim.keymap.set('n', state.keymaps.discussion_tree.delete_comment, function()
+  vim.keymap.set('n', state.settings.discussion_tree.delete_comment, function()
     require("gitlab.comment").delete_comment()
   end, { buffer = true })
 
-  vim.keymap.set('n', state.keymaps.discussion_tree.toggle_resolved, function()
+  vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, function()
     require("gitlab.comment").toggle_resolved()
   end, { buffer = true })
 
   -- Expands/collapses the current node
-  vim.keymap.set('n', state.keymaps.discussion_tree.toggle_node, function()
+  vim.keymap.set('n', state.settings.discussion_tree.toggle_node, function()
       local node = state.tree:get_node()
       if node == nil then return end
       local children = node:get_child_ids()
@@ -161,7 +161,8 @@ M.build_note_body          = function(note, resolve_info)
 
   local resolve_symbol = ''
   if resolve_info ~= nil and resolve_info.resolvable then
-    resolve_symbol = resolve_info.resolved and state.SYMBOLS.resolved or state.SYMBOLS.unresolved
+    resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved or
+        state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = "@" .. note.author.username .. " " .. u.format_date(note.created_at) .. " " .. resolve_symbol

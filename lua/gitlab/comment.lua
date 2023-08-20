@@ -5,7 +5,7 @@ local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
 local discussions        = require("gitlab.discussions")
-local keymaps            = require("gitlab.keymaps")
+local settings           = require("gitlab.settings")
 local M                  = {}
 
 local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
@@ -14,10 +14,10 @@ local edit_popup         = Popup(u.create_popup_state("Edit Comment", "80%", "80
 -- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
 M.create_comment         = function()
   comment_popup:mount()
-  keymaps.set_popup_keymaps(comment_popup, M.confirm_create_comment)
+  settings.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end
 
--- This function (keymaps.popup.perform_action) will send the comment to the Go server
+-- This function (settings.popup.perform_action) will send the comment to the Go server
 M.confirm_create_comment = function(text)
   local relative_file_path = u.get_relative_file_path()
   local current_line_number = u.get_current_line_number()
@@ -59,7 +59,7 @@ M.confirm_create_comment = function(text)
   end)
 end
 
--- This function (keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
+-- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
 M.delete_comment         = function()
   local menu = Menu({
     position = "50%",
@@ -83,10 +83,10 @@ M.delete_comment         = function()
     },
     max_width = 20,
     keymap = {
-      focus_next = state.keymaps.dialogue.focus_next,
-      focus_prev = state.keymaps.dialogue.focus_prev,
-      close = state.keymaps.dialogue.close,
-      submit = state.keymaps.dialogue.submit,
+      focus_next = state.settings.dialogue.focus_next,
+      focus_prev = state.settings.dialogue.focus_prev,
+      close = state.settings.dialogue.close,
+      submit = state.settings.dialogue.submit,
     },
     on_submit = M.send_deletion
   })
@@ -122,7 +122,7 @@ M.send_deletion          = function(item)
   end
 end
 
--- This function (keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
+-- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment           = function()
   local current_node = state.tree:get_node()
   local note_node = discussions.get_note_node(current_node)
@@ -142,7 +142,7 @@ M.edit_comment           = function()
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-  keymaps.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
+  settings.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
 end
 
 -- This function sends the edited comment to the Go server
@@ -161,7 +161,7 @@ M.send_edits             = function(discussion_id, note_id)
   end
 end
 
--- This comment (keymaps.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
+-- This comment (settings.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
 M.toggle_resolved        = function()
   local note = state.tree:get_node()
   if not note.resolvable then return end
@@ -208,7 +208,7 @@ M.update_resolved_status = function(note, mark_resolved)
   end
 
   local has_symbol = function(s)
-    return state.SYMBOLS[s] ~= nil and state.SYMBOLS[s] ~= ''
+    return state.settings.discussion_tree[s] ~= nil and state.settings.discussion_tree[s] ~= ''
   end
 
   set_property('resolved', mark_resolved)
@@ -216,11 +216,11 @@ M.update_resolved_status = function(note, mark_resolved)
   if not has_symbol(current) and not has_symbol(target) then return end
 
   if not has_symbol(current) and has_symbol(target) then
-    set_property('text', (current_text .. " " .. state.SYMBOLS[target]))
+    set_property('text', (current_text .. " " .. state.settings.discussion_tree[target]))
   elseif has_symbol(current) and not has_symbol(target) then
     set_property('text', u.remove_last_chunk(current_text))
   else
-    set_property('text', (u.remove_last_chunk(current_text) .. " " .. state.SYMBOLS[target]))
+    set_property('text', (u.remove_last_chunk(current_text) .. " " .. state.settings.discussion_tree[target]))
   end
 
   state.tree:render()
