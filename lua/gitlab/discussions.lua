@@ -1,18 +1,18 @@
-local u                   = require("gitlab.utils")
-local NuiTree             = require("nui.tree")
-local NuiSplit            = require("nui.split")
-local job                 = require("gitlab.job")
-local state               = require("gitlab.state")
-local Popup               = require("nui.popup")
-local settings            = require("gitlab.settings")
+local u                       = require("gitlab.utils")
+local NuiTree                 = require("nui.tree")
+local NuiSplit                = require("nui.split")
+local job                     = require("gitlab.job")
+local state                   = require("gitlab.state")
+local Popup                   = require("nui.popup")
+local settings                = require("gitlab.settings")
 
-local M                   = {}
+local M                       = {}
 
 -- Places all of the discussions into a readable tree
 -- in a split window
-M.split                   = nil
-M.split_visible           = false
-M.list_discussions        = function()
+M.split                       = nil
+M.split_visible               = false
+M.list_discussions            = function()
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR", vim.log.levels.WARN)
@@ -45,14 +45,14 @@ M.list_discussions        = function()
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
-local replyPopup          = Popup(u.create_popup_state("Reply", "80%", "80%"))
-M.reply                   = function(discussion_id)
+local replyPopup              = Popup(u.create_popup_state("Reply", "80%", "80%"))
+M.reply                       = function(discussion_id)
   replyPopup:mount()
   settings.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
 end
 
 -- This function will send the reply to the Go API
-M.send_reply              = function(discussion_id)
+M.send_reply                  = function(discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
     local json = vim.json.encode(jsonTable)
@@ -64,7 +64,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
-M.jump_to_change          = function()
+M.jump_to_change              = function()
   local node = state.tree:get_node()
   if node == nil then return end
 
@@ -79,15 +79,7 @@ M.jump_to_change          = function()
   local discussion_node = M.get_root_node(node)
   local review_buffer_range = M.get_review_buffer_range(discussion_node)
   if review_buffer_range == nil then return end
-
-  -- Filter to only lines in actual changes
-  local lines = {}
-  for i = review_buffer_range[1], review_buffer_range[2], 1 do
-    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
-    if string.find(line_content, "⋮") then
-      table.insert(lines, { line_content = line_content, line_number = i })
-    end
-  end
+  local lines = M.get_review_buffer_lines(review_buffer_range)
 
   -- Extract line numbers and jump to match with discussion node
   for _, line in ipairs(lines) do
@@ -98,6 +90,29 @@ M.jump_to_change          = function()
     end
   end
 end
+
+M.get_file_from_review_buffer = function(linenr)
+  for i = linenr, 0, -1 do
+    local line_content = u.get_line_content(state.REVIEW_BUF, i)
+    if M.starts_with_file_symbol(line_content) then
+      local file_name = u.get_last_chunk(line_content)
+      return file_name
+    end
+  end
+end
+
+-- Filter to only lines in actual changes
+M.get_review_buffer_lines     = function(review_buffer_range)
+  local lines = {}
+  for i = review_buffer_range[1], review_buffer_range[2], 1 do
+    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
+    if string.find(line_content, "⋮") then
+      table.insert(lines, { line_content = line_content, line_number = i })
+    end
+  end
+  return lines
+end
+
 
 M.get_change_nums         = function(line)
   local data, _ = line:match("(.-)" .. "│" .. "(.*)")
@@ -134,13 +149,11 @@ M.get_review_buffer_range = function(node)
   if start ~= nil and stop ~= nil then return { start, stop } end
 end
 
--- TODO: Check end of file too
 M.starts_with_file_symbol = function(line)
   for _, substring in ipairs({
     state.settings.review_pane.added_file,
     state.settings.review_pane.removed_file,
     state.settings.review_pane.modified_file,
-    "[Process exited 0]"
   }) do
     if string.sub(line, 1, string.len(substring)) == substring then
       return true

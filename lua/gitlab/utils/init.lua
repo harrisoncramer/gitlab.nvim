@@ -182,15 +182,6 @@ local read_file = function(file_path)
   return file_contents
 end
 
-local split_diff_view_filename = function(filename)
-  local hash, path = filename:match("://%.git/(/?[0-9a-f]+)(/.*)$")
-  if hash and path then
-    path = path:gsub("%.git/", ""):gsub("^/", "")
-    hash = hash:gsub("^/", "")
-  end
-  return hash, path
-end
-
 local current_file_path = function()
   local path = debug.getinfo(1, 'S').source:sub(2)
   return vim.fn.fnamemodify(path, ':p')
@@ -265,6 +256,19 @@ local trim = function(s)
   return s:gsub("^%s+", ""):gsub("%s+$", "")
 end
 
+local get_line_content = function(bufnr, start)
+  local current_buffer = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(
+    bufnr ~= nil and bufnr or current_buffer,
+    start - 1,
+    start,
+    false)
+
+  for _, line in ipairs(lines) do
+    return line
+  end
+end
+
 M.get_first_chunk = get_first_chunk
 M.get_last_chunk = get_last_chunk
 M.trim = trim
@@ -275,6 +279,7 @@ M.attach_uuid = attach_uuid
 M.join_tables = join_tables
 M.get_relative_file_path = get_relative_file_path
 M.get_current_line_number = get_current_line_number
+M.get_line_content = get_line_content
 M.get_buffer_text = get_buffer_text
 M.press_enter = press_enter
 M.string_starts = string_starts
@@ -287,7 +292,6 @@ M.print_error = print_error
 M.create_popup_state = create_popup_state
 M.exit = exit
 M.read_file = read_file
-M.split_diff_view_filename = split_diff_view_filename
 M.has_delta = has_delta
 M.current_file_path = current_file_path
 M.P = P
