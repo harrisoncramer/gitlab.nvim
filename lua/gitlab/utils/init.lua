@@ -269,6 +269,15 @@ local get_line_content = function(bufnr, start)
   end
 end
 
+local get_win_from_buf = function(bufnr)
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.fn.winbufnr(win) == bufnr then
+      return win
+    end
+  end
+end
+
+M.get_win_from_buf = get_win_from_buf
 M.get_first_chunk = get_first_chunk
 M.get_last_chunk = get_last_chunk
 M.trim = trim

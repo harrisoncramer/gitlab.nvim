@@ -13,6 +13,12 @@ local edit_popup         = Popup(u.create_popup_state("Edit Comment", "80%", "80
 
 -- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
 M.create_comment         = function()
+  if vim.api.nvim_get_current_win() ~= u.get_win_from_buf(state.REVIEW_BUF) then
+    vim.notify("You must leave comments in the review panel, please call require('gitlab').review()",
+      vim.log.levels.ERROR)
+    return
+  end
+
   comment_popup:mount()
   settings.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end
