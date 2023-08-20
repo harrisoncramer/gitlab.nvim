@@ -129,6 +129,10 @@ end
 
 -- Builds the Go binary
 M.build                  = function()
+  if not u.has_delta() then
+    vim.notify("Please install delta to use gitlab.nvim!", vim.log.levels.ERROR)
+    return
+  end
   local command = string.format("cd %s && make", state.settings.bin_path)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
