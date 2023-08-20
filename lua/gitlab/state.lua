@@ -21,7 +21,8 @@ M.keymaps = {
     submit = { "<CR>", "<Space>" },
   },
   review = {
-    toggle = "<leader>glt"
+    open = "<leader>glr",
+    toggle_discussions = "<leader>d"
   }
 }
 

@@ -193,8 +193,8 @@ M.summary                = M.ensureState(summary.summary)
 M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
 M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)
 
-M.review                 = M.ensureState(function() review.open() end)
-M.list_discussions       = M.ensureState(discussions.list_discussions)
+M.review                 = M.ensureState(review.open)
+M.list_discussions       = M.ensureState(discussions.list_discussions) -- Legacy to avoid breaking UX
 M.create_comment         = M.ensureState(M.ensureRevisions(comment.create_comment))
 M.edit_comment           = M.ensureState(comment.edit_comment)
 M.delete_comment         = M.ensureState(comment.delete_comment)

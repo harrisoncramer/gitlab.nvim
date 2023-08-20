@@ -10,10 +10,12 @@ local M                    = {}
 
 -- Places all of the discussions into a readable tree
 -- in a split window
+M.split                    = nil
+M.split_visible            = false
 M.list_discussions         = function()
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
-      vim.notify("No discussions for this MR")
+      vim.notify("No discussions for this MR", vim.log.levels.WARN)
       return
     end
 
@@ -21,6 +23,9 @@ M.list_discussions         = function()
     splitState.buf_options = { modifiable = false }
     local split = NuiSplit(splitState)
     split:mount()
+
+    M.split = split
+    M.split_visible = true
 
     local buf = split.bufnr
     state.SPLIT_BUF = buf
