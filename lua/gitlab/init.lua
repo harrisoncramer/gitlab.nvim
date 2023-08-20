@@ -22,10 +22,10 @@ M.setup                       = function(args)
 
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
-  state.BIN_PATH = parent_dir
-  state.BIN = parent_dir .. "/bin"
+  state.settings.bin_path = parent_dir
+  state.settings.bin = parent_dir .. "/bin"
 
-  local binary_exists = vim.loop.fs_stat(state.BIN)
+  local binary_exists = vim.loop.fs_stat(state.settings.bin)
   if binary_exists == nil then M.build() end
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
@@ -61,18 +61,22 @@ M.ensureState                 = function(callback)
   end
 end
 
+M.print_settings              = function()
+  P(state.settings)
+end
+
 -- This will start the Go server and call the callback provided
 M.go_server_running           = false
 M.start_server                = function(callback)
-  local command = state.BIN
+  local command = state.settings.bin
       .. " "
-      .. state.PROJECT_ID
+      .. state.settings.project_id
       .. " "
-      .. state.GITLAB_URL
+      .. state.settings.gitlab_url
       .. " "
       .. state.settings.port
       .. " "
-      .. state.AUTH_TOKEN
+      .. state.settings.auth_token
       .. " "
       .. state.settings.log_path
 
@@ -125,7 +129,7 @@ end
 
 -- Builds the Go binary
 M.build                  = function()
-  local command = string.format("cd %s && make", state.BIN_PATH)
+  local command = string.format("cd %s && make", state.settings.bin_path)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
     vim.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
@@ -151,19 +155,19 @@ M.setPluginConfiguration = function(args)
     end
   end
 
-  state.PROJECT_ID = properties.project_id
-  state.AUTH_TOKEN = properties.auth_token or os.getenv("GITLAB_TOKEN")
-  state.GITLAB_URL = properties.gitlab_url or "https://gitlab.com"
+  state.settings.project_id = properties.project_id
+  state.settings.auth_token = properties.auth_token or os.getenv("GITLAB_TOKEN")
+  state.settings.gitlab_url = properties.gitlab_url or "https://gitlab.com"
 
-  if state.AUTH_TOKEN == nil then
+  if state.settings.auth_token == nil then
     error("Missing authentication token for Gitlab")
   end
 
-  if state.PROJECT_ID == nil then
+  if state.settings.project_id == nil then
     error("Missing project ID in .gitlab.nvim file.")
   end
 
-  if type(tonumber(state.PROJECT_ID)) ~= "number" then
+  if type(tonumber(state.settings.project_id)) ~= "number" then
     error("The .gitlab.nvim project file's 'project_id' must be number")
   end
 
