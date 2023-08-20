@@ -19,15 +19,17 @@ M.settings = {
     resolved = '✓',
     unresolved = ''
   },
+  review_pane = {
+    toggle_discussions = "<leader>d",
+    added_file = "",
+    modified_file = "",
+    removed_file = "",
+  },
   dialogue = {
     focus_next = { "j", "<Down>", "<Tab>" },
     focus_prev = { "k", "<Up>", "<S-Tab>" },
     close = { "<Esc>", "<C-c>" },
     submit = { "<CR>", "<Space>" },
-  },
-  review = {
-    open = "<leader>glr",
-    toggle_discussions = "<leader>d"
   },
 }
 
