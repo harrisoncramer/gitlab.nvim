@@ -22,9 +22,7 @@ local get_current_line_number = function()
 end
 
 local has_delta = function()
-  local delta = os.execute("delta --version")
-  if delta ~= 0 then return false end
-  return true
+  return vim.fn.executable("delta") == 1
 end
 
 function P(...)
