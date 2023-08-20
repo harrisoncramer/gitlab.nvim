@@ -252,42 +252,7 @@ local remove_last_chunk = function(sentence)
   return sentence_without_last
 end
 
-function find_or_create_tab(target_bufnr)
-  -- Check if a tab with the buffer is already open
-  for tabnum = 1, vim.fn.tabpagenr('$') do
-    local tab_buffers = vim.fn.tabpagebuflist(tabnum)
-    for _, bufnr in ipairs(tab_buffers) do
-      if bufnr == target_bufnr then
-        -- If the buffer is found in an existing tab, switch to that tab
-        vim.fn.execute(tabnum .. 'tabnext')
-        return false
-      end
-    end
-  end
 
-  -- If the buffer is not found, create a new tab and open the buffer
-  vim.fn.execute('tabnew')
-  vim.fn.execute('buffer ' .. target_bufnr)
-  return true
-end
-
-local is_buffer_in_tab = function(buffer_name)
-  local current_tab_num = vim.fn.tabpagenr()
-  local tab_buffers = vim.fn.tabpagebuflist(current_tab_num)
-
-  for _, bufnr in ipairs(tab_buffers) do
-    local name = vim.fn.bufname(bufnr)
-    if name == buffer_name then
-      return true
-    end
-  end
-
-  return false
-end
-
-
-M.is_buffer_in_tab = is_buffer_in_tab
-M.find_or_create_tab = find_or_create_tab
 M.remove_last_chunk = remove_last_chunk
 M.extract = extract
 M.contains = contains
