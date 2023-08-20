@@ -15,6 +15,7 @@ M.open            = function()
     state.INFO.target_branch)
 
   vim.fn.termopen(term_command) -- Calls delta and sends the output to the currently blank buffer
+  state.REVIEW_BUF = vim.api.nvim_get_current_buf()
 
   vim.keymap.set('n', state.settings.review_pane.toggle_discussions, function()
     if not discussions.split then return end

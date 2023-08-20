@@ -1,18 +1,18 @@
-local u                    = require("gitlab.utils")
-local NuiTree              = require("nui.tree")
-local NuiSplit             = require("nui.split")
-local job                  = require("gitlab.job")
-local state                = require("gitlab.state")
-local Popup                = require("nui.popup")
-local settings             = require("gitlab.settings")
+local u                   = require("gitlab.utils")
+local NuiTree             = require("nui.tree")
+local NuiSplit            = require("nui.split")
+local job                 = require("gitlab.job")
+local state               = require("gitlab.state")
+local Popup               = require("nui.popup")
+local settings            = require("gitlab.settings")
 
-local M                    = {}
+local M                   = {}
 
 -- Places all of the discussions into a readable tree
 -- in a split window
-M.split                    = nil
-M.split_visible            = false
-M.list_discussions         = function()
+M.split                   = nil
+M.split_visible           = false
+M.list_discussions        = function()
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR", vim.log.levels.WARN)
@@ -45,14 +45,14 @@ M.list_discussions         = function()
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
-local replyPopup           = Popup(u.create_popup_state("Reply", "80%", "80%"))
-M.reply                    = function(discussion_id)
+local replyPopup          = Popup(u.create_popup_state("Reply", "80%", "80%"))
+M.reply                   = function(discussion_id)
   replyPopup:mount()
   settings.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
 end
 
 -- This function will send the reply to the Go API
-M.send_reply               = function(discussion_id)
+M.send_reply              = function(discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
     local json = vim.json.encode(jsonTable)
@@ -64,7 +64,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
-M.jump_to_file             = function()
+M.jump_to_file            = function()
   local node = state.tree:get_node()
   if node == nil then return end
 
@@ -77,8 +77,74 @@ M.jump_to_file             = function()
   end
 
   local discussion_node = M.get_root_node(node)
-  u.jump_to_file(discussion_node.file_name, discussion_node.line_number)
+  local review_buffer_range = M.get_review_buffer_range(discussion_node)
+  if review_buffer_range == nil then return end
+
+  if review_buffer_range == nil then return end
+  local lines = {}
+  for i = review_buffer_range[1], review_buffer_range[2], 1 do
+    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
+    if string.find(line_content, "⋮") then
+      table.insert(lines, { line_content = line_content, line_number = i })
+    end
+  end
+
+  -- Extract line numbers from each line
+  for _, line in ipairs(lines) do
+    local data, _ = line.line_content:match("(.-)" .. "│" .. "(.*)")
+    local line_data = {}
+    if data ~= nil then
+      local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
+      local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
+      line_data.new_line = tonumber(new_line)
+      line_data.old_line = tonumber(old_line)
+    end
+
+    if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
+      vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
+      vim.api.nvim_set_current_buf(state.REVIEW_BUF)
+    end
+  end
 end
+
+M.get_review_buffer_range = function(node)
+  local lines = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, 0, -1, false)
+  local start = nil
+  local stop = nil
+
+  for i, line in ipairs(lines) do
+    if start ~= nil and stop ~= nil then return { start, stop } end
+    if M.starts_with_file_symbol(line) then
+      -- Check if the file name matches the node name
+      local file_name = u.get_last_chunk(line)
+      if file_name == node.file_name then
+        start = i
+      elseif start ~= nil then
+        stop = i
+      end
+    end
+  end
+
+  -- We've reached the end of the file, set "stop" in case we already found start
+  stop = #lines
+  if start ~= nil and stop ~= nil then return { start, stop } end
+end
+
+-- TODO: Check end of file too
+M.starts_with_file_symbol = function(line)
+  for _, substring in ipairs({
+    state.settings.review_pane.added_file,
+    state.settings.review_pane.removed_file,
+    state.settings.review_pane.modified_file,
+    "[Process exited 0]"
+  }) do
+    if string.sub(line, 1, string.len(substring)) == substring then
+      return true
+    end
+  end
+  return false
+end
+
 
 M.set_tree_keymaps         = function(buf)
   vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, function()
@@ -156,6 +222,8 @@ M.build_note_body          = function(note, resolve_info)
   for bodyLine in note.body:gmatch("[^\n]+") do
     local line = u.attach_uuid(bodyLine)
     table.insert(text_nodes, NuiTree.Node({
+      new_line = note.position.new_line,
+      old_line = note.position.old_line,
       text = line.text,
       id = line.id,
       is_body = true
@@ -175,12 +243,12 @@ end
 
 M.build_note               = function(note, resolve_info)
   local text, text_nodes = M.build_note_body(note, resolve_info)
-  local line_number = note.position.new_line or note.position.old_line
   local note_node = NuiTree.Node({
     text = text,
     id = note.id,
     file_name = note.position.new_path,
-    line_number = line_number,
+    new_line = note.position.new_line,
+    old_line = note.position.old_line,
     is_note = true,
   }, text_nodes)
 
@@ -235,12 +303,15 @@ M.add_discussions_to_table = function(discussions)
     local root_text_nodes = {}
     local resolvable = false
     local resolved = false
+    local root_new_line = nil
+    local root_old_line = nil
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
         __, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
         root_file_name = note.position.new_path
-        root_line_number = note.position.new_line or note.position.old_line
+        root_new_line = note.position.new_line
+        root_old_line = note.position.old_line
         root_id = discussion.id
         root_note_id = note.id
         resolvable = note.resolvable
@@ -260,7 +331,8 @@ M.add_discussions_to_table = function(discussions)
       id = root_id,
       root_note_id = root_note_id,
       file_name = root_file_name,
-      line_number = root_line_number,
+      new_line = root_new_line,
+      old_line = root_old_line,
       resolvable = resolvable,
       resolved = resolved
     }, body)

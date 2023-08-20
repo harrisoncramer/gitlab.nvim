@@ -82,12 +82,6 @@ local format_date = function(date_string)
   end
 end
 
-local add_comment_sign = function(line_number)
-  local bufnr = vim.api.nvim_get_current_buf()
-  vim.cmd("sign define piet text= texthl=Substitute")
-  vim.fn.sign_place(0, "piet", "piet", bufnr, { lnum = line_number })
-end
-
 local function jump_to_file(filename, line_number)
   if line_number == nil then line_number = 1 end
   vim.api.nvim_command("wincmd l")
@@ -252,7 +246,28 @@ local remove_last_chunk = function(sentence)
   return sentence_without_last
 end
 
+local get_first_chunk = function(sentence, divider)
+  local words = {}
+  for word in sentence:gmatch(divider or "%S+") do
+    table.insert(words, word)
+  end
+  return words[1]
+end
 
+local get_last_chunk = function(sentence, divider)
+  local words = {}
+  for word in sentence:gmatch(divider or "%S+") do
+    table.insert(words, word)
+  end
+  return words[#words]
+end
+local trim = function(s)
+  return s:gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+M.get_first_chunk = get_first_chunk
+M.get_last_chunk = get_last_chunk
+M.trim = trim
 M.remove_last_chunk = remove_last_chunk
 M.extract = extract
 M.contains = contains
@@ -264,7 +279,6 @@ M.get_buffer_text = get_buffer_text
 M.press_enter = press_enter
 M.string_starts = string_starts
 M.format_date = format_date
-M.add_comment_sign = add_comment_sign
 M.jump_to_file = jump_to_file
 M.find_value_by_id = find_value_by_id
 M.darken_metadata = darken_metadata
