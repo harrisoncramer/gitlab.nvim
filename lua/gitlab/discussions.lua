@@ -64,7 +64,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
-M.jump_to_file            = function()
+M.jump_to_change          = function()
   local node = state.tree:get_node()
   if node == nil then return end
 
@@ -80,7 +80,7 @@ M.jump_to_file            = function()
   local review_buffer_range = M.get_review_buffer_range(discussion_node)
   if review_buffer_range == nil then return end
 
-  if review_buffer_range == nil then return end
+  -- Filter to only lines in actual changes
   local lines = {}
   for i = review_buffer_range[1], review_buffer_range[2], 1 do
     local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
@@ -89,22 +89,26 @@ M.jump_to_file            = function()
     end
   end
 
-  -- Extract line numbers from each line
+  -- Extract line numbers and jump to match with discussion node
   for _, line in ipairs(lines) do
-    local data, _ = line.line_content:match("(.-)" .. "│" .. "(.*)")
-    local line_data = {}
-    if data ~= nil then
-      local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
-      local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
-      line_data.new_line = tonumber(new_line)
-      line_data.old_line = tonumber(old_line)
-    end
-
+    local line_data = M.get_change_nums(line.line_content)
     if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
       vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
       vim.api.nvim_set_current_buf(state.REVIEW_BUF)
     end
   end
+end
+
+M.get_change_nums         = function(line)
+  local data, _ = line:match("(.-)" .. "│" .. "(.*)")
+  local line_data = {}
+  if data ~= nil then
+    local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
+    local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
+    line_data.new_line = tonumber(new_line)
+    line_data.old_line = tonumber(old_line)
+  end
+  return line_data
 end
 
 M.get_review_buffer_range = function(node)
@@ -148,7 +152,7 @@ end
 
 M.set_tree_keymaps         = function(buf)
   vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, function()
-    M.jump_to_file()
+    M.jump_to_change()
   end, { buffer = true })
 
   vim.keymap.set('n', state.settings.discussion_tree.edit_comment, function()

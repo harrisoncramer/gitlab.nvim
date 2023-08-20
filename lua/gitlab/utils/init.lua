@@ -82,7 +82,7 @@ local format_date = function(date_string)
   end
 end
 
-local function jump_to_file(filename, line_number)
+local function jump_to_change(filename, line_number)
   if line_number == nil then line_number = 1 end
   vim.api.nvim_command("wincmd l")
   local bufnr = vim.fn.bufnr(filename)
@@ -279,7 +279,7 @@ M.get_buffer_text = get_buffer_text
 M.press_enter = press_enter
 M.string_starts = string_starts
 M.format_date = format_date
-M.jump_to_file = jump_to_file
+M.jump_to_change = jump_to_change
 M.find_value_by_id = find_value_by_id
 M.darken_metadata = darken_metadata
 M.print_success = print_success
