@@ -79,7 +79,7 @@ Here is the default setup function. All of these values are optional, and if you
 ```lua
 require("gitlab").setup({
   port = 20136, -- The port of the Go server, which runs in the background
-  log_path = vim.fn.stdpath("cache") .. "gitlab.nvim.log", -- Log path for the Go server
+  log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)

@@ -2,6 +2,8 @@ local M    = {}
 
 -- These are the default settings for the plugin
 M.settings = {
+  port = 21036,
+  log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",

@@ -5,7 +5,7 @@ local M     = {}
 -- This function is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
 M.run_job   = function(endpoint, method, body, callback)
-  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.PORT) .. endpoint }
+  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.settings.port) .. endpoint }
 
   if body ~= nil then
     table.insert(args, 1, "-d")

@@ -19,9 +19,12 @@ M.list_discussions         = function()
       return
     end
 
-    local splitState = state.DISCUSSION.SPLIT
-    splitState.buf_options = { modifiable = false }
-    local split = NuiSplit(splitState)
+    local split = NuiSplit({
+      buf_options = { modifiable = false },
+      relative = state.settings.discussion_tree.relative,
+      position = state.settings.discussion_tree.position,
+      size = state.settings.discussion_tree.size,
+    })
     split:mount()
 
     M.split = split

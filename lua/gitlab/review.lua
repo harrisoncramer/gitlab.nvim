@@ -6,14 +6,15 @@ M.open            = function()
   vim.cmd.tabnew()
 
   local term_command_template =
-  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --diff-so-fancy --file-added-label %s --file-removed-label %s --file-modified-label %s %s' git diff --cached %s"
+  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --diff-so-fancy --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff --cached %s"
 
   local term_command = string.format(term_command_template,
     state.settings.review_pane.added_file,
     state.settings.review_pane.removed_file,
     state.settings.review_pane.modified_file,
     state.INFO.target_branch)
-  vim.fn.termopen(term_command)
+
+  vim.fn.termopen(term_command) -- Calls delta and sends the output to the currently blank buffer
 
   vim.keymap.set('n', state.settings.review_pane.toggle_discussions, function()
     if not discussions.split then return end

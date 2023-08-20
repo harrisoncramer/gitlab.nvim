@@ -70,11 +70,11 @@ M.start_server                = function(callback)
       .. " "
       .. state.GITLAB_URL
       .. " "
-      .. state.PORT
+      .. state.settings.port
       .. " "
       .. state.AUTH_TOKEN
       .. " "
-      .. state.LOG_PATH
+      .. state.settings.log_path
 
   vim.fn.jobstart(command, {
     on_stdout = function(job_id)
@@ -166,17 +166,6 @@ M.setPluginConfiguration = function(args)
   if type(tonumber(state.PROJECT_ID)) ~= "number" then
     error("The .gitlab.nvim project file's 'project_id' must be number")
   end
-
-  -- Configuration for the plugin, such as port of server, layout, etc
-  state.PORT = args.port or 21036
-  state.LOG_PATH = args.log_path or (vim.fn.stdpath("cache") .. "/gitlab.nvim.log")
-  state.DISCUSSION = {
-    SPLIT = {
-      relative = state.settings.discussion_tree.relative,
-      position = state.settings.discussion_tree.position,
-      size = state.settings.discussion_tree.size,
-    }
-  }
 
   return true
 end
