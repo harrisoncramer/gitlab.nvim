@@ -64,17 +64,9 @@ end
 
 -- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
-M.jump_to_change              = function()
+M.jump_to_location            = function()
   local node = state.tree:get_node()
   if node == nil then return end
-
-  local wins = vim.api.nvim_list_wins()
-  local discussion_win = vim.api.nvim_get_current_win()
-  for _, winId in ipairs(wins) do
-    if winId ~= discussion_win then
-      vim.api.nvim_set_current_win(winId)
-    end
-  end
 
   local discussion_node = M.get_root_node(node)
   local review_buffer_range = M.get_review_buffer_range(discussion_node)
@@ -85,8 +77,14 @@ M.jump_to_change              = function()
   for _, line in ipairs(lines) do
     local line_data = M.get_change_nums(line.line_content)
     if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
-      vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
-      vim.api.nvim_set_current_buf(state.REVIEW_BUF)
+      -- Iterate through all windows to find the one displaying the target buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.fn.winbufnr(win) == state.REVIEW_BUF then
+          vim.api.nvim_set_current_win(win)
+          vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
+          break
+        end
+      end
     end
   end
 end
@@ -165,7 +163,7 @@ end
 
 M.set_tree_keymaps         = function(buf)
   vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, function()
-    M.jump_to_change()
+    M.jump_to_location()
   end, { buffer = true })
 
   vim.keymap.set('n', state.settings.discussion_tree.edit_comment, function()
