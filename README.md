@@ -8,7 +8,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - Resolve, reply to, and unresolve discussion threads
 - Create, edit, delete, and reply to comments on an MR *
 
- * This feature is currently in review, see https://github.com/harrisoncramer/gitlab.nvim/issues/25
+(*) This feature is currently in review, see https://github.com/harrisoncramer/gitlab.nvim/issues/25
 
 And a lot more!
 
