@@ -1,15 +1,15 @@
-local u             = require("gitlab.utils")
-local Menu          = require("nui.menu")
-local NuiTree       = require("nui.tree")
-local NuiSplit      = require("nui.split")
-local job           = require("gitlab.job")
-local state         = require("gitlab.state")
-local Popup         = require("nui.popup")
-local settings      = require("gitlab.settings")
+local u           = require("gitlab.utils")
+local Menu        = require("nui.menu")
+local NuiTree     = require("nui.tree")
+local NuiSplit    = require("nui.split")
+local job         = require("gitlab.job")
+local state       = require("gitlab.state")
+local Popup       = require("nui.popup")
+local settings    = require("gitlab.settings")
+local reviewer    = require("gitlab.reviewer")
 
-local comment_popup = Popup(u.create_popup_state("Comment", "40%", "60%"))
-local edit_popup    = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
-local reply_popup   = Popup(u.create_popup_state("Reply", "80%", "80%"))
+local edit_popup  = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
+local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
 
 -- This module is responsible for the discussion tree. That includes things like
@@ -32,6 +32,7 @@ M.list_discussions         = function()
       position = state.settings.discussion_tree.position,
       size = state.settings.discussion_tree.size,
     })
+
     split:mount()
 
     M.split = split
@@ -75,13 +76,14 @@ M.jump_to_location         = function()
   if node == nil then return end
 
   local discussion_node = M.get_root_node(node)
-  local review_buffer_range = M.get_review_buffer_range(discussion_node)
+  local review_buffer_range = reviewer.get_review_buffer_range(discussion_node)
+
   if review_buffer_range == nil then return end
-  local lines = M.get_review_buffer_lines(review_buffer_range)
+  local lines = reviewer.get_review_buffer_lines(review_buffer_range)
 
   -- Extract line numbers and jump to match with discussion node
   for _, line in ipairs(lines) do
-    local line_data = M.get_change_nums(line.line_content)
+    local line_data = reviewer.get_change_nums(line.line_content)
     if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
       -- Iterate through all windows to find the one displaying the target buffer
       for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -216,24 +218,6 @@ M.toggle_resolved          = function()
 end
 
 -- Helpers
-M.find_deletion_commit     = function(file)
-  local current_line = vim.api.nvim_get_current_line()
-  local command = string.format("git log -S '%s' %s", current_line, file)
-  local handle = io.popen(command)
-  local output = handle:read("*line")
-  if output == nil then
-    vim.notify("Error reading SHA of deletion commit", vim.log.levels.ERROR)
-    return ""
-  end
-  handle:close()
-  local words = {}
-  for word in output:gmatch("%S+") do
-    table.insert(words, word)
-  end
-
-  return words[2]
-end
-
 M.update_resolved_status   = function(note, mark_resolved)
   local current_text = state.tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and 'resolved' or 'unresolved'
@@ -470,68 +454,5 @@ M.add_discussions_to_table = function(discussions)
 
   return t
 end
-
--- Filter to only lines in actual changes
-M.get_review_buffer_lines  = function(review_buffer_range)
-  local lines = {}
-  for i = review_buffer_range[1], review_buffer_range[2], 1 do
-    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
-    if string.find(line_content, "⋮") then
-      table.insert(lines, { line_content = line_content, line_number = i })
-    end
-  end
-  return lines
-end
-
-
-M.get_change_nums         = function(line)
-  local data, _ = line:match("(.-)" .. "│" .. "(.*)")
-  local line_data = {}
-  if data ~= nil then
-    local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
-    local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
-    line_data.new_line = tonumber(new_line)
-    line_data.old_line = tonumber(old_line)
-  end
-  return line_data
-end
-
-M.get_review_buffer_range = function(node)
-  local lines = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, 0, -1, false)
-  local start = nil
-  local stop = nil
-
-  for i, line in ipairs(lines) do
-    if start ~= nil and stop ~= nil then return { start, stop } end
-    if M.starts_with_file_symbol(line) then
-      -- Check if the file name matches the node name
-      local file_name = u.get_last_chunk(line)
-      if file_name == node.file_name then
-        start = i
-      elseif start ~= nil then
-        stop = i
-      end
-    end
-  end
-
-  -- We've reached the end of the file, set "stop" in case we already found start
-  stop = #lines
-  if start ~= nil and stop ~= nil then return { start, stop } end
-end
-
-M.starts_with_file_symbol = function(line)
-  for _, substring in ipairs({
-    state.settings.review_pane.added_file,
-    state.settings.review_pane.removed_file,
-    state.settings.review_pane.modified_file,
-  }) do
-    if string.sub(line, 1, string.len(substring)) == substring then
-      return true
-    end
-  end
-  return false
-end
-
-
 
 return M
