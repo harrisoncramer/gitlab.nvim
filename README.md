@@ -2,13 +2,13 @@
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
-- Create, edit, delete, and reply to comments on an MR**
 - Read and Edit an MR description
 - Approve or revoke approval for an MR
 - Add or remove reviewers and assignees
 - Resolve, reply to, and unresolve discussion threads
+- Create, edit, delete, and reply to comments on an MR *
 
-** This is currently in review, see https://github.com/harrisoncramer/gitlab.nvim/issues/25
+* This feature is currently in review, see https://github.com/harrisoncramer/gitlab.nvim/issues/25
 
 And a lot more!
 
