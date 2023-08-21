@@ -1,18 +1,25 @@
-local u                       = require("gitlab.utils")
-local NuiTree                 = require("nui.tree")
-local NuiSplit                = require("nui.split")
-local job                     = require("gitlab.job")
-local state                   = require("gitlab.state")
-local Popup                   = require("nui.popup")
-local settings                = require("gitlab.settings")
+local u             = require("gitlab.utils")
+local Menu          = require("nui.menu")
+local NuiTree       = require("nui.tree")
+local NuiSplit      = require("nui.split")
+local job           = require("gitlab.job")
+local state         = require("gitlab.state")
+local Popup         = require("nui.popup")
+local settings      = require("gitlab.settings")
 
-local M                       = {}
+local comment_popup = Popup(u.create_popup_state("Comment", "40%", "60%"))
+local edit_popup    = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
+local reply_popup   = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
--- Places all of the discussions into a readable tree
--- in a split window
-M.split                       = nil
-M.split_visible               = false
-M.list_discussions            = function()
+
+-- This module is responsible for the discussion tree. That includes things like
+-- editing existing notes in the tree, replying to notes in the tree,
+-- and marking discussions as resolved/unresolved.
+local M                    = {}
+
+M.split                    = nil
+M.split_visible            = false
+M.list_discussions         = function()
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR", vim.log.levels.WARN)
@@ -45,14 +52,13 @@ M.list_discussions            = function()
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
-local replyPopup              = Popup(u.create_popup_state("Reply", "80%", "80%"))
-M.reply                       = function(discussion_id)
-  replyPopup:mount()
-  settings.set_popup_keymaps(replyPopup, M.send_reply(discussion_id))
+M.reply                    = function(discussion_id)
+  reply_popup:mount()
+  settings.set_popup_keymaps(reply_popup, M.send_reply(discussion_id))
 end
 
 -- This function will send the reply to the Go API
-M.send_reply                  = function(discussion_id)
+M.send_reply               = function(discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
     local json = vim.json.encode(jsonTable)
@@ -64,7 +70,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
-M.jump_to_location            = function()
+M.jump_to_location         = function()
   local node = state.tree:get_node()
   if node == nil then return end
 
@@ -89,94 +95,181 @@ M.jump_to_location            = function()
   end
 end
 
-M.get_file_from_review_buffer = function(linenr)
-  for i = linenr, 0, -1 do
-    local line_content = u.get_line_content(state.REVIEW_BUF, i)
-    if M.starts_with_file_symbol(line_content) then
-      local file_name = u.get_last_chunk(line_content)
-      return file_name
-    end
-  end
+-- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
+M.delete_comment           = function()
+  local menu = Menu({
+    position = "50%",
+    size = {
+      width = 25,
+    },
+    border = {
+      style = "single",
+      text = {
+        top = "Delete Comment?",
+        top_align = "center",
+      },
+    },
+    win_options = {
+      winhighlight = "Normal:Normal,FloatBorder:Normal",
+    },
+  }, {
+    lines = {
+      Menu.item("Confirm"),
+      Menu.item("Cancel"),
+    },
+    max_width = 20,
+    keymap = {
+      focus_next = state.settings.dialogue.focus_next,
+      focus_prev = state.settings.dialogue.focus_prev,
+      close = state.settings.dialogue.close,
+      submit = state.settings.dialogue.submit,
+    },
+    on_submit = M.send_deletion
+  })
+  menu:mount()
 end
 
--- Filter to only lines in actual changes
-M.get_review_buffer_lines     = function(review_buffer_range)
-  local lines = {}
-  for i = review_buffer_range[1], review_buffer_range[2], 1 do
-    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
-    if string.find(line_content, "⋮") then
-      table.insert(lines, { line_content = line_content, line_number = i })
-    end
-  end
-  return lines
-end
+-- This function will actually send the deletion to Gitlab
+-- when you make a selection
+M.send_deletion            = function(item)
+  if item.text == "Confirm" then
+    local current_node = state.tree:get_node()
 
+    local note_node = M.get_note_node(current_node)
+    local root_node = M.get_root_node(current_node)
+    local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-M.get_change_nums         = function(line)
-  local data, _ = line:match("(.-)" .. "│" .. "(.*)")
-  local line_data = {}
-  if data ~= nil then
-    local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
-    local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
-    line_data.new_line = tonumber(new_line)
-    line_data.old_line = tonumber(old_line)
-  end
-  return line_data
-end
+    local jsonTable = { discussion_id = root_node.id, note_id = note_id }
+    local json = vim.json.encode(jsonTable)
 
-M.get_review_buffer_range = function(node)
-  local lines = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, 0, -1, false)
-  local start = nil
-  local stop = nil
-
-  for i, line in ipairs(lines) do
-    if start ~= nil and stop ~= nil then return { start, stop } end
-    if M.starts_with_file_symbol(line) then
-      -- Check if the file name matches the node name
-      local file_name = u.get_last_chunk(line)
-      if file_name == node.file_name then
-        start = i
-      elseif start ~= nil then
-        stop = i
+    job.run_job("comment", "DELETE", json, function(data)
+      vim.notify(data.message, vim.log.levels.INFO)
+      if not note_node.is_root then
+        state.tree:remove_node("-" .. note_id)
+        state.tree:render()
+      else
+        -- We are removing the root node of the discussion,
+        -- we need to move all the children around, the easiest way
+        -- to do this is to just re-render the whole tree 🤷
+        M.refresh_tree()
+        note_node:expand()
       end
+    end)
+  end
+end
+
+-- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
+M.edit_comment             = function()
+  local current_node = state.tree:get_node()
+  local note_node = M.get_note_node(current_node)
+  local root_node = M.get_root_node(current_node)
+
+  edit_popup:mount()
+
+  local lines = {} -- Gather all lines from immediate children that aren't note nodes
+  local children_ids = note_node:get_child_ids()
+  for _, child_id in ipairs(children_ids) do
+    local child_node = state.tree:get_node(child_id)
+    if (not child_node:has_children()) then
+      local line = state.tree:get_node(child_id).text
+      table.insert(lines, line)
     end
   end
 
-  -- We've reached the end of the file, set "stop" in case we already found start
-  stop = #lines
-  if start ~= nil and stop ~= nil then return { start, stop } end
+  local currentBuffer = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
+  settings.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
 end
 
-M.starts_with_file_symbol = function(line)
-  for _, substring in ipairs({
-    state.settings.review_pane.added_file,
-    state.settings.review_pane.removed_file,
-    state.settings.review_pane.modified_file,
-  }) do
-    if string.sub(line, 1, string.len(substring)) == substring then
-      return true
-    end
+-- This function sends the edited comment to the Go server
+M.send_edits               = function(discussion_id, note_id)
+  return function(text)
+    local json_table = {
+      discussion_id = discussion_id,
+      note_id = note_id,
+      comment = text
+    }
+    local json = vim.json.encode(json_table)
+    job.run_job("comment", "PATCH", json, function(data)
+      vim.notify(data.message, vim.log.levels.INFO)
+      M.redraw_text(text)
+    end)
   end
-  return false
 end
 
+-- This comment (settings.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
+M.toggle_resolved          = function()
+  local note = state.tree:get_node()
+  if not note or not note.resolvable then return end
+
+  local json_table = {
+    discussion_id = note.id,
+    note_id = note.root_note_id,
+    resolved = not note.resolved,
+  }
+
+  local json = vim.json.encode(json_table)
+  job.run_job("comment", "PATCH", json, function(data)
+    vim.notify(data.message, vim.log.levels.INFO)
+    M.update_resolved_status(note, not note.resolved)
+  end)
+end
+
+-- Helpers
+M.find_deletion_commit     = function(file)
+  local current_line = vim.api.nvim_get_current_line()
+  local command = string.format("git log -S '%s' %s", current_line, file)
+  local handle = io.popen(command)
+  local output = handle:read("*line")
+  if output == nil then
+    vim.notify("Error reading SHA of deletion commit", vim.log.levels.ERROR)
+    return ""
+  end
+  handle:close()
+  local words = {}
+  for word in output:gmatch("%S+") do
+    table.insert(words, word)
+  end
+
+  return words[2]
+end
+
+M.update_resolved_status   = function(note, mark_resolved)
+  local current_text = state.tree.nodes.by_id["-" .. note.id].text
+  local target = mark_resolved and 'resolved' or 'unresolved'
+  local current = mark_resolved and 'unresolved' or 'resolved'
+
+  local function set_property(key, val)
+    state.tree.nodes.by_id["-" .. note.id][key] = val
+  end
+
+  local has_symbol = function(s)
+    return state.settings.discussion_tree[s] ~= nil and state.settings.discussion_tree[s] ~= ''
+  end
+
+  set_property('resolved', mark_resolved)
+
+  if not has_symbol(current) and not has_symbol(target) then return end
+
+  if not has_symbol(current) and has_symbol(target) then
+    set_property('text', (current_text .. " " .. state.settings.discussion_tree[target]))
+  elseif has_symbol(current) and not has_symbol(target) then
+    set_property('text', u.remove_last_chunk(current_text))
+  else
+    set_property('text', (u.remove_last_chunk(current_text) .. " " .. state.settings.discussion_tree[target]))
+  end
+
+  state.tree:render()
+end
 
 M.set_tree_keymaps         = function(buf)
   vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, function()
     M.jump_to_location()
   end, { buffer = true })
 
-  vim.keymap.set('n', state.settings.discussion_tree.edit_comment, function()
-    require("gitlab.comment").edit_comment()
-  end, { buffer = true })
-
-  vim.keymap.set('n', state.settings.discussion_tree.delete_comment, function()
-    require("gitlab.comment").delete_comment()
-  end, { buffer = true })
-
-  vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, function()
-    require("gitlab.comment").toggle_resolved()
-  end, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.edit_comment, M.edit_comment, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.delete_comment, M.delete_comment, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, M.toggle_resolved, { buffer = true })
 
   -- Expands/collapses the current node
   vim.keymap.set('n', state.settings.discussion_tree.toggle_node, function()
@@ -212,6 +305,27 @@ end
 --
 -- 🌲 Helper Functions
 --
+
+M.redraw_text              = function(text)
+  local current_node = state.tree:get_node()
+  local note_node = M.get_note_node(current_node)
+
+  local childrenIds = note_node:get_child_ids()
+  for _, value in ipairs(childrenIds) do
+    state.tree:remove_node(value)
+  end
+
+  local newNoteTextNodes = {}
+  for bodyLine in text:gmatch("[^\n]+") do
+    table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
+  end
+
+  state.tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
+
+  state.tree:render()
+  local buf = vim.api.nvim_get_current_buf()
+  u.darken_metadata(buf, '')
+end
 
 M.get_root_node            = function(node)
   if (not node.is_root) then
@@ -312,7 +426,6 @@ M.add_discussions_to_table = function(discussions)
     -- These properties are filled in by the first note
     local root_text = ''
     local root_note_id = ''
-    local root_line_number = 0
     local root_file_name = ''
     local root_id = 0
     local root_text_nodes = {}
@@ -357,5 +470,68 @@ M.add_discussions_to_table = function(discussions)
 
   return t
 end
+
+-- Filter to only lines in actual changes
+M.get_review_buffer_lines  = function(review_buffer_range)
+  local lines = {}
+  for i = review_buffer_range[1], review_buffer_range[2], 1 do
+    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
+    if string.find(line_content, "⋮") then
+      table.insert(lines, { line_content = line_content, line_number = i })
+    end
+  end
+  return lines
+end
+
+
+M.get_change_nums         = function(line)
+  local data, _ = line:match("(.-)" .. "│" .. "(.*)")
+  local line_data = {}
+  if data ~= nil then
+    local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
+    local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
+    line_data.new_line = tonumber(new_line)
+    line_data.old_line = tonumber(old_line)
+  end
+  return line_data
+end
+
+M.get_review_buffer_range = function(node)
+  local lines = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, 0, -1, false)
+  local start = nil
+  local stop = nil
+
+  for i, line in ipairs(lines) do
+    if start ~= nil and stop ~= nil then return { start, stop } end
+    if M.starts_with_file_symbol(line) then
+      -- Check if the file name matches the node name
+      local file_name = u.get_last_chunk(line)
+      if file_name == node.file_name then
+        start = i
+      elseif start ~= nil then
+        stop = i
+      end
+    end
+  end
+
+  -- We've reached the end of the file, set "stop" in case we already found start
+  stop = #lines
+  if start ~= nil and stop ~= nil then return { start, stop } end
+end
+
+M.starts_with_file_symbol = function(line)
+  for _, substring in ipairs({
+    state.settings.review_pane.added_file,
+    state.settings.review_pane.removed_file,
+    state.settings.review_pane.modified_file,
+  }) do
+    if string.sub(line, 1, string.len(substring)) == substring then
+      return true
+    end
+  end
+  return false
+end
+
+
 
 return M

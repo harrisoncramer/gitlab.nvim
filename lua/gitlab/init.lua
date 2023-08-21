@@ -184,13 +184,18 @@ end
 M.summary                = M.ensureState(summary.summary)
 M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
 M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)
+
 M.review                 = M.ensureState(review.open)
-M.list_discussions       = M.ensureState(discussions.list_discussions) -- **Legacy**
 M.create_comment         = M.ensureState(M.ensureRevisions(comment.create_comment))
-M.edit_comment           = M.ensureState(comment.edit_comment)
-M.delete_comment         = M.ensureState(comment.delete_comment)
-M.toggle_resolved        = M.ensureState(comment.toggle_resolved)
+
+-- Discussion Tree
+-- These functions are operating on the discussion tree
+M.edit_comment           = M.ensureState(discussions.edit_comment)
+M.delete_comment         = M.ensureState(discussions.delete_comment)
+M.toggle_resolved        = M.ensureState(discussions.toggle_resolved)
 M.reply                  = M.ensureState(discussions.reply)
+
+-- Reviewers + Assignees
 M.add_reviewer           = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.add_reviewer))
 M.delete_reviewer        = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.delete_reviewer))
 M.add_assignee           = M.ensureState(M.ensureProjectMembers(assignees_and_reviewers.add_assignee))
