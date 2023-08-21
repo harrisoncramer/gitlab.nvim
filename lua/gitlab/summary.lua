@@ -1,10 +1,10 @@
+local Popup            = require("nui.popup")
 local job              = require("gitlab.job")
 local state            = require("gitlab.state")
-local Popup            = require("nui.popup")
 local u                = require("gitlab.utils")
-local settings         = require("gitlab.settings")
-local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
 local M                = {}
+
+local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
 
 -- The MR description will mount in a popup when this funciton is called
 M.summary              = function()
@@ -20,7 +20,7 @@ M.summary              = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     descriptionPopup.border:set_text("top", title, "center")
-    settings.set_popup_keymaps(descriptionPopup, M.edit_description)
+    state.set_popup_keymaps(descriptionPopup, M.edit_description)
   end)
 end
 

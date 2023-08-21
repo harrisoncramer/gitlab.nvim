@@ -1,7 +1,8 @@
-local M    = {}
+local u             = require("gitlab.utils")
+local M             = {}
 
 -- These are the default settings for the plugin
-M.settings = {
+M.settings          = {
   port = 21036,
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   popup = {
@@ -34,5 +35,23 @@ M.settings = {
     submit = { "<CR>", "<Space>" },
   },
 }
+
+-- Merges user settings into the default settings, overriding them
+M.merge_settings    = function(keyTable)
+  if keyTable == nil then return end
+  M.settings = u.merge_tables(M.settings, keyTable)
+end
+
+M.set_popup_keymaps = function(popup, action)
+  vim.keymap.set('n', state.settings.popup.exit, function() u.exit(popup) end, { buffer = true })
+  if action ~= nil then
+    vim.keymap.set('n', state.settings.popup.perform_action, function()
+      local text = u.get_buffer_text(popup.bufnr)
+      popup:unmount()
+      action(text)
+    end, { buffer = true })
+  end
+end
+
 
 return M

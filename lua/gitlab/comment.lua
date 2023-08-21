@@ -3,7 +3,6 @@ local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
 local discussions        = require("gitlab.discussions")
-local settings           = require("gitlab.settings")
 local reviewer           = require("gitlab.reviewer")
 local M                  = {}
 
@@ -18,7 +17,7 @@ M.create_comment         = function()
   end
 
   comment_popup:mount()
-  settings.set_popup_keymaps(comment_popup, M.confirm_create_comment)
+  state.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end
 
 -- This function (settings.popup.perform_action) will send the comment to the Go server

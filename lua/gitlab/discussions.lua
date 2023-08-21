@@ -1,11 +1,10 @@
-local u                    = require("gitlab.utils")
+local Popup                = require("nui.popup")
 local Menu                 = require("nui.menu")
 local NuiTree              = require("nui.tree")
 local NuiSplit             = require("nui.split")
+local u                    = require("gitlab.utils")
 local job                  = require("gitlab.job")
 local state                = require("gitlab.state")
-local Popup                = require("nui.popup")
-local settings             = require("gitlab.settings")
 local reviewer             = require("gitlab.reviewer")
 
 local edit_popup           = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
@@ -68,7 +67,7 @@ end
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
 M.reply                    = function(discussion_id)
   reply_popup:mount()
-  settings.set_popup_keymaps(reply_popup, M.send_reply(discussion_id))
+  state.set_popup_keymaps(reply_popup, M.send_reply(discussion_id))
 end
 
 -- This function will send the reply to the Go API
@@ -193,7 +192,7 @@ M.edit_comment             = function()
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-  settings.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
+  state.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
 end
 
 -- This function sends the edited comment to the Go server
@@ -230,7 +229,10 @@ M.toggle_resolved          = function()
   end)
 end
 
--- Helpers
+--
+-- 🌲 Helper Functions
+--
+
 M.update_resolved_status   = function(note, mark_resolved)
   local current_text = M.tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and 'resolved' or 'unresolved'
@@ -298,10 +300,6 @@ M.set_tree_keymaps         = function(buf)
     M.reply(tostring(discussion_node.id))
   end, { buffer = true })
 end
-
---
--- 🌲 Helper Functions
---
 
 M.redraw_text              = function(text)
   local current_node = M.tree:get_node()

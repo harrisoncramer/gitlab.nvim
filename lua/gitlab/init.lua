@@ -3,7 +3,6 @@ local discussions             = require("gitlab.discussions")
 local reviewer                = require("gitlab.reviewer")
 local summary                 = require("gitlab.summary")
 local assignees_and_reviewers = require("gitlab.assignees_and_reviewers")
-local settings                = require("gitlab.settings")
 local comment                 = require("gitlab.comment")
 local job                     = require("gitlab.job")
 local u                       = require("gitlab.utils")
@@ -29,7 +28,7 @@ M.setup                       = function(args)
   if binary_exists == nil then M.build() end
 
   if not M.setPluginConfiguration(args) then return end -- Return if not a valid gitlab project
-  settings.merge_settings(args)                         -- Sets keymaps and other settings or uses fallback from state.lua
+  state.merge_settings(args)                            -- Sets keymaps and other settings or uses fallback from state.lua
   M.args = args                                         -- The  ensureState function won't start without args
 end
 
