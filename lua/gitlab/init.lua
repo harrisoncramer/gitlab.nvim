@@ -1,6 +1,6 @@
 local state                   = require("gitlab.state")
 local discussions             = require("gitlab.discussions")
-local review                  = require("gitlab.review")
+local reviewer                = require("gitlab.reviewer")
 local summary                 = require("gitlab.summary")
 local assignees_and_reviewers = require("gitlab.assignees_and_reviewers")
 local settings                = require("gitlab.settings")
@@ -185,7 +185,11 @@ M.summary                = M.ensureState(summary.summary)
 M.approve                = M.ensureState(function() job.run_job("approve", "POST") end)
 M.revoke                 = M.ensureState(function() job.run_job("revoke", "POST") end)
 
-M.review                 = M.ensureState(review.open)
+M.review                 = M.ensureState(function()
+  reviewer.open()
+  discussions.list_discussions()
+end)
+
 M.create_comment         = M.ensureState(M.ensureRevisions(comment.create_comment))
 
 -- Discussion Tree

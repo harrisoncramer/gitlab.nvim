@@ -27,14 +27,17 @@ M.confirm_create_comment = function(text)
 
   if file_name == nil then
     vim.notify("Reviewer did not provide file name", vim.log.levels.ERROR)
+    return
   end
 
   if line_numbers == nil then
     vim.notify("Reviewer did not provide line numbers of change", vim.log.levels.ERROR)
+    return
   end
 
   if text == nil then
     vim.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
+    return
   end
 
   local revision = state.MR_REVISIONS[1]

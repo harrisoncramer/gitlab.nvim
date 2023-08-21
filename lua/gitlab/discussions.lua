@@ -1,24 +1,27 @@
-local u           = require("gitlab.utils")
-local Menu        = require("nui.menu")
-local NuiTree     = require("nui.tree")
-local NuiSplit    = require("nui.split")
-local job         = require("gitlab.job")
-local state       = require("gitlab.state")
-local Popup       = require("nui.popup")
-local settings    = require("gitlab.settings")
-local reviewer    = require("gitlab.reviewer")
+local u                    = require("gitlab.utils")
+local Menu                 = require("nui.menu")
+local NuiTree              = require("nui.tree")
+local NuiSplit             = require("nui.split")
+local job                  = require("gitlab.job")
+local state                = require("gitlab.state")
+local Popup                = require("nui.popup")
+local settings             = require("gitlab.settings")
+local reviewer             = require("gitlab.reviewer")
 
-local edit_popup  = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
-local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
-
+local edit_popup           = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
+local reply_popup          = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
 -- This module is responsible for the discussion tree. That includes things like
 -- editing existing notes in the tree, replying to notes in the tree,
 -- and marking discussions as resolved/unresolved.
-local M                    = {}
 
-M.split                    = nil
-M.split_visible            = false
+local M                    = {
+  split_visible = false,
+  split = nil,
+  split_buf = nil,
+  tree = nil
+}
+
 M.list_discussions         = function()
   job.run_job("discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
@@ -34,21 +37,31 @@ M.list_discussions         = function()
     })
 
     split:mount()
+    local buf = split.bufnr
 
     M.split = split
     M.split_visible = true
-
-    local buf = split.bufnr
-    state.SPLIT_BUF = buf
+    M.split_buf = split.bufnr
 
     local tree_nodes = M.add_discussions_to_table(data.discussions)
 
-    state.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
+    M.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
     M.set_tree_keymaps(buf)
 
-    state.tree:render()
+    M.tree:render()
     vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
     u.darken_metadata(buf, '')
+
+    vim.keymap.set('n', state.settings.review_pane.toggle_discussions, function()
+      if not M.split then return end
+      if M.split_visible then
+        M.split:hide()
+        M.split_visible = false
+      else
+        M.split:show()
+        M.split_visible = true
+      end
+    end)
   end)
 end
 
@@ -72,7 +85,7 @@ end
 -- This function (settings.discussion_tree.jump_to_location) will
 -- jump you to the file and line where the comment was left
 M.jump_to_location         = function()
-  local node = state.tree:get_node()
+  local node = M.tree:get_node()
   if node == nil then return end
 
   local discussion_node = M.get_root_node(node)
@@ -135,7 +148,7 @@ end
 -- when you make a selection
 M.send_deletion            = function(item)
   if item.text == "Confirm" then
-    local current_node = state.tree:get_node()
+    local current_node = M.tree:get_node()
 
     local note_node = M.get_note_node(current_node)
     local root_node = M.get_root_node(current_node)
@@ -147,8 +160,8 @@ M.send_deletion            = function(item)
     job.run_job("comment", "DELETE", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       if not note_node.is_root then
-        state.tree:remove_node("-" .. note_id)
-        state.tree:render()
+        M.tree:remove_node("-" .. note_id)
+        M.tree:render()
       else
         -- We are removing the root node of the discussion,
         -- we need to move all the children around, the easiest way
@@ -162,7 +175,7 @@ end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment             = function()
-  local current_node = state.tree:get_node()
+  local current_node = M.tree:get_node()
   local note_node = M.get_note_node(current_node)
   local root_node = M.get_root_node(current_node)
 
@@ -171,9 +184,9 @@ M.edit_comment             = function()
   local lines = {} -- Gather all lines from immediate children that aren't note nodes
   local children_ids = note_node:get_child_ids()
   for _, child_id in ipairs(children_ids) do
-    local child_node = state.tree:get_node(child_id)
+    local child_node = M.tree:get_node(child_id)
     if (not child_node:has_children()) then
-      local line = state.tree:get_node(child_id).text
+      local line = M.tree:get_node(child_id).text
       table.insert(lines, line)
     end
   end
@@ -201,7 +214,7 @@ end
 
 -- This comment (settings.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
 M.toggle_resolved          = function()
-  local note = state.tree:get_node()
+  local note = M.tree:get_node()
   if not note or not note.resolvable then return end
 
   local json_table = {
@@ -219,12 +232,12 @@ end
 
 -- Helpers
 M.update_resolved_status   = function(note, mark_resolved)
-  local current_text = state.tree.nodes.by_id["-" .. note.id].text
+  local current_text = M.tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and 'resolved' or 'unresolved'
   local current = mark_resolved and 'unresolved' or 'resolved'
 
   local function set_property(key, val)
-    state.tree.nodes.by_id["-" .. note.id][key] = val
+    M.tree.nodes.by_id["-" .. note.id][key] = val
   end
 
   local has_symbol = function(s)
@@ -243,7 +256,7 @@ M.update_resolved_status   = function(note, mark_resolved)
     set_property('text', (u.remove_last_chunk(current_text) .. " " .. state.settings.discussion_tree[target]))
   end
 
-  state.tree:render()
+  M.tree:render()
 end
 
 M.set_tree_keymaps         = function(buf)
@@ -257,29 +270,29 @@ M.set_tree_keymaps         = function(buf)
 
   -- Expands/collapses the current node
   vim.keymap.set('n', state.settings.discussion_tree.toggle_node, function()
-      local node = state.tree:get_node()
+      local node = M.tree:get_node()
       if node == nil then return end
       local children = node:get_child_ids()
       if node == nil then return end
       if node:is_expanded() then
         node:collapse()
         for _, child in ipairs(children) do
-          state.tree:get_node(child):collapse()
+          M.tree:get_node(child):collapse()
         end
       else
         for _, child in ipairs(children) do
-          state.tree:get_node(child):expand()
+          M.tree:get_node(child):expand()
         end
         node:expand()
       end
 
-      state.tree:render()
+      M.tree:render()
       u.darken_metadata(buf, '')
     end,
     { buffer = true })
 
   vim.keymap.set('n', 'r', function()
-    local node = state.tree:get_node()
+    local node = M.tree:get_node()
     if node == nil then return end
     local discussion_node = M.get_root_node(node)
     M.reply(tostring(discussion_node.id))
@@ -291,12 +304,12 @@ end
 --
 
 M.redraw_text              = function(text)
-  local current_node = state.tree:get_node()
+  local current_node = M.tree:get_node()
   local note_node = M.get_note_node(current_node)
 
   local childrenIds = note_node:get_child_ids()
   for _, value in ipairs(childrenIds) do
-    state.tree:remove_node(value)
+    M.tree:remove_node(value)
   end
 
   local newNoteTextNodes = {}
@@ -304,9 +317,9 @@ M.redraw_text              = function(text)
     table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
   end
 
-  state.tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
+  M.tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
 
-  state.tree:render()
+  M.tree:render()
   local buf = vim.api.nvim_get_current_buf()
   u.darken_metadata(buf, '')
 end
@@ -314,7 +327,7 @@ end
 M.get_root_node            = function(node)
   if (not node.is_root) then
     local parent_id = node:get_parent_id()
-    return M.get_root_node(state.tree:get_node(parent_id))
+    return M.get_root_node(M.tree:get_node(parent_id))
   else
     return node
   end
@@ -324,7 +337,7 @@ M.get_note_node            = function(node)
   if (not node.is_note) then
     local parent_id = node:get_parent_id()
     if parent_id == nil then return node end
-    return M.get_note_node(state.tree:get_node(parent_id))
+    return M.get_note_node(M.tree:get_node(parent_id))
   else
     return node
   end
@@ -371,8 +384,8 @@ end
 M.add_note_to_tree         = function(note, discussion_id)
   local note_node = M.build_note(note)
   note_node:expand()
-  state.tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
-  state.tree:render()
+  M.tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
+  M.tree:render()
   local buf = vim.api.nvim_get_current_buf()
   u.darken_metadata(buf, '')
   vim.notify("Sent reply!", vim.log.levels.INFO)
@@ -385,20 +398,20 @@ M.refresh_tree             = function()
       return
     end
 
-    if not state.SPLIT_BUF or (vim.fn.bufwinid(state.SPLIT_BUF) == -1) then return end
+    if not M.split_buf or (vim.fn.bufwinid(M.split_buf) == -1) then return end
 
-    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'modifiable', true)
-    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'readonly', false)
-    vim.api.nvim_buf_set_lines(state.SPLIT_BUF, 0, -1, false, {})
-    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'readonly', true)
-    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'modifiable', false)
+    vim.api.nvim_buf_set_option(M.split_buf, 'modifiable', true)
+    vim.api.nvim_buf_set_option(M.split_buf, 'readonly', false)
+    vim.api.nvim_buf_set_lines(M.split_buf, 0, -1, false, {})
+    vim.api.nvim_buf_set_option(M.split_buf, 'readonly', true)
+    vim.api.nvim_buf_set_option(M.split_buf, 'modifiable', false)
 
     local tree_nodes = M.add_discussions_to_table(data.discussions)
-    state.tree = NuiTree({ nodes = tree_nodes, bufnr = state.SPLIT_BUF })
-    M.set_tree_keymaps(state.SPLIT_BUF)
-    state.tree:render()
-    vim.api.nvim_buf_set_option(state.SPLIT_BUF, 'filetype', 'markdown')
-    u.darken_metadata(state.SPLIT_BUF, '')
+    M.tree = NuiTree({ nodes = tree_nodes, bufnr = M.split_buf })
+    M.set_tree_keymaps(M.split_buf)
+    M.tree:render()
+    vim.api.nvim_buf_set_option(M.split_buf, 'filetype', 'markdown')
+    u.darken_metadata(M.split_buf, '')
   end)
 end
 

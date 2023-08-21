@@ -2,6 +2,25 @@ local state                   = require("gitlab.state")
 local u                       = require("gitlab.utils")
 local M                       = {}
 
+-- Work in progress refactor: This Module contains all of the code
+-- specific to the Delta reviewer
+
+M.open                        = function()
+  vim.cmd.tabnew()
+
+  local term_command_template =
+  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff --cached %s"
+
+  local term_command = string.format(term_command_template,
+    state.settings.review_pane.added_file,
+    state.settings.review_pane.removed_file,
+    state.settings.review_pane.modified_file,
+    state.INFO.target_branch)
+
+  vim.fn.termopen(term_command) -- Calls delta and sends the output to the currently blank buffer
+  state.REVIEW_BUF = vim.api.nvim_get_current_buf()
+end
+
 M.get_changes                 = function()
   local line_num = u.get_current_line_number()
   local content = u.get_line_content(state.REVIEW_BUF, line_num)
@@ -30,7 +49,7 @@ M.get_changes                 = function()
 
   local file_name = M.get_file_from_review_buffer(u.get_current_line_number())
 
-  return current_line_changes, file_name
+  return file_name, current_line_changes
 end
 
 M.get_file_from_review_buffer = function(linenr)
