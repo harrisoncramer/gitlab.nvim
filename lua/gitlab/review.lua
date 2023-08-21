@@ -6,7 +6,7 @@ M.open            = function()
   vim.cmd.tabnew()
 
   local term_command_template =
-  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff --cached %s"
+  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff %s...HEAD"
 
   local term_command = string.format(term_command_template,
     state.settings.review_pane.added_file,
