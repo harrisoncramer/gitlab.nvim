@@ -90,13 +90,17 @@ M.setPluginConfiguration = function()
   return true
 end
 
+local function exit(popup)
+  popup:unmount()
+end
+
 -- These keymaps are buffer specific and are set dynamically when popups mount
-M.set_popup_keymaps      = function(popup, action)
-  vim.keymap.set('n', M.settings.popup.exit, function() popup:unmount() end, { buffer = true })
+M.set_popup_keymaps = function(popup, action)
+  vim.keymap.set('n', M.settings.popup.exit, function() exit(popup) end, { buffer = true })
   if action ~= nil then
     vim.keymap.set('n', M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
-      popup:unmount()
+      exit(popup)
       action(text)
     end, { buffer = true })
   end
@@ -107,10 +111,12 @@ end
 -- before calling an action. They are used to set global state that's required
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
-M.dependencies           = {
+M.dependencies      = {
   info            = { endpoint = "/info", key = "info", state = "INFO" },
   revisions       = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS" },
   project_members = { endpoint = "/members", key = "ProjectMembers", state = "PROJECT_MEMBERS" }
 }
+
+
 
 return M
