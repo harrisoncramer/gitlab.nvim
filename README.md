@@ -20,6 +20,14 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43
 - <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
 - <a href="https://github.com/dandavison/delta">delta</a>
 
+## Quick Start
+
+1. Ensure Dependencies (Linux/Mac users can run the install script: ./install)
+2. Add config (below)
+3. Check out feature branch
+4. Open Neovim
+5. Run `:lua require("gitlab").review()` to open the reviewer pane, or `:lua require("gitlab").summary() to read the MR description and get started.
+
 ## Installation
 
 With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
@@ -122,42 +130,21 @@ The `summary` command will pull down the MR description into a buffer so that yo
 require("gitlab").summary()
 ```
 
-The `review` command will open up a diff view of all the changes that have been made in this MR, and will open up any discussions that have been created as part of the MR in a split view.
+## Review Mode
 
 ```lua
-require("gitlab").review()
-```
+require("gitlab").review() -- The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane ``` Within the review view, you can leave comments, reply to others, mark discussions as completed, and more. Once in the review view, the `create_comment` command will create a Gitlab comment on the currently active line in the diff. To send the comment, use `<leader>s` while the comment popup is open:
+require("gitlab").create_comment() -- Gitlab groups threads of comments together into "discussions." The list of discussions for the current MR will be displayed in a split window in the review view. You can jump to the comment's location in the diff view by using the `o` key when hovering over the line in the tree. Within the discussion tree, there are several functions that you can call. These are also configurable via keybindings provided in the setup function:
 
-Within the review view, you can leave comments, reply to others, mark discussions as completed, and more. 
-
-Once in the review view, the `create_comment` command will create a Gitlab comment on the currently active line in the diff. To send the comment, use `<leader>s` while the comment popup is open:
-
-```lua
-require("gitlab").create_comment()
-```
-
-Gitlab groups threads of comments together into "discussions." The list of discussions for the current MR will be displayed in a split window in the review view. You can jump to the comment's location in the diff view by using the `o` key when hovering over the line in the tree. 
-
-Within the discussion tree, there are several functions that you can call. These are also configurable via keybindings provided in the setup function:
-
-```lua
-require("gitlab").delete_comment()
+require("gitlab").delete_comment() -- These commands are triggered on the discussion tree
 require("gitlab").edit_comment()
 require("gitlab").reply()
 require("gitlab").toggle_resolved()
 ```
-
 ### Other Commands
-
-The `approve` command will approve the merge request for the current branch:
 
 ```lua
 require("gitlab").approve()
-```
-
-The `revoke` command will revoke approval for the merge request for the current branch:
-
-```lua
 require("gitlab").revoke()
 ```
 
