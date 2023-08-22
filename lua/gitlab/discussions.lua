@@ -48,7 +48,6 @@ M.list_discussions         = function()
 
     M.tree:render()
     vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-    u.darken_metadata(buf, '')
 
     vim.keymap.set('n', state.settings.review_pane.toggle_discussions, function()
       if not M.split then return end
@@ -288,7 +287,6 @@ M.set_tree_keymaps         = function(buf)
       end
 
       M.tree:render()
-      u.darken_metadata(buf, '')
     end,
     { buffer = true })
 
@@ -318,7 +316,6 @@ M.redraw_text              = function(text)
 
   M.tree:render()
   local buf = vim.api.nvim_get_current_buf()
-  u.darken_metadata(buf, '')
 end
 
 M.get_root_node            = function(node)
@@ -340,10 +337,14 @@ M.get_note_node            = function(node)
   end
 end
 
+local attach_uuid          = function(str)
+  return { text = str, id = u.uuid() }
+end
+
 M.build_note_body          = function(note, resolve_info)
   local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
-    local line = u.attach_uuid(bodyLine)
+    local line = attach_uuid(bodyLine)
     table.insert(text_nodes, NuiTree.Node({
       new_line = note.position.new_line,
       old_line = note.position.old_line,
@@ -384,7 +385,6 @@ M.add_note_to_tree         = function(note, discussion_id)
   M.tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   M.tree:render()
   local buf = vim.api.nvim_get_current_buf()
-  u.darken_metadata(buf, '')
   vim.notify("Sent reply!", vim.log.levels.INFO)
 end
 
@@ -408,7 +408,6 @@ M.refresh_tree             = function()
     M.set_tree_keymaps(M.split_buf)
     M.tree:render()
     vim.api.nvim_buf_set_option(M.split_buf, 'filetype', 'markdown')
-    u.darken_metadata(M.split_buf, '')
   end)
 end
 
