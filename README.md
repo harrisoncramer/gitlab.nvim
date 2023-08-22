@@ -33,7 +33,7 @@ return {
     "stevearc/dressing.nvim" -- Recommended but not required. Better UI for pickers.
     enabled = true,
   },
-  build = function () require("gitlab").build() end, -- Builds the Go binary
+  build = function () require("gitlab.server").build() end, -- Builds the Go binary
   config = function()
     require("gitlab").setup()
   end,
@@ -49,7 +49,7 @@ use {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
   },
-  run = function() require("gitlab").build() end,
+  run = function() require("gitlab.server").build() end,
   config = function()
     require("gitlab").setup()
   end,
@@ -203,8 +203,8 @@ vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
 This plugin uses a Golang server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
 
 ```
-:lua require("gitlab").build()
-:lua require("gitlab").start_server()
+:lua require("gitlab.server").build()
+:lua require("gitlab.server").start()
 ```
 
 You can directly interact with the Go server like any other process:
