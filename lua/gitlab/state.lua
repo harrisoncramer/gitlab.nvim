@@ -4,7 +4,6 @@
 -- is valid with the ensure functions.
 
 local u                  = require("gitlab.utils")
-local job                = require("gitlab.job")
 local M                  = {}
 
 -- These are the default settings for the plugin
