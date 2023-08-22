@@ -1,4 +1,4 @@
-local core                    = require("gitlab.core")
+local server                  = require("gitlab.server")
 local state                   = require("gitlab.state")
 local discussions             = require("gitlab.discussions")
 local reviewer                = require("gitlab.reviewer")
@@ -22,7 +22,7 @@ M.setup                       = function(args)
   state.settings.bin = parent_dir .. "/bin"
 
   local binary_exists = vim.loop.fs_stat(state.settings.bin)
-  if binary_exists == nil then core.build() end
+  if binary_exists == nil then server.build() end
 
   state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
   state.merge_settings(args)     -- Sets keymaps and other settings from setup function
@@ -45,7 +45,7 @@ M.ensureState                 = function(callback)
     end
 
     -- Once the Go binary has go_server_running, call the info endpoint to set global state
-    core.start_server(function()
+    server.start_server(function()
       state.go_server_running = true
       job.run_job("info", "GET", nil, function(data)
         state.INFO = data.info

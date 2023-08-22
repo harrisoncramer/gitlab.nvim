@@ -1,3 +1,6 @@
+-- This module contains the logic responsible for building and starting
+-- the Golang server. The Go server is responsible for making API calls
+-- to Gitlab and returning the data
 local job      = require("gitlab.job")
 local state    = require("gitlab.state")
 local u        = require("gitlab.utils")
