@@ -124,17 +124,4 @@ M.get_review_buffer_lines     = function(review_buffer_range)
   return lines
 end
 
-M.get_change_nums             = function(line)
-  local data, _ = line:match("(.-)" .. "│" .. "(.*)")
-  local line_data = {}
-  if data ~= nil then
-    local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
-    local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
-    line_data.new_line = tonumber(new_line)
-    line_data.old_line = tonumber(old_line)
-  end
-  return line_data
-end
-
-
 return M
