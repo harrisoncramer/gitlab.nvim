@@ -1,10 +1,10 @@
-local Job   = require("plenary.job")
-local state = require("gitlab.state")
-local M     = {}
-
--- This function is responsible for making API calls to the Go server and
+-- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
-M.run_job   = function(endpoint, method, body, callback)
+local Job = require("plenary.job")
+local M   = {}
+
+M.run_job = function(endpoint, method, body, callback)
+  local state = require("gitlab.state")
   local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.settings.port) .. endpoint }
 
   if body ~= nil then

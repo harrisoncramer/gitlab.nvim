@@ -1,3 +1,6 @@
+-- This module is responsible for the discussion tree. That includes things like
+-- editing existing notes in the tree, replying to notes in the tree,
+-- and marking discussions as resolved/unresolved.
 local Popup                = require("nui.popup")
 local Menu                 = require("nui.menu")
 local NuiTree              = require("nui.tree")
@@ -9,10 +12,6 @@ local reviewer             = require("gitlab.reviewer")
 
 local edit_popup           = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup          = Popup(u.create_popup_state("Reply", "80%", "80%"))
-
--- This module is responsible for the discussion tree. That includes things like
--- editing existing notes in the tree, replying to notes in the tree,
--- and marking discussions as resolved/unresolved.
 
 local M                    = {
   split_visible = false,

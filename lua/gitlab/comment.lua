@@ -1,3 +1,6 @@
+-- This module is responsible for creating new comments
+-- in the reviewer's buffer. The reviewer will pass back
+-- to this module the data required to make the API calls
 local Popup              = require("nui.popup")
 local job                = require("gitlab.job")
 local state              = require("gitlab.state")

@@ -1,3 +1,6 @@
+-- This module is responsible for the MR description
+-- This lets the user open the description in a popup and
+-- send edits to the description back to Gitlab
 local Popup            = require("nui.popup")
 local job              = require("gitlab.job")
 local state            = require("gitlab.state")
@@ -6,7 +9,7 @@ local M                = {}
 
 local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
 
--- The MR description will mount in a popup when this funciton is called
+-- The function will render the MR description in a popup
 M.summary              = function()
   descriptionPopup:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
