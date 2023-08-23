@@ -2,10 +2,9 @@
 -- in the reviewer's buffer. The reviewer will pass back
 -- to this module the data required to make the API calls
 local Popup              = require("nui.popup")
-local job                = require("gitlab.job")
 local state              = require("gitlab.state")
 local u                  = require("gitlab.utils")
-local discussions        = require("gitlab.discussions")
+local discussions        = require("gitlab.actions.discussions")
 local reviewer           = require("gitlab.reviewer")
 local M                  = {}
 
@@ -13,12 +12,6 @@ local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
 
 -- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
 M.create_comment         = function()
-  if vim.api.nvim_get_current_win() ~= u.get_win_from_buf(state.REVIEW_BUF) then
-    vim.notify("You must leave comments in the review panel, please call require('gitlab').review()",
-      vim.log.levels.ERROR)
-    return
-  end
-
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, M.confirm_create_comment)
 end

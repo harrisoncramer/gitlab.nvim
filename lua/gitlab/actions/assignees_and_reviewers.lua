@@ -1,7 +1,6 @@
 -- This module is responsible for the assignment of reviewers
 -- and assignees in Gitlab, those who must review an MR.
 local u           = require("gitlab.utils")
-local job         = require("gitlab.job")
 local state       = require("gitlab.state")
 local M           = {}
 

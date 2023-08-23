@@ -2,7 +2,7 @@
 -- This lets the user open the description in a popup and
 -- send edits to the description back to Gitlab
 local Popup            = require("nui.popup")
-local job              = require("gitlab.job")
+local job            = require("gitlab.job")
 local state            = require("gitlab.state")
 local u                = require("gitlab.utils")
 local M                = {}

@@ -92,7 +92,7 @@ end
 
 -- These keymaps are buffer specific and are set dynamically when popups mount
 M.set_popup_keymaps      = function(popup, action)
-  vim.keymap.set('n', M.settings.popup.exit, function() u.exit(popup) end, { buffer = true })
+  vim.keymap.set('n', M.settings.popup.exit, function() popup:unmount() end, { buffer = true })
   if action ~= nil then
     vim.keymap.set('n', M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)

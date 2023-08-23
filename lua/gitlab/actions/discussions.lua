@@ -6,7 +6,6 @@ local Menu                 = require("nui.menu")
 local NuiTree              = require("nui.tree")
 local NuiSplit             = require("nui.split")
 local u                    = require("gitlab.utils")
-local job                  = require("gitlab.job")
 local state                = require("gitlab.state")
 local reviewer             = require("gitlab.reviewer")
 
