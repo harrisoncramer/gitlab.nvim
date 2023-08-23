@@ -21,7 +21,13 @@ M.run_job = function(endpoint, method, body, callback)
     on_stdout = function(_, output)
       vim.defer_fn(function()
         local data_ok, data = pcall(vim.json.decode, output)
-        if data_ok and data ~= nil then
+        if not data_ok then
+          local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)
+          if (type(output) == "string") then msg = string.format(msg .. ", got: '%s'", output) end
+          vim.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
+          return
+        end
+        if data ~= nil then
           local status = (tonumber(data.status) >= 200 and tonumber(data.status) < 300) and "success" or "error"
           if status == "success" and callback ~= nil then
             callback(data)
