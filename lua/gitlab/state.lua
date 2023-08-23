@@ -1,7 +1,7 @@
 -- This module is responsible for holding and setting shared state between
 -- modules, such as keybinding data and other settings and configuration.
--- This module is also responsible for "ensuring" that the state of the plugin
--- is valid with the ensure functions.
+-- This module is also responsible for ensuring that the state of the plugin
+-- is valid via dependencies
 
 local u                  = require("gitlab.utils")
 local M                  = {}
@@ -50,7 +50,7 @@ M.merge_settings         = function(args)
 end
 
 M.print_settings         = function()
-  P(M.settings)
+  u.P(M.settings)
 end
 
 -- Merges `.gitlab.nvim` settings into the state module
@@ -102,5 +102,15 @@ M.set_popup_keymaps      = function(popup, action)
   end
 end
 
+-- Dependencies
+-- These tables are passed to the async.sequence function, which calls them in sequence
+-- before calling an action. They are used to set global state that's required
+-- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
+-- adding a reviewer) requires some initial state.
+M.dependencies           = {
+  info            = { endpoint = "/info", key = "info", state = "INFO" },
+  revisions       = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS" },
+  project_members = { endpoint = "/members", key = "ProjectMembers", state = "PROJECT_MEMBERS" }
+}
 
 return M

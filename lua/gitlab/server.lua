@@ -51,6 +51,15 @@ M.build = function()
     vim.notify("Please install delta to use gitlab.nvim!", vim.log.levels.ERROR)
     return
   end
+
+  local file_path = u.current_file_path()
+  local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
+  state.settings.bin_path = parent_dir
+  state.settings.bin = parent_dir .. "/bin"
+
+  local binary_exists = vim.loop.fs_stat(state.settings.bin)
+  if binary_exists ~= nil then return end
+
   local command = string.format("cd %s && make", state.settings.bin_path)
   local installCode = os.execute(command .. "> /dev/null")
   if installCode ~= 0 then
