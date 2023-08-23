@@ -32,14 +32,14 @@ M.start_server = function(callback)
       end
     end,
     on_stderr = function(_, errors)
-      print("err")
       local err_msg = ''
       for _, err in ipairs(errors) do
         if err ~= "" and err ~= nil then
           err_msg = err_msg .. err .. "\n"
         end
       end
-      vim.notify(err_msg, vim.log.levels.ERROR)
+
+      if err_msg ~= '' then vim.notify(err_msg, vim.log.levels.ERROR) end
     end
   })
 end

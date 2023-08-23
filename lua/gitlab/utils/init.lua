@@ -101,12 +101,20 @@ M.create_popup_state = function(title, width, height)
   }
 end
 
-M.merge_tables = function(defaults, overrides)
+M.merge = function(defaults, overrides)
   local result = {}
 
   for key, value in pairs(defaults) do
     if type(value) == "table" then
-      result[key] = M.merge_tables(value, overrides[key] or {})
+      result[key] = M.merge(value, overrides[key] or {})
+    else
+      result[key] = overrides[key] or value
+    end
+  end
+
+  for key, value in pairs(overrides) do
+    if type(value) == "table" then
+      result[key] = M.merge(value, overrides[key] or {})
     else
       result[key] = overrides[key] or value
     end

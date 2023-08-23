@@ -46,7 +46,7 @@ M.settings               = {
 -- Merges user settings into the default settings, overriding them
 M.merge_settings         = function(args)
   if args == nil then return end
-  M.settings = u.merge_tables(M.settings, args)
+  M.settings = u.merge(M.settings, args)
 end
 
 M.print_settings         = function()
