@@ -2,7 +2,7 @@
 -- This lets the user open the description in a popup and
 -- send edits to the description back to Gitlab
 local Popup            = require("nui.popup")
-local job            = require("gitlab.job")
+local job              = require("gitlab.job")
 local state            = require("gitlab.state")
 local u                = require("gitlab.utils")
 local M                = {}
@@ -31,7 +31,7 @@ end
 M.edit_description     = function(text)
   local jsonTable = { description = text }
   local json = vim.json.encode(jsonTable)
-  job.run_job("mr/description", "PUT", json, function(data)
+  job.run_job("/mr/description", "PUT", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
   end)

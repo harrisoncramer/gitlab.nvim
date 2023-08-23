@@ -29,13 +29,16 @@ M.setup                       = function(args)
   state.merge_settings(args)     -- Sets keymaps and other settings from setup function
 end
 
-local info                    = { endpoint = "info", key = "info", state = "INFO" }
-local revisions               = { endpoint = "mr/revisions", key = "Revisions", state = "MR_REVISIONS" }
-local project_members         = { endpoint = "members", key = "ProjectMembers", state = "PROJECT_MEMBERS" }
+-- Dependencies
+-- These tables are passed to the async.sequence function, which calls them in sequence
+-- before calling an action. They are used to set global state that's required
+-- for each of the actions to occur.
+local info                    = { endpoint = "/info", key = "info", state = "INFO" }
+local revisions               = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS" }
+local project_members         = { endpoint = "/members", key = "ProjectMembers", state = "PROJECT_MEMBERS" }
 
 -- Global Actions 🌎
 -- These actions can be called from anywhere in Neovim
---
 M.summary                     = async.sequence(summary.summary, { info })
 M.approve                     = async.sequence(approvals.approve, { info })
 M.revoke                      = async.sequence(approvals.revoke, { info })

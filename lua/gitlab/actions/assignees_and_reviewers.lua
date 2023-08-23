@@ -1,6 +1,7 @@
 -- This module is responsible for the assignment of reviewers
 -- and assignees in Gitlab, those who must review an MR.
 local u           = require("gitlab.utils")
+local job         = require("gitlab.job")
 local state       = require("gitlab.state")
 local M           = {}
 
@@ -34,7 +35,7 @@ M.add_popup       = function(type)
     local current_ids = u.extract(current, 'id')
     table.insert(current_ids, choice.id)
     local json = vim.json.encode({ ids = current_ids })
-    job.run_job("mr/" .. type, "PUT", json, function(data)
+    job.run_job("/mr/" .. type, "PUT", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       state.INFO[plural] = data[plural]
     end)
@@ -53,7 +54,7 @@ M.delete_popup    = function(type)
     if not choice then return end
     local ids = u.extract(M.filter_eligible(current, { choice }), 'id')
     local json = vim.json.encode({ ids = ids })
-    job.run_job("mr/" .. type, "PUT", json, function(data)
+    job.run_job("/mr/" .. type, "PUT", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       state.INFO[plural] = data[plural]
     end)

@@ -3,6 +3,7 @@
 -- to this module the data required to make the API calls
 local Popup              = require("nui.popup")
 local state              = require("gitlab.state")
+local job                = require("gitlab.job")
 local u                  = require("gitlab.utils")
 local discussions        = require("gitlab.actions.discussions")
 local reviewer           = require("gitlab.reviewer")
@@ -49,7 +50,7 @@ M.confirm_create_comment = function(text)
 
   local json = vim.json.encode(jsonTable)
 
-  job.run_job("comment", "POST", json, function(data)
+  job.run_job("/comment", "POST", json, function(data)
     vim.notify("Comment created")
     discussions.refresh_tree()
   end)

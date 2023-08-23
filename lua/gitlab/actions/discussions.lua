@@ -4,6 +4,7 @@
 local Popup                = require("nui.popup")
 local Menu                 = require("nui.menu")
 local NuiTree              = require("nui.tree")
+local job                  = require("gitlab.job")
 local NuiSplit             = require("nui.split")
 local u                    = require("gitlab.utils")
 local state                = require("gitlab.state")
@@ -20,7 +21,7 @@ local M                    = {
 }
 
 M.list_discussions         = function()
-  job.run_job("discussions", "GET", nil, function(data)
+  job.run_job("/discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR", vim.log.levels.WARN)
       return
@@ -72,7 +73,7 @@ M.send_reply               = function(discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
     local json = vim.json.encode(jsonTable)
-    job.run_job("reply", "POST", json, function(data)
+    job.run_job("/reply", "POST", json, function(data)
       M.add_note_to_tree(data.note, discussion_id)
     end)
   end
@@ -153,7 +154,7 @@ M.send_deletion            = function(item)
     local jsonTable = { discussion_id = root_node.id, note_id = note_id }
     local json = vim.json.encode(jsonTable)
 
-    job.run_job("comment", "DELETE", json, function(data)
+    job.run_job("/comment", "DELETE", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       if not note_node.is_root then
         M.tree:remove_node("-" .. note_id)
@@ -201,7 +202,7 @@ M.send_edits               = function(discussion_id, note_id)
       comment = text
     }
     local json = vim.json.encode(json_table)
-    job.run_job("comment", "PATCH", json, function(data)
+    job.run_job("/comment", "PATCH", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       M.redraw_text(text)
     end)
@@ -220,7 +221,7 @@ M.toggle_resolved          = function()
   }
 
   local json = vim.json.encode(json_table)
-  job.run_job("comment", "PATCH", json, function(data)
+  job.run_job("/comment", "PATCH", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     M.update_resolved_status(note, not note.resolved)
   end)
@@ -388,7 +389,7 @@ M.add_note_to_tree         = function(note, discussion_id)
 end
 
 M.refresh_tree             = function()
-  job.run_job("discussions", "GET", nil, function(data)
+  job.run_job("/discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR")
       return

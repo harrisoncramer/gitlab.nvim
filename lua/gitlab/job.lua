@@ -5,7 +5,7 @@ local M   = {}
 
 M.run_job = function(endpoint, method, body, callback)
   local state = require("gitlab.state")
-  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.settings.port) .. endpoint }
+  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s", state.settings.port) .. endpoint }
 
   if body ~= nil then
     table.insert(args, 1, "-d")
