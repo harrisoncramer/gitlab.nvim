@@ -1,9 +1,12 @@
 local state                   = require("gitlab.state")
 local u                       = require("gitlab.utils")
-local M                       = {}
 
 -- Work in progress refactor: This Module contains all of the code
 -- specific to the Delta reviewer
+
+local M                       = {
+  bufnr = nil
+}
 
 M.open                        = function()
   vim.cmd.tabnew()
@@ -18,14 +21,14 @@ M.open                        = function()
     state.INFO.target_branch)
 
   vim.fn.termopen(term_command) -- Calls delta and sends the output to the currently blank buffer
-  state.REVIEW_BUF = vim.api.nvim_get_current_buf()
+  M.bufnr = vim.api.nvim_get_current_buf()
 end
 
 M.get_location                = function()
   local line_num = u.get_current_line_number()
-  local content = u.get_line_content(state.REVIEW_BUF, line_num)
+  local content = u.get_line_content(M.bufnr, line_num)
   local current_line_changes = M.get_change_nums(content)
-  local new_line = u.get_line_content(state.REVIEW_BUF, line_num + 1)
+  local new_line = u.get_line_content(M.bufnr, line_num + 1)
   local next_line_changes = M.get_change_nums(new_line)
 
   -- This is actually a modified line if these conditions are met
@@ -54,7 +57,7 @@ end
 
 M.get_file_from_review_buffer = function(linenr)
   for i = linenr, 0, -1 do
-    local line_content = u.get_line_content(state.REVIEW_BUF, i)
+    local line_content = u.get_line_content(M.bufnr, i)
     if M.starts_with_file_symbol(line_content) then
       local file_name = u.get_last_chunk(line_content)
       return file_name
@@ -76,28 +79,28 @@ end
 
 M.jump_to_location            = function(node)
   local range, error = M.get_review_buffer_range(node)
-  if range == nil then
-    print("SHIT")
-    return
-  end
+  if error ~= nil then return nil, nil, error end
+  if range == nil then return nil, nil, "File range could not be identified" end
+
+  local filename = nil
+  local linnr = nil
+
   local lines = M.get_review_buffer_lines(range)
   for _, line in ipairs(lines) do
     local line_data = M.get_change_nums(line.line_content)
     if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
-      -- Iterate through all windows to find the one displaying the target buffer
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
-        if vim.fn.winbufnr(win) == state.REVIEW_BUF then
-          vim.api.nvim_set_current_win(win)
-          vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
-          break
-        end
-      end
+      filename = node.file_name
+      linnr = line.line_number
+      break
     end
   end
+
+  return filename, linnr
 end
 
 M.get_review_buffer_range     = function(node)
-  local lines = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, 0, -1, false)
+  if M.bufnr == nil then return nil, "Reviewer must be open" end
+  local lines = vim.api.nvim_buf_get_lines(M.bufnr, 0, -1, false)
   local start = nil
   local stop = nil
 
@@ -135,7 +138,7 @@ end
 M.get_review_buffer_lines     = function(review_buffer_range)
   local lines = {}
   for i = review_buffer_range[1], review_buffer_range[2], 1 do
-    local line_content = vim.api.nvim_buf_get_lines(state.REVIEW_BUF, i - 1, i, false)[1]
+    local line_content = vim.api.nvim_buf_get_lines(M.bufnr, i - 1, i, false)[1]
     if string.find(line_content, "⋮") then
       table.insert(lines, { line_content = line_content, line_number = i })
     end

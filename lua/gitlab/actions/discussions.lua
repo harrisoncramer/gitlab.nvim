@@ -263,16 +263,20 @@ M.jump_to_location         = function()
   local filename, linenr, error = reviewer.jump_to_location(discussion_node)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
+    return
   end
 
   if filename == nil then
     vim.notify("File was not returned by reviewer", vim.log.levels.ERROR)
+    return
   end
 
   if linenr == nil then
     vim.notify("Line number was not returned by reviewer", vim.log.levels.ERROR)
+    return
   end
 
+  vim.cmd.tabnew()
   u.jump_to_location(filename, linenr)
 end
 
