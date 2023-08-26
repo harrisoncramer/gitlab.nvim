@@ -21,7 +21,7 @@ M.open                        = function()
   state.REVIEW_BUF = vim.api.nvim_get_current_buf()
 end
 
-M.get_changes                 = function()
+M.get_location                = function()
   local line_num = u.get_current_line_number()
   local content = u.get_line_content(state.REVIEW_BUF, line_num)
   local current_line_changes = M.get_change_nums(content)
@@ -74,7 +74,26 @@ M.get_change_nums             = function(line)
   return line_data
 end
 
-M.jump_to_location            = function(winnr, bufnr)
+M.jump_to_location            = function(node)
+  local range = M.get_review_buffer_range(node)
+  if range == nil then
+    print("SHIT")
+    return
+  end
+  local lines = M.get_review_buffer_lines(range)
+  for _, line in ipairs(lines) do
+    local line_data = M.get_change_nums(line.line_content)
+    if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
+      -- Iterate through all windows to find the one displaying the target buffer
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        if vim.fn.winbufnr(win) == state.REVIEW_BUF then
+          vim.api.nvim_set_current_win(win)
+          vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
+          break
+        end
+      end
+    end
+  end
 end
 
 M.get_review_buffer_range     = function(node)

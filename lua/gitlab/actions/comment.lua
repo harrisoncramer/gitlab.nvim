@@ -19,7 +19,7 @@ end
 
 -- This function (settings.popup.perform_action) will send the comment to the Go server
 M.confirm_create_comment = function(text)
-  local file_name, line_numbers, error = reviewer.get_changes()
+  local file_name, line_numbers, error = reviewer.get_location()
 
   if error then
     vim.notify(error, vim.log.levels.ERROR)

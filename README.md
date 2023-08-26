@@ -96,7 +96,7 @@ require("gitlab").setup({
     jump_to_location = "o", -- Jump to comment location in file
     edit_comment = "e", -- Edit coment
     delete_comment = "dd", -- Delete comment
-    reply_to_comment = "r", -- Reply to comment
+    reply = "r", -- Reply to comment
     toggle_resolved = "p", -- Toggles the resolved status of the discussion
     toggle_node = "t", -- Opens or closes the discussion
     position = "left", -- "top", "right", "bottom" or "left"

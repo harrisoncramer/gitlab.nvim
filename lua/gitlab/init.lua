@@ -14,27 +14,28 @@ local project_members         = state.dependencies.project_members
 local revisions               = state.dependencies.revisions
 
 return {
-  setup           = function(args)
+  setup              = function(args)
     server.build()                 -- Builds the Go binary if it doesn't exist
     state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
     state.merge_settings(args)     -- Sets keymaps and other settings from setup function
   end,
   -- Global Actions 🌎
-  summary         = async.sequence({ info }, summary.summary),
-  approve         = async.sequence({ info }, approvals.approve),
-  revoke          = async.sequence({ info }, approvals.revoke),
-  add_reviewer    = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
-  delete_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.delete_reviewer),
-  add_assignee    = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
-  delete_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
-  review          = async.sequence({ u.merge(info, { refresh = true }) }, reviewer.open),
-  create_comment  = async.sequence({ info, revisions }, comment.create_comment),
+  summary            = async.sequence({ info }, summary.summary),
+  approve            = async.sequence({ info }, approvals.approve),
+  revoke             = async.sequence({ info }, approvals.revoke),
+  add_reviewer       = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
+  delete_reviewer    = async.sequence({ info, project_members }, assignees_and_reviewers.delete_reviewer),
+  add_assignee       = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
+  delete_assignee    = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
+  review             = async.sequence({ u.merge(info, { refresh = true }) }, reviewer.open),
+  create_comment     = async.sequence({ info, revisions }, comment.create_comment),
   -- Discussion Tree Actions 🌴
-  edit_comment    = async.sequence({ info }, discussions.edit_comment),
-  delete_comment  = async.sequence({ info }, discussions.delete_comment),
-  toggle_resolved = async.sequence({ info }, discussions.toggle_resolved),
-  reply           = async.sequence({ info }, discussions.reply),
+  toggle_discussions = async.sequence({ info }, discussions.toggle_discussions),
+  edit_comment       = async.sequence({ info }, discussions.edit_comment),
+  delete_comment     = async.sequence({ info }, discussions.delete_comment),
+  toggle_resolved    = async.sequence({ info }, discussions.toggle_resolved),
+  reply              = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
-  state           = state,
-  print_settings  = state.print_settings,
+  state              = state,
+  print_settings     = state.print_settings,
 }

@@ -20,90 +20,72 @@ local M                    = {
   tree = nil
 }
 
-M.list_discussions         = function()
-  job.run_job("/discussions", "GET", nil, function(data)
-    if type(data.discussions) ~= "table" then
-      vim.notify("No discussions for this MR", vim.log.levels.WARN)
-      return
-    end
+M.set_tree_keymaps         = function()
+  vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, M.jump_to_location, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.edit_comment, M.edit_comment, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.delete_comment, M.delete_comment, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, M.toggle_resolved, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.toggle_node, M.toggle_node, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.reply, M.reply, { buffer = true })
+end
 
+-- Opens the discussion tree, sets the keybindings,
+M.toggle_discussions       = function()
+  if not M.split then
     local split = NuiSplit({
       buf_options = { modifiable = false },
       relative = state.settings.discussion_tree.relative,
       position = state.settings.discussion_tree.position,
       size = state.settings.discussion_tree.size,
     })
-
     split:mount()
-    local buf = split.bufnr
-
     M.split = split
     M.split_visible = true
     M.split_buf = split.bufnr
+  elseif M.split_visible then
+    M.split:hide()
+    M.split_visible = false
+  else
+    M.split:show()
+    M.split_visible = true
+  end
+
+  local buf = M.split.bufnr
+
+  job.run_job("/discussions", "GET", nil, function(data)
+    if type(data.discussions) ~= "table" then
+      vim.notify("No discussions for this MR", vim.log.levels.WARN)
+      return
+    end
 
     local tree_nodes = M.add_discussions_to_table(data.discussions)
 
     M.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
-    M.set_tree_keymaps(buf)
+    M.set_tree_keymaps()
 
     M.tree:render()
     vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
-
-    vim.keymap.set('n', state.settings.review_pane.toggle_discussions, function()
-      if not M.split then return end
-      if M.split_visible then
-        M.split:hide()
-        M.split_visible = false
-      else
-        M.split:show()
-        M.split_visible = true
-      end
-    end)
   end)
 end
 
--- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply_to_comment) when hovering over a node in the discussion tree.
-M.reply                    = function(discussion_id)
+-- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
+M.reply                    = function()
+  local node = M.tree:get_node()
+  local discussion_node = M.get_root_node(node)
+  local id = tostring(discussion_node.id)
   reply_popup:mount()
-  state.set_popup_keymaps(reply_popup, M.send_reply(discussion_id))
+  state.set_popup_keymaps(reply_popup, M.send_reply(id))
 end
 
 -- This function will send the reply to the Go API
 M.send_reply               = function(discussion_id)
+  print(discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
     local json = vim.json.encode(jsonTable)
     job.run_job("/reply", "POST", json, function(data)
       M.add_note_to_tree(data.note, discussion_id)
     end)
-  end
-end
-
--- This function (settings.discussion_tree.jump_to_location) will
--- jump you to the file and line where the comment was left
-M.jump_to_location         = function()
-  local node = M.tree:get_node()
-  if node == nil then return end
-
-  local discussion_node = M.get_root_node(node)
-  local review_buffer_range = reviewer.get_review_buffer_range(discussion_node)
-
-  if review_buffer_range == nil then return end
-  local lines = reviewer.get_review_buffer_lines(review_buffer_range)
-
-  -- Extract line numbers and jump to match with discussion node
-  for _, line in ipairs(lines) do
-    local line_data = reviewer.get_change_nums(line.line_content)
-    if node.old_line == line_data.old_line and node.new_line == line_data.new_line then
-      -- Iterate through all windows to find the one displaying the target buffer
-      for _, win in ipairs(vim.api.nvim_list_wins()) do
-        if vim.fn.winbufnr(win) == state.REVIEW_BUF then
-          vim.api.nvim_set_current_win(win)
-          vim.api.nvim_win_set_cursor(0, { line.line_number, 0 })
-          break
-        end
-      end
-    end
   end
 end
 
@@ -259,43 +241,44 @@ M.update_resolved_status   = function(note, mark_resolved)
   M.tree:render()
 end
 
-M.set_tree_keymaps         = function(buf)
-  vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, function()
-    M.jump_to_location()
-  end, { buffer = true })
+M.jump_to_location         = function()
+  local node = M.tree:get_node()
+  local discussion_node = M.get_root_node(node)
+  local filename, linenr, error = reviewer.jump_to_location(discussion_node)
+  if error ~= nil then
+    vim.notify(error, vim.log.levels.ERROR)
+  end
 
-  vim.keymap.set('n', state.settings.discussion_tree.edit_comment, M.edit_comment, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.delete_comment, M.delete_comment, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, M.toggle_resolved, { buffer = true })
+  if filename == nil then
+    vim.notify("File was not returned by reviewer", vim.log.levels.ERROR)
+  end
 
-  -- Expands/collapses the current node
-  vim.keymap.set('n', state.settings.discussion_tree.toggle_node, function()
-      local node = M.tree:get_node()
-      if node == nil then return end
-      local children = node:get_child_ids()
-      if node == nil then return end
-      if node:is_expanded() then
-        node:collapse()
-        for _, child in ipairs(children) do
-          M.tree:get_node(child):collapse()
-        end
-      else
-        for _, child in ipairs(children) do
-          M.tree:get_node(child):expand()
-        end
-        node:expand()
-      end
+  if linenr == nil then
+    vim.notify("Line number was not returned by reviewer", vim.log.levels.ERROR)
+  end
 
-      M.tree:render()
-    end,
-    { buffer = true })
+  u.jump_to_location(filename, linenr)
+end
 
-  vim.keymap.set('n', 'r', function()
-    local node = M.tree:get_node()
-    if node == nil then return end
-    local discussion_node = M.get_root_node(node)
-    M.reply(tostring(discussion_node.id))
-  end, { buffer = true })
+-- Expands/collapses the current node
+M.toggle_node              = function()
+  local node = M.tree:get_node()
+  if node == nil then return end
+  local children = node:get_child_ids()
+  if node == nil then return end
+  if node:is_expanded() then
+    node:collapse()
+    for _, child in ipairs(children) do
+      M.tree:get_node(child):collapse()
+    end
+  else
+    for _, child in ipairs(children) do
+      M.tree:get_node(child):expand()
+    end
+    node:expand()
+  end
+
+  M.tree:render()
 end
 
 M.redraw_text              = function(text)
@@ -384,7 +367,6 @@ M.add_note_to_tree         = function(note, discussion_id)
   note_node:expand()
   M.tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   M.tree:render()
-  local buf = vim.api.nvim_get_current_buf()
   vim.notify("Sent reply!", vim.log.levels.INFO)
 end
 
