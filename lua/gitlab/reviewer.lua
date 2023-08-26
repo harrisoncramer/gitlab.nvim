@@ -75,7 +75,7 @@ M.get_change_nums             = function(line)
 end
 
 M.jump_to_location            = function(node)
-  local range = M.get_review_buffer_range(node)
+  local range, error = M.get_review_buffer_range(node)
   if range == nil then
     print("SHIT")
     return

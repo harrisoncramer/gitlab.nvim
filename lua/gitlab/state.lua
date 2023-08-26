@@ -15,6 +15,7 @@ M.settings               = {
     perform_action = "<leader>s",
   },
   discussion_tree = {
+    toggle = "<leader>d",
     jump_to_location = "o",
     edit_comment = "e",
     delete_comment = "dd",
@@ -28,7 +29,6 @@ M.settings               = {
     unresolved = ''
   },
   review_pane = {
-    toggle_discussions = "<leader>d",
     added_file = "",
     modified_file = "",
     removed_file = "",

@@ -30,7 +30,7 @@ return {
   review             = async.sequence({ u.merge(info, { refresh = true }) }, reviewer.open),
   create_comment     = async.sequence({ info, revisions }, comment.create_comment),
   -- Discussion Tree Actions 🌴
-  toggle_discussions = async.sequence({ info }, discussions.toggle_discussions),
+  toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment       = async.sequence({ info }, discussions.edit_comment),
   delete_comment     = async.sequence({ info }, discussions.delete_comment),
   toggle_resolved    = async.sequence({ info }, discussions.toggle_resolved),

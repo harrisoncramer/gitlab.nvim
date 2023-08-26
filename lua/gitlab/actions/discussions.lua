@@ -30,25 +30,41 @@ M.set_tree_keymaps         = function()
 end
 
 -- Opens the discussion tree, sets the keybindings,
-M.toggle_discussions       = function()
-  if not M.split then
-    local split = NuiSplit({
-      buf_options = { modifiable = false },
-      relative = state.settings.discussion_tree.relative,
-      position = state.settings.discussion_tree.position,
-      size = state.settings.discussion_tree.size,
-    })
-    split:mount()
-    M.split = split
-    M.split_visible = true
-    M.split_buf = split.bufnr
-  elseif M.split_visible then
+M.toggle                   = function()
+  if M.split_visible then
     M.split:hide()
     M.split_visible = false
-  else
+    return
+  end
+
+  if M.split then
     M.split:show()
     M.split_visible = true
+    return
   end
+
+
+  local split = NuiSplit({
+    buf_options = { modifiable = false },
+    relative = state.settings.discussion_tree.relative,
+    position = state.settings.discussion_tree.position,
+    size = state.settings.discussion_tree.size,
+  })
+
+  split:mount()
+  M.split = split
+  M.split_visible = true
+  M.split_buf = split.bufnr
+
+  vim.api.nvim_create_autocmd({ "QuitPre", "BufDelete", "BufUnload" }, {
+    buffer = split.bufnr,
+    callback = function()
+      M.split = nil
+      M.split_visible = false
+      M.split_buf = nil
+    end,
+    desc = "Handles users who close the split in non-keybinding fashion",
+  })
 
   local buf = M.split.bufnr
 
@@ -387,7 +403,7 @@ M.refresh_tree             = function()
 
     local tree_nodes = M.add_discussions_to_table(data.discussions)
     M.tree = NuiTree({ nodes = tree_nodes, bufnr = M.split_buf })
-    M.set_tree_keymaps(M.split_buf)
+    M.set_tree_keymaps()
     M.tree:render()
     vim.api.nvim_buf_set_option(M.split_buf, 'filetype', 'markdown')
   end)
