@@ -44,7 +44,7 @@ M.get_changes                 = function()
   end
 
   if count == 0 then
-    vim.notify("Cannot comment on invalid line", vim.log.levels.ERROR)
+    return nil, nil, "Cannot comment on invalid line"
   end
 
   local file_name = M.get_file_from_review_buffer(u.get_current_line_number())
