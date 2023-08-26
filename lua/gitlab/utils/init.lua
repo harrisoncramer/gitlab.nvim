@@ -123,6 +123,22 @@ M.merge = function(defaults, overrides)
   return result
 end
 
+M.join = function(tbl, separator)
+  separator = separator or " "
+
+  local result = ""
+  for _, value in pairs(tbl) do
+    result = result .. tostring(value) .. separator
+  end
+
+  -- Remove the trailing separator
+  if separator ~= "" then
+    result = result:sub(1, - #separator - 1)
+  end
+
+  return result
+end
+
 M.read_file = function(file_path)
   local file = io.open(file_path, "r")
   if file == nil then

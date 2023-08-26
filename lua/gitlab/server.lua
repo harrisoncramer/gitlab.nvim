@@ -25,10 +25,7 @@ M.start_server = function(callback)
       if job_id <= 0 then
         vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
       else
-        job.run_job("/info", "GET", nil, function(data)
-          M.INFO = data.info
-          callback()
-        end)
+        callback()
       end
     end,
     on_stderr = function(_, errors)

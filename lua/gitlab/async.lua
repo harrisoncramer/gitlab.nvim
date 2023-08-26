@@ -31,7 +31,6 @@ function Async:fetch(dependencies, i)
 
   -- Do not call endpoint unless refresh is required
   if state[dependency.state] ~= nil and not dependency.refresh then
-    print("Not calling")
     self:fetch(dependencies, i + 1)
     return
   end
