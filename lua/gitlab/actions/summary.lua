@@ -1,12 +1,15 @@
+-- This module is responsible for the MR description
+-- This lets the user open the description in a popup and
+-- send edits to the description back to Gitlab
+local Popup            = require("nui.popup")
 local job              = require("gitlab.job")
 local state            = require("gitlab.state")
-local Popup            = require("nui.popup")
 local u                = require("gitlab.utils")
-local keymaps          = require("gitlab.keymaps")
-local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
 local M                = {}
 
--- The MR description will mount in a popup when this funciton is called
+local descriptionPopup = Popup(u.create_popup_state("Loading Description...", "80%", "80%"))
+
+-- The function will render the MR description in a popup
 M.summary              = function()
   descriptionPopup:mount()
   local currentBuffer = vim.api.nvim_get_current_buf()
@@ -20,7 +23,7 @@ M.summary              = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     descriptionPopup.border:set_text("top", title, "center")
-    keymaps.set_popup_keymaps(descriptionPopup, M.edit_description)
+    state.set_popup_keymaps(descriptionPopup, M.edit_description)
   end)
 end
 
@@ -28,7 +31,7 @@ end
 M.edit_description     = function(text)
   local jsonTable = { description = text }
   local json = vim.json.encode(jsonTable)
-  job.run_job("mr/description", "PUT", json, function(data)
+  job.run_job("/mr/description", "PUT", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
   end)

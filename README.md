@@ -6,9 +6,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - Approve or revoke approval for an MR
 - Add or remove reviewers and assignees
 - Resolve, reply to, and unresolve discussion threads
-- Create, edit, delete, and reply to comments on an MR *
-
-(*) This feature is currently in review, see https://github.com/harrisoncramer/gitlab.nvim/issues/25
+- Create, edit, delete, and reply to comments on an MR
 
 And a lot more!
 
@@ -18,6 +16,15 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43
 
 - <a href="https://go.dev/">Go</a>
 - <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
+- <a href="https://github.com/dandavison/delta">delta</a>
+
+## Quick Start
+
+1. Ensure Dependencies (Linux/Mac users can run the install script: ./install)
+2. Add config (below)
+3. Check out feature branch
+4. Open Neovim
+5. Run `:lua require("gitlab").review()` to open the reviewer pane, or `:lua require("gitlab").summary() to read the MR description and get started.
 
 ## Installation
 
@@ -29,10 +36,10 @@ return {
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
-    "stevearc/dressing.nvim" -- Recommended but not required. Better UI for pickers.
+    "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     enabled = true,
   },
-  build = function () require("gitlab").build() end, -- Builds the Go binary
+  build = function () require("gitlab.server").build() end, -- Builds the Go binary
   config = function()
     require("gitlab").setup()
   end,
@@ -48,7 +55,7 @@ use {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
   },
-  run = function() require("gitlab").build() end,
+  run = function() require("gitlab.server").build() end,
   config = function()
     require("gitlab").setup()
   end,
@@ -77,35 +84,40 @@ Here is the default setup function. All of these values are optional, and if you
 
 ```lua
 require("gitlab").setup({
-  port = 20136, -- The port of the Go server, which runs in the background
-  log_path = vim.fn.stdpath("cache") .. "gitlab.nvim.log", -- Log path for the Go server
-  keymaps = {
-    popup = { -- The popup for comment creation, editing, and replying
-      exit = "<Esc>",
-      perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
-    },
-    discussion_tree = { -- The discussion tree that holds all comments
-      jump_to_location = "o", -- Jump to comment location in file
-      edit_comment = "e", -- Edit coment
-      delete_comment = "dd", -- Delete comment
-      reply_to_comment = "r", -- Reply to comment
-      toggle_resolved = "p" -- Toggles the resolved status of the discussion
-      toggle_node = "t", -- Opens or closes the discussion
-      position = "left", -- "top", "right", "bottom" or "left"
-      relative = "editor" -- Position of tree split relative to "editor" or "window"
-      size = "20%", -- Size of split
-    },
-    dialogue = { -- The confirmation dialogue for deleting comments
-      focus_next = { "j", "<Down>", "<Tab>" },
-      focus_prev = { "k", "<Up>", "<S-Tab>" },
-      close = { "<Esc>", "<C-c>" },
-      submit = { "<CR>", "<Space>" },
-    }
+  port = 21036, -- The port of the Go server, which runs in the background
+  log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
+  reviewer = "delta", -- The reviewer type (only delta is currently supported)
+  popup = { -- The popup for comment creation, editing, and replying
+    exit = "<Esc>",
+    perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
   },
-  symbols = {  
+  discussion_tree = { -- The discussion tree that holds all comments
+    jump_to_file = "o", -- Jump to comment location in file
+    jump_to_reviewer = "m", -- Jump to the location in the reviewer window
+    edit_comment = "e", -- Edit coment
+    delete_comment = "dd", -- Delete comment
+    reply = "r", -- Reply to comment
+    toggle_node = "t", -- Opens or closes the discussion
+    toggle_resolved = "p", -- Toggles the resolved status of the discussion
+    position = "left", -- "top", "right", "bottom" or "left"
+    size = "20%", -- Size of split
+    relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
-  }
+  },
+  review_pane = { -- Specific settings for different reviewers
+    delta = {
+      added_file = "", -- The symbol to show next to added files
+      modified_file = "", -- The symbol to show next to modified files
+      removed_file = "", -- The symbol to show next to removed files
+    }
+  },
+  dialogue = {  -- The confirmation dialogue for deleting comments
+    focus_next = { "j", "<Down>", "<Tab>" },
+    focus_prev = { "k", "<Up>", "<S-Tab>" },
+    close = { "<Esc>", "<C-c>" },
+    submit = { "<CR>", "<Space>" },
+  },
 })
 ```
 
@@ -117,7 +129,7 @@ First, check out the branch that you want to review locally.
 git checkout feature-branch
 ```
 
-Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
+Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
 
 The `summary` command will pull down the MR description into a buffer so that you can read it. To edit the description, edit the buffer and press the `perform_action` keybinding when in normal mode (it's `<leader>s` by default):
 
@@ -125,23 +137,34 @@ The `summary` command will pull down the MR description into a buffer so that yo
 require("gitlab").summary()
 ```
 
+ The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane. You can leave comments on the changes.
 
-The `approve` command will approve the merge request for the current branch:
+```lua
+require("gitlab").review()
+require("gitlab").create_comment()
+```
+
+Gitlab groups threads of comments together into "discussions." 
+
+To display discussions for the current MR, use the `list_discussions()` command, which will show the discussions in a split window. 
+
+You can jump to the comment's location the reviewer window by using the `m` key, or the actual file with the 'j' key, when hovering over the line in the tree. 
+
+Within the discussion tree, you can delete/edit/reply to comments, or toggle them as resolved or not.
+
+```lua
+require("gitlab").list_discussions()
+require("gitlab").delete_comment()
+require("gitlab").edit_comment()
+require("gitlab").reply()
+require("gitlab").toggle_resolved()
+```
+
+You can approve or revoke approval for an MR:
 
 ```lua
 require("gitlab").approve()
-```
-
-The `revoke` command will revoke approval for the merge request for the current branch:
-
-```lua
 require("gitlab").revoke()
-```
-
-The `comment` command will open up a NUI popover that will allow you to create a Gitlab comment on the current line. To send the comment, use `<leader>s` while the comment popup is open:
-
-```lua
-require("gitlab").create_comment()
 ```
 
 The `add_reviewer` and `delete_reviewer` commands, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
@@ -163,23 +186,6 @@ require("dressing").setup({
 })
 ```
 
-### Discussions
-
-Gitlab groups threads of notes together into "discussions." To get a list of all the discussions for the current MR, use the `list_discussions` command. This command will open up a split view of all the comments on the current merge request. You can jump to the comment location by using the `o` key in the tree buffer, and you can reply to a thread by using the `r` keybinding in the tree buffer:
-
-```lua
-require("gitlab").list_discussions()
-```
-
-Within the discussion tree, there are several functions that you can call, however, it's better to use the keybindings provided in the setup function. If you want to call them manually, they are:
-
-```lua
-require("gitlab").delete_comment()
-require("gitlab").edit_comment()
-require("gitlab").reply()
-require("gitlab").toggle_resolved()
-```
-
 ## Keybindings
 
 The plugin does not set up any keybindings outside of these buffers, you need to set them up yourself. Here's what I'm using:
@@ -189,8 +195,7 @@ local gitlab = require("gitlab")
 vim.keymap.set("n", "<leader>gls", gitlab.summary)
 vim.keymap.set("n", "<leader>glA", gitlab.approve)
 vim.keymap.set("n", "<leader>glR", gitlab.revoke)
-vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
-vim.keymap.set("n", "<leader>gld", gitlab.list_discussions)
+vim.keymap.set("n", "<leader>glr", gitlab.review)
 vim.keymap.set("n", "<leader>glaa", gitlab.add_assignee)
 vim.keymap.set("n", "<leader>glad", gitlab.delete_assignee)
 vim.keymap.set("n", "<leader>glra", gitlab.add_reviewer)
@@ -199,11 +204,13 @@ vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
 
 ## Troubleshooting
 
+**To check that the current settings of the plugin are configured correctly, please run: `:lua require("gitlab").print_settings()`**
+
 This plugin uses a Golang server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
 
 ```
-:lua require("gitlab").build()
-:lua require("gitlab").start_server()
+:lua require("gitlab.server").build()
+:lua require("gitlab.server").start()
 ```
 
 You can directly interact with the Go server like any other process:

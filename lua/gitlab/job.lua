@@ -1,11 +1,11 @@
-local Job   = require("plenary.job")
-local state = require("gitlab.state")
-local M     = {}
-
--- This function is responsible for making API calls to the Go server and
+-- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
-M.run_job   = function(endpoint, method, body, callback)
-  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s/", state.PORT) .. endpoint }
+local Job = require("plenary.job")
+local M   = {}
+
+M.run_job = function(endpoint, method, body, callback)
+  local state = require("gitlab.state")
+  local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s", state.settings.port) .. endpoint }
 
   if body ~= nil then
     table.insert(args, 1, "-d")
@@ -21,7 +21,13 @@ M.run_job   = function(endpoint, method, body, callback)
     on_stdout = function(_, output)
       vim.defer_fn(function()
         local data_ok, data = pcall(vim.json.decode, output)
-        if data_ok and data ~= nil then
+        if not data_ok then
+          local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)
+          if (type(output) == "string") then msg = string.format(msg .. ", got: '%s'", output) end
+          vim.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
+          return
+        end
+        if data ~= nil then
           local status = (tonumber(data.status) >= 200 and tonumber(data.status) < 300) and "success" or "error"
           if status == "success" and callback ~= nil then
             callback(data)
@@ -39,7 +45,14 @@ M.run_job   = function(endpoint, method, body, callback)
       vim.defer_fn(function()
         vim.notify("Could not run command!", vim.log.levels.ERROR)
       end, 0)
-    end
+    end,
+    on_exit = function(msg, status)
+      vim.defer_fn(function()
+        if status ~= 0 then
+          vim.notify(string.format("Go server exited with non-zero code: %d", status), vim.log.levels.ERROR)
+        end
+      end, 0)
+    end,
   }):start()
 end
 

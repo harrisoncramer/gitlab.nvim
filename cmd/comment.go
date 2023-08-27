@@ -14,7 +14,8 @@ const mrVersionsUrl = "%s/api/v4/projects/%s/merge_requests/%d/versions"
 type PostCommentRequest struct {
 	Comment        string `json:"comment"`
 	FileName       string `json:"file_name"`
-	LineNumber     int    `json:"line_number"`
+	NewLine        int    `json:"new_line"`
+	OldLine        int    `json:"old_line"`
 	HeadCommitSHA  string `json:"head_commit_sha"`
 	BaseCommitSHA  string `json:"base_commit_sha"`
 	StartCommitSHA string `json:"start_commit_sha"`
@@ -113,18 +114,8 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		BaseSHA:      postCommentRequest.BaseCommitSHA,
 		NewPath:      postCommentRequest.FileName,
 		OldPath:      postCommentRequest.FileName,
-	}
-
-	/* TODO: This switch statement relates to #25, for now we are just sending both
-	the old line and new line but we will eventually have to fix this */
-	switch postCommentRequest.Type {
-	case "addition":
-		position.NewLine = postCommentRequest.LineNumber
-	case "subtraction":
-		position.OldLine = postCommentRequest.LineNumber
-	case "modification":
-		position.NewLine = postCommentRequest.LineNumber
-		position.OldLine = postCommentRequest.LineNumber
+		NewLine:      postCommentRequest.NewLine,
+		OldLine:      postCommentRequest.OldLine,
 	}
 
 	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
