@@ -20,9 +20,9 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43
 
 ## Quick Start
 
-1. Ensure Dependencies (Linux/Mac users can run the install script: ./install)
+1. Install Go and Delta Dependencies
 2. Add config (below)
-3. Check out feature branch
+3. `git checkout feature-branch`
 4. Open Neovim
 5. Run `:lua require("gitlab").review()` to open the reviewer pane, or `:lua require("gitlab").summary() to read the MR description and get started.
 
