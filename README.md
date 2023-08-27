@@ -86,31 +86,40 @@ Here is the default setup function. All of these values are optional, and if you
 
 ```lua
 require("gitlab").setup({
-  port = 20136, -- The port of the Go server, which runs in the background
+  port = 21036, -- The port of the Go server, which runs in the background
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
+  reviewer = "delta", -- The reviewer type (only delta is currently supported)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
   },
   discussion_tree = { -- The discussion tree that holds all comments
     jump_to_file = "o", -- Jump to comment location in file
+    jump_to_reviewer = "m", -- Jump to the location in the reviewer window
     edit_comment = "e", -- Edit coment
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
-    toggle_resolved = "p", -- Toggles the resolved status of the discussion
     toggle_node = "t", -- Opens or closes the discussion
+    toggle_resolved = "p", -- Toggles the resolved status of the discussion
     position = "left", -- "top", "right", "bottom" or "left"
-    relative = "editor", -- Position of tree split relative to "editor" or "window"
     size = "20%", -- Size of split
+    relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
   },
-  dialogue = { -- The confirmation dialogue for deleting comments
+  review_pane = { -- Specific settings for different reviewers
+    delta = {
+      added_file = "", -- The symbol to show next to added files
+      modified_file = "", -- The symbol to show next to modified files
+      removed_file = "", -- The symbol to show next to removed files
+    }
+  },
+  dialogue = {  -- The confirmation dialogue for deleting comments
     focus_next = { "j", "<Down>", "<Tab>" },
     focus_prev = { "k", "<Up>", "<S-Tab>" },
     close = { "<Esc>", "<C-c>" },
     submit = { "<CR>", "<Space>" },
-  }
+  },
 })
 ```
 
@@ -122,7 +131,7 @@ First, check out the branch that you want to review locally.
 git checkout feature-branch
 ```
 
-Then open Neovim and the reviewer will be initialized. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
+Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
 
 The `summary` command will pull down the MR description into a buffer so that you can read it. To edit the description, edit the buffer and press the `perform_action` keybinding when in normal mode (it's `<leader>s` by default):
 
@@ -133,9 +142,8 @@ require("gitlab").summary()
 ## Review Mode
 
 ```lua
-require("gitlab").review() -- The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane ``` Within the review view, you can leave comments, reply to others, mark discussions as completed, and more. Once in the review view, the `create_comment` command will create a Gitlab comment on the currently active line in the diff. To send the comment, use `<leader>s` while the comment popup is open:
+require("gitlab").review() -- The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane. You can leave comments on the changes.
 require("gitlab").create_comment() -- Gitlab groups threads of comments together into "discussions." The list of discussions for the current MR will be displayed in a split window in the review view. You can jump to the comment's location in the diff view by using the `o` key when hovering over the line in the tree. Within the discussion tree, there are several functions that you can call. These are also configurable via keybindings provided in the setup function:
-
 require("gitlab").delete_comment() -- These commands are triggered on the discussion tree
 require("gitlab").edit_comment()
 require("gitlab").reply()
