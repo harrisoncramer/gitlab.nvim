@@ -72,11 +72,21 @@ M.get_location                = function()
   end
 
   if current_line_changes == nil then
-    return nil, nil, "Could not find line change information"
+    return nil, nil, "Could not find current line change information"
   end
 
-  local new_line = u.get_line_content(M.bufnr, line_num + 1)
-  local next_line_changes = M.get_change_nums(new_line)
+  local new_line_num = line_num + 1
+  local next_line_changes = nil
+  while range ~= nil and new_line_num <= range[2] and next_line_changes == nil do
+    local content = u.get_line_content(M.bufnr, new_line_num)
+    local change_nums = M.get_change_nums(content)
+    next_line_changes = change_nums
+    new_line_num = new_line_num + 1
+  end
+
+  if next_line_changes == nil then
+    return nil, nil, "Could not find next line change information"
+  end
 
   -- This is actually a modified line if these conditions are met
   if (current_line_changes.old_line and not current_line_changes.new_line and not next_line_changes.old_line and next_line_changes.new_line) then
