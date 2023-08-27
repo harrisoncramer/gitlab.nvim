@@ -1,14 +1,16 @@
-local state                   = require("gitlab.state")
-local u                       = require("gitlab.utils")
+-- This Module contains all of the code specific to the Delta reviewer.
+local state         = require("gitlab.state")
+local u             = require("gitlab.utils")
 
--- Work in progress refactor: This Module contains all of the code
--- specific to the Delta reviewer
-
-local M                       = {
+local M             = {
   bufnr = nil
 }
 
-M.open                        = function()
+-- Public Functions
+-- These functions are exposed externally and are used
+-- when the reviewer is consumed by other code. They must follow the specification
+-- outlined in the reviewer/init.lua file
+M.open              = function()
   local current_buf = vim.api.nvim_get_current_buf()
   if current_buf == state.discussion_buf then
     vim.api.nvim_command("wincmd w")
@@ -33,7 +35,7 @@ M.open                        = function()
   M.bufnr = vim.api.nvim_get_current_buf()
 end
 
-M.jump                        = function(file_name, new_line, old_line)
+M.jump              = function(file_name, new_line, old_line)
   local linnr, error = M.get_jump_location(file_name, new_line, old_line)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
@@ -44,27 +46,7 @@ M.jump                        = function(file_name, new_line, old_line)
   u.jump_to_buffer(M.bufnr, linnr)
 end
 
--- TODO: Jump back to discussion tree
-M.get_jump_location           = function(file_name, new_line, old_line)
-  local range, error = M.get_review_buffer_range(file_name)
-  if error ~= nil then return nil, error end
-  if range == nil then return nil, "Review buffer range could not be identified" end
-
-  local linnr = nil
-
-  local lines = M.get_review_buffer_lines(range)
-  for _, line in ipairs(lines) do
-    local line_data = M.get_change_nums(line.line_content)
-    if old_line == line_data.old_line and new_line == line_data.new_line then
-      linnr = line.line_number
-      break
-    end
-  end
-  if linnr == nil then return nil, "Could not find matching line" end
-  return linnr, nil
-end
-
-M.get_location                = function()
+M.get_location      = function()
   local line_num = u.get_current_line_number()
   local content = u.get_line_content(M.bufnr, line_num)
   local current_line_changes = M.get_change_nums(content)
@@ -94,6 +76,29 @@ M.get_location                = function()
 
   return file_name, current_line_changes
 end
+
+-- Helper Functions 🤝
+-- These functions are not exported and should be private
+-- to the delta reviewer, they are used to support the public functions
+M.get_jump_location = function(file_name, new_line, old_line)
+  local range, error = M.get_review_buffer_range(file_name)
+  if error ~= nil then return nil, error end
+  if range == nil then return nil, "Review buffer range could not be identified" end
+
+  local linnr = nil
+
+  local lines = M.get_review_buffer_lines(range)
+  for _, line in ipairs(lines) do
+    local line_data = M.get_change_nums(line.line_content)
+    if old_line == line_data.old_line and new_line == line_data.new_line then
+      linnr = line.line_number
+      break
+    end
+  end
+  if linnr == nil then return nil, "Could not find matching line" end
+  return linnr, nil
+end
+
 
 M.get_file_from_review_buffer = function(linenr)
   for i = linenr, 0, -1 do
