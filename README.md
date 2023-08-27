@@ -93,7 +93,7 @@ require("gitlab").setup({
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
   },
   discussion_tree = { -- The discussion tree that holds all comments
-    jump_to_location = "o", -- Jump to comment location in file
+    jump_to_file = "o", -- Jump to comment location in file
     edit_comment = "e", -- Edit coment
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment

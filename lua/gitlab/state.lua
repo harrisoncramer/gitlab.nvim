@@ -16,7 +16,7 @@ M.settings               = {
   },
   discussion_tree = {
     toggle = "<leader>d",
-    jump_to_location = "o",
+    jump_to_file = "o",
     edit_comment = "e",
     delete_comment = "dd",
     reply = "r",

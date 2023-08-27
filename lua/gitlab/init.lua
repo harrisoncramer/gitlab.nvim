@@ -18,6 +18,7 @@ return {
     server.build()                 -- Builds the Go binary if it doesn't exist
     state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
     state.merge_settings(args)     -- Sets keymaps and other settings from setup function
+    reviewer.init()                -- Picks and initializes reviewer (default is Delta)
   end,
   -- Global Actions 🌎
   summary            = async.sequence({ info }, summary.summary),
@@ -27,8 +28,8 @@ return {
   delete_reviewer    = async.sequence({ info, project_members }, assignees_and_reviewers.delete_reviewer),
   add_assignee       = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
   delete_assignee    = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
-  review             = async.sequence({ u.merge(info, { refresh = true }) }, reviewer.open),
   create_comment     = async.sequence({ info, revisions }, comment.create_comment),
+  review             = async.sequence({ u.merge(info, { refresh = true }) }, function() reviewer.open() end),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment       = async.sequence({ info }, discussions.edit_comment),

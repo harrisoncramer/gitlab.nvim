@@ -63,19 +63,21 @@ M.format_date = function(date_string)
   end
 end
 
-M.jump_to_location = function(filename, line_number)
+M.jump_to_file = function(filename, line_number)
   if line_number == nil then line_number = 1 end
-  vim.api.nvim_command("wincmd l")
   local bufnr = vim.fn.bufnr(filename)
   if bufnr ~= -1 then
-    -- Buffer is already open, switch to it
-    vim.cmd("buffer " .. bufnr)
-    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+    M.jump_to_buffer(bufnr, line_number)
     return
   end
 
   -- If buffer is not already open, open it
   vim.cmd("edit " .. filename)
+  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+end
+
+M.jump_to_buffer = function(bufnr, line_number)
+  vim.cmd("buffer " .. bufnr)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 

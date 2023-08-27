@@ -1,27 +1,28 @@
 -- This module is responsible for the discussion tree. That includes things like
 -- editing existing notes in the tree, replying to notes in the tree,
 -- and marking discussions as resolved/unresolved.
-local Popup                = require("nui.popup")
-local Menu                 = require("nui.menu")
-local NuiTree              = require("nui.tree")
-local NuiSplit             = require("nui.split")
-local job                  = require("gitlab.job")
-local u                    = require("gitlab.utils")
-local state                = require("gitlab.state")
-local reviewer             = require("gitlab.reviewer")
+local Popup        = require("nui.popup")
+local Menu         = require("nui.menu")
+local NuiTree      = require("nui.tree")
+local NuiSplit     = require("nui.split")
+local job          = require("gitlab.job")
+local u            = require("gitlab.utils")
+local state        = require("gitlab.state")
+local reviewer     = require("gitlab.reviewer")
 
-local edit_popup           = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
-local reply_popup          = Popup(u.create_popup_state("Reply", "80%", "80%"))
+local edit_popup   = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
+local reply_popup  = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
-local M                    = {
+local M            = {
   split_visible = false,
   split = nil,
   split_buf = nil,
   tree = nil
 }
 
-M.set_tree_keymaps         = function()
-  vim.keymap.set('n', state.settings.discussion_tree.jump_to_location, M.jump_to_location, { buffer = true })
+M.set_tree_keymaps = function()
+  vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, M.jump_to_file, { buffer = true })
+  vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer, M.jump_to_reviewer, { buffer = true })
   vim.keymap.set('n', state.settings.discussion_tree.edit_comment, M.edit_comment, { buffer = true })
   vim.keymap.set('n', state.settings.discussion_tree.delete_comment, M.delete_comment, { buffer = true })
   vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, M.toggle_resolved, { buffer = true })
@@ -30,7 +31,7 @@ M.set_tree_keymaps         = function()
 end
 
 -- Opens the discussion tree, sets the keybindings,
-M.toggle                   = function()
+M.toggle           = function()
   if M.split_visible then
     M.split:hide()
     M.split_visible = false
@@ -43,7 +44,6 @@ M.toggle                   = function()
     return
   end
 
-
   local split = NuiSplit({
     buf_options = { modifiable = false },
     relative = state.settings.discussion_tree.relative,
@@ -55,6 +55,7 @@ M.toggle                   = function()
   M.split = split
   M.split_visible = true
   M.split_buf = split.bufnr
+  state.discussion_buf = split.bufnr
 
   vim.api.nvim_create_autocmd({ "QuitPre", "BufDelete", "BufUnload" }, {
     buffer = split.bufnr,
@@ -85,7 +86,7 @@ M.toggle                   = function()
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
-M.reply                    = function()
+M.reply            = function()
   local node = M.tree:get_node()
   local discussion_node = M.get_root_node(node)
   local id = tostring(discussion_node.id)
@@ -94,7 +95,7 @@ M.reply                    = function()
 end
 
 -- This function will send the reply to the Go API
-M.send_reply               = function(discussion_id)
+M.send_reply       = function(discussion_id)
   print(discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
@@ -106,7 +107,7 @@ M.send_reply               = function(discussion_id)
 end
 
 -- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
-M.delete_comment           = function()
+M.delete_comment   = function()
   local menu = Menu({
     position = "50%",
     size = {
@@ -141,7 +142,7 @@ end
 
 -- This function will actually send the deletion to Gitlab
 -- when you make a selection
-M.send_deletion            = function(item)
+M.send_deletion    = function(item)
   if item.text == "Confirm" then
     local current_node = M.tree:get_node()
 
@@ -169,7 +170,7 @@ M.send_deletion            = function(item)
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
-M.edit_comment             = function()
+M.edit_comment     = function()
   local current_node = M.tree:get_node()
   local note_node = M.get_note_node(current_node)
   local root_node = M.get_root_node(current_node)
@@ -192,7 +193,7 @@ M.edit_comment             = function()
 end
 
 -- This function sends the edited comment to the Go server
-M.send_edits               = function(discussion_id, note_id)
+M.send_edits       = function(discussion_id, note_id)
   return function(text)
     local json_table = {
       discussion_id = discussion_id,
@@ -208,7 +209,7 @@ M.send_edits               = function(discussion_id, note_id)
 end
 
 -- This comment (settings.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
-M.toggle_resolved          = function()
+M.toggle_resolved  = function()
   local note = M.tree:get_node()
   if not note or not note.resolvable then return end
 
@@ -221,15 +222,58 @@ M.toggle_resolved          = function()
   local json = vim.json.encode(json_table)
   job.run_job("/comment", "PATCH", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
-    M.update_resolved_status(note, not note.resolved)
+    M.redraw_resolved_status(note, not note.resolved)
   end)
 end
+
+-- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
+M.jump_to_reviewer = function()
+  local file_name, new_line, old_line, error = M.get_note_location()
+  if error ~= nil then
+    vim.notify(error, vim.log.levels.ERROR)
+    return
+  end
+  reviewer.jump(file_name, new_line, old_line)
+end
+
+-- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
+M.jump_to_file     = function()
+  local file_name, new_line, old_line, error = M.get_note_location()
+  if error ~= nil then
+    vim.notify(error, vim.log.levels.ERROR)
+    return
+  end
+  vim.cmd.tabnew()
+  u.jump_to_file(file_name, (new_line or old_line))
+end
+
+-- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
+M.toggle_node      = function()
+  local node = M.tree:get_node()
+  if node == nil then return end
+  local children = node:get_child_ids()
+  if node == nil then return end
+  if node:is_expanded() then
+    node:collapse()
+    for _, child in ipairs(children) do
+      M.tree:get_node(child):collapse()
+    end
+  else
+    for _, child in ipairs(children) do
+      M.tree:get_node(child):expand()
+    end
+    node:expand()
+  end
+
+  M.tree:render()
+end
+
 
 --
 -- 🌲 Helper Functions
 --
 
-M.update_resolved_status   = function(note, mark_resolved)
+M.redraw_resolved_status   = function(note, mark_resolved)
   local current_text = M.tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and 'resolved' or 'unresolved'
   local current = mark_resolved and 'unresolved' or 'resolved'
@@ -257,50 +301,6 @@ M.update_resolved_status   = function(note, mark_resolved)
   M.tree:render()
 end
 
-M.jump_to_location         = function()
-  local node = M.tree:get_node()
-  local discussion_node = M.get_root_node(node)
-  local filename, linenr, error = reviewer.jump_to_location(discussion_node)
-  if error ~= nil then
-    vim.notify(error, vim.log.levels.ERROR)
-    return
-  end
-
-  if filename == nil then
-    vim.notify("File was not returned by reviewer", vim.log.levels.ERROR)
-    return
-  end
-
-  if linenr == nil then
-    vim.notify("Line number was not returned by reviewer", vim.log.levels.ERROR)
-    return
-  end
-
-  vim.cmd.tabnew()
-  u.jump_to_location(filename, linenr)
-end
-
--- Expands/collapses the current node
-M.toggle_node              = function()
-  local node = M.tree:get_node()
-  if node == nil then return end
-  local children = node:get_child_ids()
-  if node == nil then return end
-  if node:is_expanded() then
-    node:collapse()
-    for _, child in ipairs(children) do
-      M.tree:get_node(child):collapse()
-    end
-  else
-    for _, child in ipairs(children) do
-      M.tree:get_node(child):expand()
-    end
-    node:expand()
-  end
-
-  M.tree:render()
-end
-
 M.redraw_text              = function(text)
   local current_node = M.tree:get_node()
   local note_node = M.get_note_node(current_node)
@@ -316,9 +316,7 @@ M.redraw_text              = function(text)
   end
 
   M.tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
-
   M.tree:render()
-  local buf = vim.api.nvim_get_current_buf()
 end
 
 M.get_root_node            = function(node)
@@ -464,6 +462,14 @@ M.add_discussions_to_table = function(discussions)
   end
 
   return t
+end
+
+M.get_note_location        = function()
+  local node = M.tree:get_node()
+  if node == nil then return nil, nil, nil, "Could not get node" end
+  local discussion_node = M.get_root_node(node)
+  if discussion_node == nil then return nil, nil, nil, "Could not get discussion node" end
+  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line
 end
 
 return M
