@@ -1,8 +1,8 @@
 -- This Module contains all of the code specific to the Delta reviewer.
-local state         = require("gitlab.state")
-local u             = require("gitlab.utils")
+local state                   = require("gitlab.state")
+local u                       = require("gitlab.utils")
 
-local M             = {
+local M                       = {
   bufnr = nil
 }
 
@@ -10,7 +10,7 @@ local M             = {
 -- These functions are exposed externally and are used
 -- when the reviewer is consumed by other code. They must follow the specification
 -- outlined in the reviewer/init.lua file
-M.open              = function()
+M.open                        = function()
   local current_buf = vim.api.nvim_get_current_buf()
   if current_buf == state.discussion_buf then
     vim.api.nvim_command("wincmd w")
@@ -26,16 +26,16 @@ M.open              = function()
   "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff %s...HEAD"
 
   local term_command = string.format(term_command_template,
-    state.settings.review_pane.added_file,
-    state.settings.review_pane.removed_file,
-    state.settings.review_pane.modified_file,
+    state.settings.review_pane.delta.added_file,
+    state.settings.review_pane.delta.removed_file,
+    state.settings.review_pane.delta.modified_file,
     state.INFO.target_branch)
 
   vim.fn.termopen(term_command) -- Calls delta and sends the output to the currently blank buffer
   M.bufnr = vim.api.nvim_get_current_buf()
 end
 
-M.jump              = function(file_name, new_line, old_line)
+M.jump                        = function(file_name, new_line, old_line)
   local linnr, error = M.get_jump_location(file_name, new_line, old_line)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
@@ -46,10 +46,35 @@ M.jump              = function(file_name, new_line, old_line)
   u.jump_to_buffer(M.bufnr, linnr)
 end
 
-M.get_location      = function()
+M.get_location                = function()
+  if M.bufnr == nil then return nil, nil, "Delta reviewer must be initialized first" end
+
+  local bufnr = vim.api.nvim_get_current_buf()
+  if bufnr ~= M.bufnr then return nil, nil, "Line location can only be determined within reviewer window" end
+
   local line_num = u.get_current_line_number()
-  local content = u.get_line_content(M.bufnr, line_num)
-  local current_line_changes = M.get_change_nums(content)
+  local file_name = M.get_file_from_review_buffer(u.get_current_line_number())
+
+  local range, error = M.get_review_buffer_range(file_name)
+
+  if error ~= nil then return nil, nil, error end
+  if range == nil then return nil, nil, "Review buffer range could not be identified" end
+
+  -- In case the comment is left on a line without change information, we
+  -- iterate backward until we find it within the range of the changes
+  local current_line_changes = nil
+  local num = line_num
+  while range ~= nil and num >= range[1] and current_line_changes == nil do
+    local content = u.get_line_content(M.bufnr, num)
+    local change_nums = M.get_change_nums(content)
+    current_line_changes = change_nums
+    num = num - 1
+  end
+
+  if current_line_changes == nil then
+    return nil, nil, "Could not find line change information"
+  end
+
   local new_line = u.get_line_content(M.bufnr, line_num + 1)
   local next_line_changes = M.get_change_nums(new_line)
 
@@ -63,24 +88,13 @@ M.get_location      = function()
     end
   end
 
-  local count = 0
-  for _ in pairs(current_line_changes) do
-    count = count + 1
-  end
-
-  if count == 0 then
-    return nil, nil, "Cannot comment on invalid line"
-  end
-
-  local file_name = M.get_file_from_review_buffer(u.get_current_line_number())
-
   return file_name, current_line_changes
 end
 
 -- Helper Functions 🤝
 -- These functions are not exported and should be private
 -- to the delta reviewer, they are used to support the public functions
-M.get_jump_location = function(file_name, new_line, old_line)
+M.get_jump_location           = function(file_name, new_line, old_line)
   local range, error = M.get_review_buffer_range(file_name)
   if error ~= nil then return nil, error end
   if range == nil then return nil, "Review buffer range could not be identified" end
@@ -99,7 +113,6 @@ M.get_jump_location = function(file_name, new_line, old_line)
   return linnr, nil
 end
 
-
 M.get_file_from_review_buffer = function(linenr)
   for i = linenr, 0, -1 do
     local line_content = u.get_line_content(M.bufnr, i)
@@ -113,12 +126,17 @@ end
 M.get_change_nums             = function(line)
   local data, _ = line:match("(.-)" .. "│" .. "(.*)")
   local line_data = {}
+  if data == nil then return nil end
+
   if data ~= nil then
     local old_line = u.trim(u.get_first_chunk(data, "[^" .. "⋮" .. "]+"))
     local new_line = u.trim(u.get_last_chunk(data, "[^" .. "⋮" .. "]+"))
     line_data.new_line = tonumber(new_line)
     line_data.old_line = tonumber(old_line)
   end
+
+  if line_data.new_line == nil and line_data.old_line == nil then return nil end
+
   return line_data
 end
 
@@ -149,9 +167,9 @@ end
 
 M.starts_with_file_symbol = function(line)
   for _, substring in ipairs({
-    state.settings.review_pane.added_file,
-    state.settings.review_pane.removed_file,
-    state.settings.review_pane.modified_file,
+    state.settings.review_pane.delta.added_file,
+    state.settings.review_pane.delta.removed_file,
+    state.settings.review_pane.delta.modified_file,
   }) do
     if string.sub(line, 1, string.len(substring)) == substring then
       return true
