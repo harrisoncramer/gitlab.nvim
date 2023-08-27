@@ -139,17 +139,30 @@ The `summary` command will pull down the MR description into a buffer so that yo
 require("gitlab").summary()
 ```
 
-## Review Mode
+ The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane. You can leave comments on the changes.
 
 ```lua
-require("gitlab").review() -- The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane. You can leave comments on the changes.
-require("gitlab").create_comment() -- Gitlab groups threads of comments together into "discussions." The list of discussions for the current MR will be displayed in a split window in the review view. You can jump to the comment's location in the diff view by using the `o` key when hovering over the line in the tree. Within the discussion tree, there are several functions that you can call. These are also configurable via keybindings provided in the setup function:
-require("gitlab").delete_comment() -- These commands are triggered on the discussion tree
+require("gitlab").review()
+require("gitlab").create_comment()
+```
+
+Gitlab groups threads of comments together into "discussions." 
+
+To display discussions for the current MR, use the `list_discussions()` command, which will show the discussions in a split window. 
+
+You can jump to the comment's location the reviewer window by using the `m` key, or the actual file with the 'j' key, when hovering over the line in the tree. 
+
+Within the discussion tree, you can delete/edit/reply to comments, or toggle them as resolved or not.
+
+```lua
+require("gitlab").list_discussions()
+require("gitlab").delete_comment()
 require("gitlab").edit_comment()
 require("gitlab").reply()
 require("gitlab").toggle_resolved()
 ```
-### Other Commands
+
+You can approve or revoke approval for an MR:
 
 ```lua
 require("gitlab").approve()
