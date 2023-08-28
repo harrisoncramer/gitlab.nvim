@@ -146,14 +146,14 @@ require("gitlab").create_comment()
 
 Gitlab groups threads of comments together into "discussions." 
 
-To display discussions for the current MR, use the `list_discussions()` command, which will show the discussions in a split window. 
+To display discussions for the current MR, use the `toggle_discussions()` command, which will show the discussions in a split window. 
 
 You can jump to the comment's location the reviewer window by using the `m` key, or the actual file with the 'j' key, when hovering over the line in the tree. 
 
 Within the discussion tree, you can delete/edit/reply to comments, or toggle them as resolved or not.
 
 ```lua
-require("gitlab").list_discussions()
+require("gitlab").toggle_discussions()
 require("gitlab").delete_comment()
 require("gitlab").edit_comment()
 require("gitlab").reply()

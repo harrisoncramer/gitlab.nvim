@@ -10,6 +10,7 @@ local M                  = {}
 M.settings               = {
   port = 21036,
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
+  reviewer = "delta",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
@@ -17,6 +18,7 @@ M.settings               = {
   discussion_tree = {
     toggle = "<leader>d",
     jump_to_file = "o",
+    jump_to_reviewer = "m",
     edit_comment = "e",
     delete_comment = "dd",
     reply = "r",
@@ -29,9 +31,11 @@ M.settings               = {
     unresolved = ''
   },
   review_pane = {
-    added_file = "",
-    modified_file = "",
-    removed_file = "",
+    delta = {
+      added_file = "",
+      modified_file = "",
+      removed_file = "",
+    }
   },
   dialogue = {
     focus_next = { "j", "<Down>", "<Tab>" },
