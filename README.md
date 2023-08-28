@@ -210,7 +210,7 @@ This plugin uses a Golang server to reach out to Gitlab. It's possible that some
 
 ```
 :lua require("gitlab.server").build()
-:lua require("gitlab.server").start()
+:lua require("gitlab.server").start(function() print("Server started") end)
 ```
 
 You can directly interact with the Go server like any other process:

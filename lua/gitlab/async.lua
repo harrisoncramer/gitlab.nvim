@@ -57,7 +57,7 @@ M.sequence = function(dependencies, cb)
       return
     end
 
-    server.start_server(function()
+    server.start(function()
       state.go_server_running = true
       handler:fetch(dependencies, 1)
     end)
