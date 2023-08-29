@@ -114,14 +114,6 @@ M.merge = function(defaults, overrides)
     end
   end
 
-  for key, value in pairs(overrides) do
-    if type(value) == "table" then
-      result[key] = M.merge(value, overrides[key] or {})
-    else
-      result[key] = overrides[key] or value
-    end
-  end
-
   return result
 end
 
