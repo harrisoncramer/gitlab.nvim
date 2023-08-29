@@ -81,6 +81,19 @@ M.jump_to_buffer = function(bufnr, line_number)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
+M.jump_to_last_window = function()
+  local current_win = vim.fn.winnr()
+  local prev_win = nil
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if win ~= current_win then
+      prev_win = win
+      break
+    end
+  end
+
+  vim.api.nvim_set_current_win(prev_win)
+end
+
 M.create_popup_state = function(title, width, height)
   return {
     buf_options = {

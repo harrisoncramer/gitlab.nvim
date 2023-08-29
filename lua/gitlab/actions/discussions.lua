@@ -243,7 +243,13 @@ M.jump_to_file     = function()
     vim.notify(error, vim.log.levels.ERROR)
     return
   end
-  vim.cmd.tabnew()
+
+  if state.settings.discussion_tree.jump_location == 'previous_window' then
+    u.jump_to_last_window()
+  else
+    vim.cmd.tabnew()
+  end
+
   u.jump_to_file(file_name, (new_line or old_line))
 end
 

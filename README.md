@@ -94,6 +94,7 @@ require("gitlab").setup({
   discussion_tree = { -- The discussion tree that holds all comments
     jump_to_file = "o", -- Jump to comment location in file
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
+    jump_location = "tab" -- "tab" or "previous_window"
     edit_comment = "e", -- Edit coment
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment

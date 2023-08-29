@@ -19,6 +19,7 @@ M.settings               = {
     toggle = "<leader>d",
     jump_to_file = "o",
     jump_to_reviewer = "m",
+    jump_location = "tab",
     edit_comment = "e",
     delete_comment = "dd",
     reply = "r",
