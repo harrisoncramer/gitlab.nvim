@@ -12,13 +12,26 @@ local M                  = {}
 local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
 
 -- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
-M.create_comment         = function()
+M.create_comment         = function(argTable)
   comment_popup:mount()
-  state.set_popup_keymaps(comment_popup, M.confirm_create_comment)
+  state.set_popup_keymaps(comment_popup, function(text)
+    M.confirm_create_comment(text, argTable)
+  end)
 end
 
 -- This function (settings.popup.perform_action) will send the comment to the Go server
-M.confirm_create_comment = function(text)
+M.confirm_create_comment = function(text, argTable)
+  if argTable == nil then argTable = {} end
+  if argTable.unlinked then
+    local jsonTable = { comment = text }
+    local json = vim.json.encode(jsonTable)
+    job.run_job("/note", "POST", json, function(data)
+      vim.notify("Note created")
+      discussions.refresh_tree()
+    end)
+    return
+  end
+
   local file_name, line_numbers, error = reviewer.get_location()
 
   if error then

@@ -38,6 +38,7 @@ func main() {
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
 	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
+	m.Handle("/note", withGitlabContext(http.HandlerFunc(NoteHandler), c))
 	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 	m.Handle("/members", withGitlabContext(http.HandlerFunc(ProjectMembersHandler), c))
 

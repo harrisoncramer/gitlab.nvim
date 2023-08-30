@@ -160,6 +160,12 @@ require("gitlab").reply()
 require("gitlab").toggle_resolved()
 ```
 
+If you'd like to create a note in an MR (like a comment, but not linked to a specific line) call the `create_note()` command. Similar commands are available on the note tree, which is visible next to the discussion tree for comments.
+
+```lua
+require("gitlab").create_note()
+```
+
 You can approve or revoke approval for an MR:
 
 ```lua
