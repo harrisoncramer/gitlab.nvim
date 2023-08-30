@@ -16,6 +16,7 @@ type SortableDiscussions []*gitlab.Discussion
 type DiscussionsResponse struct {
 	SuccessResponse
 	Discussions []*gitlab.Discussion `json:"discussions"`
+	Notes       []*gitlab.Note       `json:"note"`
 }
 
 func (n SortableDiscussions) Len() int {
@@ -33,7 +34,7 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func (c *Client) ListDiscussions() ([]*gitlab.Discussion, int, error) {
+func (c *Client) ListDiscussions() ([]*gitlab.Discussion, []*gitlab.Note, int, error) {
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
@@ -42,7 +43,7 @@ func (c *Client) ListDiscussions() ([]*gitlab.Discussion, int, error) {
 	discussions, res, err := c.git.Discussions.ListMergeRequestDiscussions(c.projectId, c.mergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
-		return nil, res.Response.StatusCode, fmt.Errorf("Listing discussions failed: %w", err)
+		return nil, nil, res.Response.StatusCode, fmt.Errorf("Listing discussions failed: %w", err)
 	}
 
 	var realDiscussions []*gitlab.Discussion
@@ -59,7 +60,22 @@ func (c *Client) ListDiscussions() ([]*gitlab.Discussion, int, error) {
 	sortedDiscussions := SortableDiscussions(realDiscussions)
 	sort.Sort(sortedDiscussions)
 
-	return sortedDiscussions, http.StatusOK, nil
+	mergeRequestNoteOptions := gitlab.ListMergeRequestNotesOptions{}
+
+	notes, res, err := c.git.Notes.ListMergeRequestNotes(c.projectId, c.mergeId, &mergeRequestNoteOptions)
+
+	if err != nil {
+		return nil, nil, res.Response.StatusCode, fmt.Errorf("Listing notes failed: %w", err)
+	}
+
+	var filteredNotes []*gitlab.Note
+	for i := 0; i < len(notes); i++ {
+		if notes[i].Position == nil && notes[i].System == false {
+			filteredNotes = append(filteredNotes, notes[i])
+		}
+	}
+
+	return sortedDiscussions, filteredNotes, http.StatusOK, nil
 }
 
 func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +87,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, status, err := c.ListDiscussions()
+	discussions, notes, status, err := c.ListDiscussions()
 
 	if err != nil {
 		c.handleError(w, err, "Could not list discussions", http.StatusBadRequest)
@@ -85,7 +101,8 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 			Message: "Discussions successfully fetched.",
 			Status:  http.StatusOK,
 		},
-		Discussions: msg,
+		Discussions: discussions,
+		Notes:       notes,
 	}
 
 	json.NewEncoder(w).Encode(response)
