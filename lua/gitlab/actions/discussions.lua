@@ -20,45 +20,6 @@ local M            = {
   tree = nil
 }
 
-M.set_tree_keymaps = function(tree, bufnr, can_jump)
-  vim.keymap.set('n',
-    state.settings.discussion_tree.edit_comment,
-    function() M.edit_comment(tree) end,
-    { buffer = bufnr }
-  )
-  vim.keymap.set('n',
-    state.settings.discussion_tree.delete_comment,
-    function() M.delete_comment(tree) end,
-    { buffer = bufnr }
-  )
-  vim.keymap.set('n',
-    state.settings.discussion_tree.toggle_resolved,
-    function() M.toggle_resolved(tree) end,
-    { buffer = bufnr }
-  )
-  vim.keymap.set('n',
-    state.settings.discussion_tree.toggle_node,
-    function() M.toggle_node(tree) end,
-    { buffer = bufnr }
-  )
-  vim.keymap.set('n',
-    state.settings.discussion_tree.reply,
-    function() M.reply(tree) end,
-    { buffer = bufnr }
-  )
-
-  if can_jump then
-    vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, function()
-      M.jump_to_file(tree)
-    end, { buffer = bufnr }
-    )
-    vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer,
-      function() M.jump_to_reviewer(tree) end,
-      { buffer = bufnr }
-    )
-  end
-end
-
 -- Opens the discussion tree, sets the keybindings. It also
 -- creates the tree for notes (which are not linked to specific lines of code)
 M.toggle           = function()
@@ -98,31 +59,6 @@ M.toggle           = function()
     vim.api.nvim_buf_set_option(linked_section.bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_option(unlinked_section.bufnr, 'filetype', 'markdown')
   end)
-end
-
-M.create_layout    = function()
-  local linked_section   = Popup({ enter = true })
-  local unlinked_section = Popup({})
-
-  local position         = state.settings.discussion_tree.position
-  local size             = state.settings.discussion_tree.size
-
-  local layout           = Layout({
-    relative = state.settings.discussion_tree.relative,
-    position = {
-      col = 0,
-      row = "100%",
-    },
-    size = {
-      width = (position == "left" and size or "100%"),
-      height = (position == "left" and "100%" or size),
-    }
-  }, Layout.Box({
-    Layout.Box(linked_section, { size = "50%" }),
-    Layout.Box(unlinked_section, { size = "50%" }),
-  }, { dir = (position == "left" and "col" or "row") }))
-
-  return linked_section, unlinked_section, layout
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
@@ -313,6 +249,71 @@ end
 --
 -- 🌲 Helper Functions
 --
+
+M.create_layout    = function()
+  local linked_section   = Popup({ enter = true })
+  local unlinked_section = Popup({})
+
+  local position         = state.settings.discussion_tree.position
+  local size             = state.settings.discussion_tree.size
+
+  local layout           = Layout({
+    relative = state.settings.discussion_tree.relative,
+    position = {
+      col = 0,
+      row = "100%",
+    },
+    size = {
+      width = (position == "left" and size or "100%"),
+      height = (position == "left" and "100%" or size),
+    }
+  }, Layout.Box({
+    Layout.Box(linked_section, { size = "50%" }),
+    Layout.Box(unlinked_section, { size = "50%" }),
+  }, { dir = (position == "left" and "col" or "row") }))
+
+  return linked_section, unlinked_section, layout
+end
+
+M.set_tree_keymaps = function(tree, bufnr, can_jump)
+  vim.keymap.set('n',
+    state.settings.discussion_tree.edit_comment,
+    function() M.edit_comment(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.delete_comment,
+    function() M.delete_comment(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.toggle_resolved,
+    function() M.toggle_resolved(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.toggle_node,
+    function() M.toggle_node(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.reply,
+    function() M.reply(tree) end,
+    { buffer = bufnr }
+  )
+
+  if can_jump then
+    vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, function()
+      M.jump_to_file(tree)
+    end, { buffer = bufnr }
+    )
+    vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer,
+      function() M.jump_to_reviewer(tree) end,
+      { buffer = bufnr }
+    )
+  end
+end
+
 
 M.redraw_resolved_status   = function(tree, note, mark_resolved)
   local current_text = tree.nodes.by_id["-" .. note.id].text
