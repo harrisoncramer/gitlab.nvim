@@ -31,20 +31,20 @@ M.toggle           = function()
   end
 
   local linked_section, unlinked_section, layout = M.create_layout()
-  layout:mount()
-  layout:show()
-
-  M.layout = layout
-  M.layout_visible = true
-  M.layout_buf = layout.bufnr
-
-  state.discussion_buf = layout.bufnr
 
   job.run_job("/discussions", "GET", nil, function(data)
-    if type(data.discussions) ~= "table" then
-      vim.notify("No discussions for this MR", vim.log.levels.WARN)
+    if type(data.discussions) ~= "table" and type(data.unlinked_discussions) ~= "table" then
+      vim.notify("No discussions or notes for this MR", vim.log.levels.WARN)
       return
     end
+
+    layout:mount()
+    layout:show()
+
+    M.layout = layout
+    M.layout_visible = true
+    M.layout_buf = layout.bufnr
+    state.discussion_buf = layout.bufnr
 
     if data.discussions then
       local discussion_tree_nodes = M.add_discussions_to_table(data.discussions or {})
