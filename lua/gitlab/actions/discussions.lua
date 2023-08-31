@@ -18,7 +18,8 @@ local M            = {
   layout_visible = false,
   layout = nil,
   layout_buf = nil,
-  tree = nil
+  discussion_tree = nil,
+  unlinked_discussion_tree = nil,
 }
 
 -- Opens the discussion tree, sets the keybindings. It also
@@ -51,6 +52,7 @@ M.toggle           = function()
       local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
       discussion_tree:render()
       M.set_tree_keymaps(discussion_tree, linked_section.bufnr, true)
+      M.discussion_tree = discussion_tree
     end
 
     if type(data.unlinked_discussions) == "table" then
@@ -58,6 +60,7 @@ M.toggle           = function()
       local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
       unlinked_discussion_tree:render()
       M.set_tree_keymaps(unlinked_discussion_tree, unlinked_section.bufnr, false)
+      M.unlinked_discussion_tree = unlinked_discussion_tree
     end
 
     M.add_empty_titles({
@@ -150,6 +153,11 @@ M.send_deletion    = function(tree, item)
       tree:render()
     end)
   end
+end
+
+M.add_discussion   = function(arg)
+  P(arg)
+  local tree = arg.unlinked and M.unlinked_discussion_tree or M.discussion_tree
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree

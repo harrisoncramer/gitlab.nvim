@@ -7,7 +7,6 @@ local discussions             = require("gitlab.actions.discussions")
 local summary                 = require("gitlab.actions.summary")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment                 = require("gitlab.actions.comment")
-local note                    = require("gitlab.actions.note")
 local approvals               = require("gitlab.actions.approvals")
 
 local info                    = state.dependencies.info
@@ -30,7 +29,7 @@ return {
   add_assignee       = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
   delete_assignee    = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
   create_comment     = async.sequence({ info, revisions }, comment.create_comment),
-  create_note        = async.sequence({}, note.create_note),
+  create_note        = async.sequence({ info }, comment.create_note),
   review             = async.sequence({ u.merge(info, { refresh = true }) }, function() reviewer.open() end),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info }, discussions.toggle),

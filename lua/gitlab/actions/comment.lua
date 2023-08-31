@@ -10,23 +10,29 @@ local reviewer           = require("gitlab.reviewer")
 local M                  = {}
 
 local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
+local note_popup         = Popup(u.create_popup_state("Note", "40%", "60%"))
 
 -- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
-M.create_comment         = function(argTable)
+M.create_comment         = function()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
-    M.confirm_create_comment(text, argTable)
+    M.confirm_create_comment(text)
+  end)
+end
+
+M.create_note            = function()
+  note_popup:mount()
+  state.set_popup_keymaps(note_popup, function(text)
+    M.confirm_create_comment(text, true)
   end)
 end
 
 -- This function (settings.popup.perform_action) will send the comment to the Go server
-M.confirm_create_comment = function(text, argTable)
-  if argTable == nil then argTable = {} end
-  if argTable.unlinked then
+M.confirm_create_comment = function(text, unlinked)
+  if unlinked then
     local body = { comment = text }
-    job.run_job("/note", "POST", body, function(data)
-      vim.notify("Note created")
-      discussions.refresh_tree()
+    job.run_job("/comment", "POST", body, function(data)
+      discussions.add_discussion({ data = data, text = text, unlinked = true })
     end)
     return
   end
@@ -66,8 +72,7 @@ M.confirm_create_comment = function(text, argTable)
   }
 
   job.run_job("/comment", "POST", body, function(data)
-    vim.notify("Comment created")
-    discussions.refresh_tree()
+    discussions.add_discussion({ data = data, text = text, unlinked = false })
   end)
 end
 

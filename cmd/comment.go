@@ -36,7 +36,8 @@ type EditCommentRequest struct {
 
 type CommentResponse struct {
 	SuccessResponse
-	Comment *gitlab.Note `json:"note"`
+	Comment      *gitlab.Note `json:"note"`
+	DiscussionId string       `json:"discussion_id"`
 }
 
 func CommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,24 +108,26 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	position := &gitlab.NotePosition{
-		PositionType: "text",
-		StartSHA:     postCommentRequest.StartCommitSHA,
-		HeadSHA:      postCommentRequest.HeadCommitSHA,
-		BaseSHA:      postCommentRequest.BaseCommitSHA,
-		NewPath:      postCommentRequest.FileName,
-		OldPath:      postCommentRequest.FileName,
-		NewLine:      postCommentRequest.NewLine,
-		OldLine:      postCommentRequest.OldLine,
+	opt := gitlab.CreateMergeRequestDiscussionOptions{
+		Body: &postCommentRequest.Comment,
 	}
 
-	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
-		c.projectId,
-		c.mergeId,
-		&gitlab.CreateMergeRequestDiscussionOptions{
-			Body:     &postCommentRequest.Comment,
-			Position: position,
-		})
+	/* If we are leaving a comment on a line, leave position. Otherwise,
+	we are leaving a note (unlinked comment) */
+	if postCommentRequest.FileName != "" {
+		opt.Position = &gitlab.NotePosition{
+			PositionType: "text",
+			StartSHA:     postCommentRequest.StartCommitSHA,
+			HeadSHA:      postCommentRequest.HeadCommitSHA,
+			BaseSHA:      postCommentRequest.BaseCommitSHA,
+			NewPath:      postCommentRequest.FileName,
+			OldPath:      postCommentRequest.FileName,
+			NewLine:      postCommentRequest.NewLine,
+			OldLine:      postCommentRequest.OldLine,
+		}
+	}
+
+	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &opt)
 
 	if err != nil {
 		c.handleError(w, err, "Could not create comment", http.StatusBadRequest)
@@ -136,7 +139,8 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 			Message: "Comment updated succesfully",
 			Status:  http.StatusOK,
 		},
-		Comment: discussion.Notes[0],
+		Comment:      discussion.Notes[0],
+		DiscussionId: discussion.ID,
 	}
 
 	json.NewEncoder(w).Encode(response)
