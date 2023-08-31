@@ -4,7 +4,9 @@
 local Popup        = require("nui.popup")
 local Menu         = require("nui.menu")
 local NuiTree      = require("nui.tree")
-local NuiSplit     = require("nui.split")
+-- local NuiSplit     = require("nui.split")
+local NuiEvent     = require("nui.utils.autocmd").event
+local Layout       = require("nui.layout")
 local job          = require("gitlab.job")
 local u            = require("gitlab.utils")
 local state        = require("gitlab.state")
@@ -14,60 +16,72 @@ local edit_popup   = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup  = Popup(u.create_popup_state("Reply", "80%", "80%"))
 
 local M            = {
-  split_visible = false,
-  split = nil,
-  split_buf = nil,
+  layout_visible = false,
+  layout = nil,
+  layout_buf = nil,
   tree = nil
 }
 
-M.set_tree_keymaps = function()
-  vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, M.jump_to_file, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer, M.jump_to_reviewer, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.edit_comment, M.edit_comment, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.delete_comment, M.delete_comment, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.toggle_resolved, M.toggle_resolved, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.toggle_node, M.toggle_node, { buffer = true })
-  vim.keymap.set('n', state.settings.discussion_tree.reply, M.reply, { buffer = true })
+M.set_tree_keymaps = function(tree, bufnr, can_jump)
+  vim.keymap.set('n',
+    state.settings.discussion_tree.edit_comment,
+    function() M.edit_comment(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.delete_comment,
+    function() M.delete_comment(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.toggle_resolved,
+    function() M.toggle_resolved(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.toggle_node,
+    function() M.toggle_node(tree) end,
+    { buffer = bufnr }
+  )
+  vim.keymap.set('n',
+    state.settings.discussion_tree.reply,
+    function() M.reply(tree) end,
+    { buffer = bufnr }
+  )
+
+  if can_jump then
+    vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, M.jump_to_file, { buffer = bufnr })
+    vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer, M.jump_to_reviewer, { buffer = bufnr })
+  end
 end
 
--- Opens the discussion tree, sets the keybindings,
+-- Opens the discussion tree, sets the keybindings. It also
+-- creates the tree for notes (which are not linked to specific lines of code)
 M.toggle           = function()
-  if M.split_visible then
-    M.split:hide()
-    M.split_visible = false
+  if M.layout_visible then
+    M.layout:unmount()
+    M.layout_visible = false
     return
   end
 
-  if M.split then
-    M.split:show()
-    M.split_visible = true
-    return
-  end
+  local top_popup, bottom_popup, layout = M.create_layout()
+  layout:mount()
+  layout:show()
 
-  local split = NuiSplit({
-    buf_options = { modifiable = false },
-    relative = state.settings.discussion_tree.relative,
-    position = state.settings.discussion_tree.position,
-    size = state.settings.discussion_tree.size,
-  })
+  M.layout = layout
+  M.layout_visible = true
+  M.layout_buf = layout.bufnr
 
-  split:mount()
-  M.split = split
-  M.split_visible = true
-  M.split_buf = split.bufnr
-  state.discussion_buf = split.bufnr
+  state.discussion_buf = layout.bufnr
 
-  vim.api.nvim_create_autocmd({ "QuitPre", "BufDelete", "BufUnload" }, {
-    buffer = split.bufnr,
-    callback = function()
-      M.split = nil
-      M.split_visible = false
-      M.split_buf = nil
-    end,
-    desc = "Handles users who close the split in non-keybinding fashion",
-  })
-
-  local buf = M.split.bufnr
+  -- vim.api.nvim_create_autocmd({ "QuitPre", "BufDelete", "BufUnload" }, {
+  --   buffer = top_popup.bufnr,
+  --   callback = function()
+  --     M.layout:unmount()
+  --     M.layout_visible = false
+  --   end,
+  --   desc = "Handles users who close the split in non-keybinding fashion",
+  -- })
 
   job.run_job("/discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
@@ -75,39 +89,66 @@ M.toggle           = function()
       return
     end
 
-    local tree_nodes = M.add_discussions_to_table(data.discussions)
+    local discussion_tree_nodes = M.add_discussions_to_table(data.discussions)
+    local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions)
 
-    M.tree = NuiTree({ nodes = tree_nodes, bufnr = buf })
-    M.set_tree_keymaps()
+    M.discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = top_popup.bufnr })
+    M.unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = bottom_popup.bufnr })
+    M.discussion_tree:render()
+    M.unlinked_discussion_tree:render()
 
-    M.tree:render()
-    vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+    M.set_tree_keymaps(M.discussion_tree, top_popup.bufnr, true)
+    M.set_tree_keymaps(M.unlinked_discussion_tree, bottom_popup.bufnr, false)
+
+    vim.api.nvim_buf_set_option(top_popup.bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_option(bottom_popup.bufnr, 'filetype', 'markdown')
   end)
 end
 
+M.create_layout    = function()
+  local top_popup    = Popup({ border = "single" })
+  local bottom_popup = Popup({ border = "single" })
+
+  local layout       = Layout({
+    relative = state.settings.discussion_tree.relative,
+    position = {
+      col = 0,
+      row = "100%",
+    },
+    size = {
+      width = (state.settings.discussion_tree.position == "left" and state.settings.discussion_tree.size or "100%"),
+      height = (state.settings.discussion_tree.position == "left" and "100%" or state.settings.discussion_tree.size),
+    }
+  }, Layout.Box({
+    Layout.Box(top_popup, { size = "40%" }),
+    Layout.Box(bottom_popup, { size = "60%" }),
+  }))
+
+  return top_popup, bottom_popup, layout
+end
+
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
-M.reply            = function()
-  local node = M.tree:get_node()
-  local discussion_node = M.get_root_node(node)
+M.reply            = function(tree)
+  local node = tree:get_node()
+  local discussion_node = M.get_root_node(tree, node)
   local id = tostring(discussion_node.id)
   reply_popup:mount()
-  state.set_popup_keymaps(reply_popup, M.send_reply(id))
+  state.set_popup_keymaps(reply_popup, M.send_reply(tree, id))
 end
 
 -- This function will send the reply to the Go API
-M.send_reply       = function(discussion_id)
-  print(discussion_id)
+M.send_reply       = function(tree, discussion_id)
   return function(text)
     local jsonTable = { discussion_id = discussion_id, reply = text }
     local json = vim.json.encode(jsonTable)
     job.run_job("/reply", "POST", json, function(data)
-      M.add_note_to_tree(data.note, discussion_id)
+      M.add_note_to_tree(tree, data.note, discussion_id)
     end)
   end
 end
 
 -- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
-M.delete_comment   = function()
+M.delete_comment   = function(tree)
   local menu = Menu({
     position = "50%",
     size = {
@@ -135,19 +176,21 @@ M.delete_comment   = function()
       close = state.settings.dialogue.close,
       submit = state.settings.dialogue.submit,
     },
-    on_submit = M.send_deletion
+    on_submit = function(item)
+      M.send_deletion(tree, item)
+    end
   })
   menu:mount()
 end
 
 -- This function will actually send the deletion to Gitlab
 -- when you make a selection
-M.send_deletion    = function(item)
+M.send_deletion    = function(tree, item)
   if item.text == "Confirm" then
-    local current_node = M.tree:get_node()
+    local current_node = tree:get_node()
 
-    local note_node = M.get_note_node(current_node)
-    local root_node = M.get_root_node(current_node)
+    local note_node = M.get_note_node(tree, current_node)
+    local root_node = M.get_root_node(tree, current_node)
     local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
     local jsonTable = { discussion_id = root_node.id, note_id = note_id }
@@ -156,8 +199,8 @@ M.send_deletion    = function(item)
     job.run_job("/comment", "DELETE", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       if not note_node.is_root then
-        M.tree:remove_node("-" .. note_id)
-        M.tree:render()
+        tree:remove_node("-" .. note_id)
+        tree:render()
       else
         -- We are removing the root node of the discussion,
         -- we need to move all the children around, the easiest way
@@ -170,30 +213,30 @@ M.send_deletion    = function(item)
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
-M.edit_comment     = function()
-  local current_node = M.tree:get_node()
-  local note_node = M.get_note_node(current_node)
-  local root_node = M.get_root_node(current_node)
+M.edit_comment     = function(tree)
+  local current_node = tree:get_node()
+  local note_node = M.get_note_node(tree, current_node)
+  local root_node = M.get_root_node(tree, current_node)
 
   edit_popup:mount()
 
   local lines = {} -- Gather all lines from immediate children that aren't note nodes
   local children_ids = note_node:get_child_ids()
   for _, child_id in ipairs(children_ids) do
-    local child_node = M.tree:get_node(child_id)
+    local child_node = tree:get_node(child_id)
     if (not child_node:has_children()) then
-      local line = M.tree:get_node(child_id).text
+      local line = tree:get_node(child_id).text
       table.insert(lines, line)
     end
   end
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-  state.set_popup_keymaps(edit_popup, M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id))
+  state.set_popup_keymaps(edit_popup, M.send_edits(tree, tostring(root_node.id), note_node.root_note_id or note_node.id))
 end
 
 -- This function sends the edited comment to the Go server
-M.send_edits       = function(discussion_id, note_id)
+M.send_edits       = function(tree, discussion_id, note_id)
   return function(text)
     local json_table = {
       discussion_id = discussion_id,
@@ -203,14 +246,14 @@ M.send_edits       = function(discussion_id, note_id)
     local json = vim.json.encode(json_table)
     job.run_job("/comment", "PATCH", json, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
-      M.redraw_text(text)
+      M.redraw_text(tree, text)
     end)
   end
 end
 
 -- This comment (settings.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
-M.toggle_resolved  = function()
-  local note = M.tree:get_node()
+M.toggle_resolved  = function(tree)
+  local note = tree:get_node()
   if not note or not note.resolvable then return end
 
   local json_table = {
@@ -222,7 +265,7 @@ M.toggle_resolved  = function()
   local json = vim.json.encode(json_table)
   job.run_job("/comment", "PATCH", json, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
-    M.redraw_resolved_status(note, not note.resolved)
+    M.redraw_resolved_status(tree, note, not note.resolved)
   end)
 end
 
@@ -248,24 +291,24 @@ M.jump_to_file     = function()
 end
 
 -- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
-M.toggle_node      = function()
-  local node = M.tree:get_node()
+M.toggle_node      = function(tree)
+  local node = tree:get_node()
   if node == nil then return end
   local children = node:get_child_ids()
   if node == nil then return end
   if node:is_expanded() then
     node:collapse()
     for _, child in ipairs(children) do
-      M.tree:get_node(child):collapse()
+      tree:get_node(child):collapse()
     end
   else
     for _, child in ipairs(children) do
-      M.tree:get_node(child):expand()
+      tree:get_node(child):expand()
     end
     node:expand()
   end
 
-  M.tree:render()
+  tree:render()
 end
 
 
@@ -273,13 +316,13 @@ end
 -- 🌲 Helper Functions
 --
 
-M.redraw_resolved_status   = function(note, mark_resolved)
-  local current_text = M.tree.nodes.by_id["-" .. note.id].text
+M.redraw_resolved_status   = function(tree, note, mark_resolved)
+  local current_text = tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and 'resolved' or 'unresolved'
   local current = mark_resolved and 'unresolved' or 'resolved'
 
   local function set_property(key, val)
-    M.tree.nodes.by_id["-" .. note.id][key] = val
+    tree.nodes.by_id["-" .. note.id][key] = val
   end
 
   local has_symbol = function(s)
@@ -298,16 +341,16 @@ M.redraw_resolved_status   = function(note, mark_resolved)
     set_property('text', (u.remove_last_chunk(current_text) .. " " .. state.settings.discussion_tree[target]))
   end
 
-  M.tree:render()
+  tree:render()
 end
 
-M.redraw_text              = function(text)
-  local current_node = M.tree:get_node()
-  local note_node = M.get_note_node(current_node)
+M.redraw_text              = function(tree, text)
+  local current_node = tree:get_node()
+  local note_node = M.get_note_node(tree, current_node)
 
   local childrenIds = note_node:get_child_ids()
   for _, value in ipairs(childrenIds) do
-    M.tree:remove_node(value)
+    tree:remove_node(value)
   end
 
   local newNoteTextNodes = {}
@@ -315,24 +358,25 @@ M.redraw_text              = function(text)
     table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
   end
 
-  M.tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
-  M.tree:render()
+  tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
+  tree:render()
 end
 
-M.get_root_node            = function(node)
+M.get_root_node            = function(tree, node)
+  P(node)
   if (not node.is_root) then
     local parent_id = node:get_parent_id()
-    return M.get_root_node(M.tree:get_node(parent_id))
+    return M.get_root_node(tree, tree:get_node(parent_id))
   else
     return node
   end
 end
 
-M.get_note_node            = function(node)
+M.get_note_node            = function(tree, node)
   if (not node.is_note) then
     local parent_id = node:get_parent_id()
     if parent_id == nil then return node end
-    return M.get_note_node(M.tree:get_node(parent_id))
+    return M.get_note_node(tree, tree:get_node(parent_id))
   else
     return node
   end
@@ -347,8 +391,8 @@ M.build_note_body          = function(note, resolve_info)
   for bodyLine in note.body:gmatch("[^\n]+") do
     local line = attach_uuid(bodyLine)
     table.insert(text_nodes, NuiTree.Node({
-      new_line = note.position.new_line,
-      old_line = note.position.old_line,
+      new_line = (type(note.position) == "table" and note.position.new_line),
+      old_line = (type(note.position) == "table" and note.position.old_line),
       text = line.text,
       id = line.id,
       is_body = true
@@ -371,23 +415,24 @@ M.build_note               = function(note, resolve_info)
   local note_node = NuiTree.Node({
     text = text,
     id = note.id,
-    file_name = note.position.new_path,
-    new_line = note.position.new_line,
-    old_line = note.position.old_line,
+    file_name = (type(note.position) == "table" and note.position.new_path),
+    new_line = (type(note.position) == "table" and note.position.new_line),
+    old_line = (type(note.position) == "table" and note.position.old_line),
     is_note = true,
   }, text_nodes)
 
   return note_node, text, text_nodes
 end
 
-M.add_note_to_tree         = function(note, discussion_id)
+M.add_note_to_tree         = function(tree, note, discussion_id)
   local note_node = M.build_note(note)
   note_node:expand()
-  M.tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
-  M.tree:render()
+  tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
+  tree:render()
   vim.notify("Sent reply!", vim.log.levels.INFO)
 end
 
+-- TODO: Fix this function for multiple trees
 M.refresh_tree             = function()
   job.run_job("/discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
@@ -395,25 +440,25 @@ M.refresh_tree             = function()
       return
     end
 
-    if not M.split_buf or (vim.fn.bufwinid(M.split_buf) == -1) then return end
+    if not M.layout_buf or (vim.fn.bufwinid(M.layout_buf) == -1) then return end
 
-    vim.api.nvim_buf_set_option(M.split_buf, 'modifiable', true)
-    vim.api.nvim_buf_set_option(M.split_buf, 'readonly', false)
-    vim.api.nvim_buf_set_lines(M.split_buf, 0, -1, false, {})
-    vim.api.nvim_buf_set_option(M.split_buf, 'readonly', true)
-    vim.api.nvim_buf_set_option(M.split_buf, 'modifiable', false)
+    vim.api.nvim_buf_set_option(M.layout_buf, 'modifiable', true)
+    vim.api.nvim_buf_set_option(M.layout_buf, 'readonly', false)
+    vim.api.nvim_buf_set_lines(M.layout_buf, 0, -1, false, {})
+    vim.api.nvim_buf_set_option(M.layout_buf, 'readonly', true)
+    vim.api.nvim_buf_set_option(M.layout_buf, 'modifiable', false)
 
     local tree_nodes = M.add_discussions_to_table(data.discussions)
-    M.tree = NuiTree({ nodes = tree_nodes, bufnr = M.split_buf })
+    M.discussion_tree = NuiTree({ nodes = tree_nodes, bufnr = M.layout_buf })
     M.set_tree_keymaps()
-    M.tree:render()
-    vim.api.nvim_buf_set_option(M.split_buf, 'filetype', 'markdown')
+    M.discussion_tree:render()
+    vim.api.nvim_buf_set_option(M.layout_buf, 'filetype', 'markdown')
   end)
 end
 
-M.add_discussions_to_table = function(discussions)
+M.add_discussions_to_table = function(items)
   local t = {}
-  for _, discussion in ipairs(discussions) do
+  for _, discussion in ipairs(items) do
     local discussion_children = {}
 
     -- These properties are filled in by the first note
@@ -430,9 +475,10 @@ M.add_discussions_to_table = function(discussions)
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
         __, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
-        root_file_name = note.position.new_path
-        root_new_line = note.position.new_line
-        root_old_line = note.position.old_line
+
+        root_file_name = (type(note.position) == "table" and note.position.new_path)
+        root_new_line = (type(note.position) == "table" and note.position.new_line)
+        root_old_line = (type(note.position) == "table" and note.position.old_line)
         root_id = discussion.id
         root_note_id = note.id
         resolvable = note.resolvable
@@ -465,7 +511,7 @@ M.add_discussions_to_table = function(discussions)
 end
 
 M.get_note_location        = function()
-  local node = M.tree:get_node()
+  local node = M.discussion_tree:get_node()
   if node == nil then return nil, nil, nil, "Could not get node" end
   local discussion_node = M.get_root_node(node)
   if discussion_node == nil then return nil, nil, nil, "Could not get discussion node" end
