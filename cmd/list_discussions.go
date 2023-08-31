@@ -15,8 +15,8 @@ type SortableDiscussions []*gitlab.Discussion
 
 type DiscussionsResponse struct {
 	SuccessResponse
-	Discussions []*gitlab.Discussion `json:"discussions"`
-	Notes       []*gitlab.Note       `json:"note"`
+	Discussions         []*gitlab.Discussion `json:"discussions"`
+	UnlinkedDiscussions []*gitlab.Discussion `json:"unlinked_discussions"`
 }
 
 func (n SortableDiscussions) Len() int {
@@ -34,7 +34,7 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func (c *Client) ListDiscussions() ([]*gitlab.Discussion, []*gitlab.Note, int, error) {
+func (c *Client) ListDiscussions() ([]*gitlab.Discussion, []*gitlab.Discussion, int, error) {
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
@@ -46,36 +46,28 @@ func (c *Client) ListDiscussions() ([]*gitlab.Discussion, []*gitlab.Note, int, e
 		return nil, nil, res.Response.StatusCode, fmt.Errorf("Listing discussions failed: %w", err)
 	}
 
-	var realDiscussions []*gitlab.Discussion
+	var unlinkedDiscussions []*gitlab.Discussion
+	var linkedDiscussions []*gitlab.Discussion
 	for i := 0; i < len(discussions); i++ {
 		notes := discussions[i].Notes
 		for j := 0; j < len(notes); j++ {
 			if notes[j].Type == gitlab.NoteTypeValue("DiffNote") {
-				realDiscussions = append(realDiscussions, discussions[i])
+				linkedDiscussions = append(linkedDiscussions, discussions[i])
+				break
+			} else if notes[j].System == false && notes[j].Position == nil {
+				unlinkedDiscussions = append(unlinkedDiscussions, discussions[i])
 				break
 			}
 		}
 	}
 
-	sortedDiscussions := SortableDiscussions(realDiscussions)
-	sort.Sort(sortedDiscussions)
+	sortedLinkedDiscussions := SortableDiscussions(linkedDiscussions)
+	sortedUnlinkedDiscussions := SortableDiscussions(unlinkedDiscussions)
 
-	mergeRequestNoteOptions := gitlab.ListMergeRequestNotesOptions{}
+	sort.Sort(sortedLinkedDiscussions)
+	sort.Sort(sortedUnlinkedDiscussions)
 
-	notes, res, err := c.git.Notes.ListMergeRequestNotes(c.projectId, c.mergeId, &mergeRequestNoteOptions)
-
-	if err != nil {
-		return nil, nil, res.Response.StatusCode, fmt.Errorf("Listing notes failed: %w", err)
-	}
-
-	var filteredNotes []*gitlab.Note
-	for i := 0; i < len(notes); i++ {
-		if notes[i].Position == nil && notes[i].System == false {
-			filteredNotes = append(filteredNotes, notes[i])
-		}
-	}
-
-	return sortedDiscussions, filteredNotes, http.StatusOK, nil
+	return sortedLinkedDiscussions, sortedUnlinkedDiscussions, http.StatusOK, nil
 }
 
 func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +79,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	discussions, notes, status, err := c.ListDiscussions()
+	linkedDiscussions, unlinkedDiscussions, status, err := c.ListDiscussions()
 
 	if err != nil {
 		c.handleError(w, err, "Could not list discussions", http.StatusBadRequest)
@@ -101,8 +93,8 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 			Message: "Discussions successfully fetched.",
 			Status:  http.StatusOK,
 		},
-		Discussions: discussions,
-		Notes:       notes,
+		Discussions:         linkedDiscussions,
+		UnlinkedDiscussions: unlinkedDiscussions,
 	}
 
 	json.NewEncoder(w).Encode(response)
