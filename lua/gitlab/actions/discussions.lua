@@ -1,6 +1,7 @@
 -- This module is responsible for the discussion tree. That includes things like
 -- editing existing notes in the tree, replying to notes in the tree,
 -- and marking discussions as resolved/unresolved.
+local Split        = require("nui.split")
 local Popup        = require("nui.popup")
 local Menu         = require("nui.menu")
 local NuiTree      = require("nui.tree")
@@ -251,26 +252,26 @@ end
 --
 
 M.create_layout    = function()
-  local linked_section   = Popup({ enter = true })
-  local unlinked_section = Popup({})
+  local linked_section   = Split({ enter = true, border = { style = "single", text = { top = "Hi there" } } })
+  local unlinked_section = Split({})
 
   local position         = state.settings.discussion_tree.position
   local size             = state.settings.discussion_tree.size
+  local relative         = state.settings.discussion_tree.relative
 
-  local layout           = Layout({
-    relative = state.settings.discussion_tree.relative,
-    position = {
-      col = 0,
-      row = "100%",
+  local layout           = Layout(
+    {
+      position = position,
+      size = size,
+      relative = relative,
     },
-    size = {
-      width = (position == "left" and size or "100%"),
-      height = (position == "left" and "100%" or size),
-    }
-  }, Layout.Box({
-    Layout.Box(linked_section, { size = "50%" }),
-    Layout.Box(unlinked_section, { size = "50%" }),
-  }, { dir = (position == "left" and "col" or "row") }))
+    Layout.Box({
+        Layout.Box(linked_section, { size = "50%" }),
+        Layout.Box(unlinked_section, { size = "50%" }),
+      },
+      { dir = (position == "left" and "col" or "row") }
+    )
+  )
 
   return linked_section, unlinked_section, layout
 end
