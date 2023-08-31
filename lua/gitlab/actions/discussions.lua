@@ -46,19 +46,24 @@ M.toggle           = function()
       return
     end
 
-    local discussion_tree_nodes = M.add_discussions_to_table(data.discussions or {})
-    local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions or {})
+    if data.discussions then
+      local discussion_tree_nodes = M.add_discussions_to_table(data.discussions or {})
+      local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
+      discussion_tree:render()
+      M.set_tree_keymaps(discussion_tree, linked_section.bufnr, true)
+    end
 
-    local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
-    local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
-    discussion_tree:render()
-    unlinked_discussion_tree:render()
+    if data.unlinked_discussions then
+      local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions or {})
+      local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
+      unlinked_discussion_tree:render()
+      M.set_tree_keymaps(unlinked_discussion_tree, unlinked_section.bufnr, false)
+    end
 
-    M.set_tree_keymaps(discussion_tree, linked_section.bufnr, true)
-    M.set_tree_keymaps(unlinked_discussion_tree, unlinked_section.bufnr, false)
-
-    vim.api.nvim_buf_set_option(linked_section.bufnr, 'filetype', 'markdown')
-    vim.api.nvim_buf_set_option(unlinked_section.bufnr, 'filetype', 'markdown')
+    M.add_empty_titles({
+      { linked_section.bufnr,   data.discussions,          "No Discussions for this MR" },
+      { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" }
+    })
   end)
 end
 
@@ -252,7 +257,7 @@ end
 --
 
 M.create_layout    = function()
-  local linked_section   = Split({ enter = true, border = { style = "single", text = { top = "Hi there" } } })
+  local linked_section   = Split({ enter = true })
   local unlinked_section = Split({})
 
   local position         = state.settings.discussion_tree.position
@@ -274,6 +279,21 @@ M.create_layout    = function()
   )
 
   return linked_section, unlinked_section, layout
+end
+
+M.add_empty_titles = function(args)
+  local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
+  vim.cmd("highlight default TitleHighlight guifg=#787878")
+  for _, section in ipairs(args) do
+    local bufnr, data, title = section[1], section[2], section[3]
+    if data == nil then
+      print(bufnr, title)
+      vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { title })
+      local linnr = 1
+      vim.api.nvim_buf_set_extmark(bufnr, ns_id, linnr - 1, 0,
+        { end_row = linnr - 1, end_col = string.len(title), hl_group = 'TitleHighlight' })
+    end
+  end
 end
 
 M.set_tree_keymaps = function(tree, bufnr, can_jump)
