@@ -68,7 +68,7 @@ M.toggle           = function()
     return
   end
 
-  local top_popup, bottom_popup, layout = M.create_layout()
+  local linked_section, unlinked_section, layout = M.create_layout()
   layout:mount()
   layout:show()
 
@@ -87,24 +87,24 @@ M.toggle           = function()
     local discussion_tree_nodes = M.add_discussions_to_table(data.discussions)
     local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions)
 
-    local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = top_popup.bufnr })
-    local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = bottom_popup.bufnr })
+    local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
+    local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
     discussion_tree:render()
     unlinked_discussion_tree:render()
 
-    M.set_tree_keymaps(discussion_tree, top_popup.bufnr, true)
-    M.set_tree_keymaps(unlinked_discussion_tree, bottom_popup.bufnr, false)
+    M.set_tree_keymaps(discussion_tree, linked_section.bufnr, true)
+    M.set_tree_keymaps(unlinked_discussion_tree, unlinked_section.bufnr, false)
 
-    vim.api.nvim_buf_set_option(top_popup.bufnr, 'filetype', 'markdown')
-    vim.api.nvim_buf_set_option(bottom_popup.bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_option(linked_section.bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_option(unlinked_section.bufnr, 'filetype', 'markdown')
   end)
 end
 
 M.create_layout    = function()
-  local top_popup    = Popup({ border = "single" })
-  local bottom_popup = Popup({ border = "single" })
+  local linked_section   = Popup({ enter = true })
+  local unlinked_section = Popup({})
 
-  local layout       = Layout({
+  local layout           = Layout({
     relative = state.settings.discussion_tree.relative,
     position = {
       col = 0,
@@ -115,11 +115,11 @@ M.create_layout    = function()
       height = (state.settings.discussion_tree.position == "left" and "100%" or state.settings.discussion_tree.size),
     }
   }, Layout.Box({
-    Layout.Box(top_popup, { size = "40%" }),
-    Layout.Box(bottom_popup, { size = "60%" }),
+    Layout.Box(linked_section, { size = "50%" }),
+    Layout.Box(unlinked_section, { size = "50%" }),
   }))
 
-  return top_popup, bottom_popup, layout
+  return linked_section, unlinked_section, layout
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
