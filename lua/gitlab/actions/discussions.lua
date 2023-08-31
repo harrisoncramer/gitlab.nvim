@@ -46,15 +46,15 @@ M.toggle           = function()
     M.layout_buf = layout.bufnr
     state.discussion_buf = layout.bufnr
 
-    if data.discussions then
-      local discussion_tree_nodes = M.add_discussions_to_table(data.discussions or {})
+    if type(data.discussions) == "table" then
+      local discussion_tree_nodes = M.add_discussions_to_table(data.discussions)
       local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
       discussion_tree:render()
       M.set_tree_keymaps(discussion_tree, linked_section.bufnr, true)
     end
 
-    if data.unlinked_discussions then
-      local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions or {})
+    if type(data.unlinked_discussions) == "table" then
+      local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions)
       local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
       unlinked_discussion_tree:render()
       M.set_tree_keymaps(unlinked_discussion_tree, unlinked_section.bufnr, false)
