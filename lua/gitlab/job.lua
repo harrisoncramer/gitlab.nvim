@@ -8,8 +8,9 @@ M.run_job = function(endpoint, method, body, callback)
   local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s", state.settings.port) .. endpoint }
 
   if body ~= nil then
+    local encoded_body = vim.json.encode(body)
     table.insert(args, 1, "-d")
-    table.insert(args, 2, body)
+    table.insert(args, 2, encoded_body)
   end
 
   -- This handler will handle all responses from the Go server. Anything with a successful

@@ -14,7 +14,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43
 
 ## Requirements
 
-- <a href="https://go.dev/">Go</a>
+- <a href="https://go.dev/">Go >= v1.19</a>
 - <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
 - <a href="https://github.com/dandavison/delta">delta</a>
 
@@ -104,6 +104,7 @@ require("gitlab").setup({
     relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
+    blacklist = nil, -- List of usernames to remove from tree (bots, CI, etc)
   },
   review_pane = { -- Specific settings for different reviewers
     delta = {

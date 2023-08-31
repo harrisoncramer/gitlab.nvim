@@ -32,7 +32,7 @@ M.toggle           = function()
 
   local linked_section, unlinked_section, layout = M.create_layout()
 
-  job.run_job("/discussions", "GET", nil, function(data)
+  job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     if type(data.discussions) ~= "table" and type(data.unlinked_discussions) ~= "table" then
       vim.notify("No discussions or notes for this MR", vim.log.levels.WARN)
       return

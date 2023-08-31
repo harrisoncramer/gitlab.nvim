@@ -5,7 +5,6 @@ local Popup           = require("nui.popup")
 local state           = require("gitlab.state")
 local job             = require("gitlab.job")
 local u               = require("gitlab.utils")
-local reviewer        = require("gitlab.reviewer")
 local M               = {}
 
 local note_popup      = Popup(u.create_popup_state("Note", "40%", "60%"))
@@ -21,7 +20,6 @@ end
 -- This function (settings.popup.perform_action) will send the note to the Go server
 M.confirm_create_note = function(text)
   local jsonTable = { note = text }
-  P(jsonTable)
   local json = vim.json.encode(jsonTable)
   job.run_job("/note", "POST", json, function(data)
     vim.notify("Note created")

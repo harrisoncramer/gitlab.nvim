@@ -105,6 +105,9 @@ end
 
 M.merge = function(defaults, overrides)
   local result = {}
+  if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
+    return overrides
+  end
 
   for key, value in pairs(defaults) do
     if type(value) == "table" then
@@ -164,6 +167,12 @@ M.join_tables = function(table1, table2)
   end
 
   return table1
+end
+
+M.table_size = function(t)
+  local count = 0
+  for _ in pairs(t) do count = count + 1 end
+  return count
 end
 
 M.contains = function(array, search_value)

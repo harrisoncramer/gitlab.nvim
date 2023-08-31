@@ -16,6 +16,7 @@ M.settings               = {
     perform_action = "<leader>s",
   },
   discussion_tree = {
+    blacklist = {},
     toggle = "<leader>d",
     jump_to_file = "o",
     jump_to_reviewer = "m",
@@ -28,7 +29,7 @@ M.settings               = {
     position = "left",
     size = "20%",
     resolved = '✓',
-    unresolved = ''
+    unresolved = '',
   },
   review_pane = {
     delta = {
