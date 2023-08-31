@@ -4,8 +4,6 @@
 local Popup        = require("nui.popup")
 local Menu         = require("nui.menu")
 local NuiTree      = require("nui.tree")
--- local NuiSplit     = require("nui.split")
-local NuiEvent     = require("nui.utils.autocmd").event
 local Layout       = require("nui.layout")
 local job          = require("gitlab.job")
 local u            = require("gitlab.utils")
@@ -50,8 +48,14 @@ M.set_tree_keymaps = function(tree, bufnr, can_jump)
   )
 
   if can_jump then
-    vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, M.jump_to_file, { buffer = bufnr })
-    vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer, M.jump_to_reviewer, { buffer = bufnr })
+    vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, function()
+      M.jump_to_file(tree)
+    end, { buffer = bufnr }
+    )
+    vim.keymap.set('n', state.settings.discussion_tree.jump_to_reviewer,
+      function() M.jump_to_reviewer(tree) end,
+      { buffer = bufnr }
+    )
   end
 end
 
@@ -74,15 +78,6 @@ M.toggle           = function()
 
   state.discussion_buf = layout.bufnr
 
-  -- vim.api.nvim_create_autocmd({ "QuitPre", "BufDelete", "BufUnload" }, {
-  --   buffer = top_popup.bufnr,
-  --   callback = function()
-  --     M.layout:unmount()
-  --     M.layout_visible = false
-  --   end,
-  --   desc = "Handles users who close the split in non-keybinding fashion",
-  -- })
-
   job.run_job("/discussions", "GET", nil, function(data)
     if type(data.discussions) ~= "table" then
       vim.notify("No discussions for this MR", vim.log.levels.WARN)
@@ -92,13 +87,13 @@ M.toggle           = function()
     local discussion_tree_nodes = M.add_discussions_to_table(data.discussions)
     local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions)
 
-    M.discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = top_popup.bufnr })
-    M.unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = bottom_popup.bufnr })
-    M.discussion_tree:render()
-    M.unlinked_discussion_tree:render()
+    local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = top_popup.bufnr })
+    local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = bottom_popup.bufnr })
+    discussion_tree:render()
+    unlinked_discussion_tree:render()
 
-    M.set_tree_keymaps(M.discussion_tree, top_popup.bufnr, true)
-    M.set_tree_keymaps(M.unlinked_discussion_tree, bottom_popup.bufnr, false)
+    M.set_tree_keymaps(discussion_tree, top_popup.bufnr, true)
+    M.set_tree_keymaps(unlinked_discussion_tree, bottom_popup.bufnr, false)
 
     vim.api.nvim_buf_set_option(top_popup.bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_option(bottom_popup.bufnr, 'filetype', 'markdown')
@@ -270,8 +265,8 @@ M.toggle_resolved  = function(tree)
 end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
-M.jump_to_reviewer = function()
-  local file_name, new_line, old_line, error = M.get_note_location()
+M.jump_to_reviewer = function(tree)
+  local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
     return
@@ -280,8 +275,8 @@ M.jump_to_reviewer = function()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
-M.jump_to_file     = function()
-  local file_name, new_line, old_line, error = M.get_note_location()
+M.jump_to_file     = function(tree)
+  local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
     return
@@ -363,7 +358,6 @@ M.redraw_text              = function(tree, text)
 end
 
 M.get_root_node            = function(tree, node)
-  P(node)
   if (not node.is_root) then
     local parent_id = node:get_parent_id()
     return M.get_root_node(tree, tree:get_node(parent_id))
@@ -510,10 +504,10 @@ M.add_discussions_to_table = function(items)
   return t
 end
 
-M.get_note_location        = function()
-  local node = M.discussion_tree:get_node()
+M.get_note_location        = function(tree)
+  local node = tree:get_node()
   if node == nil then return nil, nil, nil, "Could not get node" end
-  local discussion_node = M.get_root_node(node)
+  local discussion_node = M.get_root_node(tree, node)
   if discussion_node == nil then return nil, nil, nil, "Could not get discussion node" end
   return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line
 end
