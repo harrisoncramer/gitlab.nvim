@@ -18,8 +18,10 @@ local M            = {
   layout_visible = false,
   layout = nil,
   layout_buf = nil,
-  discussion_tree = nil,
-  unlinked_discussion_tree = nil,
+  discussions = {},
+  unlinked_discussions = {},
+  linked_section_bufnr = -1,
+  unlinked_section_bufnr = -1,
 }
 
 -- Opens the discussion tree, sets the keybindings. It also
@@ -32,6 +34,8 @@ M.toggle           = function()
   end
 
   local linked_section, unlinked_section, layout = M.create_layout()
+  M.linked_section_bufnr = linked_section.bufnr
+  M.unlinked_section_bufnr = unlinked_section.bufnr
 
   job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     if type(data.discussions) ~= "table" and type(data.unlinked_discussions) ~= "table" then
@@ -47,21 +51,11 @@ M.toggle           = function()
     M.layout_buf = layout.bufnr
     state.discussion_buf = layout.bufnr
 
-    if type(data.discussions) == "table" then
-      local discussion_tree_nodes = M.add_discussions_to_table(data.discussions)
-      local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
-      discussion_tree:render()
-      M.set_tree_keymaps(discussion_tree, linked_section.bufnr, true)
-      M.discussion_tree = discussion_tree
-    end
+    M.discussions = data.discussions
+    M.unlinked_discussions = data.unlinked_discussions
 
-    if type(data.unlinked_discussions) == "table" then
-      local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions)
-      local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
-      unlinked_discussion_tree:render()
-      M.set_tree_keymaps(unlinked_discussion_tree, unlinked_section.bufnr, false)
-      M.unlinked_discussion_tree = unlinked_discussion_tree
-    end
+    if type(data.discussions) == "table" then M.rebuild_discussion_tree() end
+    if type(data.unlinked_discussions) == "table" then M.rebuild_unlinked_discussion_tree() end
 
     M.add_empty_titles({
       { linked_section.bufnr,   data.discussions,          "No Discussions for this MR" },
@@ -84,7 +78,8 @@ M.send_reply       = function(tree, discussion_id)
   return function(text)
     local body = { discussion_id = discussion_id, reply = text }
     job.run_job("/reply", "POST", body, function(data)
-      M.add_note_to_tree(tree, data.note, discussion_id)
+      vim.notify("Sent reply!", vim.log.levels.INFO)
+      M.add_reply_to_tree(tree, data.note, discussion_id)
     end)
   end
 end
@@ -145,19 +140,12 @@ M.send_deletion    = function(tree, item)
       elseif #note_ids == 0 then
         tree:remove_node("-" .. note_id) -- Discussion has no children, safe to remove
       else
-        local first_child_id = note_ids[1]
-        local first_child = tree.nodes.by_id["-" .. first_child_id]
-        tree.nodes.by_id["-" .. note_id] = first_child -- Otherwise, Make first child new discussion root
+        -- TODO: How to handle replacing node when root comment is deleted?
       end
 
       tree:render()
     end)
   end
-end
-
-M.add_discussion   = function(arg)
-  P(arg)
-  local tree = arg.unlinked and M.unlinked_discussion_tree or M.discussion_tree
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
@@ -262,7 +250,40 @@ end
 -- 🌲 Helper Functions
 --
 
-M.create_layout    = function()
+M.rebuild_discussion_tree          = function()
+  local discussion_tree_nodes = M.add_discussions_to_table(M.discussions)
+  local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section_bufnr })
+  discussion_tree:render()
+  M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, true)
+  M.discussion_tree = discussion_tree
+end
+
+M.rebuild_unlinked_discussion_tree = function()
+  local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions)
+  local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section_bufnr })
+  unlinked_discussion_tree:render()
+  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, false)
+  M.unlinked_discussion_tree = unlinked_discussion_tree
+end
+
+M.add_discussion                   = function(arg)
+  local discussion = arg.data.discussion
+  if arg.unlinked then
+    table.insert(M.unlinked_discussions, 1, discussion)
+    local bufinfo = vim.fn.getbufinfo(M.unlinked_section_bufnr)
+    if u.table_size(bufinfo) ~= 0 then
+      M.rebuild_unlinked_discussion_tree()
+    end
+    return
+  end
+  table.insert(M.discussions, 1, discussion)
+  local bufinfo = vim.fn.getbufinfo(M.unlinked_section_bufnr)
+  if u.table_size(bufinfo) ~= 0 then
+    M.rebuild_discussion_tree()
+  end
+end
+
+M.create_layout                    = function()
   local linked_section   = Split({ enter = true })
   local unlinked_section = Split({})
 
@@ -287,7 +308,7 @@ M.create_layout    = function()
   return linked_section, unlinked_section, layout
 end
 
-M.add_empty_titles = function(args)
+M.add_empty_titles                 = function(args)
   local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
   vim.cmd("highlight default TitleHighlight guifg=#787878")
   for _, section in ipairs(args) do
@@ -302,7 +323,7 @@ M.add_empty_titles = function(args)
   end
 end
 
-M.set_tree_keymaps = function(tree, bufnr, can_jump)
+M.set_tree_keymaps                 = function(tree, bufnr, can_jump)
   vim.keymap.set('n',
     state.settings.discussion_tree.edit_comment,
     function() M.edit_comment(tree) end,
@@ -342,7 +363,7 @@ M.set_tree_keymaps = function(tree, bufnr, can_jump)
 end
 
 
-M.redraw_resolved_status   = function(tree, note, mark_resolved)
+M.redraw_resolved_status = function(tree, note, mark_resolved)
   local current_text = tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and 'resolved' or 'unresolved'
   local current = mark_resolved and 'unresolved' or 'resolved'
@@ -370,7 +391,7 @@ M.redraw_resolved_status   = function(tree, note, mark_resolved)
   tree:render()
 end
 
-M.redraw_text              = function(tree, text)
+M.redraw_text            = function(tree, text)
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
 
@@ -388,7 +409,7 @@ M.redraw_text              = function(tree, text)
   tree:render()
 end
 
-M.get_root_node            = function(tree, node)
+M.get_root_node          = function(tree, node)
   if (not node.is_root) then
     local parent_id = node:get_parent_id()
     return M.get_root_node(tree, tree:get_node(parent_id))
@@ -397,7 +418,7 @@ M.get_root_node            = function(tree, node)
   end
 end
 
-M.get_note_node            = function(tree, node)
+M.get_note_node          = function(tree, node)
   if (not node.is_note) then
     local parent_id = node:get_parent_id()
     if parent_id == nil then return node end
@@ -407,11 +428,11 @@ M.get_note_node            = function(tree, node)
   end
 end
 
-local attach_uuid          = function(str)
+local attach_uuid        = function(str)
   return { text = str, id = u.uuid() }
 end
 
-M.build_note_body          = function(note, resolve_info)
+M.build_note_body        = function(note, resolve_info)
   local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
     local line = attach_uuid(bodyLine)
@@ -435,7 +456,7 @@ M.build_note_body          = function(note, resolve_info)
   return noteHeader, text_nodes
 end
 
-M.build_note               = function(note, resolve_info)
+M.build_note             = function(note, resolve_info)
   local text, text_nodes = M.build_note_body(note, resolve_info)
   local note_node = NuiTree.Node({
     text = text,
@@ -449,13 +470,13 @@ M.build_note               = function(note, resolve_info)
   return note_node, text, text_nodes
 end
 
-M.add_note_to_tree         = function(tree, note, discussion_id)
+M.add_reply_to_tree      = function(tree, note, discussion_id)
   local note_node = M.build_note(note)
   note_node:expand()
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
-  vim.notify("Sent reply!", vim.log.levels.INFO)
 end
+
 
 M.add_discussions_to_table = function(items)
   local t = {}

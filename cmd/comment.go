@@ -36,8 +36,8 @@ type EditCommentRequest struct {
 
 type CommentResponse struct {
 	SuccessResponse
-	Comment      *gitlab.Note `json:"note"`
-	DiscussionId string       `json:"discussion_id"`
+	Comment    *gitlab.Note       `json:"note"`
+	Discussion *gitlab.Discussion `json:"discussion"`
 }
 
 func CommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -139,8 +139,8 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 			Message: "Comment updated succesfully",
 			Status:  http.StatusOK,
 		},
-		Comment:      discussion.Notes[0],
-		DiscussionId: discussion.ID,
+		Comment:    discussion.Notes[0],
+		Discussion: discussion,
 	}
 
 	json.NewEncoder(w).Encode(response)

@@ -32,7 +32,6 @@ func (d SortableDiscussions) Less(i int, j int) bool {
 	iTime := d[i].Notes[len(d[i].Notes)-1].CreatedAt
 	jTime := d[j].Notes[len(d[j].Notes)-1].CreatedAt
 	return iTime.After(*jTime)
-
 }
 
 func (n SortableDiscussions) Swap(i, j int) {

@@ -32,7 +32,7 @@ M.confirm_create_comment = function(text, unlinked)
   if unlinked then
     local body = { comment = text }
     job.run_job("/comment", "POST", body, function(data)
-      discussions.add_discussion({ data = data, text = text, unlinked = true })
+      discussions.add_discussion({ data = data, unlinked = true })
     end)
     return
   end
@@ -72,7 +72,7 @@ M.confirm_create_comment = function(text, unlinked)
   }
 
   job.run_job("/comment", "POST", body, function(data)
-    discussions.add_discussion({ data = data, text = text, unlinked = false })
+    discussions.add_discussion({ data = data, unlinked = false })
   end)
 end
 
