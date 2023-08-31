@@ -104,6 +104,9 @@ M.create_layout    = function()
   local linked_section   = Popup({ enter = true })
   local unlinked_section = Popup({})
 
+  local position         = state.settings.discussion_tree.position
+  local size             = state.settings.discussion_tree.size
+
   local layout           = Layout({
     relative = state.settings.discussion_tree.relative,
     position = {
@@ -111,13 +114,13 @@ M.create_layout    = function()
       row = "100%",
     },
     size = {
-      width = (state.settings.discussion_tree.position == "left" and state.settings.discussion_tree.size or "100%"),
-      height = (state.settings.discussion_tree.position == "left" and "100%" or state.settings.discussion_tree.size),
+      width = (position == "left" and size or "100%"),
+      height = (position == "left" and "100%" or size),
     }
   }, Layout.Box({
     Layout.Box(linked_section, { size = "50%" }),
     Layout.Box(unlinked_section, { size = "50%" }),
-  }))
+  }, { dir = (position == "left" and "col" or "row") }))
 
   return linked_section, unlinked_section, layout
 end
