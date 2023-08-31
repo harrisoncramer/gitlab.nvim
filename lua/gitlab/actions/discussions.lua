@@ -123,7 +123,7 @@ M.delete_comment   = function(tree)
 end
 
 -- This function will actually send the deletion to Gitlab
--- when you make a selection
+-- when you make a selection, and re-render the tree
 M.send_deletion    = function(tree, item)
   if item.text == "Confirm" then
     local current_node = tree:get_node()
@@ -136,16 +136,18 @@ M.send_deletion    = function(tree, item)
 
     job.run_job("/comment", "DELETE", body, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
+      local note_ids = note_node:get_child_ids()
       if not note_node.is_root then
-        tree:remove_node("-" .. note_id)
-        tree:render()
+        tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
+      elseif #note_ids == 0 then
+        tree:remove_node("-" .. note_id) -- Discussion has no children, safe to remove
       else
-        -- We are removing the root node of the discussion,
-        -- we need to move all the children around, the easiest way
-        -- to do this is to just re-render the whole tree 🤷
-        M.refresh_tree()
-        note_node:expand()
+        local first_child_id = note_ids[1]
+        local first_child = tree.nodes.by_id["-" .. first_child_id]
+        tree.nodes.by_id["-" .. note_id] = first_child -- Otherwise, Make first child new discussion root
       end
+
+      tree:render()
     end)
   end
 end
@@ -445,30 +447,6 @@ M.add_note_to_tree         = function(tree, note, discussion_id)
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
   vim.notify("Sent reply!", vim.log.levels.INFO)
-end
-
--- TODO: Fix this function for multiple trees
-M.refresh_tree             = function()
-  job.run_job("/discussions", "GET", nil, function(data)
-    if type(data.discussions) ~= "table" then
-      vim.notify("No discussions for this MR")
-      return
-    end
-
-    if not M.layout_buf or (vim.fn.bufwinid(M.layout_buf) == -1) then return end
-
-    vim.api.nvim_buf_set_option(M.layout_buf, 'modifiable', true)
-    vim.api.nvim_buf_set_option(M.layout_buf, 'readonly', false)
-    vim.api.nvim_buf_set_lines(M.layout_buf, 0, -1, false, {})
-    vim.api.nvim_buf_set_option(M.layout_buf, 'readonly', true)
-    vim.api.nvim_buf_set_option(M.layout_buf, 'modifiable', false)
-
-    local tree_nodes = M.add_discussions_to_table(data.discussions)
-    M.discussion_tree = NuiTree({ nodes = tree_nodes, bufnr = M.layout_buf })
-    M.set_tree_keymaps()
-    M.discussion_tree:render()
-    vim.api.nvim_buf_set_option(M.layout_buf, 'filetype', 'markdown')
-  end)
 end
 
 M.add_discussions_to_table = function(items)
