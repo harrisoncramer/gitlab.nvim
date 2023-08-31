@@ -46,8 +46,8 @@ M.toggle           = function()
       return
     end
 
-    local discussion_tree_nodes = M.add_discussions_to_table(data.discussions)
-    local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions)
+    local discussion_tree_nodes = M.add_discussions_to_table(data.discussions or {})
+    local unlinked_discussion_tree_nodes = M.add_discussions_to_table(data.unlinked_discussions or {})
 
     local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = linked_section.bufnr })
     local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = unlinked_section.bufnr })
