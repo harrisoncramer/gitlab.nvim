@@ -79,9 +79,8 @@ end
 -- This function will send the reply to the Go API
 M.send_reply       = function(tree, discussion_id)
   return function(text)
-    local jsonTable = { discussion_id = discussion_id, reply = text }
-    local json = vim.json.encode(jsonTable)
-    job.run_job("/reply", "POST", json, function(data)
+    local body = { discussion_id = discussion_id, reply = text }
+    job.run_job("/reply", "POST", body, function(data)
       M.add_note_to_tree(tree, data.note, discussion_id)
     end)
   end
@@ -133,10 +132,9 @@ M.send_deletion    = function(tree, item)
     local root_node = M.get_root_node(tree, current_node)
     local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-    local jsonTable = { discussion_id = root_node.id, note_id = note_id }
-    local json = vim.json.encode(jsonTable)
+    local body = { discussion_id = root_node.id, note_id = note_id }
 
-    job.run_job("/comment", "DELETE", json, function(data)
+    job.run_job("/comment", "DELETE", body, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       if not note_node.is_root then
         tree:remove_node("-" .. note_id)
@@ -178,13 +176,12 @@ end
 -- This function sends the edited comment to the Go server
 M.send_edits       = function(tree, discussion_id, note_id)
   return function(text)
-    local json_table = {
+    local body = {
       discussion_id = discussion_id,
       note_id = note_id,
       comment = text
     }
-    local json = vim.json.encode(json_table)
-    job.run_job("/comment", "PATCH", json, function(data)
+    job.run_job("/comment", "PATCH", body, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
       M.redraw_text(tree, text)
     end)
@@ -196,14 +193,13 @@ M.toggle_resolved  = function(tree)
   local note = tree:get_node()
   if not note or not note.resolvable then return end
 
-  local json_table = {
+  local body = {
     discussion_id = note.id,
     note_id = note.root_note_id,
     resolved = not note.resolved,
   }
 
-  local json = vim.json.encode(json_table)
-  job.run_job("/comment", "PATCH", json, function(data)
+  job.run_job("/comment", "PATCH", body, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
   end)

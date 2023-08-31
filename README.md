@@ -92,6 +92,7 @@ require("gitlab").setup({
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
   },
   discussion_tree = { -- The discussion tree that holds all comments
+    blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
     jump_to_file = "o", -- Jump to comment location in file
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
     edit_comment = "e", -- Edit coment
@@ -104,7 +105,6 @@ require("gitlab").setup({
     relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
-    blacklist = nil, -- List of usernames to remove from tree (bots, CI, etc)
   },
   review_pane = { -- Specific settings for different reviewers
     delta = {

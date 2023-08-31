@@ -23,9 +23,8 @@ end
 M.confirm_create_comment = function(text, argTable)
   if argTable == nil then argTable = {} end
   if argTable.unlinked then
-    local jsonTable = { comment = text }
-    local json = vim.json.encode(jsonTable)
-    job.run_job("/note", "POST", json, function(data)
+    local body = { comment = text }
+    job.run_job("/note", "POST", body, function(data)
       vim.notify("Note created")
       discussions.refresh_tree()
     end)
@@ -55,7 +54,7 @@ M.confirm_create_comment = function(text, argTable)
   end
 
   local revision = state.MR_REVISIONS[1]
-  local jsonTable = {
+  local body = {
     comment = text,
     file_name = file_name,
     old_line = line_numbers.old_line,
@@ -66,9 +65,7 @@ M.confirm_create_comment = function(text, argTable)
     type = "modification"
   }
 
-  local json = vim.json.encode(jsonTable)
-
-  job.run_job("/comment", "POST", json, function(data)
+  job.run_job("/comment", "POST", body, function(data)
     vim.notify("Comment created")
     discussions.refresh_tree()
   end)

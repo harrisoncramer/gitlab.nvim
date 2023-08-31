@@ -17,7 +17,6 @@ M.settings               = {
   },
   discussion_tree = {
     blacklist = {},
-    toggle = "<leader>d",
     jump_to_file = "o",
     jump_to_reviewer = "m",
     edit_comment = "e",

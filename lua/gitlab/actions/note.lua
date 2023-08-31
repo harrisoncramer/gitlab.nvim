@@ -19,9 +19,8 @@ end
 
 -- This function (settings.popup.perform_action) will send the note to the Go server
 M.confirm_create_note = function(text)
-  local jsonTable = { note = text }
-  local json = vim.json.encode(jsonTable)
-  job.run_job("/note", "POST", json, function(data)
+  local body = { note = text }
+  job.run_job("/note", "POST", body, function(data)
     vim.notify("Note created")
   end)
 end
