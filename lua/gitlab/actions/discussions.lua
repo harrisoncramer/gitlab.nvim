@@ -57,10 +57,12 @@ M.toggle           = function()
     if type(data.discussions) == "table" then M.rebuild_discussion_tree() end
     if type(data.unlinked_discussions) == "table" then M.rebuild_unlinked_discussion_tree() end
 
+    M.switch_can_edit_bufs(true)
     M.add_empty_titles({
       { linked_section.bufnr,   data.discussions,          "No Discussions for this MR" },
       { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" }
     })
+    M.switch_can_edit_bufs(false)
   end)
 end
 
@@ -146,6 +148,12 @@ M.send_deletion    = function(tree, item, unlinked)
           M.rebuild_discussion_tree()
         end
       end
+      M.switch_can_edit_bufs(true)
+      M.add_empty_titles({
+        { M.linked_section_bufnr,   M.discussions,          "No Discussions for this MR" },
+        { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" }
+      })
+      M.switch_can_edit_bufs(false)
     end)
   end
 end
@@ -253,29 +261,32 @@ end
 --
 
 M.rebuild_discussion_tree          = function()
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'modifiable', true)
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "readonly", false)
+  M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.linked_section_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = M.add_discussions_to_table(M.discussions)
   local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section_bufnr })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, false)
   M.discussion_tree = discussion_tree
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'modifiable', false)
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "readonly", true)
+  M.switch_can_edit_bufs(false)
 end
 
 M.rebuild_unlinked_discussion_tree = function()
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'modifiable', true)
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "readonly", false)
+  M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.unlinked_section_bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions)
   local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section_bufnr })
   unlinked_discussion_tree:render()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'modifiable', false)
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "readonly", true)
+  M.switch_can_edit_bufs(false)
+end
+
+M.switch_can_edit_bufs             = function(bool)
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'modifiable', bool)
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "readonly", not bool)
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'modifiable', bool)
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "readonly", not bool)
 end
 
 M.add_discussion                   = function(arg)
@@ -327,8 +338,7 @@ M.add_empty_titles                 = function(args)
   vim.cmd("highlight default TitleHighlight guifg=#787878")
   for _, section in ipairs(args) do
     local bufnr, data, title = section[1], section[2], section[3]
-    if data == nil then
-      print(bufnr, title)
+    if type(data) ~= "table" or #data == 0 then
       vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { title })
       local linnr = 1
       vim.api.nvim_buf_set_extmark(bufnr, ns_id, linnr - 1, 0,
