@@ -159,7 +159,7 @@ M.send_deletion    = function(tree, item, unlinked)
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
-M.edit_comment     = function(tree)
+M.edit_comment     = function(tree, unlinked)
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)
@@ -178,11 +178,12 @@ M.edit_comment     = function(tree)
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-  state.set_popup_keymaps(edit_popup, M.send_edits(tree, tostring(root_node.id), note_node.root_note_id or note_node.id))
+  state.set_popup_keymaps(edit_popup,
+    M.send_edits(tree, tostring(root_node.id), note_node.root_note_id or note_node.id, unlinked))
 end
 
 -- This function sends the edited comment to the Go server
-M.send_edits       = function(tree, discussion_id, note_id)
+M.send_edits       = function(tree, discussion_id, note_id, unlinked)
   return function(text)
     local body = {
       discussion_id = discussion_id,
@@ -191,7 +192,13 @@ M.send_edits       = function(tree, discussion_id, note_id)
     }
     job.run_job("/comment", "PATCH", body, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
-      M.redraw_text(tree, text)
+      if unlinked then
+        M.unlinked_discussions = M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
+        M.rebuild_unlinked_discussion_tree()
+      else
+        M.discussions = M.replace_text(M.discussions, discussion_id, note_id, text)
+        M.rebuild_discussion_tree()
+      end
     end)
   end
 end
@@ -350,7 +357,7 @@ end
 M.set_tree_keymaps                 = function(tree, bufnr, unlinked)
   vim.keymap.set('n',
     state.settings.discussion_tree.edit_comment,
-    function() M.edit_comment(tree) end,
+    function() M.edit_comment(tree, unlinked) end,
     { buffer = bufnr }
   )
   vim.keymap.set('n',
@@ -365,7 +372,7 @@ M.set_tree_keymaps                 = function(tree, bufnr, unlinked)
   )
   vim.keymap.set('n',
     state.settings.discussion_tree.toggle_node,
-    function() M.toggle_node(tree) end,
+    function() M.toggle_node(tree, unlinked) end,
     { buffer = bufnr }
   )
   vim.keymap.set('n',
@@ -415,22 +422,17 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   tree:render()
 end
 
-M.redraw_text            = function(tree, text)
-  local current_node = tree:get_node()
-  local note_node = M.get_note_node(tree, current_node)
-
-  local childrenIds = note_node:get_child_ids()
-  for _, value in ipairs(childrenIds) do
-    tree:remove_node(value)
+M.replace_text           = function(data, discussion_id, note_id, text)
+  for i, discussion in ipairs(data) do
+    if discussion.id == discussion_id then
+      for j, note in ipairs(discussion.notes) do
+        if note.id == note_id then
+          data[i].notes[j].body = text
+          return data
+        end
+      end
+    end
   end
-
-  local newNoteTextNodes = {}
-  for bodyLine in text:gmatch("[^\n]+") do
-    table.insert(newNoteTextNodes, NuiTree.Node({ text = bodyLine, is_body = true }, {}))
-  end
-
-  tree:set_nodes(newNoteTextNodes, "-" .. note_node.id)
-  tree:render()
 end
 
 M.get_root_node          = function(tree, node)
