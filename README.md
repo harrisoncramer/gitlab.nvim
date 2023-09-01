@@ -10,7 +10,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 
 And a lot more!
 
-https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43-8d2f-489df0745822
+https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/ab5a8597-32fa-4a28-a7d2-098bae8d3d19
 
 ## Requirements
 
