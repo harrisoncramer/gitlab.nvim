@@ -209,7 +209,6 @@ vim.keymap.set("n", "<leader>glaa", gitlab.add_assignee)
 vim.keymap.set("n", "<leader>glad", gitlab.delete_assignee)
 vim.keymap.set("n", "<leader>glra", gitlab.add_reviewer)
 vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
-vim.keymap.set("n", "<leader>gl", gitlab.delete_reviewer)
 ```
 
 ## Troubleshooting
