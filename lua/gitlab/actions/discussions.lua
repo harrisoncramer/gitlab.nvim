@@ -85,7 +85,7 @@ M.send_reply       = function(tree, discussion_id)
 end
 
 -- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
-M.delete_comment   = function(tree)
+M.delete_comment   = function(tree, unlinked)
   local menu = Menu({
     position = "50%",
     size = {
@@ -114,7 +114,7 @@ M.delete_comment   = function(tree)
       submit = state.settings.dialogue.submit,
     },
     on_submit = function(item)
-      M.send_deletion(tree, item)
+      M.send_deletion(tree, item, unlinked)
     end
   })
   menu:mount()
@@ -122,7 +122,7 @@ end
 
 -- This function will actually send the deletion to Gitlab
 -- when you make a selection, and re-render the tree
-M.send_deletion    = function(tree, item)
+M.send_deletion    = function(tree, item, unlinked)
   if item.text == "Confirm" then
     local current_node = tree:get_node()
 
@@ -134,16 +134,18 @@ M.send_deletion    = function(tree, item)
 
     job.run_job("/comment", "DELETE", body, function(data)
       vim.notify(data.message, vim.log.levels.INFO)
-      local note_ids = note_node:get_child_ids()
       if not note_node.is_root then
         tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
-      elseif #note_ids == 0 then
-        tree:remove_node("-" .. note_id) -- Discussion has no children, safe to remove
+        tree:render()
       else
-        -- TODO: How to handle replacing node when root comment is deleted?
+        if unlinked then
+          M.unlinked_discussions = u.remove_first_value(M.unlinked_discussions)
+          M.rebuild_unlinked_discussion_tree()
+        else
+          M.discussions = u.remove_first_value(M.discussions)
+          M.rebuild_discussion_tree()
+        end
       end
-
-      tree:render()
     end)
   end
 end
@@ -251,24 +253,35 @@ end
 --
 
 M.rebuild_discussion_tree          = function()
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'modifiable', true)
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "readonly", false)
+  vim.api.nvim_buf_set_lines(M.linked_section_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = M.add_discussions_to_table(M.discussions)
   local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section_bufnr })
   discussion_tree:render()
-  M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, true)
+  M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, false)
   M.discussion_tree = discussion_tree
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'modifiable', false)
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "readonly", true)
 end
 
 M.rebuild_unlinked_discussion_tree = function()
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'modifiable', true)
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "readonly", false)
+  vim.api.nvim_buf_set_lines(M.unlinked_section_bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions)
   local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section_bufnr })
   unlinked_discussion_tree:render()
-  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, false)
+  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'modifiable', false)
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "readonly", true)
 end
 
 M.add_discussion                   = function(arg)
   local discussion = arg.data.discussion
   if arg.unlinked then
+    if type(M.unlinked_discussions) ~= "table" then M.unlinked_discussions = {} end
     table.insert(M.unlinked_discussions, 1, discussion)
     local bufinfo = vim.fn.getbufinfo(M.unlinked_section_bufnr)
     if u.table_size(bufinfo) ~= 0 then
@@ -276,6 +289,7 @@ M.add_discussion                   = function(arg)
     end
     return
   end
+  if type(M.discussions) ~= "table" then M.discussions = {} end
   table.insert(M.discussions, 1, discussion)
   local bufinfo = vim.fn.getbufinfo(M.unlinked_section_bufnr)
   if u.table_size(bufinfo) ~= 0 then
@@ -323,7 +337,7 @@ M.add_empty_titles                 = function(args)
   end
 end
 
-M.set_tree_keymaps                 = function(tree, bufnr, can_jump)
+M.set_tree_keymaps                 = function(tree, bufnr, unlinked)
   vim.keymap.set('n',
     state.settings.discussion_tree.edit_comment,
     function() M.edit_comment(tree) end,
@@ -331,7 +345,7 @@ M.set_tree_keymaps                 = function(tree, bufnr, can_jump)
   )
   vim.keymap.set('n',
     state.settings.discussion_tree.delete_comment,
-    function() M.delete_comment(tree) end,
+    function() M.delete_comment(tree, unlinked) end,
     { buffer = bufnr }
   )
   vim.keymap.set('n',
@@ -350,7 +364,7 @@ M.set_tree_keymaps                 = function(tree, bufnr, can_jump)
     { buffer = bufnr }
   )
 
-  if can_jump then
+  if not unlinked then
     vim.keymap.set('n', state.settings.discussion_tree.jump_to_file, function()
       M.jump_to_file(tree)
     end, { buffer = bufnr }

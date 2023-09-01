@@ -136,6 +136,15 @@ M.join = function(tbl, separator)
   return result
 end
 
+M.remove_first_value = function(tbl)
+  local sliced_table = {}
+  for i = 2, #tbl do
+    table.insert(sliced_table, tbl[i])
+  end
+
+  return sliced_table
+end
+
 M.read_file = function(file_path)
   local file = io.open(file_path, "r")
   if file == nil then
