@@ -49,14 +49,18 @@ M.format_date = function(date_string)
 
   local time_diff = current_date - date
 
+  local function pluralize(num, word)
+    return num .. string.format(" %s", word) .. (num > 1 and "s" or '') .. " ago"
+  end
+
   if time_diff < 60 then
-    return time_diff .. " seconds ago"
+    return pluralize(time_diff, "second")
   elseif time_diff < 3600 then
-    return math.floor(time_diff / 60) .. " minutes ago"
+    return pluralize(math.floor(time_diff / 60), "minute")
   elseif time_diff < 86400 then
-    return math.floor(time_diff / 3600) .. " hours ago"
+    return pluralize(math.floor(time_diff / 3600), "hour")
   elseif time_diff < 2592000 then
-    return math.floor(time_diff / 86400) .. " days ago"
+    return pluralize(math.floor(time_diff / 86400), "day")
   else
     local formatted_date = os.date("%A, %B %e", date)
     return formatted_date
