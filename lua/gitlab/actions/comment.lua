@@ -32,6 +32,7 @@ M.confirm_create_comment = function(text, unlinked)
   if unlinked then
     local body = { comment = text }
     job.run_job("/comment", "POST", body, function(data)
+      vim.notify("Note created!", vim.log.levels.INFO)
       discussions.add_discussion({ data = data, unlinked = true })
     end)
     return
@@ -72,6 +73,7 @@ M.confirm_create_comment = function(text, unlinked)
   }
 
   job.run_job("/comment", "POST", body, function(data)
+    vim.notify("Comment created!", vim.log.levels.INFO)
     discussions.add_discussion({ data = data, unlinked = false })
   end)
 end
