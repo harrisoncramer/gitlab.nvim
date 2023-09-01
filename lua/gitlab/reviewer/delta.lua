@@ -33,6 +33,7 @@ M.open                        = function()
 
   vim.fn.termopen(term_command) -- Calls delta and sends the output to the currently blank buffer
   M.bufnr = vim.api.nvim_get_current_buf()
+  M.winnr = vim.api.nvim_get_current_win()
 end
 
 M.jump                        = function(file_name, new_line, old_line)
@@ -42,7 +43,7 @@ M.jump                        = function(file_name, new_line, old_line)
     return
   end
 
-  vim.api.nvim_command("wincmd w")
+  vim.api.nvim_set_current_win(M.winnr)
   u.jump_to_buffer(M.bufnr, linnr)
 end
 

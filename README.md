@@ -14,7 +14,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dfd3aa8a-6fc4-4e43
 
 ## Requirements
 
-- <a href="https://go.dev/">Go</a>
+- <a href="https://go.dev/">Go >= v1.19</a>
 - <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
 - <a href="https://github.com/dandavison/delta">delta</a>
 
@@ -92,6 +92,7 @@ require("gitlab").setup({
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
   },
   discussion_tree = { -- The discussion tree that holds all comments
+    blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
     jump_to_file = "o", -- Jump to comment location in file
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
     edit_comment = "e", -- Edit coment
@@ -158,6 +159,12 @@ require("gitlab").delete_comment()
 require("gitlab").edit_comment()
 require("gitlab").reply()
 require("gitlab").toggle_resolved()
+```
+
+If you'd like to create a note in an MR (like a comment, but not linked to a specific line) call the `create_note()` command. Similar commands are available on the note tree, which is visible next to the discussion tree for comments.
+
+```lua
+require("gitlab").create_note()
 ```
 
 You can approve or revoke approval for an MR:

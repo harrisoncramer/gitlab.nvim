@@ -21,9 +21,9 @@ function Async:init(cb)
   self.cb = cb
 end
 
-function Async:fetch(dependencies, i)
+function Async:fetch(dependencies, i, argTable)
   if i > #dependencies then
-    self:cb()
+    self.cb(argTable)
     return
   end
 
@@ -31,19 +31,19 @@ function Async:fetch(dependencies, i)
 
   -- Do not call endpoint unless refresh is required
   if state[dependency.state] ~= nil and not dependency.refresh then
-    self:fetch(dependencies, i + 1)
+    self:fetch(dependencies, i + 1, argTable)
     return
   end
 
   job.run_job(dependency.endpoint, "GET", dependency.body, function(data)
     state[dependency.state] = data[dependency.key]
-    self:fetch(dependencies, i + 1)
+    self:fetch(dependencies, i + 1, argTable)
   end)
 end
 
 -- Will call APIs in sequence and set global state
 M.sequence = function(dependencies, cb)
-  return function()
+  return function(argTable)
     local handler = Async:new()
     handler:init(cb)
 
@@ -53,13 +53,13 @@ M.sequence = function(dependencies, cb)
     end
 
     if state.go_server_running then
-      handler:fetch(dependencies, 1)
+      handler:fetch(dependencies, 1, argTable)
       return
     end
 
     server.start(function()
       state.go_server_running = true
-      handler:fetch(dependencies, 1)
+      handler:fetch(dependencies, 1, argTable)
     end)
   end
 end

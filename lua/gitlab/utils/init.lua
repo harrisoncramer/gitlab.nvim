@@ -105,6 +105,9 @@ end
 
 M.merge = function(defaults, overrides)
   local result = {}
+  if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
+    return overrides
+  end
 
   for key, value in pairs(defaults) do
     if type(value) == "table" then
@@ -131,6 +134,15 @@ M.join = function(tbl, separator)
   end
 
   return result
+end
+
+M.remove_first_value = function(tbl)
+  local sliced_table = {}
+  for i = 2, #tbl do
+    table.insert(sliced_table, tbl[i])
+  end
+
+  return sliced_table
 end
 
 M.read_file = function(file_path)
@@ -164,6 +176,12 @@ M.join_tables = function(table1, table2)
   end
 
   return table1
+end
+
+M.table_size = function(t)
+  local count = 0
+  for _ in pairs(t) do count = count + 1 end
+  return count
 end
 
 M.contains = function(array, search_value)

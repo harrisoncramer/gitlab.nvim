@@ -10,15 +10,33 @@ local reviewer           = require("gitlab.reviewer")
 local M                  = {}
 
 local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
+local note_popup         = Popup(u.create_popup_state("Note", "40%", "60%"))
 
 -- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
 M.create_comment         = function()
   comment_popup:mount()
-  state.set_popup_keymaps(comment_popup, M.confirm_create_comment)
+  state.set_popup_keymaps(comment_popup, function(text)
+    M.confirm_create_comment(text)
+  end)
+end
+
+M.create_note            = function()
+  note_popup:mount()
+  state.set_popup_keymaps(note_popup, function(text)
+    M.confirm_create_comment(text, true)
+  end)
 end
 
 -- This function (settings.popup.perform_action) will send the comment to the Go server
-M.confirm_create_comment = function(text)
+M.confirm_create_comment = function(text, unlinked)
+  if unlinked then
+    local body = { comment = text }
+    job.run_job("/comment", "POST", body, function(data)
+      discussions.add_discussion({ data = data, unlinked = true })
+    end)
+    return
+  end
+
   local file_name, line_numbers, error = reviewer.get_location()
 
   if error then
@@ -42,7 +60,7 @@ M.confirm_create_comment = function(text)
   end
 
   local revision = state.MR_REVISIONS[1]
-  local jsonTable = {
+  local body = {
     comment = text,
     file_name = file_name,
     old_line = line_numbers.old_line,
@@ -53,11 +71,8 @@ M.confirm_create_comment = function(text)
     type = "modification"
   }
 
-  local json = vim.json.encode(jsonTable)
-
-  job.run_job("/comment", "POST", json, function(data)
-    vim.notify("Comment created")
-    discussions.refresh_tree()
+  job.run_job("/comment", "POST", body, function(data)
+    discussions.add_discussion({ data = data, unlinked = false })
   end)
 end
 
