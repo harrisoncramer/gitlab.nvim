@@ -44,14 +44,14 @@ end
 
 M.retrigger    = function()
   local body = { pipeline_id = state.INFO.pipeline.id }
-  if state.INFO.pipeline.status == 'success' then
-    vim.notify("Pipeline has already passed!", vim.log.levels.WARN)
+  if state.INFO.pipeline.status ~= 'failed' then
+    vim.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
     return
   end
 
   job.run_job("/pipeline", "POST", body, function(data)
     vim.notify("Pipeline re-triggered!", vim.log.levels.INFO)
-    state.INFO.pipeline = data.pipeline
+    state.INFO.pipeline = data.Pipeline
   end)
 end
 
