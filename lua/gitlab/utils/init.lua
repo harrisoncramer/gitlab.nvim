@@ -258,4 +258,9 @@ M.get_win_from_buf = function(bufnr)
   end
 end
 
+M.switch_can_edit_buf = function(buf, bool)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', bool)
+  vim.api.nvim_buf_set_option(buf, "readonly", not bool)
+end
+
 return M

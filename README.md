@@ -119,6 +119,44 @@ require("gitlab").setup({
     close = { "<Esc>", "<C-c>" },
     submit = { "<CR>", "<Space>" },
   },
+  pipeline = {
+    created = {
+      symbol = "",
+      color = '#FFFF00',
+    },
+    pending = {
+      symbol = "",
+      color = '#FFFF00',
+    },
+    preparing = {
+      symbol = "",
+      color = '#FFFF00',
+    },
+    scheduled = {
+      symbol = "",
+      color = '#FFFF00',
+    },
+    running = {
+      symbol = "ﰌ",
+      color = '#FFFF00',
+    },
+    canceled = {
+      symbol = "ﰸ",
+      color = '#FFFF00',
+    },
+    skipped = {
+      symbol = "ﰸ",
+      color = '#FFFF00',
+    },
+    success = {
+      symbol = "✓",
+      color = '#00FF00',
+    },
+    failed = {
+      symbol = "",
+      color = '#FF0000',
+    },
+  },
 })
 ```
 
@@ -174,6 +212,12 @@ require("gitlab").approve()
 require("gitlab").revoke()
 ```
 
+You can view the status of the pipeline for the current MR. To re-trigger failed jobs in the pipeline manually, use your `settings.popup.perform_action` keybinding:
+
+```lua
+require("gitlab").pipeline()
+```
+
 The `add_reviewer` and `delete_reviewer` commands, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
 
 ```lua
@@ -209,6 +253,7 @@ vim.keymap.set("n", "<leader>glaa", gitlab.add_assignee)
 vim.keymap.set("n", "<leader>glad", gitlab.delete_assignee)
 vim.keymap.set("n", "<leader>glra", gitlab.add_reviewer)
 vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
+vim.keymap.set("n", "<leader>glp", gitlab.pipeline)
 ```
 
 ## Troubleshooting
