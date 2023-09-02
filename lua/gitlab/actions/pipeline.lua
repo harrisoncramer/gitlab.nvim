@@ -27,7 +27,7 @@ M.open         = function()
   local lines = {}
 
   u.switch_can_edit_buf(bufnr, true)
-  table.insert(lines, string.format("Status: %s (%s)", state.settings.pipeline[pipeline.status].symbol, pipeline.status))
+  table.insert(lines, string.format("Status: %s (%s)", state.settings.pipeline[pipeline.status], pipeline.status))
   table.insert(lines, "")
   table.insert(lines, string.format("Last Run: %s", u.format_date(pipeline.created_at)))
   table.insert(lines, string.format("Url: %s", pipeline.web_url))
@@ -57,11 +57,23 @@ end
 
 M.color_status = function(status, bufnr, status_line)
   local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
-  vim.cmd(string.format("highlight default StatusHighlight guifg=%s", state.settings.pipeline[status].color))
+  vim.cmd(string.format("highlight default StatusHighlight guifg=%s", state.settings.pipeline[status]))
+
+  local status_to_color_map = {
+    created = 'DiagnosticWarn',
+    pending = 'DiagnosticWarn',
+    preparing = 'DiagnosticWarn',
+    scheduled = 'DiagnosticWarn',
+    running = 'DiagnosticWarn',
+    canceled = 'DiagnosticWarn',
+    skipped = 'DiagnosticWarn',
+    failed = 'DiagnosticError',
+    success = 'DiagnosticOK',
+  }
 
   local linnr = 1
   vim.api.nvim_buf_set_extmark(bufnr, ns_id, linnr - 1, 0,
-    { end_row = linnr - 1, end_col = string.len(status_line), hl_group = 'StatusHighlight' })
+    { end_row = linnr - 1, end_col = string.len(status_line), hl_group = status_to_color_map[status] })
 end
 
 return M

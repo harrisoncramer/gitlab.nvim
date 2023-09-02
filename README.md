@@ -120,42 +120,15 @@ require("gitlab").setup({
     submit = { "<CR>", "<Space>" },
   },
   pipeline = {
-    created = {
-      symbol = "",
-      color = '#FFFF00',
-    },
-    pending = {
-      symbol = "",
-      color = '#FFFF00',
-    },
-    preparing = {
-      symbol = "",
-      color = '#FFFF00',
-    },
-    scheduled = {
-      symbol = "",
-      color = '#FFFF00',
-    },
-    running = {
-      symbol = "ﰌ",
-      color = '#FFFF00',
-    },
-    canceled = {
-      symbol = "ﰸ",
-      color = '#FFFF00',
-    },
-    skipped = {
-      symbol = "ﰸ",
-      color = '#FFFF00',
-    },
-    success = {
-      symbol = "✓",
-      color = '#00FF00',
-    },
-    failed = {
-      symbol = "",
-      color = '#FF0000',
-    },
+    created = "",
+    pending = "",
+    preparing = "",
+    scheduled = "",
+    running = "ﰌ",
+    canceled = "ﰸ",
+    skipped = "ﰸ",
+    success = "✓",
+    failed = "",
   },
 })
 ```
