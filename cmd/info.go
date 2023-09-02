@@ -56,6 +56,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 
 	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
 		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}

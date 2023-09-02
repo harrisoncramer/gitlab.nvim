@@ -22,6 +22,7 @@ func DescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
+		w.Header().Set("Allow", http.MethodPut)
 		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}

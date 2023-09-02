@@ -263,4 +263,12 @@ M.switch_can_edit_buf = function(buf, bool)
   vim.api.nvim_buf_set_option(buf, "readonly", not bool)
 end
 
+M.reverse = function(list)
+  local rev = {}
+  for i = #list, 1, -1 do
+    rev[#rev + 1] = list[i]
+  end
+  return rev
+end
+
 return M

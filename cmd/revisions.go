@@ -18,6 +18,7 @@ func RevisionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
 		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
