@@ -107,7 +107,7 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
   },
-  review_pane = { -- Specific settings for different reviewers
+  review_pane = { -- Specific settings for different reviewers, only delta currently supported
     delta = {
       added_file = "", -- The symbol to show next to added files
       modified_file = "", -- The symbol to show next to modified files
@@ -144,13 +144,13 @@ git checkout feature-branch
 
 Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
 
-The `summary` command will pull down the MR description into a buffer so that you can read it. To edit the description, edit the buffer and press the `perform_action` keybinding when in normal mode (it's `<leader>s` by default):
+The `summary` action will pull down the MR description into a buffer so that you can read it. To edit the description, use the `settings.popup.perform_action` keybinding.
 
 ```lua
 require("gitlab").summary()
 ```
 
- The `review` command will open up view of all the changes that have been made in this MR compared to the target branch in a review pane. You can leave comments on the changes.
+The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action.
 
 ```lua
 require("gitlab").review()
@@ -161,21 +161,17 @@ require("gitlab").create_comment()
 
 Gitlab groups threads of comments together into "discussions." 
 
-To display discussions for the current MR, use the `toggle_discussions()` command, which will show the discussions in a split window. 
-
-You can jump to the comment's location the reviewer window by using the `m` key, or the actual file with the 'j' key, when hovering over the line in the tree. 
-
-Within the discussion tree, you can delete/edit/reply to comments, or toggle them as resolved or not.
+To display all discussions for the current MR, use the `toggle_discussions` action, which will show the discussions in a split window. 
 
 ```lua
 require("gitlab").toggle_discussions()
-require("gitlab").delete_comment()
-require("gitlab").edit_comment()
-require("gitlab").reply()
-require("gitlab").toggle_resolved()
 ```
 
-If you'd like to create a note in an MR (like a comment, but not linked to a specific line) call the `create_note()` command. Similar commands are available on the note tree, which is visible next to the discussion tree for comments.
+You can jump to the comment's location in the reviewer window by using the `state.settings.discussion_tree.jump_to_reviewer` key, or the actual file with the 'state.settings.discussion_tree.jump_to_file' key.
+
+Within the discussion tree, you can delete/edit/reply to comments with the `state.settings.discussion_tree.delete_comment` `state.settings.discussion_tree.edit_comment` and `state.settings.discussion_tree.reply` keys, and toggle them as resolved with the `state.settings.discussion_tree.toggle_resolved` key.
+
+If you'd like to create a note in an MR (like a comment, but not linked to a specific line) use the `create_note` action. The same keybindings for delete/edit/reply are available on the note tree.
 
 ```lua
 require("gitlab").create_note()
@@ -183,7 +179,7 @@ require("gitlab").create_note()
 
 ### MR Approvals
 
-You can approve or revoke approval for an MR:
+You can approve or revoke approval for an MR with the `approve` and `revoke` actions respectively.
 
 ```lua
 require("gitlab").approve()
@@ -192,17 +188,17 @@ require("gitlab").revoke()
 
 ### Pipelines
 
-You can view the status of the pipeline for the current MR. 
+You can view the status of the pipeline for the current MR with the `pipeline` action.
 
 ```lua
 require("gitlab").pipeline()
 ```
 
-To re-trigger failed jobs in the pipeline manually, use your `settings.popup.perform_action` keybinding. To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action` keybinding.
+To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding. To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action` keybinding.
 
 ### Reviewers and Assignees
 
-The `add_reviewer` and `delete_reviewer` commands, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
+The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
 
 ```lua
 require("gitlab").add_reviewer()
@@ -211,7 +207,7 @@ require("gitlab").add_assignee()
 require("gitlab").delete_assignee()
 ```
 
-These commands use Neovim's built in picker, which is much nicer if you install <a href="https://github.com/stevearc/dressing.nvim">dressing</a>. If you use Dressing, please enable it:
+These actions use Neovim's built in picker, which is much nicer if you install <a href="https://github.com/stevearc/dressing.nvim">dressing</a>. If you use Dressing, please enable it:
 
 ```lua
 require("dressing").setup({
@@ -257,9 +253,9 @@ You can directly interact with the Go server like any other process:
 curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
 ```
 
-This is the API call that is happening from within Neovim when you run the `summary` command.
+This is the API call that is happening from within Neovim when you run the `summary` action.
 
-If you are able to build and start the Go server and hit the endpoint successfully for the command you are trying to run (such as creating a comment or approving a merge request) then something is wrong with the Lua code. In that case, please file a bug report.
+If you are able to build and start the Go server and hit the endpoint successfully for the action you are trying to run (such as creating a comment or approving a merge request) then something is wrong with the Lua code. In that case, please file a bug report.
 
 This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab. 
 
