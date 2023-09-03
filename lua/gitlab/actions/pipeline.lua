@@ -54,7 +54,7 @@ M.open         = function()
       end
 
       pipeline_popup.border:set_text("top", "Pipeline Status", "center")
-      state.set_popup_keymaps(pipeline_popup, M.retrigger)
+      state.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
       u.switch_can_edit_buf(bufnr, false)
     end)
   end)
@@ -71,6 +71,10 @@ M.retrigger    = function()
     vim.notify("Pipeline re-triggered!", vim.log.levels.INFO)
     state.INFO.pipeline = data.Pipeline
   end)
+end
+
+M.see_logs     = function()
+  vim.notify("Logs", vim.log.levels.INFO)
 end
 
 M.color_status = function(status, bufnr, status_line, linnr)

@@ -14,6 +14,7 @@ M.settings               = {
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
+    perform_linewise_action = "<leader>l",
   },
   discussion_tree = {
     blacklist = {},
@@ -110,13 +111,22 @@ local function exit(popup)
 end
 
 -- These keymaps are buffer specific and are set dynamically when popups mount
-M.set_popup_keymaps = function(popup, action)
+M.set_popup_keymaps = function(popup, action, linewise_action)
   vim.keymap.set('n', M.settings.popup.exit, function() exit(popup) end, { buffer = true })
   if action ~= nil then
     vim.keymap.set('n', M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
       exit(popup)
       action(text)
+    end, { buffer = true })
+  end
+
+  if linewise_action ~= nil then
+    vim.keymap.set('n', M.settings.popup.perform_linewise_action, function()
+      local bufnr = vim.api.nvim_get_current_buf()
+      local linnr = vim.api.nvim_win_get_cursor(0)[1]
+      local text = u.get_line_content(bufnr, linnr)
+      linewise_action(text)
     end, { buffer = true })
   end
 end
