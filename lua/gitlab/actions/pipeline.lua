@@ -5,7 +5,10 @@ local Popup    = require("nui.popup")
 local state    = require("gitlab.state")
 local job      = require("gitlab.job")
 local u        = require("gitlab.utils")
-local M        = {}
+local M        = {
+  pipeline_jobs = nil,
+  pipeline_popup = nil
+}
 
 -- The function will render the Pipeline state in a popup
 M.open         = function()
@@ -19,11 +22,13 @@ M.open         = function()
   local body = { pipeline_id = state.INFO.pipeline.id }
   job.run_job("/pipeline", "GET", body, function(data)
     local pipeline_jobs = u.reverse(type(data.Jobs) == "table" and data.Jobs or {})
+    M.pipeline_jobs = pipeline_jobs
 
     local width = string.len(pipeline.web_url) + 10
     local height = 6 + #pipeline_jobs + 3
 
     local pipeline_popup = Popup(u.create_popup_state("Loading Pipeline...", width, height))
+    M.pipeline_popup = pipeline_popup
     pipeline_popup:mount()
 
     local bufnr = vim.api.nvim_get_current_buf()
@@ -54,7 +59,7 @@ M.open         = function()
       end
 
       pipeline_popup.border:set_text("top", "Pipeline Status", "center")
-      state.set_popup_keymaps(pipeline_popup, M.retrigger)
+      state.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
       u.switch_can_edit_buf(bufnr, false)
     end)
   end)
@@ -70,6 +75,59 @@ M.retrigger    = function()
   job.run_job("/pipeline", "POST", body, function(data)
     vim.notify("Pipeline re-triggered!", vim.log.levels.INFO)
     state.INFO.pipeline = data.Pipeline
+  end)
+end
+
+M.see_logs     = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local linnr = vim.api.nvim_win_get_cursor(0)[1]
+  local text = u.get_line_content(bufnr, linnr)
+  local last_word = u.get_last_chunk(text)
+  if last_word == nil then
+    vim.notify("Cannot find job name", vim.log.levels.ERROR)
+    return
+  end
+
+  local j = nil
+  for _, pipeline_job in ipairs(M.pipeline_jobs) do
+    if pipeline_job.name == last_word then j = pipeline_job end
+  end
+
+  if j == nil then
+    vim.notify("Cannot find job in state", vim.log.levels.ERROR)
+    return
+  end
+
+  local body = { job_id = j.id }
+  job.run_job("/job", "GET", body, function(data)
+    local file = data.file
+    if file == "" then
+      vim.notify("Log trace is empty", vim.log.levels.WARN)
+      return
+    end
+
+    local lines = {}
+    for line in file:gmatch("[^\n]+") do
+      table.insert(lines, line)
+    end
+
+    if #lines == 0 then
+      vim.notify("Log trace lines could not be parsed", vim.log.levels.ERROR)
+      return
+    end
+
+    M.pipeline_popup:unmount()
+    vim.cmd.enew()
+
+    bufnr = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+    local job_file_path = string.format("/tmp/gitlab.nvim.job-%d", j.id)
+    vim.cmd("w! " .. job_file_path)
+    vim.cmd.bd()
+
+    vim.cmd.enew()
+    vim.cmd("term cat " .. job_file_path)
   end)
 end
 
