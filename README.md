@@ -90,7 +90,7 @@ require("gitlab").setup({
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
-    perform_linewise_action = "<leader>l", -- Once in normal mode, does whatever the linewise action is (see job logs, etc)
+    perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
 },
   discussion_tree = { -- The discussion tree that holds all comments
     blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
@@ -157,6 +157,8 @@ require("gitlab").review()
 require("gitlab").create_comment()
 ```
 
+### Discussions and Notes
+
 Gitlab groups threads of comments together into "discussions." 
 
 To display discussions for the current MR, use the `toggle_discussions()` command, which will show the discussions in a split window. 
@@ -179,6 +181,8 @@ If you'd like to create a note in an MR (like a comment, but not linked to a spe
 require("gitlab").create_note()
 ```
 
+### MR Approvals
+
 You can approve or revoke approval for an MR:
 
 ```lua
@@ -186,11 +190,17 @@ require("gitlab").approve()
 require("gitlab").revoke()
 ```
 
-You can view the status of the pipeline for the current MR. To re-trigger failed jobs in the pipeline manually, use your `settings.popup.perform_action` keybinding:
+### Pipelines
+
+You can view the status of the pipeline for the current MR. 
 
 ```lua
 require("gitlab").pipeline()
 ```
+
+To re-trigger failed jobs in the pipeline manually, use your `settings.popup.perform_action` keybinding. To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action` keybinding.
+
+### Reviewers and Assignees
 
 The `add_reviewer` and `delete_reviewer` commands, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
 
