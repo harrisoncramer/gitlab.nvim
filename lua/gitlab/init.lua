@@ -7,6 +7,7 @@ local discussions             = require("gitlab.actions.discussions")
 local summary                 = require("gitlab.actions.summary")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment                 = require("gitlab.actions.comment")
+local pipeline                = require("gitlab.actions.pipeline")
 local approvals               = require("gitlab.actions.approvals")
 
 local info                    = state.dependencies.info
@@ -31,6 +32,7 @@ return {
   create_comment     = async.sequence({ info, revisions }, comment.create_comment),
   create_note        = async.sequence({ info }, comment.create_note),
   review             = async.sequence({ u.merge(info, { refresh = true }) }, function() reviewer.open() end),
+  pipeline           = async.sequence({ info }, pipeline.open),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment       = async.sequence({ info }, discussions.edit_comment),

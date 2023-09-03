@@ -40,6 +40,7 @@ func main() {
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
 	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 	m.Handle("/members", withGitlabContext(http.HandlerFunc(ProjectMembersHandler), c))
+	m.Handle("/pipeline", withGitlabContext(http.HandlerFunc(PipelineHandler), c))
 
 	port := fmt.Sprintf(":%s", os.Args[3])
 	server := &http.Server{

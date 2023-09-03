@@ -290,10 +290,8 @@ M.rebuild_unlinked_discussion_tree = function()
 end
 
 M.switch_can_edit_bufs             = function(bool)
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'modifiable', bool)
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "readonly", not bool)
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'modifiable', bool)
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "readonly", not bool)
+  u.switch_can_edit_buf(M.unlinked_section_bufnr, bool)
+  u.switch_can_edit_buf(M.linked_section_bufnr, bool)
 end
 
 M.add_discussion                   = function(arg)

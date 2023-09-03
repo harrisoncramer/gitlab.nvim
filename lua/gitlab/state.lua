@@ -37,6 +37,17 @@ M.settings               = {
       removed_file = "",
     }
   },
+  pipeline = {
+    created = "",
+    pending = "",
+    preparing = "",
+    scheduled = "",
+    running = "ﰌ",
+    canceled = "ﰸ",
+    skipped = "ﰸ",
+    success = "✓",
+    failed = "",
+  },
   dialogue = {
     focus_next = { "j", "<Down>", "<Tab>" },
     focus_prev = { "k", "<Up>", "<S-Tab>" },
