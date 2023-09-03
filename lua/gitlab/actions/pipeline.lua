@@ -11,8 +11,8 @@ local M        = {}
 M.open         = function()
   local pipeline = state.INFO.pipeline
 
-  if pipeline == nil or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
-    vim.notify("Pipeline information not found", vim.log.levels.WARN)
+  if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
+    vim.notify("Pipeline not found", vim.log.levels.WARN)
     return
   end
 
