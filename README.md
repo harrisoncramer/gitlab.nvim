@@ -24,7 +24,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/ab5a8597-32fa-4a28
 2. Add configuration (see Installation section)
 3. Checkout your feature branch: `git checkout feature-branch`
 4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane, or `:lua require("gitlab").summary()` to read the MR description and get started.
+5. Run `:lua require("gitlab").review()` to open the reviewer pane
 
 ## Installation
 
