@@ -7,6 +7,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - Add or remove reviewers and assignees
 - Resolve, reply to, and unresolve discussion threads
 - Create, edit, delete, and reply to comments on an MR
+- View and Manage Pipeline Jobs
 
 And a lot more!
 
