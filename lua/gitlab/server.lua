@@ -1,7 +1,6 @@
 -- This module contains the logic responsible for building and starting
 -- the Golang server. The Go server is responsible for making API calls
 -- to Gitlab and returning the data
-local job   = require("gitlab.job")
 local state = require("gitlab.state")
 local u     = require("gitlab.utils")
 local M     = {}
@@ -43,7 +42,7 @@ end
 
 
 -- Builds the Go binary
-M.build = function()
+M.build = function(override)
   if not u.has_delta() then
     vim.notify("Please install delta to use gitlab.nvim!", vim.log.levels.ERROR)
     return
@@ -54,8 +53,10 @@ M.build = function()
   state.settings.bin_path = parent_dir
   state.settings.bin = parent_dir .. "/bin"
 
-  local binary_exists = vim.loop.fs_stat(state.settings.bin)
-  if binary_exists ~= nil then return end
+  if not override then
+    local binary_exists = vim.loop.fs_stat(state.settings.bin)
+    if binary_exists ~= nil then return end
+  end
 
   local command = string.format("cd %s && make", state.settings.bin_path)
   local installCode = os.execute(command .. "> /dev/null")
