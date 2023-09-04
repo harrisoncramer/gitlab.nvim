@@ -31,7 +31,8 @@ M.init = function()
   --   • {interval}  The old_line of the change
 
   M.get_location = reviewer.get_location
-  -- Returns the current location (based on cursor) from the reviewer window
+  -- Returns the current location (based on cursor) from the reviewer window in format:
+  -- file_name, {new_line, old_line}, error
 end
 
 
