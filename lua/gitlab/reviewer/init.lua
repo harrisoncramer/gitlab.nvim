@@ -2,13 +2,15 @@
 -- settings and then map all of it's functions
 local state = require("gitlab.state")
 local delta = require("gitlab.reviewer.delta")
+local diffview = require("gitlab.reviewer.diffview")
 
 local M = {
   reviewer = nil,
 }
 
 local reviewer_map = {
-  delta = delta
+  delta = delta,
+  diffview = diffview
 }
 
 M.init = function()
@@ -26,10 +28,11 @@ M.init = function()
   -- Parameters:
   --   • {file_name}      The name of the file to jump to
   --   • {new_line}  The new_line of the change
-  --   • {interval}  The old_lien of the change
+  --   • {interval}  The old_line of the change
 
   M.get_location = reviewer.get_location
-  -- Returns the current location (based on cursor) from the reviewer window
+  -- Returns the current location (based on cursor) from the reviewer window in format:
+  -- file_name, {new_line, old_line}, error
 end
 
 
