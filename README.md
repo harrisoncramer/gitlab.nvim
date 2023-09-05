@@ -17,11 +17,11 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/ab5a8597-32fa-4a28
 
 - <a href="https://go.dev/">Go >= v1.19</a>
 - <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
-- <a href="https://github.com/dandavison/delta">delta</a>
 
 ## Quick Start
 
-1. Install Go and Delta Dependencies
+1. Install Go
+2. Install reviewer: <a href="https://github.com/dandavison/delta">delta</a> or <a href="https://github.com/sindrets/diffview.nvim">diffview</a>
 2. Add configuration (see Installation section)
 3. Checkout your feature branch: `git checkout feature-branch`
 4. Open Neovim
@@ -42,7 +42,7 @@ return {
   },
   build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
   config = function()
-    require("gitlab").setup()
+    require("gitlab").setup() -- Uses delta reviewer by default
   end,
 }
 ```
@@ -87,7 +87,7 @@ Here is the default setup function. All of these values are optional, and if you
 require("gitlab").setup({
   port = 21036, -- The port of the Go server, which runs in the background
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
-  reviewer = "delta", -- The reviewer type (only delta is currently supported)
+  reviewer = "delta", -- The reviewer type ("delta" or "diffview")
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -108,7 +108,7 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
   },
-  review_pane = { -- Specific settings for different reviewers, only delta currently supported
+  review_pane = { -- Specific settings for different reviewers
     delta = {
       added_file = "", -- The symbol to show next to added files
       modified_file = "", -- The symbol to show next to modified files

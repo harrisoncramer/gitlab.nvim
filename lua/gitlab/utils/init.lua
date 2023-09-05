@@ -4,8 +4,19 @@ M.get_current_line_number = function()
   return vim.api.nvim_call_function('line', { '.' })
 end
 
-M.has_delta = function()
-  return vim.fn.executable("delta") == 1
+M.has_reviewer = function(reviewer)
+  local has_reviewer = false
+  if reviewer == "diffview" then
+    has_reviewer = vim.fn.exists(":DiffviewOpen") ~= 0
+  else
+    has_reviewer = vim.fn.executable("delta") == 1
+  end
+
+  if not has_reviewer then
+    error(string.format("Please install %s or change your reviewer", reviewer))
+  end
+
+  return has_reviewer
 end
 
 M.P = function(...)

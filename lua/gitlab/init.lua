@@ -20,6 +20,7 @@ return {
     state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
     state.merge_settings(args)     -- Sets keymaps and other settings from setup function
     reviewer.init()                -- Picks and initializes reviewer (default is Delta)
+    u.has_reviewer(args.reviewer or "delta")
   end,
   -- Global Actions 🌎
   summary            = async.sequence({ info }, summary.summary),
