@@ -46,7 +46,7 @@ M.build = function(override)
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
   state.settings.bin_path = parent_dir
-  state.settings.bin = parent_dir .. (u.is_windows() and "\\bin" or "/bin")
+  state.settings.bin = parent_dir .. (u.is_windows() and "\\bin.exe" or "/bin")
 
   if not override then
     local binary_exists = vim.loop.fs_stat(state.settings.bin)
@@ -54,7 +54,7 @@ M.build = function(override)
   end
 
   local cmd = u.is_windows() and
-      'cd cmd && go build -o bin && move bin ..\\' or
+      'cd cmd && go build -o bin.exe && move bin.exe ..\\' or
       'cd cmd && go build -o bin && mv bin ../bin'
 
   local command = string.format(cmd, state.settings.bin_path)
