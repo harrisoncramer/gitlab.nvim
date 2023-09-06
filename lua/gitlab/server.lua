@@ -54,13 +54,13 @@ M.build = function(override)
   end
 
   local cmd = u.is_windows() and
-      'cd cmd && go build -o bin && move bin ..\\bin' or
+      'cd cmd && go build -o bin && move bin ..\\' or
       'cd cmd && go build -o bin && mv bin ../bin'
 
   local command = string.format(cmd, state.settings.bin_path)
-  local null = u.is_windows() and "NUL" or "/dev/null"
-  print(command .. "> " .. null)
-  local installCode = os.execute(command .. " > " .. null)
+  local null = u.is_windows() and " >NUL" or " > /dev/null"
+  print(command .. null)
+  local installCode = os.execute(command .. null)
   if installCode ~= 0 then
     vim.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
     return false
