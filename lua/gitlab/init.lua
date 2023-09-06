@@ -16,6 +16,7 @@ local revisions               = state.dependencies.revisions
 
 return {
   setup              = function(args)
+    if args == nil then args = {} end
     server.build()                 -- Builds the Go binary if it doesn't exist
     state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
     state.merge_settings(args)     -- Sets keymaps and other settings from setup function
