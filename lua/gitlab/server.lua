@@ -59,6 +59,7 @@ M.build = function(override)
 
   local command = string.format(cmd, state.settings.bin_path)
   local null = u.is_windows() and "NUL" or "/dev/null"
+  print(command .. "> " .. null)
   local installCode = os.execute(command .. "> " .. null)
   if installCode ~= 0 then
     vim.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
