@@ -19,6 +19,13 @@ M.has_reviewer = function(reviewer)
   return has_reviewer
 end
 
+M.is_windows = function()
+  if vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1 then
+    return true
+  end
+  return false
+end
+
 M.P = function(...)
   local objects = {}
   for i = 1, select("#", ...) do

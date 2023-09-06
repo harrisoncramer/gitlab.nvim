@@ -16,7 +16,6 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/ab5a8597-32fa-4a28
 ## Requirements
 
 - <a href="https://go.dev/">Go >= v1.19</a>
-- <a href="https://www.gnu.org/software/make/manual/make.html">make (for install)</a>
 
 ## Quick Start
 
@@ -63,7 +62,7 @@ use {
 }
 ```
 
-## Configuration
+## Project Configuration
 
 This plugin requires a `.gitlab.nvim` file in the root of the project. Provide this file with values required to connect to your gitlab instance of your repository (gitlab_url is optional, use ONLY for self-hosted instances):
 
