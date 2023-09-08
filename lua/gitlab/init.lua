@@ -9,6 +9,7 @@ local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers"
 local comment                 = require("gitlab.actions.comment")
 local pipeline                = require("gitlab.actions.pipeline")
 local approvals               = require("gitlab.actions.approvals")
+local miscellaneous           = require("gitlab.actions.miscellaneous")
 
 local info                    = state.dependencies.info
 local project_members         = state.dependencies.project_members
@@ -44,4 +45,5 @@ return {
   -- Other functions 🤷
   state              = state,
   print_settings     = state.print_settings,
+  open_in_browser    = async.sequence({ info }, miscellaneous.open_in_browser),
 }
