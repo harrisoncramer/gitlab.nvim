@@ -11,6 +11,7 @@ M.settings               = {
   port = 21036,
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   reviewer = "delta",
+  summary_image_dir = '',
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",

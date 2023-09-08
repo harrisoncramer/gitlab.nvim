@@ -281,6 +281,26 @@ M.switch_can_edit_buf = function(buf, bool)
   vim.api.nvim_buf_set_option(buf, "readonly", not bool)
 end
 
+M.list_files_in_folder = function(folder_path)
+  local files = {}
+
+  if vim.fn.isdirectory(folder_path) == 0 then
+    return nil
+  end
+
+  local result_ok, result = pcall(vim.fn.readdir, folder_path)
+
+  if not result_ok then return nil end
+
+  if result ~= nil then
+      for _, file in ipairs(result) do
+          table.insert(files, file)
+      end
+  end
+
+  return files
+end
+
 M.reverse = function(list)
   local rev = {}
   for i = #list, 1, -1 do

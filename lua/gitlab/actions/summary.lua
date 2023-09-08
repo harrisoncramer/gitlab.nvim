@@ -23,7 +23,7 @@ M.summary              = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     descriptionPopup.border:set_text("top", title, "center")
-    state.set_popup_keymaps(descriptionPopup, M.edit_description)
+    state.set_popup_keymaps(descriptionPopup, M.edit_description, M.add_summary_image)
   end)
 end
 
@@ -33,6 +33,32 @@ M.edit_description     = function(text)
   job.run_job("/mr/description", "PUT", body, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
+  end)
+end
+
+M.add_summary_image       = function()
+  local image_dir = state.settings.summary_image_dir
+  if not image_dir or image_dir == '' then
+    vim.notify("Must provide image directory", vim.log.levels.ERROR)
+    return
+  end
+
+  local files = u.list_files_in_folder(image_dir)
+
+  if files == nil then
+    vim.notify(string.format("Could not list files in %s", image_dir), vim.log.levels.ERROR)
+    return
+  end
+
+  vim.ui.select(files, {
+    prompt = 'Choose image',
+  }, function(choice)
+    if not choice then return end
+      local body = { file_path = choice }
+      job.run_job("/mr/description/image", "POST", body, function(data)
+      local markdown = data.Markdown
+      print(markdown)
+    end)
   end)
 end
 
