@@ -8,19 +8,19 @@ import (
 	"os"
 )
 
-type ImageRequest struct {
+type AttachmentRequest struct {
 	FilePath string `json:"file_path"`
 	FileName string `json:"file_name"`
 }
 
-type ImageResponse struct {
+type AttachmentResponse struct {
 	SuccessResponse
 	Markdown string `json:"markdown"`
 	Alt      string `json:"alt"`
 	Url      string `json:"url"`
 }
 
-func ImageHandler(w http.ResponseWriter, r *http.Request) {
+func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -28,7 +28,7 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
 
-	var imageRequest ImageRequest
+	var attachmentRequest AttachmentRequest
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -37,27 +37,27 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	err = json.Unmarshal(body, &imageRequest)
+	err = json.Unmarshal(body, &attachmentRequest)
 	if err != nil {
 		c.handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
 		return
 	}
 
-	file, err := os.Open(imageRequest.FilePath)
+	file, err := os.Open(attachmentRequest.FilePath)
 	if err != nil {
-		c.handleError(w, err, fmt.Sprintf("Could not read %s", imageRequest.FilePath), http.StatusBadRequest)
+		c.handleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
 		return
 	}
 
 	defer file.Close()
 
-	projectFile, res, err := c.git.Projects.UploadFile(c.projectId, file, imageRequest.FileName)
+	projectFile, res, err := c.git.Projects.UploadFile(c.projectId, file, attachmentRequest.FileName)
 	if err != nil {
-		c.handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", imageRequest.FilePath), res.StatusCode)
+		c.handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FilePath), res.StatusCode)
 		return
 	}
 
-	fileResponse := ImageResponse{
+	fileResponse := AttachmentResponse{
 		SuccessResponse: SuccessResponse{
 			Status:  http.StatusOK,
 			Message: "File uploaded successfully",
