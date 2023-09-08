@@ -38,16 +38,16 @@ M.edit_description     = function(text)
 end
 
 M.attach_file          = function()
-  local image_dir = state.settings.files_dir
-  if not image_dir or image_dir == '' then
+  local attachment_dir = state.settings.attachment_dir
+  if not attachment_dir or attachment_dir == '' then
     vim.notify("Must provide image directory", vim.log.levels.ERROR)
     return
   end
 
-  local files = u.list_files_in_folder(image_dir)
+  local files = u.list_files_in_folder(attachment_dir)
 
   if files == nil then
-    vim.notify(string.format("Could not list files in %s", image_dir), vim.log.levels.ERROR)
+    vim.notify(string.format("Could not list files in %s", attachment_dir), vim.log.levels.ERROR)
     return
   end
 
@@ -55,7 +55,7 @@ M.attach_file          = function()
     prompt = 'Choose image',
   }, function(choice)
     if not choice then return end
-    local full_path = image_dir .. (u.is_windows() and "\\" or "/") .. choice
+    local full_path = attachment_dir .. (u.is_windows() and "\\" or "/") .. choice
     local body = { file_path = full_path, file_name = choice }
     job.run_job("/mr/description/image", "POST", body, function(data)
       local markdown = data.markdown

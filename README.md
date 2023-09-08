@@ -87,7 +87,7 @@ require("gitlab").setup({
   port = 21036, -- The port of the Go server, which runs in the background
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   reviewer = "delta", -- The reviewer type ("delta" or "diffview")
-  files_dir = nil, -- The local directory for files (see the "summary" section)
+  attachment_dir = nil, -- The local directory for files (see the "summary" section)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -153,7 +153,7 @@ The `summary` action will pull down the MR description into a buffer so that you
 require("gitlab").summary()
 ```
 
-To attach a file to the MR, use the `settings.popup.perform_linewise_action` keybinding with the popup open. The plugin will look in the directory you specify in the `settings.files_dir` folder (this must be an absolute path).
+To attach a file to the MR, use the `settings.popup.perform_linewise_action` keybinding with the popup open. The plugin will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path).
 
 ### Reviewing Diffs
 
