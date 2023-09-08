@@ -54,8 +54,8 @@ M.build = function(override)
   end
 
   local cmd = u.is_windows() and
-      'cd cmd && go build -o bin.exe && move bin.exe ..\\' or
-      'cd cmd && go build -o bin && mv bin ../bin'
+      'cd %s\\cmd && go build -o bin.exe && move bin.exe ..\\' or
+      'cd %s/cmd && go build -o bin && mv bin ../bin'
 
   local command = string.format(cmd, state.settings.bin_path)
   local null = u.is_windows() and " >NUL" or " > /dev/null"
