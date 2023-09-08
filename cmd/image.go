@@ -10,6 +10,7 @@ import (
 
 type ImageRequest struct {
 	FilePath string `json:"file_path"`
+	FileName string `json:"file_name"`
 }
 
 type ImageResponse struct {
@@ -24,14 +25,14 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
-	c := r.Context().Value("Client").(Client)
+	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
 
 	var imageRequest ImageRequest
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		return
 	}
 
 	defer r.Body.Close()
@@ -39,18 +40,21 @@ func ImageHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &imageRequest)
 	if err != nil {
 		c.handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
+		return
 	}
 
 	file, err := os.Open(imageRequest.FilePath)
 	if err != nil {
 		c.handleError(w, err, fmt.Sprintf("Could not read %s", imageRequest.FilePath), http.StatusBadRequest)
+		return
 	}
 
 	defer file.Close()
 
-	projectFile, res, err := c.git.Projects.UploadFile(c.projectId, file, "test")
+	projectFile, res, err := c.git.Projects.UploadFile(c.projectId, file, imageRequest.FileName)
 	if err != nil {
 		c.handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", imageRequest.FilePath), res.StatusCode)
+		return
 	}
 
 	fileResponse := ImageResponse{

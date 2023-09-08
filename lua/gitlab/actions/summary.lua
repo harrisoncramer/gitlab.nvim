@@ -1,6 +1,7 @@
 -- This module is responsible for the MR description
 -- This lets the user open the description in a popup and
 -- send edits to the description back to Gitlab
+local path             = require("plenary.path")
 local Popup            = require("nui.popup")
 local job              = require("gitlab.job")
 local state            = require("gitlab.state")
@@ -23,7 +24,7 @@ M.summary              = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     descriptionPopup.border:set_text("top", title, "center")
-    state.set_popup_keymaps(descriptionPopup, M.edit_description, M.add_summary_image)
+    state.set_popup_keymaps(descriptionPopup, M.edit_description, M.attach_file)
   end)
 end
 
@@ -36,8 +37,8 @@ M.edit_description     = function(text)
   end)
 end
 
-M.add_summary_image       = function()
-  local image_dir = state.settings.summary_image_dir
+M.attach_file          = function()
+  local image_dir = state.settings.files_dir
   if not image_dir or image_dir == '' then
     vim.notify("Must provide image directory", vim.log.levels.ERROR)
     return
@@ -54,10 +55,13 @@ M.add_summary_image       = function()
     prompt = 'Choose image',
   }, function(choice)
     if not choice then return end
-      local body = { file_path = choice }
-      job.run_job("/mr/description/image", "POST", body, function(data)
-      local markdown = data.Markdown
-      print(markdown)
+    local full_path = image_dir .. (u.is_windows() and "\\" or "/") .. choice
+    local body = { file_path = full_path, file_name = choice }
+    job.run_job("/mr/description/image", "POST", body, function(data)
+      local markdown = data.markdown
+      local current_line = u.get_current_line_number()
+      local bufnr = vim.api.nvim_get_current_buf()
+      vim.api.nvim_buf_set_lines(bufnr, current_line - 1, current_line, false, { markdown })
     end)
   end)
 end
