@@ -15,7 +15,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/ab5a8597-32fa-4a28
 
 ## Requirements
 
-- <a href="https://go.dev/">Go >= v1.19</a>
+- <a href="https://go.dev/">Go</a> >= v1.19
 
 ## Quick Start
 
