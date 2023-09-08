@@ -10,6 +10,7 @@ local job          = require("gitlab.job")
 local u            = require("gitlab.utils")
 local state        = require("gitlab.state")
 local reviewer     = require("gitlab.reviewer")
+local miscellaneous    = require("gitlab.actions.miscellaneous")
 
 local edit_popup   = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup  = Popup(u.create_popup_state("Reply", "80%", "80%"))
@@ -72,7 +73,7 @@ M.reply            = function(tree)
   local discussion_node = M.get_root_node(tree, node)
   local id = tostring(discussion_node.id)
   reply_popup:mount()
-  state.set_popup_keymaps(reply_popup, M.send_reply(tree, id))
+  state.set_popup_keymaps(reply_popup, M.send_reply(tree, id), miscellaneous.attach_file)
 end
 
 -- This function will send the reply to the Go API

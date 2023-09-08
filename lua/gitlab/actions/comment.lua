@@ -6,6 +6,7 @@ local state              = require("gitlab.state")
 local job                = require("gitlab.job")
 local u                  = require("gitlab.utils")
 local discussions        = require("gitlab.actions.discussions")
+local miscellaneous      = require("gitlab.actions.miscellaneous")
 local reviewer           = require("gitlab.reviewer")
 local M                  = {}
 
@@ -17,14 +18,14 @@ M.create_comment         = function()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text)
-  end)
+  end, miscellaneous.attach_file)
 end
 
 M.create_note            = function()
   note_popup:mount()
   state.set_popup_keymaps(note_popup, function(text)
     M.confirm_create_comment(text, true)
-  end)
+  end, miscellaneous.attach_file)
 end
 
 -- This function (settings.popup.perform_action) will send the comment to the Go server

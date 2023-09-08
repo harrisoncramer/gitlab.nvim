@@ -153,8 +153,6 @@ The `summary` action will pull down the MR description into a buffer so that you
 require("gitlab").summary()
 ```
 
-To attach a file to the MR, use the `settings.popup.perform_linewise_action` keybinding with the popup open. The plugin will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path).
-
 ### Reviewing Diffs
 
 The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action.
@@ -185,6 +183,14 @@ If you'd like to create a note in an MR (like a comment, but not linked to a spe
 ```lua
 require("gitlab").create_note()
 ```
+
+### Uploading Files
+
+To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files. 
+
+When you have picked the file, it will be added to the current buffer at the current line.
+
+Use the `settings.popup.perform_action` to send the changes to Gitlab.
 
 ### MR Approvals
 

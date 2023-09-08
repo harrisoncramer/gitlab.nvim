@@ -1,10 +1,10 @@
 -- This module is responsible for the MR description
 -- This lets the user open the description in a popup and
 -- send edits to the description back to Gitlab
-local path             = require("plenary.path")
 local Popup            = require("nui.popup")
 local job              = require("gitlab.job")
 local state            = require("gitlab.state")
+local miscellaneous    = require("gitlab.actions.miscellaneous")
 local u                = require("gitlab.utils")
 local M                = {}
 
@@ -24,7 +24,7 @@ M.summary              = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     descriptionPopup.border:set_text("top", title, "center")
-    state.set_popup_keymaps(descriptionPopup, M.edit_description, M.attach_file)
+    state.set_popup_keymaps(descriptionPopup, M.edit_description, miscellaneous.attach_file)
   end)
 end
 
@@ -34,35 +34,6 @@ M.edit_description     = function(text)
   job.run_job("/mr/description", "PUT", body, function(data)
     vim.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
-  end)
-end
-
-M.attach_file          = function()
-  local attachment_dir = state.settings.attachment_dir
-  if not attachment_dir or attachment_dir == '' then
-    vim.notify("Must provide image directory", vim.log.levels.ERROR)
-    return
-  end
-
-  local files = u.list_files_in_folder(attachment_dir)
-
-  if files == nil then
-    vim.notify(string.format("Could not list files in %s", attachment_dir), vim.log.levels.ERROR)
-    return
-  end
-
-  vim.ui.select(files, {
-    prompt = 'Choose image',
-  }, function(choice)
-    if not choice then return end
-    local full_path = attachment_dir .. (u.is_windows() and "\\" or "/") .. choice
-    local body = { file_path = full_path, file_name = choice }
-    job.run_job("/mr/description/image", "POST", body, function(data)
-      local markdown = data.markdown
-      local current_line = u.get_current_line_number()
-      local bufnr = vim.api.nvim_get_current_buf()
-      vim.api.nvim_buf_set_lines(bufnr, current_line - 1, current_line, false, { markdown })
-    end)
   end)
 end
 
