@@ -15,7 +15,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/ab5a8597-32fa-4a28
 
 ## Requirements
 
-- <a href="https://go.dev/">Go >= v1.19</a>
+- <a href="https://go.dev/">Go</a> >= v1.19
 
 ## Quick Start
 
@@ -87,6 +87,7 @@ require("gitlab").setup({
   port = 21036, -- The port of the Go server, which runs in the background
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   reviewer = "delta", -- The reviewer type ("delta" or "diffview")
+  attachment_dir = nil, -- The local directory for files (see the "summary" section)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -144,11 +145,15 @@ git checkout feature-branch
 
 Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
 
+### Summary
+
 The `summary` action will pull down the MR description into a buffer so that you can read it. To edit the description, use the `settings.popup.perform_action` keybinding.
 
 ```lua
 require("gitlab").summary()
 ```
+
+### Reviewing Diffs
 
 The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action.
 
@@ -156,6 +161,8 @@ The `review` action will open a diff of the changes. You can leave comments usin
 require("gitlab").review()
 require("gitlab").create_comment()
 ```
+
+The reviewer is Delta by default, but you can configure the plugin to use Diffview instead.
 
 ### Discussions and Notes
 
@@ -176,6 +183,14 @@ If you'd like to create a note in an MR (like a comment, but not linked to a spe
 ```lua
 require("gitlab").create_note()
 ```
+
+### Uploading Files
+
+To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files. 
+
+When you have picked the file, it will be added to the current buffer at the current line.
+
+Use the `settings.popup.perform_action` to send the changes to Gitlab.
 
 ### MR Approvals
 

@@ -281,6 +281,37 @@ M.switch_can_edit_buf = function(buf, bool)
   vim.api.nvim_buf_set_option(buf, "readonly", not bool)
 end
 
+M.list_files_in_folder = function(folder_path)
+  if vim.fn.isdirectory(folder_path) == 0 then
+    return nil
+  end
+
+  local folder_ok, folder = pcall(vim.fn.readdir, folder_path)
+
+  if not folder_ok then return nil end
+
+  local files = {}
+  if folder ~= nil then
+    for _, file in ipairs(folder) do
+      local file_path = folder_path .. (M.is_windows() and "\\" or '/') .. file
+      local timestamp = vim.fn.getftime(file_path)
+      table.insert(files, { name = file, timestamp = timestamp })
+    end
+  end
+
+  -- Sort the table by timestamp in descending order (newest first)
+  table.sort(files, function(a, b)
+    return a.timestamp > b.timestamp
+  end)
+
+  local result = {}
+  for _, file in ipairs(files) do
+    table.insert(result, file.name)
+  end
+
+  return result
+end
+
 M.reverse = function(list)
   local rev = {}
   for i = #list, 1, -1 do

@@ -4,6 +4,7 @@
 local Popup            = require("nui.popup")
 local job              = require("gitlab.job")
 local state            = require("gitlab.state")
+local miscellaneous    = require("gitlab.actions.miscellaneous")
 local u                = require("gitlab.utils")
 local M                = {}
 
@@ -23,7 +24,7 @@ M.summary              = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     descriptionPopup.border:set_text("top", title, "center")
-    state.set_popup_keymaps(descriptionPopup, M.edit_description)
+    state.set_popup_keymaps(descriptionPopup, M.edit_description, miscellaneous.attach_file)
   end)
 end
 
