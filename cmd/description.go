@@ -9,16 +9,17 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type DescriptionUpdateRequest struct {
+type SummaryUpdateRequest struct {
 	Description string `json:"description"`
+	Title       string `json:"title"`
 }
 
-type DescriptionUpdateResponse struct {
+type SummaryUpdateResponse struct {
 	SuccessResponse
 	MergeRequest *gitlab.MergeRequest `json:"mr"`
 }
 
-func DescriptionHandler(w http.ResponseWriter, r *http.Request) {
+func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
@@ -34,31 +35,34 @@ func DescriptionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
-	var DescriptionUpdateRequest DescriptionUpdateRequest
-	err = json.Unmarshal(body, &DescriptionUpdateRequest)
+	var SummaryUpdateRequest SummaryUpdateRequest
+	err = json.Unmarshal(body, &SummaryUpdateRequest)
 
 	if err != nil {
 		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	mr, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{Description: &DescriptionUpdateRequest.Description})
+	mr, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{
+		Description: &SummaryUpdateRequest.Description,
+		Title:       &SummaryUpdateRequest.Title,
+	})
 
 	if err != nil {
-		c.handleError(w, err, "Could not edit merge request description", http.StatusBadRequest)
+		c.handleError(w, err, "Could not edit merge request summary", http.StatusBadRequest)
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
-		c.handleError(w, err, "Could not edit merge request description", http.StatusBadRequest)
+		c.handleError(w, err, "Could not edit merge request summary", http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 
-	response := DescriptionUpdateResponse{
+	response := SummaryUpdateResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Description updated",
+			Message: "Summary updated",
 			Status:  http.StatusOK,
 		},
 		MergeRequest: mr,

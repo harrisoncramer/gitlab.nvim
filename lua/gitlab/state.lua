@@ -107,19 +107,20 @@ M.setPluginConfiguration = function()
   return true
 end
 
-local function exit(popup)
+local function exit(popup, cb)
   popup:unmount()
+  if cb ~= nil then cb() end
 end
 
 -- These keymaps are buffer specific and are set dynamically when popups mount
-M.set_popup_keymaps = function(popup, action, linewise_action)
-  vim.keymap.set('n', M.settings.popup.exit, function() exit(popup) end, { buffer = true })
+M.set_popup_keymaps = function(popup, action, linewise_action, cb)
+  vim.keymap.set('n', M.settings.popup.exit, function() exit(popup, cb) end, { buffer = popup.bufnr })
   if action ~= nil then
     vim.keymap.set('n', M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
-      exit(popup)
       action(text)
-    end, { buffer = true })
+      exit(popup)
+    end, { buffer = popup.bufnr })
   end
 
   if linewise_action ~= nil then
@@ -128,7 +129,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action)
       local linnr = vim.api.nvim_win_get_cursor(0)[1]
       local text = u.get_line_content(bufnr, linnr)
       linewise_action(text)
-    end, { buffer = true })
+    end, { buffer = popup.bufnr })
   end
 end
 
