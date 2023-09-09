@@ -95,9 +95,6 @@ M.ready_to_review = function()
     return nil, nil, string.format("Error checking status of %s branch", state.INFO.source_branch)
   end
 
-  print(string.format("Your target branch output is: %s", target_output))
-  print(string.format("Your source branch output is: %s", source_output))
-
   if target_output ~= "" or source_output ~= "" then
     return target_output ~= "", source_output ~= "", nil
   end
