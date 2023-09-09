@@ -153,6 +153,8 @@ The `summary` action will pull down the MR description into a buffer so that you
 require("gitlab").summary()
 ```
 
+The upper part of the popup contains the title, which can also be edited and sent via the perform action keybinding in the same manner.
+
 ### Reviewing Diffs
 
 The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action.
