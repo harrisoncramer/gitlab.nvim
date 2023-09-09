@@ -48,8 +48,9 @@ M.summary          = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
-    state.set_popup_keymaps(description_popup, M.edit_summary, miscellaneous.attach_file, exit)
-    state.set_popup_keymaps(title_popup, M.edit_summary, nil, exit)
+    state.set_popup_keymaps(description_popup, M.edit_summary, miscellaneous.attach_file,
+      { cb = exit, action_before_close = true })
+    state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
   end)
 end
 
