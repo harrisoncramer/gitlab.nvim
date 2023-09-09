@@ -45,6 +45,12 @@ end
 -- Will call APIs in sequence and set global state
 M.sequence = function(dependencies, cb)
   return function(argTable)
+    local branch = vim.fn.system({ "git", "rev-parse", "--abbrev-ref", "HEAD" }):gsub("%s+", "")
+    if branch == "main" or branch == "master" then
+      vim.notify("Must check out feature branch", vim.log.levels.ERROR)
+      return
+    end
+
     local handler = Async:new()
     handler:init(cb)
 

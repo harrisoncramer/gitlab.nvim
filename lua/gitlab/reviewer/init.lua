@@ -24,12 +24,7 @@ M.init = function()
   -- Opens the reviewer window. If either branch is out of date,
   -- prompts the user to pull down, then opens the reviewer
   M.open = function()
-    local branch = vim.fn.system({ "git", "rev-parse", "--abbrev-ref", "HEAD" }):gsub("%s+", "")
-    if branch == "main" or branch == "master" then
-      return -- Must run reviews on feature branches
-    end
-
-    local target_not_ready, source_not_ready, err = M.ready_to_review(state.INFO.source_branch)
+    local target_not_ready, source_not_ready, err = M.ready_to_review()
     if err then
       vim.notify(err, vim.log.levels.ERROR)
       return
