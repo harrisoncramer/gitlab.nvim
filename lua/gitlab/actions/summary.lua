@@ -103,13 +103,13 @@ M.create_layout    = function()
       position = "50%",
       relative = "editor",
       size = {
-        width = 100,
-        height = 80,
+        width = "90%",
+        height = "70%",
       },
     },
     Layout.Box({
       Layout.Box(title_popup, { size = { height = 3 } }),
-      Layout.Box(description_popup, { size = "50%" }),
+      Layout.Box(description_popup, { size = "100%" }),
     }, { dir = "col" })
   )
 
