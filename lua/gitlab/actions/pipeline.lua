@@ -7,19 +7,26 @@ local job      = require("gitlab.job")
 local u        = require("gitlab.utils")
 local M        = {
   pipeline_jobs = nil,
-  pipeline_popup = nil
+  pipeline_popup = nil,
 }
 
--- The function will render the Pipeline state in a popup
-M.open         = function()
-  local pipeline = state.INFO.pipeline
+local function get_pipeline()
+  local pipeline = state.INFO.head_pipeline or state.INFO.pipeline
 
   if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
     vim.notify("Pipeline not found", vim.log.levels.WARN)
     return
   end
+  return pipeline
+end
 
-  local body = { pipeline_id = state.INFO.pipeline.id }
+-- The function will render the Pipeline state in a popup
+M.open = function()
+  local pipeline = get_pipeline()
+  if not pipeline then
+    return
+  end
+  local body = { pipeline_id = pipeline.id }
   job.run_job("/pipeline", "GET", body, function(data)
     local pipeline_jobs = u.reverse(type(data.Jobs) == "table" and data.Jobs or {})
     M.pipeline_jobs = pipeline_jobs
@@ -66,19 +73,23 @@ M.open         = function()
 end
 
 M.retrigger    = function()
-  local body = { pipeline_id = state.INFO.pipeline.id }
-  if state.INFO.pipeline.status ~= 'failed' then
+  local pipeline = get_pipeline()
+  if not pipeline then
+    return
+  end
+  local body = { pipeline_id = pipeline.id }
+  if pipeline.status ~= "failed" then
     vim.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
     return
   end
 
   job.run_job("/pipeline", "POST", body, function(data)
     vim.notify("Pipeline re-triggered!", vim.log.levels.INFO)
-    state.INFO.pipeline = data.Pipeline
+    pipeline = data.Pipeline
   end)
 end
 
-M.see_logs     = function()
+M.see_logs = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local linnr = vim.api.nvim_win_get_cursor(0)[1]
   local text = u.get_line_content(bufnr, linnr)
