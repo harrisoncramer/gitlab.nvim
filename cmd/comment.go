@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -12,14 +14,29 @@ import (
 const mrVersionsUrl = "%s/api/v4/projects/%s/merge_requests/%d/versions"
 
 type PostCommentRequest struct {
-	Comment        string `json:"comment"`
-	FileName       string `json:"file_name"`
-	NewLine        int    `json:"new_line"`
-	OldLine        int    `json:"old_line"`
-	HeadCommitSHA  string `json:"head_commit_sha"`
-	BaseCommitSHA  string `json:"base_commit_sha"`
-	StartCommitSHA string `json:"start_commit_sha"`
-	Type           string `json:"type"`
+	Comment        string     `json:"comment"`
+	FileName       string     `json:"file_name"`
+	NewLine        int        `json:"new_line"`
+	OldLine        int        `json:"old_line"`
+	HeadCommitSHA  string     `json:"head_commit_sha"`
+	BaseCommitSHA  string     `json:"base_commit_sha"`
+	StartCommitSHA string     `json:"start_commit_sha"`
+	Type           string     `json:"type"`
+	LineRange      *LineRange `json:"line_range,omitempty"`
+}
+
+// LineRange represents the range of a note.
+type LineRange struct {
+	StartRange *LinePosition `json:"start"`
+	EndRange   *LinePosition `json:"end"`
+}
+
+// LinePosition represents a position in a line range.
+// unlike gitlab struct this does not contain LineCode with sha1 of filename
+type LinePosition struct {
+	Type    string `json:"type"`
+	OldLine int    `json:"old_line"`
+	NewLine int    `json:"new_line"`
 }
 
 type DeleteCommentRequest struct {
@@ -116,7 +133,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	we are leaving a note (unlinked comment) */
 	if postCommentRequest.FileName != "" {
 		opt.Position = &gitlab.NotePosition{
-			PositionType: "text",
+			PositionType: postCommentRequest.Type,
 			StartSHA:     postCommentRequest.StartCommitSHA,
 			HeadSHA:      postCommentRequest.HeadCommitSHA,
 			BaseSHA:      postCommentRequest.BaseCommitSHA,
@@ -125,6 +142,31 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 			NewLine:      postCommentRequest.NewLine,
 			OldLine:      postCommentRequest.OldLine,
 		}
+
+		if postCommentRequest.LineRange != nil {
+			var format = "%x_%d_%d"
+			opt.Position.LineRange = &gitlab.LineRange{
+				StartRange: &gitlab.LinePosition{
+					Type: postCommentRequest.LineRange.StartRange.Type,
+					LineCode: fmt.Sprintf(
+						format,
+						sha1.Sum([]byte(postCommentRequest.FileName)),
+						postCommentRequest.LineRange.StartRange.OldLine,
+						postCommentRequest.LineRange.StartRange.NewLine,
+					),
+				},
+				EndRange: &gitlab.LinePosition{
+					Type: postCommentRequest.LineRange.StartRange.Type,
+					LineCode: fmt.Sprintf(
+						format,
+						sha1.Sum([]byte(postCommentRequest.FileName)),
+						postCommentRequest.LineRange.EndRange.OldLine,
+						postCommentRequest.LineRange.EndRange.NewLine,
+					),
+				},
+			}
+		}
+
 	}
 
 	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &opt)
