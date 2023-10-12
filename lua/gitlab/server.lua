@@ -2,44 +2,69 @@
 -- the Golang server. The Go server is responsible for making API calls
 -- to Gitlab and returning the data
 local state = require("gitlab.state")
-local u     = require("gitlab.utils")
-local M     = {}
+local u = require("gitlab.utils")
+local M = {}
 
 -- Starts the Go server and call the callback provided
-M.start     = function(callback)
+M.start = function(callback)
+  local empty_port = "''"
+  local port = state.settings.port or empty_port
   local command = state.settings.bin
-      .. " "
-      .. state.settings.project_id
-      .. " "
-      .. state.settings.gitlab_url
-      .. " "
-      .. state.settings.port
-      .. " "
-      .. state.settings.auth_token
-      .. " "
-      .. state.settings.log_path
+    .. " "
+    .. state.settings.project_id
+    .. " "
+    .. state.settings.gitlab_url
+    .. " "
+    .. port
+    .. " "
+    .. state.settings.auth_token
+    .. " "
+    .. state.settings.log_path
 
-  vim.fn.jobstart(command, {
-    on_stdout = function(job_id)
-      if job_id <= 0 then
-        vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
-      else
+  local job_id = vim.fn.jobstart(command, {
+    on_stdout = function(_, data)
+      -- if port was not provided then we need to parse it from output of server
+      if state.settings.port == nil then
+        for _, line in ipairs(data) do
+          port = line:match("Server started on port:%s+(%d+)")
+          if port ~= nil then
+            state.settings.port = port
+            break
+          end
+        end
+      end
+
+      -- This assumes that first output of server will be parsable and
+      -- port will be correctly set.
+      if state.settings.port ~= nil then
         callback()
+      else
+        vim.notify("Failed to parse server port", vim.log.levels.ERROR)
       end
     end,
     on_stderr = function(_, errors)
-      local err_msg = ''
+      local err_msg = ""
       for _, err in ipairs(errors) do
         if err ~= "" and err ~= nil then
           err_msg = err_msg .. err .. "\n"
         end
       end
 
-      if err_msg ~= '' then vim.notify(err_msg, vim.log.levels.ERROR) end
-    end
+      if err_msg ~= "" then
+        vim.notify(err_msg, vim.log.levels.ERROR)
+      end
+    end,
+    on_exit = function(job_id, exit_code, ...)
+      vim.notify(
+        "Golang gitlab server exited: job_id: " .. job_id .. ", exit_code: " .. exit_code,
+        vim.log.levels.ERROR
+      )
+    end,
   })
+  if job_id <= 0 then
+    vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+  end
 end
-
 
 -- Builds the Go binary
 M.build = function(override)
@@ -50,12 +75,13 @@ M.build = function(override)
 
   if not override then
     local binary_exists = vim.loop.fs_stat(state.settings.bin)
-    if binary_exists ~= nil then return end
+    if binary_exists ~= nil then
+      return
+    end
   end
 
-  local cmd = u.is_windows() and
-      'cd %s\\cmd && go build -o bin.exe && move bin.exe ..\\' or
-      'cd %s/cmd && go build -o bin && mv bin ../bin'
+  local cmd = u.is_windows() and "cd %s\\cmd && go build -o bin.exe && move bin.exe ..\\"
+    or "cd %s/cmd && go build -o bin && mv bin ../bin"
 
   local command = string.format(cmd, state.settings.bin_path)
   local null = u.is_windows() and " >NUL" or " > /dev/null"
