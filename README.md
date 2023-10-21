@@ -84,7 +84,7 @@ Here is the default setup function. All of these values are optional, and if you
 
 ```lua
 require("gitlab").setup({
-  port = 21036, -- The port of the Go server, which runs in the background, if omitted random port will be chosen automatically.
+  port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   reviewer = "delta", -- The reviewer type ("delta" or "diffview")
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
