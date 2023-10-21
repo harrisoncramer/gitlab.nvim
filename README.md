@@ -13,7 +13,6 @@ And a lot more!
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/50f44eaf-5f99-4cb3-93e9-ed66ace0f675
 
-
 ## Requirements
 
 - <a href="https://go.dev/">Go</a> >= v1.19
@@ -22,10 +21,10 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/50f44eaf-5f99-4cb3
 
 1. Install Go
 2. Install reviewer: <a href="https://github.com/dandavison/delta">delta</a> or <a href="https://github.com/sindrets/diffview.nvim">diffview</a>
-2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+3. Add configuration (see Installation section)
+4. Checkout your feature branch: `git checkout feature-branch`
+5. Open Neovim
+6. Run `:lua require("gitlab").review()` to open the reviewer pane
 
 ## Installation
 
@@ -85,7 +84,7 @@ Here is the default setup function. All of these values are optional, and if you
 
 ```lua
 require("gitlab").setup({
-  port = 21036, -- The port of the Go server, which runs in the background
+  port = 21036, -- The port of the Go server, which runs in the background, if omitted random port will be chosen automatically.
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   reviewer = "delta", -- The reviewer type ("delta" or "diffview")
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
@@ -138,13 +137,13 @@ require("gitlab").setup({
 
 ## Usage
 
-First, check out the branch that you want to review locally. 
+First, check out the branch that you want to review locally.
 
 ```
 git checkout feature-branch
 ```
 
-Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of. 
+Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of.
 
 ### Summary
 
@@ -169,9 +168,9 @@ The reviewer is Delta by default, but you can configure the plugin to use Diffvi
 
 ### Discussions and Notes
 
-Gitlab groups threads of comments together into "discussions." 
+Gitlab groups threads of comments together into "discussions."
 
-To display all discussions for the current MR, use the `toggle_discussions` action, which will show the discussions in a split window. 
+To display all discussions for the current MR, use the `toggle_discussions` action, which will show the discussions in a split window.
 
 ```lua
 require("gitlab").toggle_discussions()
@@ -189,7 +188,7 @@ require("gitlab").create_note()
 
 ### Uploading Files
 
-To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files. 
+To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files.
 
 When you have picked the file, it will be added to the current buffer at the current line.
 
@@ -277,7 +276,7 @@ This is the API call that is happening from within Neovim when you run the `summ
 
 If you are able to build and start the Go server and hit the endpoint successfully for the action you are trying to run (such as creating a comment or approving a merge request) then something is wrong with the Lua code. In that case, please file a bug report.
 
-This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab. 
+This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab.
 
 If the Golang server is not starting up correctly, please check your `.gitlab.nvim` file and your setup function. You can, however, try running the Golang server independently of Neovim. For instance, to start it up for a certain project, navigate to your plugin directory, and build the binary (these are instructions for Lazy) and move that binary to your project. You can then try running the binary directly, or even with a debugger like Delve:
 
