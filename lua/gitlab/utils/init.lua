@@ -126,20 +126,10 @@ M.create_popup_state = function(title, width, height)
 end
 
 M.merge = function(defaults, overrides)
-  local result = {}
   if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
     return overrides
   end
-
-  for key, value in pairs(defaults) do
-    if type(value) == "table" then
-      result[key] = M.merge(value, overrides[key] or {})
-    else
-      result[key] = overrides[key] or value
-    end
-  end
-
-  return result
+  return vim.tbl_deep_extend("force", defaults, overrides)
 end
 
 M.join = function(tbl, separator)

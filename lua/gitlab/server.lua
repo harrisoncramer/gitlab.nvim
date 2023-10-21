@@ -9,6 +9,8 @@ local M = {}
 M.start = function(callback)
   local empty_port = "''"
   local port = state.settings.port or empty_port
+  local parsed_port = nil
+  local callback_called = false
   local command = state.settings.bin
     .. " "
     .. state.settings.project_id
@@ -24,21 +26,24 @@ M.start = function(callback)
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(_, data)
       -- if port was not provided then we need to parse it from output of server
-      if state.settings.port == nil then
+      if parsed_port == nil then
         for _, line in ipairs(data) do
           port = line:match("Server started on port:%s+(%d+)")
           if port ~= nil then
+            parsed_port = port
             state.settings.port = port
             break
           end
         end
       end
 
-      -- This assumes that first output of server will be parsable and
-      -- port will be correctly set.
-      if state.settings.port ~= nil then
+      -- This assumes that first output of server will be parsable and port will be correctly set.
+      -- Make sure that this actually check if port was correctly parsed based on server output
+      -- because server outputs port only if it started successfully.
+      if parsed_port ~= nil and not callback_called then
         callback()
-      else
+        callback_called = true
+      elseif not callback_called then
         vim.notify("Failed to parse server port", vim.log.levels.ERROR)
       end
     end,
