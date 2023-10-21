@@ -16,8 +16,8 @@ const mrVersionsUrl = "%s/api/v4/projects/%s/merge_requests/%d/versions"
 type PostCommentRequest struct {
 	Comment        string     `json:"comment"`
 	FileName       string     `json:"file_name"`
-	NewLine        int        `json:"new_line"`
-	OldLine        int        `json:"old_line"`
+	NewLine        *int       `json:"new_line,omitempty"`
+	OldLine        *int       `json:"old_line,omitempty"`
 	HeadCommitSHA  string     `json:"head_commit_sha"`
 	BaseCommitSHA  string     `json:"base_commit_sha"`
 	StartCommitSHA string     `json:"start_commit_sha"`
@@ -132,41 +132,42 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	/* If we are leaving a comment on a line, leave position. Otherwise,
 	we are leaving a note (unlinked comment) */
 	if postCommentRequest.FileName != "" {
-		opt.Position = &gitlab.NotePosition{
-			PositionType: postCommentRequest.Type,
-			StartSHA:     postCommentRequest.StartCommitSHA,
-			HeadSHA:      postCommentRequest.HeadCommitSHA,
-			BaseSHA:      postCommentRequest.BaseCommitSHA,
-			NewPath:      postCommentRequest.FileName,
-			OldPath:      postCommentRequest.FileName,
+		opt.Position = &gitlab.PositionOptions{
+			PositionType: &postCommentRequest.Type,
+			StartSHA:     &postCommentRequest.StartCommitSHA,
+			HeadSHA:      &postCommentRequest.HeadCommitSHA,
+			BaseSHA:      &postCommentRequest.BaseCommitSHA,
+			NewPath:      &postCommentRequest.FileName,
+			OldPath:      &postCommentRequest.FileName,
 			NewLine:      postCommentRequest.NewLine,
 			OldLine:      postCommentRequest.OldLine,
 		}
 
 		if postCommentRequest.LineRange != nil {
 			var format = "%x_%d_%d"
-			opt.Position.LineRange = &gitlab.LineRange{
-				StartRange: &gitlab.LinePosition{
-					Type: postCommentRequest.LineRange.StartRange.Type,
-					LineCode: fmt.Sprintf(
-						format,
-						sha1.Sum([]byte(postCommentRequest.FileName)),
-						postCommentRequest.LineRange.StartRange.OldLine,
-						postCommentRequest.LineRange.StartRange.NewLine,
-					),
+			var start_filename_sha1 = fmt.Sprintf(
+				format,
+				sha1.Sum([]byte(postCommentRequest.FileName)),
+				postCommentRequest.LineRange.StartRange.OldLine,
+				postCommentRequest.LineRange.StartRange.NewLine,
+			)
+			var end_filename_sha1 = fmt.Sprintf(
+				format,
+				sha1.Sum([]byte(postCommentRequest.FileName)),
+				postCommentRequest.LineRange.EndRange.OldLine,
+				postCommentRequest.LineRange.EndRange.NewLine,
+			)
+			opt.Position.LineRange = &gitlab.LineRangeOptions{
+				Start: &gitlab.LinePositionOptions{
+					Type:     &postCommentRequest.LineRange.StartRange.Type,
+					LineCode: &start_filename_sha1,
 				},
-				EndRange: &gitlab.LinePosition{
-					Type: postCommentRequest.LineRange.StartRange.Type,
-					LineCode: fmt.Sprintf(
-						format,
-						sha1.Sum([]byte(postCommentRequest.FileName)),
-						postCommentRequest.LineRange.EndRange.OldLine,
-						postCommentRequest.LineRange.EndRange.NewLine,
-					),
+				End: &gitlab.LinePositionOptions{
+					Type:     &postCommentRequest.LineRange.EndRange.Type,
+					LineCode: &end_filename_sha1,
 				},
 			}
 		}
-
 	}
 
 	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &opt)

@@ -56,7 +56,7 @@ M.create_comment_suggestion = function()
   if start_line == current_line then
     suggestion_start = backticks .. "suggestion:-0+" .. range
   elseif end_line == current_line then
-    suggestion_start = backticks .. "```suggestion:-" .. range .. "+0"
+    suggestion_start = backticks .. "suggestion:-" .. range .. "+0"
   else
     -- This should never happen afaik
     vim.notify("Unexpected suggestion position", vim.log.levels.ERROR)
