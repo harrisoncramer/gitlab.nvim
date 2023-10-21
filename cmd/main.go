@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -29,6 +31,7 @@ func main() {
 	}
 
 	m := http.NewServeMux()
+	m.Handle("/ping", http.HandlerFunc(PingHandler))
 	m.Handle("/mr/summary", withGitlabContext(http.HandlerFunc(SummaryHandler), c))
 	m.Handle("/mr/attachment", withGitlabContext(http.HandlerFunc(AttachmentHandler), c))
 	m.Handle("/mr/reviewer", withGitlabContext(http.HandlerFunc(ReviewersHandler), c))
@@ -44,19 +47,45 @@ func main() {
 	m.Handle("/pipeline", withGitlabContext(http.HandlerFunc(PipelineHandler), c))
 	m.Handle("/job", withGitlabContext(http.HandlerFunc(JobHandler), c))
 
-	port := fmt.Sprintf(":%s", os.Args[3])
-	server := &http.Server{
-		Addr:    port,
-		Handler: m,
+	port := os.Args[3]
+	if port == "" {
+		// port was not specified
+		port = "0"
+	}
+	addr := fmt.Sprintf("localhost:%s", port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
+		os.Exit(1)
+	}
+	listner_port := listener.Addr().(*net.TCPAddr).Port
+
+	errCh := make(chan error)
+	go func() {
+		err := http.Serve(listener, m)
+		errCh <- err
+	}()
+
+	go func() {
+		for i := 0; i < 10; i++ {
+			resp, err := http.Get("http://localhost:" + fmt.Sprintf("%d", listner_port) + "/ping")
+			if resp.StatusCode == 200 && err == nil {
+				/* This print is detected by the Lua code and used to fetch project information */
+				fmt.Println("Server started on port: ", listner_port)
+				return
+			}
+			// Wait for healthcheck to pass - at most 1 sec.
+			time.Sleep(100 * time.Microsecond)
+		}
+		errCh <- err
+	}()
+
+	if err := <-errCh; err != nil {
+		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
+		os.Exit(1)
 	}
 
-	done := make(chan bool)
-	go server.ListenAndServe()
-
-	/* This print is detected by the Lua code and used to fetch project information */
-	fmt.Println("Server started.")
-
-	<-done
 }
 
 func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
@@ -76,4 +105,8 @@ func getCurrentBranch() (res string, e error) {
 	}
 
 	return strings.TrimSpace(string(output)), nil
+}
+func PingHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "pong")
 }

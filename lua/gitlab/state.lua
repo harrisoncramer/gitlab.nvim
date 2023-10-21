@@ -7,11 +7,11 @@ local u                  = require("gitlab.utils")
 local M                  = {}
 
 -- These are the default settings for the plugin
-M.settings               = {
-  port = 21036,
+M.settings = {
+  port = nil, -- choose random port
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   reviewer = "delta",
-  attachment_dir = '',
+  attachment_dir = "",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
@@ -29,15 +29,15 @@ M.settings               = {
     relative = "editor",
     position = "left",
     size = "20%",
-    resolved = '✓',
-    unresolved = '',
+    resolved = "✓",
+    unresolved = "",
   },
   review_pane = {
     delta = {
       added_file = "",
       modified_file = "",
       removed_file = "",
-    }
+    },
   },
   pipeline = {
     created = "",
