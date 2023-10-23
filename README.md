@@ -157,12 +157,15 @@ The upper part of the popup contains the title, which can also be edited and sen
 
 ### Reviewing Diffs
 
-The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action.
+The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action or for multiline comments use `create_multiline_comment` in visual mode.
 
 ```lua
 require("gitlab").review()
 require("gitlab").create_comment()
+require("gitlab").create_multiline_comment()
 ```
+
+For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with gitlab [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from visual selection.
 
 The reviewer is Delta by default, but you can configure the plugin to use Diffview instead.
 

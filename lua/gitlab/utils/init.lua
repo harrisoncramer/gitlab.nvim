@@ -358,17 +358,22 @@ M.parse_hunk_headers = function(file_path, base_branch)
   return hunks
 end
 
+---@class LineDiffInfo
+---@field old_line integer
+---@field new_line integer
+---@field in_hunk boolean
+
 ---Search git diff hunks to find old and new line number corresponding to target line.
 ---This function does not check if target line is outside of boundaries of file.
 ---@param hunks Hunk[] git diff parsed hunks.
 ---@param target_line integer line number to search for - based on is_new paramter the search is
 ---either in new lines or old lines of hunks.
 ---@param is_new boolean whether to search for new line or old line
----@return integer,integer old line number and new line number
+---@return LineDiffInfo
 M.get_lines_from_hunks = function(hunks, target_line, is_new)
   if #hunks == 0 then
     -- If there are zero hunks, return target_line for both old and new lines
-    return target_line, target_line
+    return { old_line = target_line, new_line = target_line, in_hunk = false }
   end
   local current_new_line = 0
   local current_old_line = 0
@@ -376,11 +381,19 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
     for _, hunk in ipairs(hunks) do
       -- target line is before current hunk
       if target_line < hunk.new_line then
-        return current_old_line + (target_line - current_new_line), target_line
+        return {
+          old_line = current_old_line + (target_line - current_new_line),
+          new_line = target_line,
+          in_hunk = false,
+        }
       -- target line is within the current hunk
       elseif hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
         -- this is interesting magic of gitlab calculation
-        return hunk.old_line + hunk.old_range + 1, target_line
+        return {
+          old_line = hunk.old_line + hunk.old_range + 1,
+          new_line = target_line,
+          in_hunk = true,
+        }
       -- target line is after the current hunk
       else
         current_new_line = hunk.new_line + hunk.new_range
@@ -388,15 +401,27 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
       end
     end
     -- target line is after last hunk
-    return current_old_line + (target_line - current_new_line), target_line
+    return {
+      old_line = current_old_line + (target_line - current_new_line),
+      new_line = target_line,
+      in_hunk = false,
+    }
   else
     for _, hunk in ipairs(hunks) do
       -- target line is before current hunk
       if target_line < hunk.old_line then
-        return target_line, current_new_line + (target_line - current_old_line)
+        return {
+          old_line = target_line,
+          new_line = current_new_line + (target_line - current_old_line),
+          in_hunk = false,
+        }
       -- target line is within the current hunk
       elseif hunk.old_line <= target_line and target_line <= (hunk.old_line + hunk.old_range) then
-        return target_line, hunk.new_line
+        return {
+          old_line = target_line,
+          new_line = hunk.new_line,
+          in_hunk = true,
+        }
       -- target line is after the current hunk
       else
         current_new_line = hunk.new_line + hunk.new_range
@@ -404,7 +429,11 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
       end
     end
     -- target line is after last hunk
-    return current_old_line + (target_line - current_new_line), target_line
+    return {
+      old_line = current_old_line + (target_line - current_new_line),
+      new_line = target_line,
+      in_hunk = false,
+    }
   end
 end
 

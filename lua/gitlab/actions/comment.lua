@@ -137,11 +137,13 @@ M.confirm_create_comment = function(text, range, unlinked)
     head_commit_sha = revision.head_commit_sha,
     type = "text",
   }
+
+  local hunks = u.parse_hunk_headers(file_name, state.INFO.target_branch)
+
   if range then
     -- https://docs.gitlab.com/ee/api/discussions.html#parameters-for-multiline-comments
     -- lua does not have sha1 function built in - there are external dependencies but we can also
     -- calculate this in go server.
-    local hunks = u.parse_hunk_headers(file_name, state.INFO.target_branch)
     if not hunks then
       vim.notify("Could not parse hunks", vim.log.levels.ERROR)
       return
@@ -149,21 +151,47 @@ M.confirm_create_comment = function(text, range, unlinked)
 
     --TODO: is this correct also for delta ?
     local is_new = line_numbers.old_line == nil
-    local start_old_line, start_new_line = u.get_lines_from_hunks(hunks, range.start_line, is_new)
-    local end_old_line, end_new_line = u.get_lines_from_hunks(hunks, range.end_line, is_new)
+    local start_selection = u.get_lines_from_hunks(hunks, range.start_line, is_new)
+    local end_selection = u.get_lines_from_hunks(hunks, range.end_line, is_new)
     local type = is_new and "new" or "old"
     body.line_range = {
       start = {
-        old_line = start_old_line,
-        new_line = start_new_line,
+        old_line = start_selection.old_line,
+        new_line = start_selection.new_line,
         type = type,
       },
       ["end"] = {
-        old_line = end_old_line,
-        new_line = end_new_line,
+        old_line = end_selection.old_line,
+        new_line = end_selection.new_line,
         type = type,
       },
     }
+    -- Even multiline comment must specify both old line and new line if these are outside of
+    -- changed lines.
+    if line_numbers.old_line == start_selection.old_line and not start_selection.in_hunk then
+      body.new_line = start_selection.new_line
+    elseif line_numbers.old_line == end_selection.old_line and not end_selection.in_hunk then
+      body.new_line = end_selection.new_line
+    elseif line_numbers.new_line == start_selection.new_line and not start_selection.in_hunk then
+      body.old_line = start_selection.old_line
+    elseif line_numbers.new_line == end_selection.new_line and not end_selection.in_hunk then
+      body.old_line = end_selection.old_line
+    end
+  else
+    local line_info = nil
+    if line_numbers.old_line == nil then
+      line_info = u.get_lines_from_hunks(hunks, line_numbers.new_line, true)
+    elseif line_numbers.new_line == nil then
+      line_info = u.get_lines_from_hunks(hunks, line_numbers.old_line, false)
+    end
+
+    -- If single line comment is outside of changed lines then we need to specify both new line and old line
+    -- otherwise the API returns error.
+    -- https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
+    if line_info ~= nil and not line_info.in_hunk then
+      body.old_line = line_info.old_line
+      body.new_line = line_info.new_line
+    end
   end
 
   job.run_job("/comment", "POST", body, function(data)
