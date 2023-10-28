@@ -451,7 +451,7 @@ end
 ---Return start line and end line of visual selection.
 ---Exists visual mode in order to access marks "<" , ">"
 ---@return integer,integer start line and end line
-M.get_visual_selection_boundries = function()
+M.get_visual_selection_boundaries = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
   local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
   local end_line = vim.api.nvim_buf_get_mark(0, ">")[1]

@@ -27,7 +27,7 @@ M.create_multiline_comment = function()
   if not u.check_visual_mode() then
     return
   end
-  local start_line, end_line = u.get_visual_selection_boundries()
+  local start_line, end_line = u.get_visual_selection_boundaries()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })
@@ -40,7 +40,7 @@ M.create_comment_suggestion = function()
   if not u.check_visual_mode() then
     return
   end
-  local start_line, end_line = u.get_visual_selection_boundries()
+  local start_line, end_line = u.get_visual_selection_boundaries()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local range = end_line - start_line
   local backticks = "```"
