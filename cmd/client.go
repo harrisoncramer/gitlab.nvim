@@ -68,11 +68,6 @@ var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, 
 	}
 	defer file.Close()
 
-	if response.StatusCode != http.StatusOK {
-		fmt.Println("HTTP request failed with status code:", response.Status)
-		return
-	}
-
 	var data []byte
 	reader := bufio.NewReader(response.Body)
 	_, err = reader.Read(data)
