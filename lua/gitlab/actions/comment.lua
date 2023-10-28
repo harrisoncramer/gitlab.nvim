@@ -1,19 +1,20 @@
 -- This module is responsible for creating new comments
 -- in the reviewer's buffer. The reviewer will pass back
 -- to this module the data required to make the API calls
-local Popup         = require("nui.popup")
-local state         = require("gitlab.state")
-local job           = require("gitlab.job")
-local u             = require("gitlab.utils")
-local discussions   = require("gitlab.actions.discussions")
+local Popup = require("nui.popup")
+local state = require("gitlab.state")
+local job = require("gitlab.job")
+local u = require("gitlab.utils")
+local discussions = require("gitlab.actions.discussions")
 local miscellaneous = require("gitlab.actions.miscellaneous")
-local reviewer      = require("gitlab.reviewer")
-local M             = {}
+local reviewer = require("gitlab.reviewer")
+local M = {}
 
 local comment_popup = Popup(u.create_popup_state("Comment", "40%", "60%"))
-local note_popup    = Popup(u.create_popup_state("Note", "40%", "60%"))
+local note_popup = Popup(u.create_popup_state("Note", "40%", "60%"))
 
--- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
+-- This function will open a comment popup in order to create a comment on the changed/updated
+-- line in the current MR
 M.create_comment = function()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
@@ -43,7 +44,12 @@ M.create_comment_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local range = end_line - start_line
   local backticks = "```"
-  local selected_lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+  local selected_lines = reviewer.get_lines(start_line, end_line)
+
+  if selected_lines == nil then
+    -- TODO: remove when delta is supported
+    return
+  end
 
   for line in ipairs(selected_lines) do
     if string.match(line, "^```$") then
@@ -90,11 +96,31 @@ end
 ---@field start_line integer
 ---@field end_line integer
 
+---@class ReviewerLineInfo
+---@field old_line integer
+---@field new_line integer
+---@field type string either "new" or "old"
+
+---@class ReviewerRangeInfo
+---@field start ReviewerLineInfo
+---@field end ReviewerLineInfo
+
+---@class ReviewerInfo
+---@field file_name string
+---@field old_line integer | nil
+---@field new_line integer | nil
+---@field range_info ReviewerRangeInfo
+
 ---This function (settings.popup.perform_action) will send the comment to the Go server
 ---@param text string comment text
 ---@param range LineRange | nil range of visuel selection or nil
----@param unlinked any
+---@param unlinked boolean | nil if true, the comment is not linked to a line
 M.confirm_create_comment = function(text, range, unlinked)
+  if text == nil then
+    vim.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
+    return
+  end
+
   if unlinked then
     local body = { comment = text }
     job.run_job("/comment", "POST", body, function(data)
@@ -104,95 +130,23 @@ M.confirm_create_comment = function(text, range, unlinked)
     return
   end
 
-  local file_name, line_numbers, error = reviewer.get_location()
-
-  if error then
-    vim.notify(error, vim.log.levels.ERROR)
-    return
-  end
-
-  if file_name == nil then
-    vim.notify("Reviewer did not provide file name", vim.log.levels.ERROR)
-    return
-  end
-
-  if line_numbers == nil then
-    vim.notify("Reviewer did not provide line numbers of change", vim.log.levels.ERROR)
-    return
-  end
-
-  if text == nil then
-    vim.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
+  local reviewer_info = reviewer.get_location(range)
+  if not reviewer_info then
     return
   end
 
   local revision = state.MR_REVISIONS[1]
   local body = {
     comment = text,
-    file_name = file_name,
-    old_line = line_numbers.old_line,
-    new_line = line_numbers.new_line,
+    file_name = reviewer_info.file_name,
+    old_line = reviewer_info.old_line,
+    new_line = reviewer_info.new_line,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
     head_commit_sha = revision.head_commit_sha,
     type = "text",
+    line_range = reviewer_info.range_info,
   }
-
-  local hunks = u.parse_hunk_headers(file_name, state.INFO.target_branch)
-
-  if range then
-    -- https://docs.gitlab.com/ee/api/discussions.html#parameters-for-multiline-comments
-    -- lua does not have sha1 function built in - there are external dependencies but we can also
-    -- calculate this in go server.
-    if not hunks then
-      vim.notify("Could not parse hunks", vim.log.levels.ERROR)
-      return
-    end
-
-    --TODO: is this correct also for delta ?
-    local is_new = line_numbers.old_line == nil
-    local start_selection = u.get_lines_from_hunks(hunks, range.start_line, is_new)
-    local end_selection = u.get_lines_from_hunks(hunks, range.end_line, is_new)
-    local type = is_new and "new" or "old"
-    body.line_range = {
-      start = {
-        old_line = start_selection.old_line,
-        new_line = start_selection.new_line,
-        type = type,
-      },
-      ["end"] = {
-        old_line = end_selection.old_line,
-        new_line = end_selection.new_line,
-        type = type,
-      },
-    }
-    -- Even multiline comment must specify both old line and new line if these are outside of
-    -- changed lines.
-    if line_numbers.old_line == start_selection.old_line and not start_selection.in_hunk then
-      body.new_line = start_selection.new_line
-    elseif line_numbers.old_line == end_selection.old_line and not end_selection.in_hunk then
-      body.new_line = end_selection.new_line
-    elseif line_numbers.new_line == start_selection.new_line and not start_selection.in_hunk then
-      body.old_line = start_selection.old_line
-    elseif line_numbers.new_line == end_selection.new_line and not end_selection.in_hunk then
-      body.old_line = end_selection.old_line
-    end
-  else
-    local line_info = nil
-    if line_numbers.old_line == nil then
-      line_info = u.get_lines_from_hunks(hunks, line_numbers.new_line, true)
-    elseif line_numbers.new_line == nil then
-      line_info = u.get_lines_from_hunks(hunks, line_numbers.old_line, false)
-    end
-
-    -- If single line comment is outside of changed lines then we need to specify both new line and old line
-    -- otherwise the API returns error.
-    -- https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
-    if line_info ~= nil and not line_info.in_hunk then
-      body.old_line = line_info.old_line
-      body.new_line = line_info.new_line
-    end
-  end
 
   job.run_job("/comment", "POST", body, function(data)
     vim.notify("Comment created!", vim.log.levels.INFO)

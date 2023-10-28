@@ -10,7 +10,7 @@ local M = {
 
 local reviewer_map = {
   delta = delta,
-  diffview = diffview
+  diffview = diffview,
 }
 
 M.init = function()
@@ -31,9 +31,12 @@ M.init = function()
   --   • {interval}  The old_line of the change
 
   M.get_location = reviewer.get_location
-  -- Returns the current location (based on cursor) from the reviewer window in format:
-  -- file_name, {new_line, old_line}, error
-end
+  -- Parameters:
+  --   • {range}  LineRange if function was triggered from visual selection
+  -- Returns the current location (based on cursor) from the reviewer window as ReviewerInfo class
 
+  M.get_lines = reviewer.get_lines
+  -- Returns the content of the file in the current location in the reviewer window
+end
 
 return M
