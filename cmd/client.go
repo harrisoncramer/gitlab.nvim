@@ -142,7 +142,7 @@ func (c *Client) init(branchName string) error {
 		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(requestLogger))
 	}
 
-	if debugObject.GoRequest {
+	if debugObject.GoResponse {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
 	}
 
