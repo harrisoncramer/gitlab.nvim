@@ -21,9 +21,11 @@ M.start = function(callback)
       .. " "
       .. state.settings.auth_token
       .. " "
-      .. state.settings.debug_type
+      .. "'" .. vim.json.encode(state.settings.debug) .. "'"
       .. " "
       .. state.settings.log_path
+
+  print(command)
 
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(_, data)

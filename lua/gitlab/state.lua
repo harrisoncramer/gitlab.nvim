@@ -8,8 +8,8 @@ local M                  = {}
 
 -- These are the default settings for the plugin
 M.settings               = {
-  port = nil,      -- choose random port
-  debug_type = "", -- "request", "response", or "both"
+  port = nil, -- choose random port
+  debug = { go_request = false, go_response = false },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   reviewer = "delta",
   attachment_dir = "",

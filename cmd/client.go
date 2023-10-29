@@ -24,6 +24,11 @@ type Client struct {
 	git            *gitlab.Client
 }
 
+type DebugSettings struct {
+	GoRequest  bool `json:"go_request"`
+	GoResponse bool `json:"go_response"`
+}
+
 var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r *http.Request, i int) {
 	logPath := os.Args[len(os.Args)-1]
 
@@ -100,7 +105,13 @@ func (c *Client) init(branchName string) error {
 	projectId := os.Args[1]
 	gitlabInstance := os.Args[2]
 	authToken := os.Args[4]
-	debugType := os.Args[5]
+	debugSettings := os.Args[5]
+
+	var debugObject DebugSettings
+	err := json.Unmarshal([]byte(debugSettings), &debugObject)
+	if err != nil {
+		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings)
+	}
 
 	logPath := os.Args[len(os.Args)-1]
 
@@ -127,11 +138,11 @@ func (c *Client) init(branchName string) error {
 		gitlab.WithBaseURL(apiCustUrl),
 	}
 
-	if debugType == "request" || debugType == "both" {
+	if debugObject.GoRequest {
 		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(requestLogger))
 	}
 
-	if debugType == "response" || debugType == "both" {
+	if debugObject.GoRequest {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
 	}
 
