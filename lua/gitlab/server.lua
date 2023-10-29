@@ -25,8 +25,6 @@ M.start = function(callback)
       .. " "
       .. state.settings.log_path
 
-  print(command)
-
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(_, data)
       -- if port was not provided then we need to parse it from output of server
