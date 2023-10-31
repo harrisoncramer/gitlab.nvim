@@ -386,7 +386,7 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = target_line,
           in_hunk = false,
         }
-        -- target line is within the current hunk
+      -- target line is within the current hunk
       elseif hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
         -- this is interesting magic of gitlab calculation
         return {
@@ -394,7 +394,7 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = target_line,
           in_hunk = true,
         }
-        -- target line is after the current hunk
+      -- target line is after the current hunk
       else
         current_new_line = hunk.new_line + hunk.new_range
         current_old_line = hunk.old_line + hunk.old_range
@@ -415,14 +415,14 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = current_new_line + (target_line - current_old_line),
           in_hunk = false,
         }
-        -- target line is within the current hunk
+      -- target line is within the current hunk
       elseif hunk.old_line <= target_line and target_line <= (hunk.old_line + hunk.old_range) then
         return {
           old_line = target_line,
           new_line = hunk.new_line,
           in_hunk = true,
         }
-        -- target line is after the current hunk
+      -- target line is after the current hunk
       else
         current_new_line = hunk.new_line + hunk.new_range
         current_old_line = hunk.old_line + hunk.old_range
