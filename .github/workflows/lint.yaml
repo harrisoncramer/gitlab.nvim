@@ -1,0 +1,11 @@
+name: Linting
+on:
+  pull_request:
+    branches:
+      - main
+- uses: actions/checkout@v3
+- uses: JohnnyMorganz/stylua-action@v3
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    version: latest
+    args: --check .
