@@ -158,12 +158,13 @@ The upper part of the popup contains the title, which can also be edited and sen
 
 ### Reviewing Diffs
 
-The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action or for multiline comments use `create_multiline_comment` in visual mode.
+The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action. In visual mode, add multiline comments with the `create_multiline_comment` command, and add suggested changes with the `create_comment_suggestion` command.
 
 ```lua
 require("gitlab").review()
 require("gitlab").create_comment()
-require("gitlab").create_multiline_comment()
+require("gitlab").create_multiline_comment() -- Only supported for diffview reviewer
+require("gitlab").create_comment_suggestion() -- Only supported for diffview reviewer
 ```
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with gitlab [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from visual selection.
@@ -267,7 +268,7 @@ vim.keymap.set("n", "<leader>glo", gitlab.open_in_browser)
 
 This plugin uses a Golang server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
 
-```
+```lua
 :lua require("gitlab.server").build(true)
 :lua require("gitlab.server").start(function() print("Server started") end)
 ```
