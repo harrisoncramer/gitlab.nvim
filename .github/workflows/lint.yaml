@@ -1,11 +1,13 @@
-name: Linting
+name: Luacheck
 on:
   pull_request:
     branches:
       - main
-- uses: actions/checkout@v3
-- uses: JohnnyMorganz/stylua-action@v3
-  with:
-    token: ${{ secrets.GITHUB_TOKEN }}
-    version: latest
-    args: --check .
+jobs:
+  sile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Luacheck linter
+        uses: lunarmodules/luacheck@v1
