@@ -272,26 +272,10 @@ This plugin uses a Golang server to reach out to Gitlab. It's possible that some
 :lua require("gitlab.server").start(function() print("Server started") end)
 ```
 
-You can directly interact with the Go server like any other process:
+The easiest way to debug what's going wrong is to turn on the `debug` options in your setup function. This will allow you to see requests leaving the Go server, and the responses coming back from Gitlab. Once the server is running, you can also interact with the Go server like any other process:
 
 ```
 curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
-```
-
-This is the API call that is happening from within Neovim when you run the `summary` action.
-
-If you are able to build and start the Go server and hit the endpoint successfully for the action you are trying to run (such as creating a comment or approving a merge request) then something is wrong with the Lua code. In that case, please file a bug report.
-
-This Go server, in turn, writes logs to the log path that is configured in your setup function. These are written by default to `~/.cache/nvim/gitlab.nvim.log` and will be written each time the server reaeches out to Gitlab.
-
-If the Golang server is not starting up correctly, please check your `.gitlab.nvim` file and your setup function. You can, however, try running the Golang server independently of Neovim. For instance, to start it up for a certain project, navigate to your plugin directory, and build the binary (these are instructions for Lazy) and move that binary to your project. You can then try running the binary directly, or even with a debugger like Delve:
-
-```bash
-$ cd ~/.local/share/nvim/lazy/gitlab.nvim
-$ cd cmd
-$ go build -gcflags=all="-N -l" -o bin && cp ./bin ~/path-to-your-project
-$ cd ~/path-to-your-project
-$ dlv exec ./bin -- 41057709 https://www.gitlab.com 21036 your-gitlab-token
 ```
 
 ## Extra Goodies
