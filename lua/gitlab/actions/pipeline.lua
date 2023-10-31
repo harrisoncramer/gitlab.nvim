@@ -1,11 +1,11 @@
 -- This module is responsible for the MR pipline
 -- This lets the user see the current status of the pipeline
 -- and retrigger the pipeline from within the editor
-local Popup    = require("nui.popup")
-local state    = require("gitlab.state")
-local job      = require("gitlab.job")
-local u        = require("gitlab.utils")
-local M        = {
+local Popup = require("nui.popup")
+local state = require("gitlab.state")
+local job = require("gitlab.job")
+local u = require("gitlab.utils")
+local M = {
   pipeline_jobs = nil,
   pipeline_popup = nil,
 }
@@ -53,8 +53,15 @@ M.open = function()
     table.insert(lines, "")
     table.insert(lines, "Jobs:")
     for _, pipeline_job in ipairs(pipeline_jobs) do
-      table.insert(lines,
-        string.format("%s (%s) %s", state.settings.pipeline[pipeline_job.status], pipeline_job.status, pipeline_job.name))
+      table.insert(
+        lines,
+        string.format(
+          "%s (%s) %s",
+          state.settings.pipeline[pipeline_job.status],
+          pipeline_job.status,
+          pipeline_job.name
+        )
+      )
     end
 
     vim.schedule(function()
@@ -72,7 +79,7 @@ M.open = function()
   end)
 end
 
-M.retrigger    = function()
+M.retrigger = function()
   local pipeline = get_pipeline()
   if not pipeline then
     return
@@ -101,7 +108,9 @@ M.see_logs = function()
 
   local j = nil
   for _, pipeline_job in ipairs(M.pipeline_jobs) do
-    if pipeline_job.name == last_word then j = pipeline_job end
+    if pipeline_job.name == last_word then
+      j = pipeline_job
+    end
   end
 
   if j == nil then
@@ -147,19 +156,24 @@ M.color_status = function(status, bufnr, status_line, linnr)
   vim.cmd(string.format("highlight default StatusHighlight guifg=%s", state.settings.pipeline[status]))
 
   local status_to_color_map = {
-    created = 'DiagnosticWarn',
-    pending = 'DiagnosticWarn',
-    preparing = 'DiagnosticWarn',
-    scheduled = 'DiagnosticWarn',
-    running = 'DiagnosticWarn',
-    canceled = 'DiagnosticWarn',
-    skipped = 'DiagnosticWarn',
-    failed = 'DiagnosticError',
-    success = 'DiagnosticOK',
+    created = "DiagnosticWarn",
+    pending = "DiagnosticWarn",
+    preparing = "DiagnosticWarn",
+    scheduled = "DiagnosticWarn",
+    running = "DiagnosticWarn",
+    canceled = "DiagnosticWarn",
+    skipped = "DiagnosticWarn",
+    failed = "DiagnosticError",
+    success = "DiagnosticOK",
   }
 
-  vim.api.nvim_buf_set_extmark(bufnr, ns_id, linnr - 1, 0,
-    { end_row = linnr - 1, end_col = string.len(status_line), hl_group = status_to_color_map[status] })
+  vim.api.nvim_buf_set_extmark(
+    bufnr,
+    ns_id,
+    linnr - 1,
+    0,
+    { end_row = linnr - 1, end_col = string.len(status_line), hl_group = status_to_color_map[status] }
+  )
 end
 
 return M

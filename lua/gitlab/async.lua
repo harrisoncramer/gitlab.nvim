@@ -1,14 +1,14 @@
 -- This module is responsible for calling APIs in sequence. It provides
 -- an abstraction around the APIs that lets us ensure state.
 local server = require("gitlab.server")
-local job    = require("gitlab.job")
-local state  = require("gitlab.state")
-local u      = require("gitlab.utils")
+local job = require("gitlab.job")
+local state = require("gitlab.state")
+local u = require("gitlab.utils")
 
-local M      = {}
+local M = {}
 
-Async        = {
-  cb = nil
+Async = {
+  cb = nil,
 }
 
 function Async:new(o)

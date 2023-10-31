@@ -3,11 +3,11 @@
 -- This module is also responsible for ensuring that the state of the plugin
 -- is valid via dependencies
 
-local u                  = require("gitlab.utils")
-local M                  = {}
+local u = require("gitlab.utils")
+local M = {}
 
 -- These are the default settings for the plugin
-M.settings               = {
+M.settings = {
   port = nil, -- choose random port
   debug = { go_request = false, go_response = false },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
@@ -62,12 +62,14 @@ M.settings               = {
 }
 
 -- Merges user settings into the default settings, overriding them
-M.merge_settings         = function(args)
-  if args == nil then return end
+M.merge_settings = function(args)
+  if args == nil then
+    return
+  end
   M.settings = u.merge(M.settings, args)
 end
 
-M.print_settings         = function()
+M.print_settings = function()
   u.P(M.settings)
 end
 
@@ -110,15 +112,21 @@ end
 
 local function exit(popup, cb)
   popup:unmount()
-  if cb ~= nil then cb() end
+  if cb ~= nil then
+    cb()
+  end
 end
 
 -- These keymaps are buffer specific and are set dynamically when popups mount
 M.set_popup_keymaps = function(popup, action, linewise_action, opts)
-  if opts == nil then opts = {} end
-  vim.keymap.set('n', M.settings.popup.exit, function() exit(popup, opts.cb) end, { buffer = popup.bufnr })
+  if opts == nil then
+    opts = {}
+  end
+  vim.keymap.set("n", M.settings.popup.exit, function()
+    exit(popup, opts.cb)
+  end, { buffer = popup.bufnr })
   if action ~= nil then
-    vim.keymap.set('n', M.settings.popup.perform_action, function()
+    vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
@@ -131,7 +139,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   end
 
   if linewise_action ~= nil then
-    vim.keymap.set('n', M.settings.popup.perform_linewise_action, function()
+    vim.keymap.set("n", M.settings.popup.perform_linewise_action, function()
       local bufnr = vim.api.nvim_get_current_buf()
       local linnr = vim.api.nvim_win_get_cursor(0)[1]
       local text = u.get_line_content(bufnr, linnr)
@@ -145,12 +153,10 @@ end
 -- before calling an action. They are used to set global state that's required
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
-M.dependencies      = {
-  info            = { endpoint = "/info", key = "info", state = "INFO", refresh = false },
-  revisions       = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
-  project_members = { endpoint = "/members", key = "ProjectMembers", state = "PROJECT_MEMBERS", refresh = false }
+M.dependencies = {
+  info = { endpoint = "/info", key = "info", state = "INFO", refresh = false },
+  revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
+  project_members = { endpoint = "/members", key = "ProjectMembers", state = "PROJECT_MEMBERS", refresh = false },
 }
-
-
 
 return M
