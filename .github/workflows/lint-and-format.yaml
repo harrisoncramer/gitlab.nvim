@@ -1,4 +1,4 @@
-name: Luacheck
+name: Luacheck and Stylua
 on:
   pull_request:
     branches:
@@ -11,6 +11,8 @@ jobs:
         uses: actions/checkout@v3
       - name: Luacheck linter
         uses: lunarmodules/luacheck@v1
+        with:
+          args: luacheck --globals vim -- .
   stylua:
     runs-on: ubuntu-latest
     steps:
