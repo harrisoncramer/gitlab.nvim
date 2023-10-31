@@ -57,7 +57,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileResponse := AttachmentResponse{
+	response := AttachmentResponse{
 		SuccessResponse: SuccessResponse{
 			Status:  http.StatusOK,
 			Message: "File uploaded successfully",
@@ -67,5 +67,8 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 		Url:      projectFile.URL,
 	}
 
-	json.NewEncoder(w).Encode(fileResponse)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

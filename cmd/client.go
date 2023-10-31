@@ -14,13 +14,11 @@ import (
 )
 
 type Client struct {
-	command        string
 	projectId      string
 	mergeId        int
 	gitlabInstance string
 	authToken      string
 	logPath        string
-	debug          bool
 	git            *gitlab.Client
 }
 
@@ -41,11 +39,14 @@ var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r 
 	token := r.Header.Get("Private-Token")
 	r.Header.Set("Private-Token", "REDACTED")
 	res, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		panic(err)
+	}
 	r.Header.Set("Private-Token", token)
 
-	_, err = file.Write([]byte("\n-- REQUEST --\n"))
-	_, err = file.Write(res)
-	_, err = file.Write([]byte("\n"))
+	_, err = file.Write([]byte("\n-- REQUEST --\n")) //nolint:all
+	_, err = file.Write(res)                         //nolint:all
+	_, err = file.Write([]byte("\n"))                //nolint:all
 }
 
 var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, response *http.Response) {
@@ -58,10 +59,13 @@ var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, 
 	defer file.Close()
 
 	res, err := httputil.DumpResponse(response, true)
+	if err != nil {
+		panic(err)
+	}
 
-	_, err = file.Write([]byte("\n-- RESPONSE --\n"))
-	_, err = file.Write(res)
-	_, err = file.Write([]byte("\n"))
+	_, err = file.Write([]byte("\n-- RESPONSE --\n")) //nolint:all
+	_, err = file.Write(res)                          //nolint:all
+	_, err = file.Write([]byte("\n"))                 //nolint:all
 }
 
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
@@ -155,5 +159,9 @@ func (c *Client) handleError(w http.ResponseWriter, err error, message string, s
 		Details: err.Error(),
 		Status:  status,
 	}
-	json.NewEncoder(w).Encode(response)
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

@@ -31,5 +31,8 @@ func RevokeHandler(w http.ResponseWriter, r *http.Request) {
 		Status:  http.StatusOK,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

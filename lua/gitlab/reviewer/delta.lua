@@ -23,7 +23,7 @@ M.open = function()
   end
 
   local term_command_template =
-    "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff %s...HEAD"
+  "GIT_PAGER='delta --hunk-header-style omit --line-numbers --paging never --file-added-label %s --file-removed-label %s --file-modified-label %s' git diff %s...HEAD"
 
   local term_command = string.format(
     term_command_template,
@@ -118,10 +118,10 @@ M.get_location = function(range)
   local result = { file_name = file_name }
   -- This is actually a modified line if these conditions are met
   if
-    current_line_changes.old_line
-    and not current_line_changes.new_line
-    and not next_line_changes.old_line
-    and next_line_changes.new_line
+      current_line_changes.old_line
+      and not current_line_changes.new_line
+      and not next_line_changes.old_line
+      and next_line_changes.new_line
   then
     result.old_line = current_line_changes.old
     result.new_line = next_line_changes.new_line

@@ -68,6 +68,9 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 		MergeRequest: mr,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 
 }

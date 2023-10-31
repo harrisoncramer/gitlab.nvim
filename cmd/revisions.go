@@ -38,6 +38,9 @@ func RevisionsHandler(w http.ResponseWriter, r *http.Request) {
 		Revisions: versionInfo,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 
 }
