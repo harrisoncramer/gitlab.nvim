@@ -6,18 +6,17 @@ M.get_current_line_number = function()
 end
 
 M.has_reviewer = function(reviewer)
-  local has_reviewer
   if reviewer == "diffview" then
-    has_reviewer = vim.fn.exists(":DiffviewOpen") ~= 0
+    local diffview_ok, _ = pcall(require, "diffview")
+    if not diffview_ok then
+      error("Please install diffview or change your reviewer")
+    end
   else
-    has_reviewer = vim.fn.executable("delta") == 1
+    local has_reviewer = vim.fn.executable("delta") == 1
+    if not has_reviewer then
+      error(string.format("Please install delta or change your reviewer", reviewer))
+    end
   end
-
-  if not has_reviewer then
-    error(string.format("Please install %s or change your reviewer", reviewer))
-  end
-
-  return has_reviewer
 end
 
 M.is_windows = function()
