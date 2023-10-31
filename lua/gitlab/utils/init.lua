@@ -253,10 +253,7 @@ end
 M.get_line_content = function(bufnr, start)
   local current_buffer = vim.api.nvim_get_current_buf()
   local lines = vim.api.nvim_buf_get_lines(bufnr ~= nil and bufnr or current_buffer, start - 1, start, false)
-
-  for _, line in ipairs(lines) do
-    return line
-  end
+  return lines[1]
 end
 
 M.get_win_from_buf = function(bufnr)
