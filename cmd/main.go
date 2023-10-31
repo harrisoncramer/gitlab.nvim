@@ -88,9 +88,12 @@ func main() {
 
 }
 
+type ClientString string
+
 func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(context.Background(), "client", c)
+		var cl ClientString = "client"
+		ctx := context.WithValue(context.Background(), cl, c)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

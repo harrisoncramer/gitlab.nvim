@@ -1,7 +1,7 @@
 -- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
 local Job = require("plenary.job")
-local M   = {}
+local M = {}
 
 M.run_job = function(endpoint, method, body, callback)
   local state = require("gitlab.state")
@@ -24,7 +24,9 @@ M.run_job = function(endpoint, method, body, callback)
         local data_ok, data = pcall(vim.json.decode, output)
         if not data_ok then
           local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)
-          if (type(output) == "string") then msg = string.format(msg .. ", got: '%s'", output) end
+          if type(output) == "string" then
+            msg = string.format(msg .. ", got: '%s'", output)
+          end
           vim.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
           return
         end
@@ -42,12 +44,12 @@ M.run_job = function(endpoint, method, body, callback)
         end
       end, 0)
     end,
-    on_stderr = function(_, output)
+    on_stderr = function()
       vim.defer_fn(function()
         vim.notify("Could not run command!", vim.log.levels.ERROR)
       end, 0)
     end,
-    on_exit = function(msg, status)
+    on_exit = function(_, status)
       vim.defer_fn(function()
         if status ~= 0 then
           vim.notify(string.format("Go server exited with non-zero code: %d", status), vim.log.levels.ERROR)

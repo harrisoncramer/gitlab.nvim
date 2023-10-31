@@ -40,6 +40,9 @@ func JobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reader, _, err := c.git.Jobs.GetTraceFile(c.projectId, jobTraceRequest.JobId)
+	if err != nil {
+		c.handleError(w, err, "Could not get trace file for job", http.StatusBadRequest)
+	}
 
 	file, err := io.ReadAll(reader)
 
@@ -55,5 +58,8 @@ func JobHandler(w http.ResponseWriter, r *http.Request) {
 		File: string(file),
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

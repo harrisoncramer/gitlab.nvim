@@ -62,7 +62,7 @@ func (c *Client) ListDiscussions(blacklist []string) ([]*gitlab.Discussion, []*g
 			if note.Type == gitlab.NoteTypeValue("DiffNote") {
 				linkedDiscussions = append(linkedDiscussions, discussion)
 				break
-			} else if note.System == false && note.Position == nil {
+			} else if !note.System && note.Position == nil {
 				unlinkedDiscussions = append(unlinkedDiscussions, discussion)
 				break
 			}
@@ -118,5 +118,8 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		UnlinkedDiscussions: unlinkedDiscussions,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

@@ -246,11 +246,8 @@ M.get_review_buffer_lines = function(review_buffer_range)
   return lines
 end
 
----Return content between start_line and end_line
----@param start_line integer
----@param end_line integer
----@return string[] | nil
-M.get_lines = function(start_line, end_line)
+--- This function is not supported for delta
+M.get_lines = function()
   vim.notify("Getting lines in delta is not supported yet", vim.log.levels.ERROR)
   return nil
 end

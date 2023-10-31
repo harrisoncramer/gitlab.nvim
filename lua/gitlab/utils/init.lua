@@ -6,7 +6,7 @@ M.get_current_line_number = function()
 end
 
 M.has_reviewer = function(reviewer)
-  local has_reviewer = false
+  local has_reviewer
   if reviewer == "diffview" then
     has_reviewer = vim.fn.exists(":DiffviewOpen") ~= 0
   else
@@ -253,10 +253,7 @@ end
 M.get_line_content = function(bufnr, start)
   local current_buffer = vim.api.nvim_get_current_buf()
   local lines = vim.api.nvim_buf_get_lines(bufnr ~= nil and bufnr or current_buffer, start - 1, start, false)
-
-  for _, line in ipairs(lines) do
-    return line
-  end
+  return lines[1]
 end
 
 M.get_win_from_buf = function(bufnr)
@@ -386,7 +383,7 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = target_line,
           in_hunk = false,
         }
-      -- target line is within the current hunk
+        -- target line is within the current hunk
       elseif hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
         -- this is interesting magic of gitlab calculation
         return {
@@ -394,7 +391,7 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = target_line,
           in_hunk = true,
         }
-      -- target line is after the current hunk
+        -- target line is after the current hunk
       else
         current_new_line = hunk.new_line + hunk.new_range
         current_old_line = hunk.old_line + hunk.old_range
@@ -415,14 +412,14 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = current_new_line + (target_line - current_old_line),
           in_hunk = false,
         }
-      -- target line is within the current hunk
+        -- target line is within the current hunk
       elseif hunk.old_line <= target_line and target_line <= (hunk.old_line + hunk.old_range) then
         return {
           old_line = target_line,
           new_line = hunk.new_line,
           in_hunk = true,
         }
-      -- target line is after the current hunk
+        -- target line is after the current hunk
       else
         current_new_line = hunk.new_line + hunk.new_range
         current_old_line = hunk.old_line + hunk.old_range

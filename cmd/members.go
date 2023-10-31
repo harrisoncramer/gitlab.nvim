@@ -37,7 +37,8 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
 		ProjectMembers: projectMembers,
 	}
 
-	json.NewEncoder(w).Encode(response)
-
-	return
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

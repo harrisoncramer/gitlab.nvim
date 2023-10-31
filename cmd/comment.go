@@ -11,8 +11,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-const mrVersionsUrl = "%s/api/v4/projects/%s/merge_requests/%d/versions"
-
 type PostCommentRequest struct {
 	Comment        string     `json:"comment"`
 	FileName       string     `json:"file_name"`
@@ -103,7 +101,10 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 		Status:  http.StatusOK,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }
 
 func PostComment(w http.ResponseWriter, r *http.Request) {
@@ -186,7 +187,10 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		Discussion: discussion,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }
 
 func EditComment(w http.ResponseWriter, r *http.Request) {
@@ -241,5 +245,8 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 		Comment: note,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

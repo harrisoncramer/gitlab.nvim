@@ -67,7 +67,10 @@ func GetJobs(w http.ResponseWriter, r *http.Request) {
 		Jobs: jobs,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 
 }
 
@@ -104,6 +107,8 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 		Pipeline: pipeline,
 	}
 
-	json.NewEncoder(w).Encode(response)
-
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

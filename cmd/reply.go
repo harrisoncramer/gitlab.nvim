@@ -79,5 +79,8 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 		Note: note,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

@@ -38,7 +38,7 @@ func (c *Client) Info() ([]byte, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, errors.New(fmt.Sprintf("Recieved non-200 response: %d", res.StatusCode))
+		return nil, fmt.Errorf("Recieved non-200 response: %d", res.StatusCode)
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -83,5 +83,8 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 		Info: mergeRequest,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

@@ -65,6 +65,8 @@ func AssigneesHandler(w http.ResponseWriter, r *http.Request) {
 		Assignees: mr.Assignees,
 	}
 
-	json.NewEncoder(w).Encode(response)
-
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

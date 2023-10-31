@@ -1,7 +1,7 @@
-local state       = require("gitlab.state")
-local u           = require("gitlab.utils")
-local job         = require("gitlab.job")
-local M           = {}
+local state = require("gitlab.state")
+local u = require("gitlab.utils")
+local job = require("gitlab.job")
+local M = {}
 
 M.open_in_browser = function()
   local url = state.INFO.web_url
@@ -18,9 +18,9 @@ M.open_in_browser = function()
   end
 end
 
-M.attach_file     = function()
+M.attach_file = function()
   local attachment_dir = state.settings.attachment_dir
-  if not attachment_dir or attachment_dir == '' then
+  if not attachment_dir or attachment_dir == "" then
     vim.notify("Must provide valid attachment_dir in plugin setup", vim.log.levels.ERROR)
     return
   end
@@ -33,9 +33,11 @@ M.attach_file     = function()
   end
 
   vim.ui.select(files, {
-    prompt = 'Choose attachment',
+    prompt = "Choose attachment",
   }, function(choice)
-    if not choice then return end
+    if not choice then
+      return
+    end
     local full_path = attachment_dir .. (u.is_windows() and "\\" or "/") .. choice
     local body = { file_path = full_path, file_name = choice }
     job.run_job("/mr/attachment", "POST", body, function(data)

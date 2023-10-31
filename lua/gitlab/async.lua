@@ -1,28 +1,27 @@
 -- This module is responsible for calling APIs in sequence. It provides
 -- an abstraction around the APIs that lets us ensure state.
 local server = require("gitlab.server")
-local job    = require("gitlab.job")
-local state  = require("gitlab.state")
-local u      = require("gitlab.utils")
+local job = require("gitlab.job")
+local state = require("gitlab.state")
 
-local M      = {}
+local M = {}
 
-Async        = {
-  cb = nil
+local async = {
+  cb = nil,
 }
 
-function Async:new(o)
+function async:new(o)
   o = o or {}
   setmetatable(o, self)
   self.__index = self
   return o
 end
 
-function Async:init(cb)
+function async:init(cb)
   self.cb = cb
 end
 
-function Async:fetch(dependencies, i, argTable)
+function async:fetch(dependencies, i, argTable)
   if i > #dependencies then
     self.cb(argTable)
     return
@@ -45,7 +44,7 @@ end
 -- Will call APIs in sequence and set global state
 M.sequence = function(dependencies, cb)
   return function(argTable)
-    local handler = Async:new()
+    local handler = async:new()
     handler:init(cb)
 
     if not state.is_gitlab_project then

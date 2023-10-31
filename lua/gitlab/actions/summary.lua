@@ -1,23 +1,22 @@
 -- This module is responsible for the MR description
 -- This lets the user open the description in a popup and
 -- send edits to the description back to Gitlab
-local Layout        = require("nui.layout")
-local Popup         = require("nui.popup")
-local job           = require("gitlab.job")
-local u             = require("gitlab.utils")
-local state         = require("gitlab.state")
+local Layout = require("nui.layout")
+local Popup = require("nui.popup")
+local job = require("gitlab.job")
+local u = require("gitlab.utils")
+local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
-local M             = {
+local M = {
   layout_visible = false,
   layout = nil,
   layout_buf = nil,
   title_bufnr = nil,
-  description_bufnr = nil
+  description_bufnr = nil,
 }
 
-
 -- The function will render the MR description in a popup
-M.summary          = function()
+M.summary = function()
   if M.layout_visible then
     M.layout:unmount()
     M.layout_visible = false
@@ -48,14 +47,18 @@ M.summary          = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
-    state.set_popup_keymaps(description_popup, M.edit_summary, miscellaneous.attach_file,
-      { cb = exit, action_before_close = true })
+    state.set_popup_keymaps(
+      description_popup,
+      M.edit_summary,
+      miscellaneous.attach_file,
+      { cb = exit, action_before_close = true }
+    )
     state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
   end)
 end
 
 -- This function will PUT the new description to the Go server
-M.edit_summary     = function()
+M.edit_summary = function()
   local description = u.get_buffer_text(M.description_bufnr)
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
   local body = { title = title, description = description }
@@ -68,22 +71,22 @@ M.edit_summary     = function()
   end)
 end
 
-local top_popup    = {
+local top_popup = {
   buf_options = {
-    filetype = 'markdown'
+    filetype = "markdown",
   },
   focusable = true,
   border = {
     style = "rounded",
     text = {
-      top = "Merge Request"
+      top = "Merge Request",
     },
   },
 }
 
 local bottom_popup = {
   buf_options = {
-    filetype = 'markdown'
+    filetype = "markdown",
   },
   enter = true,
   focusable = true,
@@ -92,7 +95,7 @@ local bottom_popup = {
   },
 }
 
-M.create_layout    = function()
+M.create_layout = function()
   local title_popup = Popup(top_popup)
   M.title_bufnr = title_popup.bufnr
   local description_popup = Popup(bottom_popup)
