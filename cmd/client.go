@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"strconv"
 
@@ -38,29 +38,13 @@ var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r 
 	}
 	defer file.Close()
 
-	clonedRequest := r.Clone(r.Context())
-	var data []byte
-	reader := bufio.NewReader(clonedRequest.Body)
-	_, err = reader.Read(data)
-	if err != nil {
-		panic(err)
-	}
+	token := r.Header.Get("Private-Token")
+	r.Header.Set("Private-Token", "xxxx")
+	res, err := httputil.DumpRequest(r, true)
+	r.Header.Set("Private-Token", token)
 
-	clonedRequest.Header.Set("Private-Token", "xxxx")
-	output := map[string]interface{}{
-		"Method":  clonedRequest.Method,
-		"URL":     clonedRequest.URL.String(),
-		"Body":    string(data),
-		"Headers": clonedRequest.Header,
-	}
-
-	logString, err := json.MarshalIndent(output, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = file.Write([]byte("-- REQUEST: \n"))
-	_, err = file.Write(logString)
+	_, err = file.Write([]byte("\n-- REQUEST --\n"))
+	_, err = file.Write(res)
 	_, err = file.Write([]byte("\n"))
 }
 
@@ -73,25 +57,10 @@ var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, 
 	}
 	defer file.Close()
 
-	var data []byte
-	reader := bufio.NewReader(response.Body)
-	_, err = reader.Read(data)
-	if err != nil {
-		panic(err)
-	}
+	res, err := httputil.DumpResponse(response, true)
 
-	output := map[string]interface{}{
-		"Body":    string(data),
-		"Headers": response.Header,
-	}
-
-	logString, err := json.MarshalIndent(output, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = file.Write([]byte("-- RESPONSE: \n"))
-	_, err = file.Write(logString)
+	_, err = file.Write([]byte("\n-- RESPONSE --\n"))
+	_, err = file.Write(res)
 	_, err = file.Write([]byte("\n"))
 }
 
