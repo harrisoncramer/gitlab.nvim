@@ -86,6 +86,7 @@ Here is the default setup function. All of these values are optional, and if you
 require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
+  debug = { go_request = false, go_response = false }, -- Which values to log
   reviewer = "delta", -- The reviewer type ("delta" or "diffview")
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   popup = { -- The popup for comment creation, editing, and replying

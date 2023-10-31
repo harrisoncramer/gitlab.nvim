@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"strconv"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -17,15 +19,17 @@ type Client struct {
 	mergeId        int
 	gitlabInstance string
 	authToken      string
+	logPath        string
+	debug          bool
 	git            *gitlab.Client
 }
 
-type Logger struct {
-	Active bool
+type DebugSettings struct {
+	GoRequest  bool `json:"go_request"`
+	GoResponse bool `json:"go_response"`
 }
 
-func (l Logger) Printf(s string, args ...interface{}) {
-	logString := fmt.Sprintf(s+"\n", args...)
+var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r *http.Request, i int) {
 	logPath := os.Args[len(os.Args)-1]
 
 	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -33,7 +37,31 @@ func (l Logger) Printf(s string, args ...interface{}) {
 		panic(err)
 	}
 	defer file.Close()
-	_, err = file.Write([]byte(logString))
+
+	token := r.Header.Get("Private-Token")
+	r.Header.Set("Private-Token", "REDACTED")
+	res, err := httputil.DumpRequest(r, true)
+	r.Header.Set("Private-Token", token)
+
+	_, err = file.Write([]byte("\n-- REQUEST --\n"))
+	_, err = file.Write(res)
+	_, err = file.Write([]byte("\n"))
+}
+
+var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, response *http.Response) {
+	logPath := os.Args[len(os.Args)-1]
+
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	res, err := httputil.DumpResponse(response, true)
+
+	_, err = file.Write([]byte("\n-- RESPONSE --\n"))
+	_, err = file.Write(res)
+	_, err = file.Write([]byte("\n"))
 }
 
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
@@ -46,6 +74,15 @@ func (c *Client) init(branchName string) error {
 	projectId := os.Args[1]
 	gitlabInstance := os.Args[2]
 	authToken := os.Args[4]
+	debugSettings := os.Args[5]
+
+	var debugObject DebugSettings
+	err := json.Unmarshal([]byte(debugSettings), &debugObject)
+	if err != nil {
+		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings)
+	}
+
+	logPath := os.Args[len(os.Args)-1]
 
 	if projectId == "" {
 		return errors.New("Project ID cannot be empty")
@@ -62,11 +99,23 @@ func (c *Client) init(branchName string) error {
 	c.gitlabInstance = gitlabInstance
 	c.projectId = projectId
 	c.authToken = authToken
+	c.logPath = logPath
 
-	var l Logger
 	var apiCustUrl = fmt.Sprintf(c.gitlabInstance + "/api/v4")
 
-	git, err := gitlab.NewClient(authToken, gitlab.WithBaseURL(apiCustUrl), gitlab.WithCustomLogger(l))
+	gitlabOptions := []gitlab.ClientOptionFunc{
+		gitlab.WithBaseURL(apiCustUrl),
+	}
+
+	if debugObject.GoRequest {
+		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(requestLogger))
+	}
+
+	if debugObject.GoResponse {
+		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
+	}
+
+	git, err := gitlab.NewClient(authToken, gitlabOptions...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create client: %v", err)
