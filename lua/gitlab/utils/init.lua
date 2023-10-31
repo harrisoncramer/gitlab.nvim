@@ -1,7 +1,8 @@
+local Job = require("plenary.job")
 local M = {}
 
 M.get_current_line_number = function()
-  return vim.api.nvim_call_function('line', { '.' })
+  return vim.api.nvim_call_function("line", { "." })
 end
 
 M.has_reviewer = function(reviewer)
@@ -62,13 +63,13 @@ M.format_date = function(date_string)
     day = date_table.day,
     hour = date_table.hour,
     min = date_table.min,
-    sec = date_table.sec
+    sec = date_table.sec,
   })
 
   local time_diff = current_date - date
 
   local function pluralize(num, word)
-    return num .. string.format(" %s", word) .. (num > 1 and "s" or '') .. " ago"
+    return num .. string.format(" %s", word) .. (num > 1 and "s" or "") .. " ago"
   end
 
   if time_diff < 60 then
@@ -86,7 +87,9 @@ M.format_date = function(date_string)
 end
 
 M.jump_to_file = function(filename, line_number)
-  if line_number == nil then line_number = 1 end
+  if line_number == nil then
+    line_number = 1
+  end
   local bufnr = vim.fn.bufnr(filename)
   if bufnr ~= -1 then
     M.jump_to_buffer(bufnr, line_number)
@@ -106,7 +109,7 @@ end
 M.create_popup_state = function(title, width, height)
   return {
     buf_options = {
-      filetype = 'markdown'
+      filetype = "markdown",
     },
     relative = "editor",
     enter = true,
@@ -114,7 +117,7 @@ M.create_popup_state = function(title, width, height)
     border = {
       style = "rounded",
       text = {
-        top = title
+        top = title,
       },
     },
     position = "50%",
@@ -142,7 +145,7 @@ M.join = function(tbl, separator)
 
   -- Remove the trailing separator
   if separator ~= "" then
-    result = result:sub(1, - #separator - 1)
+    result = result:sub(1, -#separator - 1)
   end
 
   return result
@@ -169,16 +172,16 @@ M.read_file = function(file_path)
 end
 
 M.current_file_path = function()
-  local path = debug.getinfo(1, 'S').source:sub(2)
-  return vim.fn.fnamemodify(path, ':p')
+  local path = debug.getinfo(1, "S").source:sub(2)
+  return vim.fn.fnamemodify(path, ":p")
 end
 
 local random = math.random
 M.uuid = function()
-  local template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-  return string.gsub(template, '[xy]', function(c)
-    local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
-    return string.format('%x', v)
+  local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+  return string.gsub(template, "[xy]", function(c)
+    local v = (c == "x") and random(0, 0xf) or random(8, 0xb)
+    return string.format("%x", v)
   end)
 end
 
@@ -192,7 +195,9 @@ end
 
 M.table_size = function(t)
   local count = 0
-  for _ in pairs(t) do count = count + 1 end
+  for _ in pairs(t) do
+    count = count + 1
+  end
   return count
 end
 
@@ -247,11 +252,7 @@ end
 
 M.get_line_content = function(bufnr, start)
   local current_buffer = vim.api.nvim_get_current_buf()
-  local lines = vim.api.nvim_buf_get_lines(
-    bufnr ~= nil and bufnr or current_buffer,
-    start - 1,
-    start,
-    false)
+  local lines = vim.api.nvim_buf_get_lines(bufnr ~= nil and bufnr or current_buffer, start - 1, start, false)
 
   for _, line in ipairs(lines) do
     return line
@@ -267,8 +268,8 @@ M.get_win_from_buf = function(bufnr)
 end
 
 M.switch_can_edit_buf = function(buf, bool)
-  vim.api.nvim_buf_set_option(buf, 'modifiable', bool)
-  vim.api.nvim_buf_set_option(buf, "readonly", not bool)
+  vim.api.nvim_set_option_value("modifiable", bool, { buf = buf })
+  vim.api.nvim_set_option_value("readonly", not bool, { buf = buf })
 end
 
 M.list_files_in_folder = function(folder_path)
@@ -278,12 +279,14 @@ M.list_files_in_folder = function(folder_path)
 
   local folder_ok, folder = pcall(vim.fn.readdir, folder_path)
 
-  if not folder_ok then return nil end
+  if not folder_ok then
+    return nil
+  end
 
   local files = {}
   if folder ~= nil then
     for _, file in ipairs(folder) do
-      local file_path = folder_path .. (M.is_windows() and "\\" or '/') .. file
+      local file_path = folder_path .. (M.is_windows() and "\\" or "/") .. file
       local timestamp = vim.fn.getftime(file_path)
       table.insert(files, { name = file, timestamp = timestamp })
     end
@@ -308,6 +311,151 @@ M.reverse = function(list)
     rev[#rev + 1] = list[i]
   end
   return rev
+end
+
+---@class Hunk
+---@field old_line integer
+---@field old_range integer
+---@field new_line integer
+---@field new_range integer
+
+---Parse git diff hunks.
+---@param file_path string Path to file.
+---@param base_branch string Git base branch of merge request.
+---@return Hunk[] list of hunks.
+M.parse_hunk_headers = function(file_path, base_branch)
+  local hunks = {}
+
+  local diff_job = Job:new({
+    command = "git",
+    args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
+    on_exit = function(j, return_code)
+      if return_code == 0 then
+        for _, line in ipairs(j:result()) do
+          if line:sub(1, 2) == "@@" then
+            -- match:
+            --  @@ -23 +23 @@ ...
+            --  @@ -23,0 +23 @@ ...
+            --  @@ -41,0 +42,4 @@ ...
+            local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
+
+            table.insert(hunks, {
+              old_line = tonumber(old_start),
+              old_range = tonumber(old_range) or 0,
+              new_line = tonumber(new_start),
+              new_range = tonumber(new_range) or 0,
+            })
+          end
+        end
+      else
+        vim.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
+      end
+    end,
+  })
+
+  diff_job:sync()
+
+  return hunks
+end
+
+---@class LineDiffInfo
+---@field old_line integer
+---@field new_line integer
+---@field in_hunk boolean
+
+---Search git diff hunks to find old and new line number corresponding to target line.
+---This function does not check if target line is outside of boundaries of file.
+---@param hunks Hunk[] git diff parsed hunks.
+---@param target_line integer line number to search for - based on is_new paramter the search is
+---either in new lines or old lines of hunks.
+---@param is_new boolean whether to search for new line or old line
+---@return LineDiffInfo
+M.get_lines_from_hunks = function(hunks, target_line, is_new)
+  if #hunks == 0 then
+    -- If there are zero hunks, return target_line for both old and new lines
+    return { old_line = target_line, new_line = target_line, in_hunk = false }
+  end
+  local current_new_line = 0
+  local current_old_line = 0
+  if is_new then
+    for _, hunk in ipairs(hunks) do
+      -- target line is before current hunk
+      if target_line < hunk.new_line then
+        return {
+          old_line = current_old_line + (target_line - current_new_line),
+          new_line = target_line,
+          in_hunk = false,
+        }
+      -- target line is within the current hunk
+      elseif hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
+        -- this is interesting magic of gitlab calculation
+        return {
+          old_line = hunk.old_line + hunk.old_range + 1,
+          new_line = target_line,
+          in_hunk = true,
+        }
+      -- target line is after the current hunk
+      else
+        current_new_line = hunk.new_line + hunk.new_range
+        current_old_line = hunk.old_line + hunk.old_range
+      end
+    end
+    -- target line is after last hunk
+    return {
+      old_line = current_old_line + (target_line - current_new_line),
+      new_line = target_line,
+      in_hunk = false,
+    }
+  else
+    for _, hunk in ipairs(hunks) do
+      -- target line is before current hunk
+      if target_line < hunk.old_line then
+        return {
+          old_line = target_line,
+          new_line = current_new_line + (target_line - current_old_line),
+          in_hunk = false,
+        }
+      -- target line is within the current hunk
+      elseif hunk.old_line <= target_line and target_line <= (hunk.old_line + hunk.old_range) then
+        return {
+          old_line = target_line,
+          new_line = hunk.new_line,
+          in_hunk = true,
+        }
+      -- target line is after the current hunk
+      else
+        current_new_line = hunk.new_line + hunk.new_range
+        current_old_line = hunk.old_line + hunk.old_range
+      end
+    end
+    -- target line is after last hunk
+    return {
+      old_line = current_old_line + (target_line - current_new_line),
+      new_line = target_line,
+      in_hunk = false,
+    }
+  end
+end
+
+---Check if current mode is visual mode
+---@return boolean true if current mode is visual mode
+M.check_visual_mode = function()
+  local mode = vim.api.nvim_get_mode().mode
+  if mode ~= "v" and mode ~= "V" then
+    vim.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
+    return false
+  end
+  return true
+end
+
+---Return start line and end line of visual selection.
+---Exists visual mode in order to access marks "<" , ">"
+---@return integer,integer start line and end line
+M.get_visual_selection_boundaries = function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
+  local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
+  local end_line = vim.api.nvim_buf_get_mark(0, ">")[1]
+  return start_line, end_line
 end
 
 return M

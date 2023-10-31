@@ -2,7 +2,7 @@ module gitlab.com/harrisoncramer/gitlab.nvim
 
 go 1.19
 
-require github.com/xanzy/go-gitlab v0.83.0
+require github.com/xanzy/go-gitlab v0.93.2
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect

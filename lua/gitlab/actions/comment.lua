@@ -1,35 +1,126 @@
 -- This module is responsible for creating new comments
 -- in the reviewer's buffer. The reviewer will pass back
 -- to this module the data required to make the API calls
-local Popup              = require("nui.popup")
-local state              = require("gitlab.state")
-local job                = require("gitlab.job")
-local u                  = require("gitlab.utils")
-local discussions        = require("gitlab.actions.discussions")
-local miscellaneous      = require("gitlab.actions.miscellaneous")
-local reviewer           = require("gitlab.reviewer")
-local M                  = {}
+local Popup = require("nui.popup")
+local state = require("gitlab.state")
+local job = require("gitlab.job")
+local u = require("gitlab.utils")
+local discussions = require("gitlab.actions.discussions")
+local miscellaneous = require("gitlab.actions.miscellaneous")
+local reviewer = require("gitlab.reviewer")
+local M = {}
 
-local comment_popup      = Popup(u.create_popup_state("Comment", "40%", "60%"))
-local note_popup         = Popup(u.create_popup_state("Note", "40%", "60%"))
+local comment_popup = Popup(u.create_popup_state("Comment", "40%", "60%"))
+local note_popup = Popup(u.create_popup_state("Note", "40%", "60%"))
 
--- This function will open a comment popup in order to create a comment on the changed/updated line in the current MR
-M.create_comment         = function()
+-- This function will open a comment popup in order to create a comment on the changed/updated
+-- line in the current MR
+M.create_comment = function()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text)
   end, miscellaneous.attach_file)
 end
 
-M.create_note            = function()
-  note_popup:mount()
-  state.set_popup_keymaps(note_popup, function(text)
-    M.confirm_create_comment(text, true)
+---Create multiline comment for the last selection.
+M.create_multiline_comment = function()
+  if not u.check_visual_mode() then
+    return
+  end
+  local start_line, end_line = u.get_visual_selection_boundaries()
+  comment_popup:mount()
+  state.set_popup_keymaps(comment_popup, function(text)
+    M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })
   end, miscellaneous.attach_file)
 end
 
--- This function (settings.popup.perform_action) will send the comment to the Go server
-M.confirm_create_comment = function(text, unlinked)
+---Create comment prepopulated with gitlab suggestion
+---https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
+M.create_comment_suggestion = function()
+  if not u.check_visual_mode() then
+    return
+  end
+  local start_line, end_line = u.get_visual_selection_boundaries()
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local range = end_line - start_line
+  local backticks = "```"
+  local selected_lines = reviewer.get_lines(start_line, end_line)
+
+  if selected_lines == nil then
+    -- TODO: remove when delta is supported
+    return
+  end
+
+  for line in ipairs(selected_lines) do
+    if string.match(line, "^```$") then
+      backticks = "````"
+      break
+    end
+  end
+
+  local suggestion_start
+  if start_line == current_line then
+    suggestion_start = backticks .. "suggestion:-0+" .. range
+  elseif end_line == current_line then
+    suggestion_start = backticks .. "suggestion:-" .. range .. "+0"
+  else
+    -- This should never happen afaik
+    vim.notify("Unexpected suggestion position", vim.log.levels.ERROR)
+    return
+  end
+  suggestion_start = suggestion_start
+  local suggestion_lines = {}
+  table.insert(suggestion_lines, suggestion_start)
+  vim.list_extend(suggestion_lines, selected_lines)
+  table.insert(suggestion_lines, backticks)
+
+  comment_popup:mount()
+  vim.api.nvim_buf_set_lines(comment_popup.bufnr, 0, 0, false, suggestion_lines)
+  state.set_popup_keymaps(comment_popup, function(text)
+    if range > 0 then
+      M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })
+    else
+      M.confirm_create_comment(text, nil)
+    end
+  end, miscellaneous.attach_file)
+end
+
+M.create_note = function()
+  note_popup:mount()
+  state.set_popup_keymaps(note_popup, function(text)
+    M.confirm_create_comment(text, nil, true)
+  end, miscellaneous.attach_file)
+end
+
+---@class LineRange
+---@field start_line integer
+---@field end_line integer
+
+---@class ReviewerLineInfo
+---@field old_line integer
+---@field new_line integer
+---@field type string either "new" or "old"
+
+---@class ReviewerRangeInfo
+---@field start ReviewerLineInfo
+---@field end ReviewerLineInfo
+
+---@class ReviewerInfo
+---@field file_name string
+---@field old_line integer | nil
+---@field new_line integer | nil
+---@field range_info ReviewerRangeInfo
+
+---This function (settings.popup.perform_action) will send the comment to the Go server
+---@param text string comment text
+---@param range LineRange | nil range of visuel selection or nil
+---@param unlinked boolean | nil if true, the comment is not linked to a line
+M.confirm_create_comment = function(text, range, unlinked)
+  if text == nil then
+    vim.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
+    return
+  end
+
   if unlinked then
     local body = { comment = text }
     job.run_job("/comment", "POST", body, function(data)
@@ -39,38 +130,22 @@ M.confirm_create_comment = function(text, unlinked)
     return
   end
 
-  local file_name, line_numbers, error = reviewer.get_location()
-
-  if error then
-    vim.notify(error, vim.log.levels.ERROR)
-    return
-  end
-
-  if file_name == nil then
-    vim.notify("Reviewer did not provide file name", vim.log.levels.ERROR)
-    return
-  end
-
-  if line_numbers == nil then
-    vim.notify("Reviewer did not provide line numbers of change", vim.log.levels.ERROR)
-    return
-  end
-
-  if text == nil then
-    vim.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
+  local reviewer_info = reviewer.get_location(range)
+  if not reviewer_info then
     return
   end
 
   local revision = state.MR_REVISIONS[1]
   local body = {
     comment = text,
-    file_name = file_name,
-    old_line = line_numbers.old_line,
-    new_line = line_numbers.new_line,
+    file_name = reviewer_info.file_name,
+    old_line = reviewer_info.old_line,
+    new_line = reviewer_info.new_line,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
     head_commit_sha = revision.head_commit_sha,
-    type = "modification"
+    type = "text",
+    line_range = reviewer_info.range_info,
   }
 
   job.run_job("/comment", "POST", body, function(data)
