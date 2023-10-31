@@ -64,7 +64,7 @@ M.toggle = function()
 
     M.switch_can_edit_bufs(true)
     M.add_empty_titles({
-      { linked_section.bufnr,   data.discussions,          "No Discussions for this MR" },
+      { linked_section.bufnr, data.discussions, "No Discussions for this MR" },
       { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
     M.switch_can_edit_bufs(false)
@@ -155,7 +155,7 @@ M.send_deletion = function(tree, item, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section_bufnr,   M.discussions,          "No Discussions for this MR" },
+        { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
         { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -485,7 +485,7 @@ M.build_note_body = function(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-        or state.settings.discussion_tree.unresolved
+      or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = "@" .. note.author.username .. " " .. u.format_date(note.created_at) .. " " .. resolve_symbol

@@ -145,7 +145,7 @@ M.join = function(tbl, separator)
 
   -- Remove the trailing separator
   if separator ~= "" then
-    result = result:sub(1, - #separator - 1)
+    result = result:sub(1, -#separator - 1)
   end
 
   return result

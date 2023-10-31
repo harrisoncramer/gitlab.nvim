@@ -12,7 +12,7 @@ jobs:
       - name: Luacheck linter
         uses: lunarmodules/luacheck@v1
         with:
-          args: luacheck --globals vim --no-max-line-length -- .
+          args: --globals vim --no-max-line-length -- .
   stylua:
     runs-on: ubuntu-latest
     steps:
