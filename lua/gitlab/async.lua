@@ -3,7 +3,6 @@
 local server = require("gitlab.server")
 local job = require("gitlab.job")
 local state = require("gitlab.state")
-local u = require("gitlab.utils")
 
 local M = {}
 
