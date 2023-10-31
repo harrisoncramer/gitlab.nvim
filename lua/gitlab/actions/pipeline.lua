@@ -90,9 +90,8 @@ M.retrigger = function()
     return
   end
 
-  job.run_job("/pipeline", "POST", body, function(data)
+  job.run_job("/pipeline", "POST", body, function()
     vim.notify("Pipeline re-triggered!", vim.log.levels.INFO)
-    pipeline = data.Pipeline
   end)
 end
 
@@ -100,6 +99,7 @@ M.see_logs = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local linnr = vim.api.nvim_win_get_cursor(0)[1]
   local text = u.get_line_content(bufnr, linnr)
+  print(text)
   local last_word = u.get_last_chunk(text)
   if last_word == nil then
     vim.notify("Cannot find job name", vim.log.levels.ERROR)

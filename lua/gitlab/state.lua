@@ -143,6 +143,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       local bufnr = vim.api.nvim_get_current_buf()
       local linnr = vim.api.nvim_win_get_cursor(0)[1]
       local text = u.get_line_content(bufnr, linnr)
+      print(text)
       linewise_action(text)
     end, { buffer = popup.bufnr })
   end

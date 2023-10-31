@@ -64,7 +64,7 @@ M.toggle = function()
 
     M.switch_can_edit_bufs(true)
     M.add_empty_titles({
-      { linked_section.bufnr, data.discussions, "No Discussions for this MR" },
+      { linked_section.bufnr,   data.discussions,          "No Discussions for this MR" },
       { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
     M.switch_can_edit_bufs(false)
@@ -155,7 +155,7 @@ M.send_deletion = function(tree, item, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_section_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -185,12 +185,12 @@ M.edit_comment = function(tree, unlinked)
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
   state.set_popup_keymaps(
     edit_popup,
-    M.send_edits(tree, tostring(root_node.id), note_node.root_note_id or note_node.id, unlinked)
+    M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id, unlinked)
   )
 end
 
 -- This function sends the edited comment to the Go server
-M.send_edits = function(tree, discussion_id, note_id, unlinked)
+M.send_edits = function(discussion_id, note_id, unlinked)
   return function(text)
     local body = {
       discussion_id = discussion_id,
@@ -485,7 +485,7 @@ M.build_note_body = function(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-      or state.settings.discussion_tree.unresolved
+        or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = "@" .. note.author.username .. " " .. u.format_date(note.created_at) .. " " .. resolve_symbol
@@ -532,7 +532,7 @@ M.add_discussions_to_table = function(items)
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        __, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
+        _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
 
         root_file_name = (type(note.position) == "table" and note.position.new_path)
         root_new_line = (type(note.position) == "table" and note.position.new_line)
