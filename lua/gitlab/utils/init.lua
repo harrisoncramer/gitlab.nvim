@@ -14,7 +14,7 @@ M.has_reviewer = function(reviewer)
   else
     local has_reviewer = vim.fn.executable("delta") == 1
     if not has_reviewer then
-      error(string.format("Please install %s or change your reviewer", reviewer))
+      error(string.format("Please install delta or change your reviewer", reviewer))
     end
   end
 end
