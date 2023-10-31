@@ -1,4 +1,4 @@
-name: Luacheck and Stylua
+name: Linting and Formatting
 on:
   pull_request:
     branches:
