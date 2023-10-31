@@ -39,7 +39,7 @@ var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r 
 	defer file.Close()
 
 	token := r.Header.Get("Private-Token")
-	r.Header.Set("Private-Token", "xxxx")
+	r.Header.Set("Private-Token", "REDACTED")
 	res, err := httputil.DumpRequest(r, true)
 	r.Header.Set("Private-Token", token)
 
