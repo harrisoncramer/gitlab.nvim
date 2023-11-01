@@ -13,6 +13,16 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 
 local edit_popup = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
+local discussion_sign_name = "gitlab_discussion"
+local diagnostics_namespace = vim.api.nvim_create_namespace(discussion_sign_name)
+
+vim.fn.sign_define(discussion_sign_name, {
+  text = state.settings.discussion_sign.text,
+  linehl = state.settings.discussion_sign.linehl,
+  texthl = state.settings.discussion_sign.texthl,
+  culhl = state.settings.discussion_sign.culhl,
+  numhl = state.settings.discussion_sign.numhl,
+})
 
 local M = {
   layout_visible = false,
@@ -24,6 +34,137 @@ local M = {
   unlinked_section_bufnr = -1,
 }
 
+---@class DiscussionData
+---@field discussions table?
+---@field unlinked_discussions table?
+
+---Load the discussion data, storage them in M.discussions and M.unlinked_discussions and call
+---callback with data
+---@param callback fun(data: DiscussionData): nil
+M.load_discussions = function(callback)
+  job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
+    M.discussions = data.discussions
+    M.unlinked_discussions = data.unlinked_discussions
+    callback(data)
+  end)
+end
+
+---Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
+---string for sign name and sign group ( currently there is only one sign needed)
+---TODO: for multiline comments we can set main sign on comment line and in range of comment we
+---could have some other sing with lower priority just to show context 🤔
+M.refresh_signs = function()
+  local file = reviewer.get_current_file()
+  -- NOTE: If there will be period refresh then probably we need to keep track of added signs and remove all redundant
+  --with `sign_getplaced` and `sign_unplace`
+  vim.fn.sign_unplace(discussion_sign_name)
+  if type(M.discussions) == "table" then
+    for _, discussion in ipairs(M.discussions) do
+      local first_note = discussion.notes[1]
+      if
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
+      then
+        reviewer.place_sign(
+          first_note.id,
+          discussion_sign_name,
+          discussion_sign_name,
+          first_note.position.new_line,
+          first_note.position.old_line
+        )
+      end
+    end
+  end
+end
+
+---Refresh the diagnostics for the currently reviewed file
+---TODO: support for multiline comments
+---TODO: Build text for all notes in discussion. -> that can be actually big 🤔
+M.refresh_diagnostics = function()
+  local file = reviewer.get_current_file()
+  vim.diagnostic.reset(diagnostics_namespace)
+  local new_diagnostics = {}
+  local old_diagnostics = {}
+  if type(M.discussions) == "table" then
+    for _, discussion in ipairs(M.discussions) do
+      local first_note = discussion.notes[1]
+      if
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
+      then
+        local diagnostic = {
+          message = first_note.body,
+          col = 0,
+          severity = state.settings.discussion_diagnostics.severity,
+          user_data = { discussion_id = discussion.id },
+          source = "gitlab",
+          -- code ??
+        }
+        if first_note.position.new_line ~= nil then
+          local new_diagnostic = {
+            lnum = first_note.position.new_line - 1,
+          }
+          new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
+          table.insert(new_diagnostics, new_diagnostic)
+        end
+        if first_note.position.old_line ~= nil then
+          local old_diagnostic = {
+            lnum = first_note.position.old_line - 1,
+          }
+          old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
+          table.insert(old_diagnostics, old_diagnostic)
+        end
+      end
+    end
+  end
+  reviewer.set_diagnostics(
+    diagnostics_namespace,
+    new_diagnostics,
+    "new",
+    state.settings.discussion_diagnostics.display_opts
+  )
+  reviewer.set_diagnostics(
+    diagnostics_namespace,
+    old_diagnostics,
+    "old",
+    state.settings.discussion_diagnostics.display_opts
+  )
+end
+
+---Setup callback to refresh discussion data, discussion signs and diagnostics whenever the
+---reviewed file changes.
+M.setup_refresh_discussion_data_callback = function()
+  reviewer.set_callback_for_file_changed(function()
+    M.load_discussions(function()
+      if state.settings.discussion_sign.enabled then
+        M.refresh_signs()
+      end
+      if state.settings.discussion_diagnostics.enabled then
+        M.refresh_diagnostics()
+      end
+    end)
+  end)
+end
+
+M.refresh_discussion_tree = function()
+  if M.layout_visible == false then
+    return
+  end
+
+  if type(M.discussions) == "table" then
+    M.rebuild_discussion_tree()
+  end
+  if type(M.unlinked_discussions) == "table" then
+    M.rebuild_unlinked_discussion_tree()
+  end
+
+  M.switch_can_edit_bufs(true)
+  M.add_empty_titles({
+    { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
+    { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+  })
+  M.switch_can_edit_bufs(false)
+end
 -- Opens the discussion tree, sets the keybindings. It also
 -- creates the tree for notes (which are not linked to specific lines of code)
 M.toggle = function()
@@ -37,9 +178,9 @@ M.toggle = function()
   M.linked_section_bufnr = linked_section.bufnr
   M.unlinked_section_bufnr = unlinked_section.bufnr
 
-  job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
-    if type(data.discussions) ~= "table" and type(data.unlinked_discussions) ~= "table" then
-      u.notify("No discussions or notes for this MR", vim.log.levels.WARN)
+  M.load_discussions(function()
+    if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
+      vim.notify("No discussions or notes for this MR", vim.log.levels.WARN)
       return
     end
 
@@ -50,24 +191,7 @@ M.toggle = function()
     M.layout_visible = true
     M.layout_buf = layout.bufnr
     state.discussion_buf = layout.bufnr
-
-    M.discussions = data.discussions
-    M.unlinked_discussions = data.unlinked_discussions
-
-    if type(data.discussions) == "table" then
-      M.rebuild_discussion_tree()
-    end
-    if type(data.unlinked_discussions) == "table" then
-      M.rebuild_unlinked_discussion_tree()
-    end
-
-    M.switch_can_edit_bufs(true)
-    M.add_empty_titles({
-      { linked_section.bufnr, data.discussions, "No Discussions for this MR" },
-      { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-    })
-
-    M.switch_can_edit_bufs(false)
+    M.refresh_discussion_tree()
   end)
 end
 

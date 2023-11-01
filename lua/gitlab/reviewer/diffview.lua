@@ -2,6 +2,7 @@
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local async_ok, async = pcall(require, "diffview.async")
+local diffview_lib = require("diffview.lib")
 
 local M = {
   bufnr = nil,
@@ -20,7 +21,7 @@ M.jump = function(file_name, new_line, old_line)
   end
   vim.api.nvim_set_current_tabpage(M.tabnr)
   vim.cmd("DiffviewFocusFiles")
-  local view = require("diffview.lib").get_current_view()
+  local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
@@ -66,7 +67,7 @@ M.get_location = function(range)
   end
 
   -- check if we are in the diffview buffer
-  local view = require("diffview.lib").get_current_view()
+  local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
@@ -149,4 +150,52 @@ M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
+---Get currently shown file
+M.get_current_file = function()
+  return diffview_lib.get_current_view().panel.cur_file.path
+end
+
+---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
+---line for identifing lines before changes and both if line was not changed.
+---@param id number id of sign
+---@param sign_name string sign to place
+---@param group string group of sign
+---@param new_line number line number after change
+---@param old_line number line number before change
+M.place_sign = function(id, sign_name, group, new_line, old_line)
+  local view = diffview_lib.get_current_view()
+  if new_line ~= nil then
+    vim.fn.sign_place(id, group, sign_name, view.cur_layout.b.file.bufnr, { lnum = new_line })
+  end
+  if old_line ~= nil then
+    vim.fn.sign_place(id, group, sign_name, view.cur_layout.a.file.bufnr, { lnum = new_line })
+  end
+end
+
+---Set diagnostics in currently reviewed file.
+---@param namespace integer namespace for diagnostics
+---@param diagnostics table see :h vim.diagnostic.set
+---@param type string "new" if diagnostic should be in file after changes else "old"
+---@param opts table? see :h vim.diagnostic.set
+M.set_diagnostics = function(namespace, diagnostics, type, opts)
+  local view = diffview_lib.get_current_view()
+  if type == "new" then
+    vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
+  elseif type == "old" then
+    vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
+  else
+    vim.notify("Unknown diagnostic type", vim.log.levels.ERROR)
+  end
+end
+
+---Diffview exposes events which can be used to setup autocommands.
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+M.set_callback_for_file_changed = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = "DiffviewDiffBufWinEnter",
+    group = group,
+    callback = callback,
+  })
+end
 return M

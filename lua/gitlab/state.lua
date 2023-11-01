@@ -33,6 +33,19 @@ M.settings = {
     resolved = "✓",
     unresolved = "",
   },
+  discussion_sign = {
+    enabled = true,
+    text = "💬",
+    linehl = nil,
+    texthl = nil,
+    culhl = nil,
+    numhl = nil,
+  },
+  discussion_diagnostics = {
+    enabled = true,
+    severity = vim.diagnostic.severity.INFO,
+    display_opts = {}, -- see opts in vim.diagnostic.set
+  },
   pipeline = {
     created = "",
     pending = "",
