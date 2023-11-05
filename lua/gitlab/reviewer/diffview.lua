@@ -157,19 +157,20 @@ end
 
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
 ---line for identifing lines before changes and both if line was not changed.
----@param id number id of sign
----@param sign_name string sign to place
----@param group string group of sign
----@param new_line number? line number after change
----@param old_line number? line number before change
-M.place_sign = function(id, sign_name, group, new_line, old_line)
+---@param signs table table of signs. See :h sign_placelist
+---@param type string "new" if diagnostic should be in file after changes else "old"
+M.place_sign = function(signs, type)
   local view = diffview_lib.get_current_view()
-  if new_line ~= nil then
-    vim.fn.sign_place(id, group, sign_name, view.cur_layout.b.file.bufnr, { lnum = new_line })
+  if type == "new" then
+    for _, sign in ipairs(signs) do
+      sign.buffer = view.cur_layout.b.file.bufnr
+    end
+  elseif type == "old" then
+    for _, sign in ipairs(signs) do
+      sign.buffer = view.cur_layout.a.file.bufnr
+    end
   end
-  if old_line ~= nil then
-    vim.fn.sign_place(id, group, sign_name, view.cur_layout.a.file.bufnr, { lnum = old_line })
-  end
+  vim.fn.sign_placelist(signs)
 end
 
 ---Set diagnostics in currently reviewed file.

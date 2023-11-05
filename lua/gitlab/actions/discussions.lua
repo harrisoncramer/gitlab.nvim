@@ -14,10 +14,34 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 local edit_popup = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
 local discussion_sign_name = "gitlab_discussion"
+local discussion_helper_sign_start = "gitlab_discussion_helper_start"
+local discussion_helper_sign_mid = "gitlab_discussion_helper_mid"
+local discussion_helper_sign_end = "gitlab_discussion_helper_end"
 local diagnostics_namespace = vim.api.nvim_create_namespace(discussion_sign_name)
 
 vim.fn.sign_define(discussion_sign_name, {
   text = state.settings.discussion_sign.text,
+  linehl = state.settings.discussion_sign.linehl,
+  texthl = state.settings.discussion_sign.texthl,
+  culhl = state.settings.discussion_sign.culhl,
+  numhl = state.settings.discussion_sign.numhl,
+})
+vim.fn.sign_define(discussion_helper_sign_start, {
+  text = state.settings.discussion_sign.helper_signs.start,
+  linehl = state.settings.discussion_sign.linehl,
+  texthl = state.settings.discussion_sign.texthl,
+  culhl = state.settings.discussion_sign.culhl,
+  numhl = state.settings.discussion_sign.numhl,
+})
+vim.fn.sign_define(discussion_helper_sign_mid, {
+  text = state.settings.discussion_sign.helper_signs.mid,
+  linehl = state.settings.discussion_sign.linehl,
+  texthl = state.settings.discussion_sign.texthl,
+  culhl = state.settings.discussion_sign.culhl,
+  numhl = state.settings.discussion_sign.numhl,
+})
+vim.fn.sign_define(discussion_helper_sign_end, {
+  text = state.settings.discussion_sign.helper_signs["end"],
   linehl = state.settings.discussion_sign.linehl,
   texthl = state.settings.discussion_sign.texthl,
   culhl = state.settings.discussion_sign.culhl,
@@ -113,17 +137,22 @@ M.load_discussions = function(callback)
   end)
 end
 
+---Parse line code and return old and new line numbers
+---@param line_code string gitlab line code -> 588440f66559714280628a4f9799f0c4eb880a4a_10_10
+---@return number?
+---@return number?
+local function _parse_line_code(line_code)
+  local line_code_regex = "%w+_(%d+)_(%d+)"
+  local old_line, new_line = line_code:match(line_code_regex)
+  return tonumber(old_line), tonumber(new_line)
+end
+
 ---Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
 ---string for sign name and sign group ( currently there is only one sign needed)
----TODO: for multiline comments we can set main sign on comment line and in range of comment we
----could have some other sing with lower priority just to show context 🤔
 M.refresh_signs = function()
   local file = reviewer.get_current_file()
-  -- NOTE: If there will be period refresh then we may need to keep track of added signs and
-  -- remove all redundant with `sign_getplaced` and `sign_unplace`.
-  -- I was testing this and was not able to create any flicker or any visually disturbing effect
-  -- when refreshing signs
-  vim.fn.sign_unplace(discussion_sign_name)
+  local new_signs = {}
+  local old_signs = {}
   if type(M.discussions) == "table" then
     for _, discussion in ipairs(M.discussions) do
       local first_note = discussion.notes[1]
@@ -131,36 +160,91 @@ M.refresh_signs = function()
         type(first_note.position) == "table"
         and (first_note.position.new_path == file or first_note.position.old_path == file)
       then
+        local base_sign = {
+          name = discussion_sign_name,
+          group = discussion_sign_name,
+          priority = state.settings.discussion_sign.priority,
+        }
+        local base_helper_sign = {
+          name = discussion_sign_name,
+          group = discussion_sign_name,
+          priority = state.settings.discussion_sign.priority - 1,
+        }
         if first_note.position.line_range ~= nil then
+          local start_old_line, start_new_line = _parse_line_code(first_note.position.line_range.start.line_code)
+          local end_old_line, end_new_line = _parse_line_code(first_note.position.line_range["end"].line_code)
+          local discussion_line, start_line, end_line
           if first_note.position.line_range.start.type == "new" then
-            reviewer.place_sign(
-              first_note.id,
-              discussion_sign_name,
-              discussion_sign_name,
-              first_note.position.new_line,
-              nil
+            table.insert(
+              new_signs,
+              vim.tbl_deep_extend("force", {
+                id = first_note.id,
+                lnum = first_note.position.new_line,
+              }, base_sign)
             )
+            discussion_line = first_note.position.new_line
+            start_line = start_new_line
+            end_line = end_new_line
           elseif first_note.position.line_range.start.type == "old" then
-            reviewer.place_sign(
-              first_note.id,
-              discussion_sign_name,
-              discussion_sign_name,
-              nil,
-              first_note.position.old_line
+            table.insert(
+              old_signs,
+              vim.tbl_deep_extend("force", {
+                id = first_note.id,
+                lnum = first_note.position.old_line,
+              }, base_sign)
             )
+            discussion_line = first_note.position.old_line
+            start_line = start_old_line
+            end_line = end_old_line
+          end
+          -- Helper signs does not have specific ids currently.
+          if state.settings.discussion_sign.helper_signs.enabled then
+            local helper_signs = {}
+            if start_line > end_line then
+              start_line, end_line = end_line, start_line
+            end
+            for i = start_line, end_line do
+              if i ~= discussion_line then
+                local sign_name
+                if i == start_line then
+                  sign_name = discussion_helper_sign_start
+                elseif i == end_line then
+                  sign_name = discussion_helper_sign_end
+                else
+                  sign_name = discussion_helper_sign_mid
+                end
+                table.insert(
+                  helper_signs,
+                  vim.tbl_deep_extend("keep", {
+                    name = sign_name,
+                    lnum = i,
+                  }, base_helper_sign)
+                )
+              end
+            end
+            if first_note.position.line_range.start.type == "new" then
+              vim.list_extend(new_signs, helper_signs)
+            elseif first_note.position.line_range.start.type == "old" then
+              vim.list_extend(old_signs, helper_signs)
+            end
           end
         else
-          reviewer.place_sign(
-            first_note.id,
-            discussion_sign_name,
-            discussion_sign_name,
-            first_note.position.new_line,
-            first_note.position.old_line
-          )
+          local sign = vim.tbl_deep_extend("force", {
+            id = first_note.id,
+          }, base_sign)
+          if first_note.position.new_line ~= nil then
+            table.insert(new_signs, vim.tbl_deep_extend("force", { lnum = first_note.position.new_line }, sign))
+          end
+          if first_note.position.old_line ~= nil then
+            table.insert(old_signs, vim.tbl_deep_extend("force", { lnum = first_note.position.old_line }, sign))
+          end
         end
       end
     end
   end
+  vim.fn.sign_unplace(discussion_sign_name)
+  reviewer.place_sign(old_signs, "old")
+  reviewer.place_sign(new_signs, "new")
 end
 
 ---Refresh the diagnostics for the currently reviewed file
@@ -199,12 +283,11 @@ M.refresh_diagnostics = function()
         -- line number equal to note.position.new_line or note.position.old_line because that is
         -- only line where you can trigger the diagnostic show. This also need to be in sinc
         -- with the sign placement.
-        local line_code_regex = "%w+_(%d+)_(%d+)"
-        local start_old_line, start_new_line = first_note.position.line_range.start.line_code:match(line_code_regex)
-        local end_old_line, end_new_line = first_note.position.line_range["end"].line_code:match(line_code_regex)
+        local start_old_line, start_new_line = _parse_line_code(first_note.position.line_range.start.line_code)
+        local end_old_line, end_new_line = _parse_line_code(first_note.position.line_range["end"].line_code)
         if first_note.position.line_range.start.type == "new" then
           local new_diagnostic
-          if first_note.position.new_line == tonumber(start_new_line) then
+          if first_note.position.new_line == start_new_line then
             new_diagnostic = {
               lnum = start_new_line - 1,
               end_lnum = end_new_line - 1,

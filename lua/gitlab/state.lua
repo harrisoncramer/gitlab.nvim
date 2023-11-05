@@ -34,12 +34,22 @@ M.settings = {
     unresolved = "",
   },
   discussion_sign = {
+    -- See :h sign_define for details about sign configuration.
     enabled = true,
     text = "💬",
     linehl = nil,
     texthl = nil,
     culhl = nil,
     numhl = nil,
+    priority = 20,
+    helper_signs = {
+      -- For multiline comments the helper signs are used to indicate the whole context
+      -- Priority of helper signs is lower than the main sign (-1).
+      enabled = true,
+      start = "↑",
+      mid = "|",
+      ["end"] = "↓",
+    },
   },
   discussion_diagnostics = {
     -- If you want to customize diagnostics for discussions you can make special config

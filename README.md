@@ -120,6 +120,15 @@ require("gitlab").setup({
     texthl = nil,
     culhl = nil,
     numhl = nil,
+    priority = 20,
+    helper_signs = {
+      -- For multiline comments the helper signs are used to indicate the whole context
+      -- Priority of helper signs is lower than the main sign (-1).
+      enabled = true,
+      start = "↑",
+      mid = "|",
+      ["end"] = "↓",
+    },
   },
   discussion_diagnostics = {
     -- If you want to customize diagnostics for discussions you can make special config
@@ -212,6 +221,10 @@ By default when reviewing files you will see signs and diagnostics ( if enabled 
 ```lua
 require("gitlab").jump_to_discussion_tree_from_diagnostic()
 ```
+
+#### Limitations
+
+When checking multiline diagnostic the cursor must be on the "main" line of diagnostic -> where the `discussion_sign.text` is shown otherwise `vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not work.
 
 ### Uploading Files
 
