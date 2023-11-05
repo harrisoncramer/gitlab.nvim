@@ -28,15 +28,79 @@ local M = {
   layout_visible = false,
   layout = nil,
   layout_buf = nil,
+  ---@type Discussion[]
   discussions = {},
+  ---@type UnlinkedDiscussion[]
   unlinked_discussions = {},
-  linked_section_bufnr = -1,
-  unlinked_section_bufnr = -1,
+  linked_section = nil,
+  unlinked_section = nil,
+  discussion_tree = nil,
 }
 
+---@class Author
+---@field id integer
+---@field username string
+---@field email string
+---@field name string
+---@field state string
+---@field avatar_url string
+---@field web_url string
+
+---@class LinePosition
+---@field line_code string
+---@field type string
+
+---@class GitlabLineRange
+---@field start LinePosition
+---@field end LinePosition
+
+---@class NotePosition
+---@field base_sha string
+---@field start_sha string
+---@field head_sha string
+---@field position_type string
+---@field new_path string?
+---@field new_line integer?
+---@field old_path string?
+---@field old_line integer?
+---@field line_range GitlabLineRange?
+
+---@class Note
+---@field id integer
+---@field type string
+---@field body string
+---@field attachment string
+---@field title string
+---@field file_name string
+---@field author Author
+---@field system boolean
+---@field expires_at string?
+---@field updated_at string?
+---@field created_at string?
+---@field noteable_id integer
+---@field noteable_type string
+---@field commit_id string
+---@field position NotePosition
+---@field resolvable boolean
+---@field resolved boolean
+---@field resolved_by Author
+---@field resolved_at string?
+---@field noteable_iid integer
+
+---@class UnlinkedNote: Note
+---@field position nil
+
+---@class Discussion
+---@field id string
+---@field individual_note boolean
+---@field notes Note[]
+
+---@class UnlinkedDiscussion: Discussion
+---@field notes UnlinkedNote[]
+
 ---@class DiscussionData
----@field discussions table?
----@field unlinked_discussions table?
+---@field discussions Discussion[]
+---@field unlinked_discussions UnlinkedDiscussion[]
 
 ---Load the discussion data, storage them in M.discussions and M.unlinked_discussions and call
 ---callback with data
@@ -55,8 +119,10 @@ end
 ---could have some other sing with lower priority just to show context 🤔
 M.refresh_signs = function()
   local file = reviewer.get_current_file()
-  -- NOTE: If there will be period refresh then probably we need to keep track of added signs and remove all redundant
-  --with `sign_getplaced` and `sign_unplace`
+  -- NOTE: If there will be period refresh then we may need to keep track of added signs and
+  -- remove all redundant with `sign_getplaced` and `sign_unplace`.
+  -- I was testing this and was not able to create any flicker or any visually disturbing effect
+  -- when refreshing signs
   vim.fn.sign_unplace(discussion_sign_name)
   if type(M.discussions) == "table" then
     for _, discussion in ipairs(M.discussions) do
@@ -65,41 +131,110 @@ M.refresh_signs = function()
         type(first_note.position) == "table"
         and (first_note.position.new_path == file or first_note.position.old_path == file)
       then
-        reviewer.place_sign(
-          first_note.id,
-          discussion_sign_name,
-          discussion_sign_name,
-          first_note.position.new_line,
-          first_note.position.old_line
-        )
+        if first_note.position.line_range ~= nil then
+          if first_note.position.line_range.start.type == "new" then
+            reviewer.place_sign(
+              first_note.id,
+              discussion_sign_name,
+              discussion_sign_name,
+              first_note.position.new_line,
+              nil
+            )
+          elseif first_note.position.line_range.start.type == "old" then
+            reviewer.place_sign(
+              first_note.id,
+              discussion_sign_name,
+              discussion_sign_name,
+              nil,
+              first_note.position.old_line
+            )
+          end
+        else
+          reviewer.place_sign(
+            first_note.id,
+            discussion_sign_name,
+            discussion_sign_name,
+            first_note.position.new_line,
+            first_note.position.old_line
+          )
+        end
       end
     end
   end
 end
 
 ---Refresh the diagnostics for the currently reviewed file
----TODO: support for multiline comments
----TODO: Build text for all notes in discussion. -> that can be actually big 🤔
 M.refresh_diagnostics = function()
+  -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
+  -- 1-based indexing
   local file = reviewer.get_current_file()
-  vim.diagnostic.reset(diagnostics_namespace)
   local new_diagnostics = {}
   local old_diagnostics = {}
-  if type(M.discussions) == "table" then
-    for _, discussion in ipairs(M.discussions) do
-      local first_note = discussion.notes[1]
-      if
-        type(first_note.position) == "table"
-        and (first_note.position.new_path == file or first_note.position.old_path == file)
-      then
-        local diagnostic = {
-          message = first_note.body,
-          col = 0,
-          severity = state.settings.discussion_diagnostics.severity,
-          user_data = { discussion_id = discussion.id },
-          source = "gitlab",
-          -- code ??
-        }
+  if type(M.discussions) ~= "table" then
+    vim.diagnostic.reset(diagnostics_namespace)
+    return
+  end
+
+  for _, discussion in ipairs(M.discussions) do
+    local first_note = discussion.notes[1]
+    if
+      type(first_note.position) == "table"
+      and (first_note.position.new_path == file or first_note.position.old_path == file)
+    then
+      local message = ""
+      for _, note in ipairs(discussion.notes) do
+        message = message .. M.build_note_header(note) .. "\n" .. note.body .. "\n"
+      end
+
+      local diagnostic = {
+        message = message,
+        col = 0,
+        severity = state.settings.discussion_diagnostics.severity,
+        user_data = { discussion_id = discussion.id, header = M.build_note_header(discussion.notes[1]) },
+        source = "gitlab",
+        code = state.settings.discussion_diagnostics.code,
+      }
+      if first_note.position.line_range ~= nil then
+        -- Diagnostics for line range discussions are tricky - you need to set lnum to
+        -- line number equal to note.position.new_line or note.position.old_line because that is
+        -- only line where you can trigger the diagnostic show. This also need to be in sinc
+        -- with the sign placement.
+        local line_code_regex = "%w+_(%d+)_(%d+)"
+        local start_old_line, start_new_line = first_note.position.line_range.start.line_code:match(line_code_regex)
+        local end_old_line, end_new_line = first_note.position.line_range["end"].line_code:match(line_code_regex)
+        if first_note.position.line_range.start.type == "new" then
+          local new_diagnostic
+          if first_note.position.new_line == tonumber(start_new_line) then
+            new_diagnostic = {
+              lnum = start_new_line - 1,
+              end_lnum = end_new_line - 1,
+            }
+          else
+            new_diagnostic = {
+              lnum = end_new_line - 1,
+              end_lnum = start_new_line - 1,
+            }
+          end
+          new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
+          table.insert(new_diagnostics, new_diagnostic)
+        elseif first_note.position.line_range.start.type == "old" then
+          local old_diagnostic
+          if first_note.position.old_line == start_old_line then
+            old_diagnostic = {
+              lnum = start_old_line - 1,
+              end_lnum = end_old_line - 1,
+            }
+          else
+            old_diagnostic = {
+              lnum = end_old_line - 1,
+              end_lnum = start_old_line - 1,
+            }
+          end
+          old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
+          table.insert(old_diagnostics, old_diagnostic)
+        end
+      else
+        -- Diagnostics for single line discussions.
         if first_note.position.new_line ~= nil then
           local new_diagnostic = {
             lnum = first_note.position.new_line - 1,
@@ -117,6 +252,8 @@ M.refresh_diagnostics = function()
       end
     end
   end
+
+  vim.diagnostic.reset(diagnostics_namespace)
   reviewer.set_diagnostics(
     diagnostics_namespace,
     new_diagnostics,
@@ -131,19 +268,22 @@ M.refresh_diagnostics = function()
   )
 end
 
+---Refresh discussion data, discussion signs and diagnostics
+M.refresh_discussion_data = function()
+  M.load_discussions(function()
+    if state.settings.discussion_sign.enabled then
+      M.refresh_signs()
+    end
+    if state.settings.discussion_diagnostics.enabled then
+      M.refresh_diagnostics()
+    end
+  end)
+end
+
 ---Setup callback to refresh discussion data, discussion signs and diagnostics whenever the
 ---reviewed file changes.
 M.setup_refresh_discussion_data_callback = function()
-  reviewer.set_callback_for_file_changed(function()
-    M.load_discussions(function()
-      if state.settings.discussion_sign.enabled then
-        M.refresh_signs()
-      end
-      if state.settings.discussion_diagnostics.enabled then
-        M.refresh_diagnostics()
-      end
-    end)
-  end)
+  reviewer.set_callback_for_file_changed(M.refresh_discussion_data)
 end
 
 M.refresh_discussion_tree = function()
@@ -160,23 +300,28 @@ M.refresh_discussion_tree = function()
 
   M.switch_can_edit_bufs(true)
   M.add_empty_titles({
-    { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
-    { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+    { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+    { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
   })
   M.switch_can_edit_bufs(false)
 end
--- Opens the discussion tree, sets the keybindings. It also
--- creates the tree for notes (which are not linked to specific lines of code)
-M.toggle = function()
+
+---Opens the discussion tree, sets the keybindings. It also
+---creates the tree for notes (which are not linked to specific lines of code)
+---@param callback function?
+M.toggle = function(callback)
   if M.layout_visible then
     M.layout:unmount()
     M.layout_visible = false
+    M.discussion_tree = nil
+    M.linked_section = nil
+    M.unlinked_section = nil
     return
   end
 
   local linked_section, unlinked_section, layout = M.create_layout()
-  M.linked_section_bufnr = linked_section.bufnr
-  M.unlinked_section_bufnr = unlinked_section.bufnr
+  M.linked_section = linked_section
+  M.unlinked_section = unlinked_section
 
   M.load_discussions(function()
     if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
@@ -192,7 +337,90 @@ M.toggle = function()
     M.layout_buf = layout.bufnr
     state.discussion_buf = layout.bufnr
     M.refresh_discussion_tree()
+    if type(callback) == "function" then
+      callback()
+    end
   end)
+end
+
+---Jump to the discussion tree at the discussion from diagnostic on current line.
+M.jump_to_discussion_tree = function()
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local diagnostics = vim.diagnostic.get(0, { namespace = diagnostics_namespace, lnum = current_line - 1 })
+
+  ---Function used to jump to the discussion tree after the menu selection.
+  local jump_after_menu_selection = function(diagnostic)
+    ---Function used to jump to the discussion tree after the discussion tree is opened.
+    local jump_after_tree_opened = function()
+      -- All diagnostics in `diagnotics_namespace` have diagnostic_id
+      local discussion_id = diagnostic.user_data.discussion_id
+      local discussion_node, line_number = M.discussion_tree:get_node("-" .. discussion_id)
+      if discussion_node == {} or discussion_node == nil then
+        vim.notify("Discussion not found", vim.log.levels.WARN)
+        return
+      end
+      if not discussion_node:is_expanded() then
+        for _, child in ipairs(discussion_node:get_child_ids()) do
+          M.discussion_tree:get_node(child):expand()
+        end
+        discussion_node:expand()
+      end
+      M.discussion_tree:render()
+      vim.api.nvim_win_set_cursor(M.linked_section.winid, { line_number, 0 })
+      vim.api.nvim_set_current_win(M.linked_section.winid)
+    end
+
+    if not M.layout_visible then
+      M.toggle(jump_after_tree_opened)
+    else
+      jump_after_tree_opened()
+    end
+  end
+
+  if #diagnostics == 0 then
+    vim.notify("No diagnostics for this line", vim.log.levels.WARN)
+    return
+  elseif #diagnostics > 1 then
+    local lines = {}
+    for _, diagnostic in pairs(diagnostics) do
+      table.insert(lines, Menu.item(diagnostic.user_data.header, { diagnostic = diagnostic }))
+    end
+    local menu = Menu({
+      relative = "cursor",
+      position = {
+        row = 1,
+        col = 0,
+      },
+      size = {
+        width = 50,
+      },
+      border = {
+        style = "single",
+        text = {
+          top = "Choose a discussion to jump to",
+          top_align = "center",
+        },
+      },
+      win_options = {
+        winhighlight = "Normal:Normal,FloatBorder:Normal",
+      },
+    }, {
+      lines = lines,
+      max_width = 50,
+      keymap = {
+        focus_next = state.settings.dialogue.focus_next,
+        focus_prev = state.settings.dialogue.focus_prev,
+        close = state.settings.dialogue.close,
+        submit = state.settings.dialogue.submit,
+      },
+      on_submit = function(item)
+        jump_after_menu_selection(item.diagnostic)
+      end,
+    })
+    menu:mount()
+  else
+    jump_after_menu_selection(diagnostics[1])
+  end
 end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
@@ -251,14 +479,14 @@ M.send_deletion = function(tree, unlinked)
         M.discussions = u.remove_first_value(M.discussions)
         M.rebuild_discussion_tree()
       end
-    end
-    M.switch_can_edit_bufs(true)
-    M.add_empty_titles({
-      { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
-      { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-    })
-    M.switch_can_edit_bufs(false)
-  end)
+      M.switch_can_edit_bufs(true)
+      M.add_empty_titles({
+        { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+        { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+      })
+      M.switch_can_edit_bufs(false)
+    end)
+  end
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
@@ -379,11 +607,11 @@ end
 
 M.rebuild_discussion_tree = function()
   M.switch_can_edit_bufs(true)
-  vim.api.nvim_buf_set_lines(M.linked_section_bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
   local discussion_tree_nodes = M.add_discussions_to_table(M.discussions)
-  local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section_bufnr })
+  local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr })
   discussion_tree:render()
-  M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, false)
+  M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
   M.switch_can_edit_bufs(false)
   vim.api.nvim_buf_set_option(M.linked_section_bufnr, "filetype", "gitlab")
@@ -391,19 +619,19 @@ end
 
 M.rebuild_unlinked_discussion_tree = function()
   M.switch_can_edit_bufs(true)
-  vim.api.nvim_buf_set_lines(M.unlinked_section_bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_lines(M.unlinked_section.bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions)
-  local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section_bufnr })
+  local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section.bufnr })
   unlinked_discussion_tree:render()
-  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, true)
+  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section.bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   M.switch_can_edit_bufs(false)
   vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "filetype", "gitlab")
 end
 
 M.switch_can_edit_bufs = function(bool)
-  u.switch_can_edit_buf(M.unlinked_section_bufnr, bool)
-  u.switch_can_edit_buf(M.linked_section_bufnr, bool)
+  u.switch_can_edit_buf(M.unlinked_section.bufnr, bool)
+  u.switch_can_edit_buf(M.linked_section.bufnr, bool)
 end
 
 M.add_discussion = function(arg)
@@ -413,7 +641,7 @@ M.add_discussion = function(arg)
       M.unlinked_discussions = {}
     end
     table.insert(M.unlinked_discussions, 1, discussion)
-    local bufinfo = vim.fn.getbufinfo(M.unlinked_section_bufnr)
+    local bufinfo = vim.fn.getbufinfo(M.unlinked_section.bufnr)
     if u.table_size(bufinfo) ~= 0 then
       M.rebuild_unlinked_discussion_tree()
     end
@@ -423,7 +651,7 @@ M.add_discussion = function(arg)
     M.discussions = {}
   end
   table.insert(M.discussions, 1, discussion)
-  local bufinfo = vim.fn.getbufinfo(M.unlinked_section_bufnr)
+  local bufinfo = vim.fn.getbufinfo(M.unlinked_section.bufnr)
   if u.table_size(bufinfo) ~= 0 then
     M.rebuild_discussion_tree()
   end
@@ -566,6 +794,13 @@ local attach_uuid = function(str)
   return { text = str, id = u.uuid() }
 end
 
+---Build note header from note.
+---@param note Note
+---@return string
+M.build_note_header = function(note)
+  return "@" .. note.author.username .. " " .. u.format_date(note.created_at)
+end
+
 M.build_note_body = function(note, resolve_info)
   local text_nodes = {}
   for bodyLine in note.body:gmatch("[^\n]+") do
@@ -588,7 +823,7 @@ M.build_note_body = function(note, resolve_info)
       or state.settings.discussion_tree.unresolved
   end
 
-  local noteHeader = "@" .. note.author.username .. " " .. u.format_date(note.created_at) .. " " .. resolve_symbol
+  local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end

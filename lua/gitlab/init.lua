@@ -38,6 +38,7 @@ return {
   create_comment = async.sequence({ info, revisions }, comment.create_comment),
   create_multiline_comment = async.sequence({ info, revisions }, comment.create_multiline_comment),
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
+  jump_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.jump_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
   review = async.sequence({ u.merge(info, { refresh = true }) }, function()
     reviewer.open()

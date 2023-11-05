@@ -160,15 +160,15 @@ end
 ---@param id number id of sign
 ---@param sign_name string sign to place
 ---@param group string group of sign
----@param new_line number line number after change
----@param old_line number line number before change
+---@param new_line number? line number after change
+---@param old_line number? line number before change
 M.place_sign = function(id, sign_name, group, new_line, old_line)
   local view = diffview_lib.get_current_view()
   if new_line ~= nil then
     vim.fn.sign_place(id, group, sign_name, view.cur_layout.b.file.bufnr, { lnum = new_line })
   end
   if old_line ~= nil then
-    vim.fn.sign_place(id, group, sign_name, view.cur_layout.a.file.bufnr, { lnum = new_line })
+    vim.fn.sign_place(id, group, sign_name, view.cur_layout.a.file.bufnr, { lnum = old_line })
   end
 end
 
