@@ -724,8 +724,7 @@ M.add_discussion = function(arg)
       M.unlinked_discussions = {}
     end
     table.insert(M.unlinked_discussions, 1, discussion)
-    local bufinfo = vim.fn.getbufinfo(M.unlinked_section.bufnr)
-    if u.table_size(bufinfo) ~= 0 then
+    if M.unlinked_section ~= nil then
       M.rebuild_unlinked_discussion_tree()
     end
     return
@@ -734,8 +733,7 @@ M.add_discussion = function(arg)
     M.discussions = {}
   end
   table.insert(M.discussions, 1, discussion)
-  local bufinfo = vim.fn.getbufinfo(M.unlinked_section.bufnr)
-  if u.table_size(bufinfo) ~= 0 then
+  if M.linked_section ~= nil then
     M.rebuild_discussion_tree()
   end
 end
