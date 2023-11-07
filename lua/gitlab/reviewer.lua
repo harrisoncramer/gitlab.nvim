@@ -8,10 +8,6 @@ local M = {
   tabnr = nil,
 }
 
--- Public Functions
--- These functions are exposed externally and are used
--- when the reviewer is consumed by other code. They must follow the specification
--- outlined in the reviewer/init.lua file
 M.open = function()
   vim.api.nvim_command(string.format("DiffviewOpen %s", state.INFO.target_branch))
   M.tabnr = vim.api.nvim_get_current_tabpage()
@@ -119,7 +115,7 @@ M.get_location = function(range)
     return result
   end
 
-  result.range_info = { start = {}, ["end"] = {} }
+  result.range_info = { start = {},["end"] = {} }
   if current_line == range.start_line then
     result.range_info.start.old_line = current_line_info.old_line
     result.range_info.start.new_line = current_line_info.new_line
