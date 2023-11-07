@@ -12,7 +12,7 @@ end
 M.has_reviewer = function()
   local diffview_ok, _ = pcall(require, "diffview")
   if not diffview_ok then
-    u.notify("Please install diffview or change your reviewer")
+    M.notify("Please install diffview or change your reviewer")
   end
 end
 
@@ -341,7 +341,7 @@ M.parse_hunk_headers = function(file_path, base_branch)
           end
         end
       else
-        u.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
+        M.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
       end
     end,
   })
@@ -435,7 +435,7 @@ end
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
-    u.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
+    M.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
     return false
   end
   return true
