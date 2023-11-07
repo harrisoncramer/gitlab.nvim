@@ -502,43 +502,17 @@ M.move_to_discussion_tree = function()
     vim.notify("No diagnostics for this line", vim.log.levels.WARN)
     return
   elseif #diagnostics > 1 then
-    local lines = {}
-    for _, diagnostic in pairs(diagnostics) do
-      table.insert(lines, Menu.item(diagnostic.user_data.header, { diagnostic = diagnostic }))
-    end
-    local menu = Menu({
-      relative = "cursor",
-      position = {
-        row = 1,
-        col = 0,
-      },
-      size = {
-        width = 50,
-      },
-      border = {
-        style = "single",
-        text = {
-          top = "Choose a discussion to jump to",
-          top_align = "center",
-        },
-      },
-      win_options = {
-        winhighlight = "Normal:Normal,FloatBorder:Normal",
-      },
-    }, {
-      lines = lines,
-      max_width = 50,
-      keymap = {
-        focus_next = state.settings.dialogue.focus_next,
-        focus_prev = state.settings.dialogue.focus_prev,
-        close = state.settings.dialogue.close,
-        submit = state.settings.dialogue.submit,
-      },
-      on_submit = function(item)
-        jump_after_menu_selection(item.diagnostic)
+    vim.ui.select(diagnostics, {
+      prompt = "Choose discussion to jump to",
+      format_item = function(diagnostic)
+        return diagnostic.message
       end,
-    })
-    menu:mount()
+    }, function(diagnostic)
+      if not diagnostic then
+        return
+      end
+      jump_after_menu_selection(diagnostic)
+    end)
   else
     jump_after_menu_selection(diagnostics[1])
   end

@@ -228,12 +228,10 @@ require("gitlab").move_to_discussion_tree_from_diagnostic()
 
 The `discussion_sign` configuration controls the display of signs for discussions. The `enabled` option turns on/off the signs. `text` sets the sign text. `linehl`, `texthl`, `culhl`, and `numhl` customize the line highlighting, text highlighting, column highlighting, and number highlighting respectively. Keep in mind that these can be overridden by other configuration (for example diffview.nvim highlights). `priority` controls the sign priority order (when multiple signs are placed on the same line, the sign with highest priority is used). The `helper_signs` table configures additional signs for multiline discussions in order to show the whole context. `enabled` turns on/off the helper signs. `start`, `mid`, and `end` set the helper sign text.
 
-The `discussion_diagnostic` configuration customizes the diagnostic display for discussions. The `enabled` option turns on/off the diagnostics. `severity` sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, or `vim.diagnostic.severity.INFO`, `vim.diagnostic.severity.HINT`. `code` specifies a diagnostic code. `display_opts` configures the diagnostic display options where you can configure values like:
+The `discussion_diagnostic` configuration customizes the diagnostic display for discussions. The `enabled` option turns on/off the diagnostics. `severity` sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, or `vim.diagnostic.severity.INFO`, `vim.diagnostic.severity.HINT`. `code` specifies a diagnostic code. `display_opts` configures the diagnostic display options where you can configure values like (this is dirrectly used as opts in vim.diagnostic.set):
 
 - `virtual_text` - Show virtual text for diagnostics.
 - `underline` - Underline text for diagnostics.
-- `severity_sort` - Sort diagnostics by severity.
-- `float` - Show diagnostics in a floating window.
 
 Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details.
 

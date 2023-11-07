@@ -61,7 +61,7 @@ M.settings = {
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
     code = nil, -- see :h diagnostic-structure
-    display_opts = {}, -- see opts in vim.diagnostic.set
+    display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
     created = "",

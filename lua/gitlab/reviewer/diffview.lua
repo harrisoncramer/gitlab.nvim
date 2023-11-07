@@ -180,9 +180,9 @@ end
 ---@param opts table? see :h vim.diagnostic.set
 M.set_diagnostics = function(namespace, diagnostics, type, opts)
   local view = diffview_lib.get_current_view()
-  if type == "new" then
+  if type == "new" and view.cur_layout.b.file.bufnr then
     vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
-  elseif type == "old" then
+  elseif type == "old" and view.cur_layout.a.file.bufnr then
     vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
   else
     vim.notify("Unknown diagnostic type", vim.log.levels.ERROR)
