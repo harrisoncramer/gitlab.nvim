@@ -11,7 +11,7 @@ M.settings = {
   port = nil, -- choose random port
   debug = { go_request = false, go_response = false },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
-  reviewer = "delta",
+  reviewer = "diffview",
   attachment_dir = "",
   popup = {
     exit = "<Esc>",
@@ -33,13 +33,6 @@ M.settings = {
     resolved = "✓",
     unresolved = "",
   },
-  review_pane = {
-    delta = {
-      added_file = "",
-      modified_file = "",
-      removed_file = "",
-    },
-  },
   pipeline = {
     created = "",
     pending = "",
@@ -51,12 +44,6 @@ M.settings = {
     success = "✓",
     failed = "",
   },
-  dialogue = {
-    focus_next = { "j", "<Down>", "<Tab>" },
-    focus_prev = { "k", "<Up>", "<S-Tab>" },
-    close = { "<Esc>", "<C-c>" },
-    submit = { "<CR>", "<Space>" },
-  },
   go_server_running = false,
   is_gitlab_project = false,
 }
@@ -66,7 +53,33 @@ M.merge_settings = function(args)
   if args == nil then
     return
   end
+
   M.settings = u.merge(M.settings, args)
+
+  -- Check deprecated settings and alert users!
+  if M.settings.dialogue ~= nil then
+    u.notify("The dialogue field has been deprecated, please remove it from your setup function", vim.log.levels.WARN)
+  end
+
+  if M.settings.reviewer ~= "diffview" then
+    u.notify(
+      "Delta is no longer a supported reviewer, please use diffview and update your setup function",
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
+  local diffview_ok, _ = pcall(require, "diffview")
+  if not diffview_ok then
+    u.notify("Please install diffview, it is required")
+  end
+
+  if M.settings.review_pane ~= nil then
+    u.notify(
+      "The review_pane field is only relevant for Delta, which has been deprecated, please remove it from your setup function",
+      vim.log.levels.WARN
+    )
+  end
 end
 
 M.print_settings = function()

@@ -3,7 +3,6 @@
 -- and marking discussions as resolved/unresolved.
 local Split = require("nui.split")
 local Popup = require("nui.popup")
-local Menu = require("nui.menu")
 local NuiTree = require("nui.tree")
 local Layout = require("nui.layout")
 local job = require("gitlab.job")
@@ -40,7 +39,7 @@ M.toggle = function()
 
   job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     if type(data.discussions) ~= "table" and type(data.unlinked_discussions) ~= "table" then
-      vim.notify("No discussions or notes for this MR", vim.log.levels.WARN)
+      u.notify("No discussions or notes for this MR", vim.log.levels.WARN)
       return
     end
 
@@ -85,7 +84,7 @@ M.send_reply = function(tree, discussion_id)
   return function(text)
     local body = { discussion_id = discussion_id, reply = text }
     job.run_job("/reply", "POST", body, function(data)
-      vim.notify("Sent reply!", vim.log.levels.INFO)
+      u.notify("Sent reply!", vim.log.levels.INFO)
       M.add_reply_to_tree(tree, data.note, discussion_id)
     end)
   end
@@ -93,74 +92,48 @@ end
 
 -- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
 M.delete_comment = function(tree, unlinked)
-  local menu = Menu({
-    position = "50%",
-    size = {
-      width = 25,
-    },
-    border = {
-      style = "single",
-      text = {
-        top = "Delete Comment?",
-        top_align = "center",
-      },
-    },
-    win_options = {
-      winhighlight = "Normal:Normal,FloatBorder:Normal",
-    },
-  }, {
-    lines = {
-      Menu.item("Confirm"),
-      Menu.item("Cancel"),
-    },
-    max_width = 20,
-    keymap = {
-      focus_next = state.settings.dialogue.focus_next,
-      focus_prev = state.settings.dialogue.focus_prev,
-      close = state.settings.dialogue.close,
-      submit = state.settings.dialogue.submit,
-    },
-    on_submit = function(item)
-      M.send_deletion(tree, item, unlinked)
-    end,
-  })
-  menu:mount()
+  vim.ui.select({ "Confirm", "Cancel" }, {
+    prompt = "Delete comment?",
+  }, function(choice)
+    if choice == "Cancel" then
+      return
+    end
+    M.send_deletion(tree, unlinked)
+  end)
 end
 
 -- This function will actually send the deletion to Gitlab
 -- when you make a selection, and re-render the tree
-M.send_deletion = function(tree, item, unlinked)
-  if item.text == "Confirm" then
-    local current_node = tree:get_node()
+M.send_deletion = function(tree, unlinked)
+  local current_node = tree:get_node()
 
-    local note_node = M.get_note_node(tree, current_node)
-    local root_node = M.get_root_node(tree, current_node)
-    local note_id = note_node.is_root and root_node.root_note_id or note_node.id
+  local note_node = M.get_note_node(tree, current_node)
+  local root_node = M.get_root_node(tree, current_node)
+  local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-    local body = { discussion_id = root_node.id, note_id = note_id }
+  local body = { discussion_id = root_node.id, note_id = note_id }
 
-    job.run_job("/comment", "DELETE", body, function(data)
-      vim.notify(data.message, vim.log.levels.INFO)
-      if not note_node.is_root then
-        tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
-        tree:render()
+  job.run_job("/comment", "DELETE", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    if not note_node.is_root then
+      tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
+      tree:render()
+    else
+      if unlinked then
+        M.unlinked_discussions = u.remove_first_value(M.unlinked_discussions)
+        M.rebuild_unlinked_discussion_tree()
       else
-        if unlinked then
-          M.unlinked_discussions = u.remove_first_value(M.unlinked_discussions)
-          M.rebuild_unlinked_discussion_tree()
-        else
-          M.discussions = u.remove_first_value(M.discussions)
-          M.rebuild_discussion_tree()
-        end
+        M.discussions = u.remove_first_value(M.discussions)
+        M.rebuild_discussion_tree()
       end
-      M.switch_can_edit_bufs(true)
-      M.add_empty_titles({
-        { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
-        { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-      })
-      M.switch_can_edit_bufs(false)
-    end)
-  end
+    end
+    M.switch_can_edit_bufs(true)
+    M.add_empty_titles({
+      { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+    })
+    M.switch_can_edit_bufs(false)
+  end)
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
@@ -198,7 +171,7 @@ M.send_edits = function(discussion_id, note_id, unlinked)
       comment = text,
     }
     job.run_job("/comment", "PATCH", body, function(data)
-      vim.notify(data.message, vim.log.levels.INFO)
+      u.notify(data.message, vim.log.levels.INFO)
       if unlinked then
         M.unlinked_discussions = M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
@@ -224,7 +197,7 @@ M.toggle_resolved = function(tree)
   }
 
   job.run_job("/comment", "PATCH", body, function(data)
-    vim.notify(data.message, vim.log.levels.INFO)
+    u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
   end)
 end
@@ -233,7 +206,7 @@ end
 M.jump_to_reviewer = function(tree)
   local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
-    vim.notify(error, vim.log.levels.ERROR)
+    u.notify(error, vim.log.levels.ERROR)
     return
   end
   reviewer.jump(file_name, new_line, old_line)
@@ -243,7 +216,7 @@ end
 M.jump_to_file = function(tree)
   local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
-    vim.notify(error, vim.log.levels.ERROR)
+    u.notify(error, vim.log.levels.ERROR)
     return
   end
   vim.cmd.tabnew()

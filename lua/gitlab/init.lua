@@ -22,9 +22,9 @@ return {
     end
     server.build() -- Builds the Go binary if it doesn't exist
     state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    reviewer.init() -- Picks and initializes reviewer (default is Delta)
-    u.has_reviewer(args.reviewer or "delta")
+    if not state.merge_settings(args) then -- Sets keymaps and other settings from setup function
+      return
+    end
   end,
   -- Global Actions 🌎
   summary = async.sequence({ info }, summary.summary),

@@ -1,6 +1,7 @@
 -- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
 local Job = require("plenary.job")
+local u = require("gitlab.utils")
 local M = {}
 
 M.run_job = function(endpoint, method, body, callback)
@@ -27,7 +28,7 @@ M.run_job = function(endpoint, method, body, callback)
           if type(output) == "string" then
             msg = string.format(msg .. ", got: '%s'", output)
           end
-          vim.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
+          u.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
           return
         end
         if data ~= nil then
@@ -36,23 +37,23 @@ M.run_job = function(endpoint, method, body, callback)
             callback(data)
           elseif status == "success" then
             local message = string.format("%s", data.message)
-            vim.notify(message, vim.log.levels.INFO)
+            u.notify(message, vim.log.levels.INFO)
           else
             local message = string.format("%s: %s", data.message, data.details)
-            vim.notify(message, vim.log.levels.ERROR)
+            u.notify(message, vim.log.levels.ERROR)
           end
         end
       end, 0)
     end,
     on_stderr = function()
       vim.defer_fn(function()
-        vim.notify("Could not run command!", vim.log.levels.ERROR)
+        u.notify("Could not run command!", vim.log.levels.ERROR)
       end, 0)
     end,
     on_exit = function(_, status)
       vim.defer_fn(function()
         if status ~= 0 then
-          vim.notify(string.format("Go server exited with non-zero code: %d", status), vim.log.levels.ERROR)
+          u.notify(string.format("Go server exited with non-zero code: %d", status), vim.log.levels.ERROR)
         end
       end, 0)
     end,
