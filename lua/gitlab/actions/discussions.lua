@@ -133,17 +133,18 @@ M.filter_discussions_for_signs_and_diagnostics = function()
       and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-        state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-        and first_note.resolvable
-        and first_note.resolved
-      then
         --Skip resolved discussions
-      elseif
-        state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-        and first_note.position.base_sha ~= state.MR_REVISIONS[1].base_sha
-      then
+        not (
+          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+          and first_note.resolvable
+          and first_note.resolved
+        )
         --Skip discussions from old revisions
-      else
+        and not (
+          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+          and first_note.position.base_sha ~= state.MR_REVISIONS[1].base_sha
+        )
+      then
         table.insert(discussions, discussion)
       end
     end
