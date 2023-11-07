@@ -23,8 +23,8 @@ return {
     server.build() -- Builds the Go binary if it doesn't exist
     state.merge_settings(args) -- Sets keymaps and other settings from setup function
     require("gitlab.colors") -- Sets colors
-    reviewer.init()
-    discussions.setup_refresh_discussion_data_callback() -- place signs / diagnostics for discussions in reviewer
+    reviewer.init() -- Picks and initializes reviewer (default is Delta)
+    discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
     u.has_reviewer(args.reviewer or "delta")
   end,
   -- Global Actions 🌎
@@ -38,9 +38,9 @@ return {
   create_comment = async.sequence({ info, revisions }, comment.create_comment),
   create_multiline_comment = async.sequence({ info, revisions }, comment.create_multiline_comment),
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
-  jump_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.jump_to_discussion_tree),
+  move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
-  review = async.sequence({ u.merge(info, { refresh = true }) }, function()
+  review = async.sequence({ u.merge(info, { refresh = true }), revisions }, function()
     reviewer.open()
   end),
   pipeline = async.sequence({ info }, pipeline.open),

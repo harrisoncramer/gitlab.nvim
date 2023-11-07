@@ -33,6 +33,10 @@ M.settings = {
     resolved = "✓",
     unresolved = "",
   },
+  discussion_sign_and_diagnostic = {
+    skip_resolved_discussion = false,
+    skip_old_revision_discussion = false,
+  },
   discussion_sign = {
     -- See :h sign_define for details about sign configuration.
     enabled = true,
@@ -51,7 +55,7 @@ M.settings = {
       ["end"] = "↓",
     },
   },
-  discussion_diagnostics = {
+  discussion_diagnostic = {
     -- If you want to customize diagnostics for discussions you can make special config
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,

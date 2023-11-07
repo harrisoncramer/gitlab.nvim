@@ -42,7 +42,7 @@ M.init = function()
 
   M.place_sign = reviewer.place_sign
   -- Places a sign on the line for currently reviewed file.
-  -- Prameters:
+  -- Parameters:
   --   • {id}    The sign id
   --   • {sign}  The sign to place
   --   • {group} The sign group to place on
@@ -54,9 +54,14 @@ M.init = function()
   -- Parameters:
   --   • {callback}  The callback to call
 
+  M.set_callback_for_reviewer_leave = reviewer.set_callback_for_reviewer_leave
+  -- Call callback whenever the reviewer is left
+  -- Parameters:
+  --   • {callback}  The callback to call
+
   M.set_diagnostics = reviewer.set_diagnostics
   -- Set diagnostics for currently reviewed file
-  -- Prameters:
+  -- Parameters:
   --   • {namespace}    The namespace for diagnostics
   --   • {diagnostics}  The diagnostics to set
   --   • {type}         "new" if diagnostic should be in file after changes else "old"

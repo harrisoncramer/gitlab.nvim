@@ -112,6 +112,10 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
   },
+  discussion_sign_and_diagnostic = {
+    skip_resolved_discussion = false,
+    skip_old_revision_discussion = true,
+  },
   discussion_sign = {
     -- See :h sign_define for details about sign configuration.
     enabled = true,
@@ -120,7 +124,7 @@ require("gitlab").setup({
     texthl = nil,
     culhl = nil,
     numhl = nil,
-    priority = 20,
+    priority = 20, -- Priority of sign, the lower the number the higher the priority
     helper_signs = {
       -- For multiline comments the helper signs are used to indicate the whole context
       -- Priority of helper signs is lower than the main sign (-1).
@@ -130,7 +134,7 @@ require("gitlab").setup({
       ["end"] = "↓",
     },
   },
-  discussion_diagnostics = {
+  discussion_diagnostic = {
     -- If you want to customize diagnostics for discussions you can make special config
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
@@ -219,8 +223,24 @@ require("gitlab").create_note()
 By default when reviewing files you will see signs and diagnostics ( if enabled in configuration ). When cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show`. You can also jump to discussion tree where you can reply, edit or delete discussion.
 
 ```lua
-require("gitlab").jump_to_discussion_tree_from_diagnostic()
+require("gitlab").move_to_discussion_tree_from_diagnostic()
 ```
+
+The `discussion_sign` configuration controls the display of signs for discussions. The `enabled` option turns on/off the signs. `text` sets the sign text. `linehl`, `texthl`, `culhl`, and `numhl` customize the line highlighting, text highlighting, column highlighting, and number highlighting respectively. Keep in mind that these can be overridden by other configuration (for example diffview.nvim highlights). `priority` controls the sign priority order (when multiple signs are placed on the same line, the sign with highest priority is used). The `helper_signs` table configures additional signs for multiline discussions in order to show the whole context. `enabled` turns on/off the helper signs. `start`, `mid`, and `end` set the helper sign text.
+
+The `discussion_diagnostic` configuration customizes the diagnostic display for discussions. The `enabled` option turns on/off the diagnostics. `severity` sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, or `vim.diagnostic.severity.INFO`, `vim.diagnostic.severity.HINT`. `code` specifies a diagnostic code. `display_opts` configures the diagnostic display options where you can configure values like:
+
+- `virtual_text` - Show virtual text for diagnostics.
+- `underline` - Underline text for diagnostics.
+- `severity_sort` - Sort diagnostics by severity.
+- `float` - Show diagnostics in a floating window.
+
+Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details.
+
+Signs and diagnostics have common settings in `discussion_sign_and_diagnostics`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor:
+
+- `skip_resolved_discussion` - Whether to skip showing signs and diagnostics for resolved discussions. Default is `false`, meaning signs and diagnostics will be shown for resolved discussions.
+- `skip_old_revision_discussion` - Whether to skip showing signs and diagnostics for discussions on outdated diff revisions. Default is `true`, meaning signs and diagnostics won't be shown for discussions no longer relevant to the current diff.
 
 #### Limitations
 
@@ -287,7 +307,7 @@ vim.keymap.set("n", "<leader>glR", gitlab.revoke)
 vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
 vim.keymap.set("v", "<leader>glc", gitlab.create_multiline_comment)
 vim.keymap.set("v", "<leader>glC", gitlab.create_comment_suggestion)
-vim.keymap.set("n", "<leader>glj", gitlab.jump_to_discussion_tree_from_diagnostic)
+vim.keymap.set("n", "<leader>glm", gitlab.move_to_discussion_tree_from_diagnostic)
 vim.keymap.set("n", "<leader>gln", gitlab.create_note)
 vim.keymap.set("n", "<leader>gld", gitlab.toggle_discussions)
 vim.keymap.set("n", "<leader>glaa", gitlab.add_assignee)

@@ -146,6 +146,7 @@ M.confirm_create_comment = function(text, range, unlinked)
   job.run_job("/comment", "POST", body, function(data)
     u.notify("Comment created!", vim.log.levels.INFO)
     discussions.add_discussion({ data = data, unlinked = false })
+    discussions.refresh_discussion_data()
   end)
 end
 

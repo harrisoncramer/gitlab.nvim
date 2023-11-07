@@ -192,11 +192,23 @@ end
 ---Diffview exposes events which can be used to setup autocommands.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_file_changed = function(callback)
-  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand", {})
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
   vim.api.nvim_create_autocmd("User", {
-    pattern = "DiffviewDiffBufWinEnter",
+    pattern = { "DiffviewDiffBufWinEnter", "DiffviewViewEnter" },
     group = group,
     callback = callback,
   })
 end
+
+---Diffview exposes events which can be used to setup autocommands.
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+M.set_callback_for_reviewer_leave = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.leave", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
+    group = group,
+    callback = callback,
+  })
+end
+
 return M
