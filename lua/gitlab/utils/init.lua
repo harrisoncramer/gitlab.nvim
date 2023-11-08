@@ -2,8 +2,8 @@ local Job = require("plenary.job")
 local M = {}
 
 M.get_colors_for_group = function(group)
-  local normal_fg = vim.fn.synIDattr(vim.fn.hlID(group), 'fg')
-  local normal_bg = vim.fn.synIDattr(vim.fn.hlID(group), 'bg')
+  local normal_fg = vim.fn.synIDattr(vim.fn.hlID(group), "fg")
+  local normal_bg = vim.fn.synIDattr(vim.fn.hlID(group), "bg")
   return { fg = normal_fg, bg = normal_bg }
 end
 
@@ -150,7 +150,7 @@ M.join = function(tbl, separator)
 
   -- Remove the trailing separator
   if separator ~= "" then
-    result = result:sub(1, - #separator - 1)
+    result = result:sub(1, -#separator - 1)
   end
 
   return result

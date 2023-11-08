@@ -64,7 +64,7 @@ M.toggle = function()
 
     M.switch_can_edit_bufs(true)
     M.add_empty_titles({
-      { linked_section.bufnr,   data.discussions,          "No Discussions for this MR" },
+      { linked_section.bufnr, data.discussions, "No Discussions for this MR" },
       { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -156,7 +156,7 @@ M.send_deletion = function(tree, item, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section_bufnr,   M.discussions,          "No Discussions for this MR" },
+        { M.linked_section_bufnr, M.discussions, "No Discussions for this MR" },
         { M.unlinked_section_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -289,7 +289,7 @@ M.rebuild_discussion_tree = function()
   M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, false)
   M.discussion_tree = discussion_tree
   M.switch_can_edit_bufs(false)
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, 'filetype', 'gitlab')
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "filetype", "gitlab")
 end
 
 M.rebuild_unlinked_discussion_tree = function()
@@ -301,7 +301,7 @@ M.rebuild_unlinked_discussion_tree = function()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   M.switch_can_edit_bufs(false)
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, 'filetype', 'gitlab')
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "filetype", "gitlab")
 end
 
 M.switch_can_edit_bufs = function(bool)
@@ -488,7 +488,7 @@ M.build_note_body = function(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-        or state.settings.discussion_tree.unresolved
+      or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = "@" .. note.author.username .. " " .. u.format_date(note.created_at) .. " " .. resolve_symbol

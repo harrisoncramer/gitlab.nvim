@@ -61,11 +61,11 @@ M.settings = {
   is_gitlab_project = false,
   colors = {
     discussion_tree = {
-      username = 'Keyword',
-      date = 'Comment',
-      chevron = 'Comment',
-    }
-  }
+      username = "Keyword",
+      date = "Comment",
+      chevron = "Comment",
+    },
+  },
 }
 
 -- Merges user settings into the default settings, overriding them
