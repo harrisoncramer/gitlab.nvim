@@ -59,6 +59,13 @@ M.settings = {
   },
   go_server_running = false,
   is_gitlab_project = false,
+  colors = {
+    discussion_tree = {
+      username = u.get_colors_for_group('Keyword'),
+      date = u.get_colors_for_group('Comment'),
+      chevron = u.get_colors_for_group('Comment'),
+    }
+  }
 }
 
 -- Merges user settings into the default settings, overriding them
