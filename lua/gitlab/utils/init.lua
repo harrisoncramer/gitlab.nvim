@@ -5,15 +5,14 @@ M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
-M.get_current_line_number = function()
-  return vim.api.nvim_call_function("line", { "." })
+M.get_colors_for_group = function(group)
+  local normal_fg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "fg")
+  local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "bg")
+  return { fg = normal_fg, bg = normal_bg }
 end
 
-M.has_reviewer = function()
-  local diffview_ok, _ = pcall(require, "diffview")
-  if not diffview_ok then
-    M.notify("Please install diffview or change your reviewer")
-  end
+M.get_current_line_number = function()
+  return vim.api.nvim_call_function("line", { "." })
 end
 
 M.is_windows = function()
@@ -141,7 +140,7 @@ M.join = function(tbl, separator)
 
   -- Remove the trailing separator
   if separator ~= "" then
-    result = result:sub(1, -#separator - 1)
+    result = result:sub(1, - #separator - 1)
   end
 
   return result

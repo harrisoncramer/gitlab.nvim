@@ -46,14 +46,17 @@ M.settings = {
   },
   go_server_running = false,
   is_gitlab_project = false,
+  colors = {
+    discussion_tree = {
+      username = "Keyword",
+      date = "Comment",
+      chevron = "Comment",
+    },
+  },
 }
 
 -- Merges user settings into the default settings, overriding them
 M.merge_settings = function(args)
-  if args == nil then
-    return
-  end
-
   M.settings = u.merge(M.settings, args)
 
   -- Check deprecated settings and alert users!
@@ -66,12 +69,13 @@ M.merge_settings = function(args)
       "Delta is no longer a supported reviewer, please use diffview and update your setup function",
       vim.log.levels.ERROR
     )
-    return
+    return false
   end
 
   local diffview_ok, _ = pcall(require, "diffview")
   if not diffview_ok then
     u.notify("Please install diffview, it is required")
+    return false
   end
 
   if M.settings.review_pane ~= nil then
@@ -80,6 +84,8 @@ M.merge_settings = function(args)
       vim.log.levels.WARN
     )
   end
+
+  return true
 end
 
 M.print_settings = function()

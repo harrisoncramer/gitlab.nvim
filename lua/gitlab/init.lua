@@ -20,11 +20,13 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
+    server.build()                         -- Builds the Go binary if it doesn't exist
+    state.setPluginConfiguration()         -- Sets configuration from `.gitlab.nvim` file
+
     if not state.merge_settings(args) then -- Sets keymaps and other settings from setup function
       return
     end
+    require("gitlab.colors") -- Sets colors
   end,
   -- Global Actions 🌎
   summary = async.sequence({ info }, summary.summary),

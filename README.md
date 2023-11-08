@@ -120,6 +120,13 @@ require("gitlab").setup({
     success = "✓",
     failed = "",
   },
+  colors = {
+    discussion_tree = {
+      username = 'Keyword', -- The highlight group used, for instance 'DiagnosticSignWarn'
+      date = 'Comment',
+      chevron = 'Comment',
+    }
+  }
 })
 ```
 
