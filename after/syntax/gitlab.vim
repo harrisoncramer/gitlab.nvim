@@ -2,7 +2,7 @@ if filereadable($VIMRUNTIME . '/syntax/markdown.vim')
   source $VIMRUNTIME/syntax/markdown.vim
 endif
 
-syntax match Username "@\w\+"
+syntax match Username "@\S*"
 syntax match Date "\v\d+\s+\w+\s+ago"
 syntax match ChevronDown ""
 syntax match ChevronRight ""
