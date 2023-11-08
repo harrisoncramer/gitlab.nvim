@@ -135,7 +135,7 @@ require("gitlab").setup({
   },
   colors = {
     discussion_tree = {
-      username = 'Keyword', -- The highlight group used
+      username = 'Keyword', -- The highlight group used, for instance 'DiagnosticSignWarn'
       date = 'Comment',
       chevron = 'Comment',
     }
