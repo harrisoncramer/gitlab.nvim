@@ -67,6 +67,7 @@ M.toggle = function()
       { linked_section.bufnr, data.discussions, "No Discussions for this MR" },
       { unlinked_section.bufnr, data.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
+
     M.switch_can_edit_bufs(false)
   end)
 end
@@ -288,6 +289,7 @@ M.rebuild_discussion_tree = function()
   M.set_tree_keymaps(discussion_tree, M.linked_section_bufnr, false)
   M.discussion_tree = discussion_tree
   M.switch_can_edit_bufs(false)
+  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "filetype", "gitlab")
 end
 
 M.rebuild_unlinked_discussion_tree = function()
@@ -299,6 +301,7 @@ M.rebuild_unlinked_discussion_tree = function()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   M.switch_can_edit_bufs(false)
+  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "filetype", "gitlab")
 end
 
 M.switch_can_edit_bufs = function(bool)
