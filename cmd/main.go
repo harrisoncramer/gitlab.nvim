@@ -16,7 +16,12 @@ func main() {
 	branchName, err := getCurrentBranch()
 
 	if err != nil {
-		log.Fatalf("Failure: Failed to get current branch: %v", err)
+		log.Fatalf("Failed to get current branch in git directory: %v", err)
+	}
+
+	projectName, err := getProjectName()
+	if err != nil || projectName == "" {
+		log.Fatalf("Failed to get git project name: %v", err)
 	}
 
 	if branchName == "main" || branchName == "master" {
@@ -26,7 +31,7 @@ func main() {
 	/* Initialize Gitlab client */
 	var c Client
 
-	if err := c.init(branchName); err != nil {
+	if err := c.init(branchName, projectName); err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
@@ -47,7 +52,7 @@ func main() {
 	m.Handle("/pipeline", withGitlabContext(http.HandlerFunc(PipelineHandler), c))
 	m.Handle("/job", withGitlabContext(http.HandlerFunc(JobHandler), c))
 
-	port := os.Args[3]
+	port := os.Args[2]
 	if port == "" {
 		// port was not specified
 		port = "0"
@@ -109,4 +114,22 @@ func getCurrentBranch() (res string, e error) {
 func PingHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "pong")
+}
+
+/* Gets the project name */
+func getProjectName() (res string, e error) {
+	hasRemote := exec.Command("git", "remote", "get-url", "origin")
+	_, err := hasRemote.Output()
+
+	if err != nil {
+		return "", fmt.Errorf("Could not get origin remote")
+	}
+
+	cmd := exec.Command("bash", "-c", "git remote get-url origin | xargs basename -s .git")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("Error running git get-url: %v", err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
 }

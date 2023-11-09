@@ -80,40 +80,36 @@ M.print_settings = function()
   u.P(M.settings)
 end
 
--- Merges `.gitlab.nvim` settings into the state module
+-- First reads environment variables into the settings module,
+-- then attemps to read a `.gitlab.nvim` configuration file.
+-- If after doing this, any variables are missing, alerts the user.
+-- The `.gitlab.nvim` configuration file takes precedence.
 M.setPluginConfiguration = function()
+  if M.initialized then return true end
   local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
   local config_file_content = u.read_file(config_file_path)
-  if config_file_content == nil then
-    return false
-  end
 
-  M.is_gitlab_project = true
-
-  local file = assert(io.open(config_file_path, "r"))
-  local properties = {}
-  for line in file:lines() do
-    for key, value in string.gmatch(line, "(.-)=(.-)$") do
-      properties[key] = value
+  local file_properties = {}
+  if config_file_content ~= nil then
+    local file = assert(io.open(config_file_path, "r"))
+    for line in file:lines() do
+      for key, value in string.gmatch(line, "(.-)=(.-)$") do
+        file_properties[key] = value
+      end
     end
   end
 
-  M.settings.project_id = properties.project_id
-  M.settings.auth_token = properties.auth_token or os.getenv("GITLAB_TOKEN")
-  M.settings.gitlab_url = properties.gitlab_url or "https://gitlab.com"
+  M.settings.auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
+  M.settings.gitlab_url = file_properties.gitlab_url or os.getenv("GITLAB_URL") or "https://gitlab.com"
 
   if M.settings.auth_token == nil then
-    error("Missing authentication token for Gitlab")
+    vim.notify(
+      "Missing authentication token for Gitlab, please provide it as an environment variable or in the .gitlab.nvim file",
+      vim.log.levels.ERROR)
+    return false
   end
 
-  if M.settings.project_id == nil then
-    error("Missing project ID in .gitlab.nvim file.")
-  end
-
-  if type(tonumber(M.settings.project_id)) ~= "number" then
-    error("The .gitlab.nvim project file's 'project_id' must be number")
-  end
-
+  M.initialized = true
   return true
 end
 

@@ -47,9 +47,11 @@ M.sequence = function(dependencies, cb)
     local handler = async:new()
     handler:init(cb)
 
-    if not state.is_gitlab_project then
-      vim.notify("The gitlab.nvim state was not set. Do you have a .gitlab.nvim file configured?", vim.log.levels.ERROR)
-      return
+    -- Sets configuration for plugin, if not already set
+    if not state.initialized then
+      if not state.setPluginConfiguration() then
+        return
+      end
     end
 
     if state.go_server_running then

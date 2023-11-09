@@ -69,16 +69,15 @@ var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, 
 }
 
 /* This will initialize the client with the token and check for the basic project ID and command arguments */
-func (c *Client) init(branchName string) error {
+func (c *Client) init(branchName string, projectName string) error {
 
-	if len(os.Args) < 5 {
-		return errors.New("Must provide project ID, gitlab instance, port, and auth token!")
+	if len(os.Args) < 3 {
+		return errors.New("Must provide gitlab instance, port, and auth token!")
 	}
 
-	projectId := os.Args[1]
-	gitlabInstance := os.Args[2]
-	authToken := os.Args[4]
-	debugSettings := os.Args[5]
+	gitlabInstance := os.Args[1]
+	authToken := os.Args[3]
+	debugSettings := os.Args[4]
 
 	var debugObject DebugSettings
 	err := json.Unmarshal([]byte(debugSettings), &debugObject)
@@ -87,10 +86,6 @@ func (c *Client) init(branchName string) error {
 	}
 
 	logPath := os.Args[len(os.Args)-1]
-
-	if projectId == "" {
-		return errors.New("Project ID cannot be empty")
-	}
 
 	if gitlabInstance == "" {
 		return errors.New("GitLab instance URL cannot be empty")
@@ -101,7 +96,6 @@ func (c *Client) init(branchName string) error {
 	}
 
 	c.gitlabInstance = gitlabInstance
-	c.projectId = projectId
 	c.authToken = authToken
 	c.logPath = logPath
 
@@ -124,6 +118,26 @@ func (c *Client) init(branchName string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create client: %v", err)
 	}
+
+	opt := gitlab.ListProjectsOptions{
+		Search:     gitlab.String(projectName),
+		Membership: gitlab.Bool(true),
+	}
+
+	projects, _, err := git.Projects.ListProjects(&opt)
+	if err != nil {
+		return fmt.Errorf(fmt.Sprintf("Could not find project named %s", projectName), err)
+	}
+
+	if len(projects) > 1 {
+		return errors.New(fmt.Sprintf("Query for \"%s\" returned %d projects, should return 1", projectName, len(projects)))
+	}
+
+	if len(projects) == 0 {
+		return errors.New(fmt.Sprintf("Query for \"%s\" returned no projects, should return 1", projectName))
+	}
+
+	c.projectId = fmt.Sprint(projects[0].ID)
 
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.String("all"),
