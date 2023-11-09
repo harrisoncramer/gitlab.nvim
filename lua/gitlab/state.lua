@@ -85,7 +85,9 @@ end
 -- If after doing this, any variables are missing, alerts the user.
 -- The `.gitlab.nvim` configuration file takes precedence.
 M.setPluginConfiguration = function()
-  if M.initialized then return true end
+  if M.initialized then
+    return true
+  end
   local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
   local config_file_content = u.read_file(config_file_path)
 
@@ -105,7 +107,8 @@ M.setPluginConfiguration = function()
   if M.settings.auth_token == nil then
     vim.notify(
       "Missing authentication token for Gitlab, please provide it as an environment variable or in the .gitlab.nvim file",
-      vim.log.levels.ERROR)
+      vim.log.levels.ERROR
+    )
     return false
   end
 

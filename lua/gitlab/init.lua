@@ -20,10 +20,10 @@ return {
     if args == nil then
       args = {}
     end
-    server.build()             -- Builds the Go binary if it doesn't exist
+    server.build() -- Builds the Go binary if it doesn't exist
     state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors")   -- Sets colors
-    reviewer.init()            -- Picks and initializes reviewer (default is Delta)
+    require("gitlab.colors") -- Sets colors
+    reviewer.init() -- Picks and initializes reviewer (default is Delta)
     u.has_reviewer(args.reviewer or "delta")
   end,
   -- Global Actions 🌎
