@@ -130,11 +130,11 @@ func (c *Client) init(branchName string, projectName string) error {
 	}
 
 	if len(projects) > 1 {
-		return errors.New(fmt.Sprintf("Query for \"%s\" returned %d projects, should return 1", projectName, len(projects)))
+		return fmt.Errorf("Query for \"%s\" returned %d projects, should return 1", projectName, len(projects))
 	}
 
 	if len(projects) == 0 {
-		return errors.New(fmt.Sprintf("Query for \"%s\" returned no projects, should return 1", projectName))
+		return fmt.Errorf("Query for \"%s\" returned no projects, should return 1", projectName)
 	}
 
 	c.projectId = fmt.Sprint(projects[0].ID)
