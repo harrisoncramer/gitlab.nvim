@@ -38,7 +38,7 @@ M.add_popup = function(type)
     table.insert(current_ids, choice.id)
     local body = { ids = current_ids }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
-      vim.notify(data.message, vim.log.levels.INFO)
+      u.notify(data.message, vim.log.levels.INFO)
       state.INFO[plural] = data[plural]
     end)
   end)
@@ -59,7 +59,7 @@ M.delete_popup = function(type)
     local ids = u.extract(M.filter_eligible(current, { choice }), "id")
     local body = { ids = ids }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
-      vim.notify(data.message, vim.log.levels.INFO)
+      u.notify(data.message, vim.log.levels.INFO)
       state.INFO[plural] = data[plural]
     end)
   end)

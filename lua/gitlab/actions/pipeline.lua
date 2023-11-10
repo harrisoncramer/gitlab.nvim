@@ -14,7 +14,7 @@ local function get_pipeline()
   local pipeline = state.INFO.head_pipeline or state.INFO.pipeline
 
   if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
-    vim.notify("Pipeline not found", vim.log.levels.WARN)
+    u.notify("Pipeline not found", vim.log.levels.WARN)
     return
   end
   return pipeline
@@ -86,12 +86,12 @@ M.retrigger = function()
   end
   local body = { pipeline_id = pipeline.id }
   if pipeline.status ~= "failed" then
-    vim.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
+    u.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
     return
   end
 
   job.run_job("/pipeline", "POST", body, function()
-    vim.notify("Pipeline re-triggered!", vim.log.levels.INFO)
+    u.notify("Pipeline re-triggered!", vim.log.levels.INFO)
   end)
 end
 
@@ -101,7 +101,7 @@ M.see_logs = function()
   local text = u.get_line_content(bufnr, linnr)
   local last_word = u.get_last_chunk(text)
   if last_word == nil then
-    vim.notify("Cannot find job name", vim.log.levels.ERROR)
+    u.notify("Cannot find job name", vim.log.levels.ERROR)
     return
   end
 
@@ -113,7 +113,7 @@ M.see_logs = function()
   end
 
   if j == nil then
-    vim.notify("Cannot find job in state", vim.log.levels.ERROR)
+    u.notify("Cannot find job in state", vim.log.levels.ERROR)
     return
   end
 
@@ -121,7 +121,7 @@ M.see_logs = function()
   job.run_job("/job", "GET", body, function(data)
     local file = data.file
     if file == "" then
-      vim.notify("Log trace is empty", vim.log.levels.WARN)
+      u.notify("Log trace is empty", vim.log.levels.WARN)
       return
     end
 
@@ -131,7 +131,7 @@ M.see_logs = function()
     end
 
     if #lines == 0 then
-      vim.notify("Log trace lines could not be parsed", vim.log.levels.ERROR)
+      u.notify("Log trace lines could not be parsed", vim.log.levels.ERROR)
       return
     end
 

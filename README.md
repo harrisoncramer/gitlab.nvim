@@ -20,7 +20,6 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/50f44eaf-5f99-4cb3
 ## Quick Start
 
 1. Install Go
-2. Install reviewer: <a href="https://github.com/dandavison/delta">delta</a> or <a href="https://github.com/sindrets/diffview.nvim">diffview</a>
 3. Add configuration (see Installation section)
 4. Checkout your feature branch: `git checkout feature-branch`
 5. Open Neovim
@@ -36,12 +35,13 @@ return {
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
+    "sindrets/diffview.nvim",
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     enabled = true,
   },
   build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
   config = function()
-    require("gitlab").setup() -- Uses delta reviewer by default
+    require("gitlab").setup()
   end,
 }
 ```
@@ -54,6 +54,7 @@ use {
   requires = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim"
+    "sindrets/diffview.nvim",
   },
   run = function() require("gitlab.server").build(true) end,
   config = function()
@@ -87,7 +88,6 @@ require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   debug = { go_request = false, go_response = false }, -- Which values to log
-  reviewer = "delta", -- The reviewer type ("delta" or "diffview")
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
@@ -108,19 +108,6 @@ require("gitlab").setup({
     relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
-  },
-  review_pane = { -- Specific settings for different reviewers
-    delta = {
-      added_file = "", -- The symbol to show next to added files
-      modified_file = "", -- The symbol to show next to modified files
-      removed_file = "", -- The symbol to show next to removed files
-    }
-  },
-  dialogue = {  -- The confirmation dialogue for deleting comments
-    focus_next = { "j", "<Down>", "<Tab>" },
-    focus_prev = { "k", "<Up>", "<S-Tab>" },
-    close = { "<Esc>", "<C-c>" },
-    submit = { "<CR>", "<Space>" },
   },
   pipeline = {
     created = "",
@@ -170,13 +157,11 @@ The `review` action will open a diff of the changes. You can leave comments usin
 ```lua
 require("gitlab").review()
 require("gitlab").create_comment()
-require("gitlab").create_multiline_comment() -- Only supported for diffview reviewer
-require("gitlab").create_comment_suggestion() -- Only supported for diffview reviewer
+require("gitlab").create_multiline_comment()
+require("gitlab").create_comment_suggestion()
 ```
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with gitlab [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from visual selection.
-
-The reviewer is Delta by default, but you can configure the plugin to use Diffview instead.
 
 ### Discussions and Notes
 

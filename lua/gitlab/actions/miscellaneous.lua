@@ -6,7 +6,7 @@ local M = {}
 M.open_in_browser = function()
   local url = state.INFO.web_url
   if url == nil then
-    vim.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
+    u.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
     return
   end
   if vim.fn.has("mac") == 1 then
@@ -14,21 +14,21 @@ M.open_in_browser = function()
   elseif vim.fn.has("unix") == 1 then
     vim.fn.jobstart({ "xdg-open", url })
   else
-    vim.notify("Opening a Gitlab URL is not supported on this OS!", vim.log.levels.ERROR)
+    u.notify("Opening a Gitlab URL is not supported on this OS!", vim.log.levels.ERROR)
   end
 end
 
 M.attach_file = function()
   local attachment_dir = state.settings.attachment_dir
   if not attachment_dir or attachment_dir == "" then
-    vim.notify("Must provide valid attachment_dir in plugin setup", vim.log.levels.ERROR)
+    u.notify("Must provide valid attachment_dir in plugin setup", vim.log.levels.ERROR)
     return
   end
 
   local files = u.list_files_in_folder(attachment_dir)
 
   if files == nil then
-    vim.notify(string.format("Could not list files in %s", attachment_dir), vim.log.levels.ERROR)
+    u.notify(string.format("Could not list files in %s", attachment_dir), vim.log.levels.ERROR)
     return
   end
 

@@ -3,6 +3,7 @@
 local server = require("gitlab.server")
 local job = require("gitlab.job")
 local state = require("gitlab.state")
+local u = require("gitlab.utils")
 
 local M = {}
 
@@ -48,7 +49,7 @@ M.sequence = function(dependencies, cb)
     handler:init(cb)
 
     if not state.is_gitlab_project then
-      vim.notify("The gitlab.nvim state was not set. Do you have a .gitlab.nvim file configured?", vim.log.levels.ERROR)
+      u.notify("The gitlab.nvim state was not set. Do you have a .gitlab.nvim file configured?", vim.log.levels.ERROR)
       return
     end
 

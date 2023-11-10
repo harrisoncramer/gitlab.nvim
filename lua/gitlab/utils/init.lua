@@ -1,6 +1,10 @@
 local Job = require("plenary.job")
 local M = {}
 
+M.notify = function(msg, lvl)
+  vim.notify("gitlab.nvim: " .. msg, lvl)
+end
+
 M.get_colors_for_group = function(group)
   local normal_fg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "fg")
   local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "bg")
@@ -9,20 +13,6 @@ end
 
 M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
-end
-
-M.has_reviewer = function(reviewer)
-  if reviewer == "diffview" then
-    local diffview_ok, _ = pcall(require, "diffview")
-    if not diffview_ok then
-      error("Please install diffview or change your reviewer")
-    end
-  else
-    local has_reviewer = vim.fn.executable("delta") == 1
-    if not has_reviewer then
-      error(string.format("Please install delta or change your reviewer", reviewer))
-    end
-  end
 end
 
 M.is_windows = function()
@@ -350,7 +340,7 @@ M.parse_hunk_headers = function(file_path, base_branch)
           end
         end
       else
-        vim.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
+        M.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
       end
     end,
   })
@@ -444,7 +434,7 @@ end
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
-    vim.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
+    M.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
     return false
   end
   return true
