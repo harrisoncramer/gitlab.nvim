@@ -24,7 +24,6 @@ return {
     state.merge_settings(args) -- Sets keymaps and other settings from setup function
     require("gitlab.colors") -- Sets colors
     reviewer.init() -- Picks and initializes reviewer (default is Delta)
-    u.has_reviewer(args.reviewer or "delta")
   end,
   -- Global Actions 🌎
   summary = async.sequence({ info }, summary.summary),

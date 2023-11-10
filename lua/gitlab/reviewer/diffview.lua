@@ -1,4 +1,4 @@
--- This Module contains all of the code specific to the Diffview reviewer.
+-- This Module contains all of the reviewer code for diffview
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local async_ok, async = pcall(require, "diffview.async")
@@ -8,10 +8,6 @@ local M = {
   tabnr = nil,
 }
 
--- Public Functions
--- These functions are exposed externally and are used
--- when the reviewer is consumed by other code. They must follow the specification
--- outlined in the reviewer/init.lua file
 M.open = function()
   vim.api.nvim_command(string.format("DiffviewOpen %s", state.INFO.target_branch))
   M.tabnr = vim.api.nvim_get_current_tabpage()
@@ -19,14 +15,14 @@ end
 
 M.jump = function(file_name, new_line, old_line)
   if M.tabnr == nil then
-    vim.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
+    u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
   end
   vim.api.nvim_set_current_tabpage(M.tabnr)
   vim.cmd("DiffviewFocusFiles")
   local view = require("diffview.lib").get_current_view()
   if view == nil then
-    vim.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
   local files = view.panel:ordered_file_list()
@@ -34,7 +30,7 @@ M.jump = function(file_name, new_line, old_line)
   for _, file in ipairs(files) do
     if file.path == file_name then
       if not async_ok then
-        vim.notify("Could not load Diffview async", vim.log.levels.ERROR)
+        u.notify("Could not load Diffview async", vim.log.levels.ERROR)
         return
       end
       async.await(view:set_file(file))
@@ -56,7 +52,7 @@ end
 ---@return ReviewerInfo | nil nil is returned only if error was encountered
 M.get_location = function(range)
   if M.tabnr == nil then
-    vim.notify("Diffview reviewer must be initialized first")
+    u.notify("Diffview reviewer must be initialized first")
     return
   end
   local bufnr = vim.api.nvim_get_current_buf()
@@ -65,14 +61,14 @@ M.get_location = function(range)
   -- check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
   if tabnr ~= M.tabnr then
-    vim.notify("Line location can only be determined within reviewer window")
+    u.notify("Line location can only be determined within reviewer window")
     return
   end
 
   -- check if we are in the diffview buffer
   local view = require("diffview.lib").get_current_view()
   if view == nil then
-    vim.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
   local layout = view.cur_layout
@@ -90,13 +86,13 @@ M.get_location = function(range)
     type = "new"
     is_new = true
   else
-    vim.notify("Line location can only be determined within reviewer window")
+    u.notify("Line location can only be determined within reviewer window")
     return
   end
 
   local hunks = u.parse_hunk_headers(result.file_name, state.INFO.target_branch)
   if hunks == nil then
-    vim.notify("Could not parse hunks", vim.log.levels.ERROR)
+    u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
   end
 

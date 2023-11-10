@@ -46,11 +46,6 @@ M.create_comment_suggestion = function()
   local backticks = "```"
   local selected_lines = reviewer.get_lines(start_line, end_line)
 
-  if selected_lines == nil then
-    -- TODO: remove when delta is supported
-    return
-  end
-
   for line in ipairs(selected_lines) do
     if string.match(line, "^```$") then
       backticks = "````"
@@ -65,7 +60,7 @@ M.create_comment_suggestion = function()
     suggestion_start = backticks .. "suggestion:-" .. range .. "+0"
   else
     -- This should never happen afaik
-    vim.notify("Unexpected suggestion position", vim.log.levels.ERROR)
+    u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
     return
   end
   suggestion_start = suggestion_start
@@ -117,14 +112,14 @@ end
 ---@param unlinked boolean | nil if true, the comment is not linked to a line
 M.confirm_create_comment = function(text, range, unlinked)
   if text == nil then
-    vim.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
+    u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
   end
 
   if unlinked then
     local body = { comment = text }
     job.run_job("/comment", "POST", body, function(data)
-      vim.notify("Note created!", vim.log.levels.INFO)
+      u.notify("Note created!", vim.log.levels.INFO)
       discussions.add_discussion({ data = data, unlinked = true })
     end)
     return
@@ -149,7 +144,7 @@ M.confirm_create_comment = function(text, range, unlinked)
   }
 
   job.run_job("/comment", "POST", body, function(data)
-    vim.notify("Comment created!", vim.log.levels.INFO)
+    u.notify("Comment created!", vim.log.levels.INFO)
     discussions.add_discussion({ data = data, unlinked = false })
   end)
 end

@@ -56,18 +56,15 @@ M.start = function(callback)
       end
 
       if err_msg ~= "" then
-        vim.notify(err_msg, vim.log.levels.ERROR)
+        u.notify(err_msg, vim.log.levels.ERROR)
       end
     end,
     on_exit = function(job_id, exit_code)
-      vim.notify(
-        "Golang gitlab server exited: job_id: " .. job_id .. ", exit_code: " .. exit_code,
-        vim.log.levels.ERROR
-      )
+      u.notify("Golang gitlab server exited: job_id: " .. job_id .. ", exit_code: " .. exit_code, vim.log.levels.ERROR)
     end,
   })
   if job_id <= 0 then
-    vim.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+    u.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
   end
 end
 
@@ -92,7 +89,7 @@ M.build = function(override)
   local null = u.is_windows() and " >NUL" or " > /dev/null"
   local installCode = os.execute(command .. null)
   if installCode ~= 0 then
-    vim.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
+    u.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
     return false
   end
   return true

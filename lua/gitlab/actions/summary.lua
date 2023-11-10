@@ -63,7 +63,7 @@ M.edit_summary = function()
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
   local body = { title = title, description = description }
   job.run_job("/mr/summary", "PUT", body, function(data)
-    vim.notify(data.message, vim.log.levels.INFO)
+    u.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
     state.INFO.title = data.mr.title
     M.layout:unmount()
