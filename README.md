@@ -53,9 +53,9 @@ use {
   'harrisoncramer/gitlab.nvim',
   requires = {
     "MunifTanjim/nui.nvim",
-    "nvim-lua/plenary.nvim"
+    "nvim-lua/plenary.nvim",
     "sindrets/diffview.nvim",
-    "stevearc/dressing.nvim"
+    "stevearc/dressing.nvim",
   },
   run = function() require("gitlab.server").build(true) end,
   config = function()
