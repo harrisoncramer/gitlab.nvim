@@ -13,8 +13,9 @@ M.init = function()
   local reviewer = reviewer_map[state.settings.reviewer]
   if reviewer == nil then
     vim.notify(
-    string.format("gitlab.nvim could not find reviewer %s, only diffview is supported", state.settings.reviewer),
-    vim.log.levels.ERROR)
+      string.format("gitlab.nvim could not find reviewer %s, only diffview is supported", state.settings.reviewer),
+      vim.log.levels.ERROR
+    )
     return
   end
 
