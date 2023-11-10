@@ -1,4 +1,4 @@
--- This Module contains all of the reviewer code
+-- This Module contains all of the reviewer code for diffview
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local async_ok, async = pcall(require, "diffview.async")
@@ -115,7 +115,7 @@ M.get_location = function(range)
     return result
   end
 
-  result.range_info = { start = {}, ["end"] = {} }
+  result.range_info = { start = {},["end"] = {} }
   if current_line == range.start_line then
     result.range_info.start.old_line = current_line_info.old_line
     result.range_info.start.new_line = current_line_info.new_line
