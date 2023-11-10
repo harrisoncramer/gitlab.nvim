@@ -64,7 +64,7 @@ M.merge_settings = function(args)
     u.notify("The dialogue field has been deprecated, please remove it from your setup function", vim.log.levels.WARN)
   end
 
-  if M.settings.reviewer ~= "diffview" then
+  if M.settings.reviewer == "delta" then
     u.notify(
       "Delta is no longer a supported reviewer, please use diffview and update your setup function",
       vim.log.levels.ERROR
