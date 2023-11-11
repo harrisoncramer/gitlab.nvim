@@ -25,7 +25,6 @@ return {
     require("gitlab.colors") -- Sets colors
     reviewer.init() -- Picks and initializes reviewer (default is Delta)
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    u.has_reviewer(args.reviewer or "delta")
   end,
   -- Global Actions 🌎
   summary = async.sequence({ info }, summary.summary),

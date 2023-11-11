@@ -12,6 +12,17 @@ local M = {
 M.open = function()
   vim.api.nvim_command(string.format("DiffviewOpen %s", state.INFO.target_branch))
   M.tabnr = vim.api.nvim_get_current_tabpage()
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.close", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewViewClosed" },
+    group = group,
+    callback = function()
+      --Check if our diffview tab was closed
+      if vim.api.nvim_tabpage_is_valid(M.tabnr) then
+        M.tabnr = nil
+      end
+    end,
+  })
 end
 
 M.jump = function(file_name, new_line, old_line)
@@ -196,7 +207,11 @@ M.set_callback_for_file_changed = function(callback)
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewDiffBufWinEnter", "DiffviewViewEnter" },
     group = group,
-    callback = callback,
+    callback = function(...)
+      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+        callback(...)
+      end
+    end,
   })
 end
 
@@ -207,7 +222,11 @@ M.set_callback_for_reviewer_leave = function(callback)
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
     group = group,
-    callback = callback,
+    callback = function(...)
+      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+        callback(...)
+      end
+    end,
   })
 end
 

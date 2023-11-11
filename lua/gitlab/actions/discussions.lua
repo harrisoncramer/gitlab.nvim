@@ -580,8 +580,8 @@ M.send_deletion = function(tree, unlinked)
         { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
-    end)
-  end
+    end
+  end)
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
@@ -709,7 +709,7 @@ M.rebuild_discussion_tree = function()
   M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
   M.switch_can_edit_bufs(false)
-  vim.api.nvim_buf_set_option(M.linked_section_bufnr, "filetype", "gitlab")
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
 end
 
 M.rebuild_unlinked_discussion_tree = function()
@@ -721,7 +721,7 @@ M.rebuild_unlinked_discussion_tree = function()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section.bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   M.switch_can_edit_bufs(false)
-  vim.api.nvim_buf_set_option(M.unlinked_section_bufnr, "filetype", "gitlab")
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
 end
 
 M.switch_can_edit_bufs = function(bool)
