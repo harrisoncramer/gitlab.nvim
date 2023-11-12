@@ -7,27 +7,22 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 )
 
 func main() {
-	branchName, err := getCurrentBranch()
-
+	url, namespace, projectName, branchName, err := ExtractGitInfo()
 	if err != nil {
-		log.Fatalf("Failure: Failed to get current branch: %v", err)
+		log.Fatalf("Failed to get git namespace, project, branch, or url: %v", err)
 	}
 
-	if branchName == "main" || branchName == "master" {
-		log.Fatalf("Cannot run on %s branch", branchName)
-	}
-
-	/* Initialize Gitlab client */
 	var c Client
-
-	if err := c.init(branchName); err != nil {
+	if err := c.initGitlabClient(); err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
+	}
+
+	if err := c.initProjectSettings(url, namespace, projectName, branchName); err != nil {
+		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
 	m := http.NewServeMux()
@@ -47,7 +42,7 @@ func main() {
 	m.Handle("/pipeline", withGitlabContext(http.HandlerFunc(PipelineHandler), c))
 	m.Handle("/job", withGitlabContext(http.HandlerFunc(JobHandler), c))
 
-	port := os.Args[3]
+	port := os.Args[2]
 	if port == "" {
 		// port was not specified
 		port = "0"
@@ -59,7 +54,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
 		os.Exit(1)
 	}
-	listner_port := listener.Addr().(*net.TCPAddr).Port
+	listenerPort := listener.Addr().(*net.TCPAddr).Port
 
 	errCh := make(chan error)
 	go func() {
@@ -69,10 +64,10 @@ func main() {
 
 	go func() {
 		for i := 0; i < 10; i++ {
-			resp, err := http.Get("http://localhost:" + fmt.Sprintf("%d", listner_port) + "/ping")
+			resp, err := http.Get("http://localhost:" + fmt.Sprintf("%d", listenerPort) + "/ping")
 			if resp.StatusCode == 200 && err == nil {
 				/* This print is detected by the Lua code and used to fetch project information */
-				fmt.Println("Server started on port: ", listner_port)
+				fmt.Println("Server started on port: ", listenerPort)
 				return
 			}
 			// Wait for healthcheck to pass - at most 1 sec.
@@ -85,7 +80,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
 		os.Exit(1)
 	}
+}
 
+func PingHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "pong")
 }
 
 func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
@@ -93,20 +92,4 @@ func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
 		ctx := context.WithValue(context.Background(), "client", c) //nolint:all
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-/* Gets the current branch */
-func getCurrentBranch() (res string, e error) {
-	gitCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-
-	output, err := gitCmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("Error running git rev-parse: %w", err)
-	}
-
-	return strings.TrimSpace(string(output)), nil
-}
-func PingHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "pong")
 }

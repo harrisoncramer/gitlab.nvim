@@ -66,18 +66,20 @@ use {
 
 ## Project Configuration
 
-This plugin requires a `.gitlab.nvim` file in the root of the project. Provide this file with values required to connect to your gitlab instance of your repository (gitlab_url is optional, use ONLY for self-hosted instances):
+This plugin requires an <a href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token">auth token</a> to connect to Gitlab. The token can be set in the root directory of the project in a `.gitlab.nvim` environment file, or can be set via a shell environment variable called `GITLAB_TOKEN` instead. If both are present, the `.gitlab.nvim` file will take precedence. 
+
+Optionally provide a GITLAB_URL environment variable (or gitlab_url value in the `.gitlab.nvim` file) to connect to a self-hosted Gitlab instance. This is optional, use ONLY for self-hosted instances.
 
 ```
-project_id=112415
 auth_token=your_gitlab_token
 gitlab_url=https://my-personal-gitlab-instance.com/
 ```
 
-If you don't want to write your authentication token into a dotfile, you may provide it as a shell variable. For instance in your `.bashrc` or `.zshrc` file:
+If you don't want to write these into a dotfile, you may provide them via shell variables. These will be overridden by the dotfile if it is present:
 
 ```bash
 export GITLAB_TOKEN="your_gitlab_token"
+export GITLAB_URL="https://my-personal-gitlab-instance.com/"
 ```
 
 ## Configuring the Plugin
@@ -139,17 +141,17 @@ First, check out the branch that you want to review locally.
 git checkout feature-branch
 ```
 
-Then open Neovim. The `project_id` you specify in your configuration file must match the project_id of the Gitlab project your terminal is inside of.
+Then open Neovim. To begin, try running the `summary` command or the `review` command.
 
 ### Summary
 
-The `summary` action will pull down the MR description into a buffer so that you can read it. To edit the description, use the `settings.popup.perform_action` keybinding.
+The `summary` action will open the MR title and description. 
 
 ```lua
 require("gitlab").summary()
 ```
 
-The upper part of the popup contains the title, which can also be edited and sent via the perform action keybinding in the same manner.
+After editing the description or title, you may save your changes via the `settings.popup.perform_action` keybinding.
 
 ### Reviewing Diffs
 
@@ -162,7 +164,7 @@ require("gitlab").create_multiline_comment()
 require("gitlab").create_comment_suggestion()
 ```
 
-For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with gitlab [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from visual selection.
+For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
 
 ### Discussions and Notes
 
@@ -176,7 +178,9 @@ require("gitlab").toggle_discussions()
 
 You can jump to the comment's location in the reviewer window by using the `state.settings.discussion_tree.jump_to_reviewer` key, or the actual file with the 'state.settings.discussion_tree.jump_to_file' key.
 
-Within the discussion tree, you can delete/edit/reply to comments with the `state.settings.discussion_tree.delete_comment` `state.settings.discussion_tree.edit_comment` and `state.settings.discussion_tree.reply` keys, and toggle them as resolved with the `state.settings.discussion_tree.toggle_resolved` key.
+Within the discussion tree, you can delete/edit/reply to comments with the `state.settings.discussion_tree.SOME_ACTION` keybindings.
+
+#### Notes
 
 If you'd like to create a note in an MR (like a comment, but not linked to a specific line) use the `create_note` action. The same keybindings for delete/edit/reply are available on the note tree.
 

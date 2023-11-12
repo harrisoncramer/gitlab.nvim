@@ -21,10 +21,7 @@ return {
       args = {}
     end
     server.build() -- Builds the Go binary if it doesn't exist
-    state.setPluginConfiguration() -- Sets configuration from `.gitlab.nvim` file
-    if not state.merge_settings(args) then -- Sets keymaps and other settings from setup function
-      return
-    end
+    state.merge_settings(args) -- Sets keymaps and other settings from setup function
     require("gitlab.colors") -- Sets colors
     reviewer.init()
   end,

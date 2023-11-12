@@ -13,8 +13,6 @@ M.start = function(callback)
   local callback_called = false
   local command = state.settings.bin
     .. " "
-    .. state.settings.project_id
-    .. " "
     .. state.settings.gitlab_url
     .. " "
     .. port
@@ -47,8 +45,6 @@ M.start = function(callback)
       if parsed_port ~= nil and not callback_called then
         callback()
         callback_called = true
-      elseif not callback_called then
-        u.notify("Failed to parse server port", vim.log.levels.ERROR)
       end
     end,
     on_stderr = function(_, errors)
