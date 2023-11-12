@@ -80,28 +80,17 @@ func (c *Client) initGitlabClient() error {
 }
 
 /* This will fetch the project ID and merge request ID using the client */
-func (c *Client) initProjectSettings(branchName string, remoteUrl string) error {
+func (c *Client) initProjectSettings(remoteUrl string, namespace string, projectName string, branchName string) error {
 
-	opt := gitlab.ListProjectsOptions{
-		Simple:     gitlab.Bool(true),
-		Membership: gitlab.Bool(true),
-	}
+	idStr := namespace + "/" + projectName
+	opt := gitlab.GetProjectOptions{}
+	project, _, err := c.git.Projects.GetProject(idStr, &opt)
 
-	projects, _, err := c.git.Projects.ListProjects(&opt)
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project named %s", remoteUrl), err)
+		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", remoteUrl), err)
 	}
-
-	if len(projects) == 0 {
-		return fmt.Errorf("Query for \"%s\" returned no projects", remoteUrl)
-	}
-
-	var project *gitlab.Project
-	for _, p := range projects {
-		if p.SSHURLToRepo == remoteUrl || p.HTTPURLToRepo == remoteUrl {
-			project = p
-			break
-		}
+	if project == nil {
+		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", remoteUrl), err)
 	}
 
 	if project == nil {

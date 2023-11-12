@@ -19,9 +19,9 @@ func main() {
 		log.Fatalf("Cannot run on %s branch", branchName)
 	}
 
-	projectName, err := GetProjectName()
-	if err != nil || projectName == "" {
-		log.Fatalf("Failed to get git project name: %v", err)
+	url, namespace, projectName, err := ExtractGitInfo()
+	if err != nil || namespace == "" || projectName == "" {
+		log.Fatalf("Failed to get git group or project name: %v", err)
 	}
 
 	var c Client
@@ -29,7 +29,7 @@ func main() {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	if err := c.initProjectSettings(branchName, projectName); err != nil {
+	if err := c.initProjectSettings(url, namespace, projectName, branchName); err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -19,7 +20,7 @@ func GetCurrentBranch() (res string, e error) {
 }
 
 /* Gets the project SSH or HTTPS url */
-func GetProjectName() (res string, e error) {
+func getProjectUrl() (res string, e error) {
 	cmd := exec.Command("git", "remote", "get-url", "origin")
 	url, err := cmd.Output()
 
@@ -28,4 +29,23 @@ func GetProjectName() (res string, e error) {
 	}
 
 	return strings.TrimSpace(string(url)), nil
+}
+
+func ExtractGitInfo() (string, string, string, error) {
+
+	url, err := getProjectUrl()
+	if err != nil {
+		return "", "", "", fmt.Errorf("Could not get project Url: %v", err)
+	}
+
+	re := regexp.MustCompile(`(?:[:\/])([^\/]+)\/([^\/]+)\.git$`)
+	matches := re.FindStringSubmatch(url)
+	if len(matches) != 3 {
+		return "", "", "", fmt.Errorf("Invalid Git URL format: %s", url)
+	}
+
+	namespace := matches[1]
+	projectName := matches[2]
+
+	return url, namespace, projectName, nil
 }
