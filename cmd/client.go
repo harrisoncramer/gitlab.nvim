@@ -19,7 +19,6 @@ type Client struct {
 	mergeId        int
 	gitlabInstance string
 	authToken      string
-	logFile        string
 	git            *gitlab.Client
 }
 
