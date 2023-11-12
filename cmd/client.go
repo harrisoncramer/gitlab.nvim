@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -18,7 +19,7 @@ type Client struct {
 	mergeId        int
 	gitlabInstance string
 	authToken      string
-	logPath        string
+	logFile        string
 	git            *gitlab.Client
 }
 
@@ -27,79 +28,32 @@ type DebugSettings struct {
 	GoResponse bool `json:"go_response"`
 }
 
-var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r *http.Request, i int) {
-	logPath := os.Args[len(os.Args)-1]
+/* This will parse and validate the project settings and then initialize the Gitlab client */
+func (c *Client) initGitlabClient() error {
 
-	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	token := r.Header.Get("Private-Token")
-	r.Header.Set("Private-Token", "REDACTED")
-	res, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		panic(err)
-	}
-	r.Header.Set("Private-Token", token)
-
-	_, err = file.Write([]byte("\n-- REQUEST --\n")) //nolint:all
-	_, err = file.Write(res)                         //nolint:all
-	_, err = file.Write([]byte("\n"))                //nolint:all
-}
-
-var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, response *http.Response) {
-	logPath := os.Args[len(os.Args)-1]
-
-	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	res, err := httputil.DumpResponse(response, true)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = file.Write([]byte("\n-- RESPONSE --\n")) //nolint:all
-	_, err = file.Write(res)                          //nolint:all
-	_, err = file.Write([]byte("\n"))                 //nolint:all
-}
-
-/* This will initialize the client with the token and check for the basic project ID and command arguments */
-func (c *Client) init(branchName string, projectName string) error {
-
-	if len(os.Args) < 3 {
-		return errors.New("Must provide gitlab instance, port, and auth token!")
+	if len(os.Args) < 6 {
+		return errors.New("Must provide gitlab url, port, auth token, debug settings, and log path")
 	}
 
 	gitlabInstance := os.Args[1]
-	authToken := os.Args[3]
-	debugSettings := os.Args[4]
+	if gitlabInstance == "" {
+		return errors.New("GitLab instance URL cannot be empty")
+	}
 
+	authToken := os.Args[3]
+	if authToken == "" {
+		return errors.New("Auth token cannot be empty")
+	}
+
+	/* Parse debug settings and initialize logger handlers */
+	debugSettings := os.Args[4]
 	var debugObject DebugSettings
 	err := json.Unmarshal([]byte(debugSettings), &debugObject)
 	if err != nil {
 		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings)
 	}
 
-	logPath := os.Args[len(os.Args)-1]
-
-	if gitlabInstance == "" {
-		return errors.New("GitLab instance URL cannot be empty")
-	}
-
-	if authToken == "" {
-		return errors.New("Auth token cannot be empty")
-	}
-
-	c.gitlabInstance = gitlabInstance
-	c.authToken = authToken
-	c.logPath = logPath
-
-	var apiCustUrl = fmt.Sprintf(c.gitlabInstance + "/api/v4")
+	var apiCustUrl = fmt.Sprintf(gitlabInstance + "/api/v4")
 
 	gitlabOptions := []gitlab.ClientOptionFunc{
 		gitlab.WithBaseURL(apiCustUrl),
@@ -119,25 +73,43 @@ func (c *Client) init(branchName string, projectName string) error {
 		return fmt.Errorf("Failed to create client: %v", err)
 	}
 
+	c.gitlabInstance = gitlabInstance
+	c.authToken = authToken
+	c.git = git
+
+	return nil
+}
+
+/* This will fetch the project ID and merge request ID using the client */
+func (c *Client) initProjectSettings(branchName string, remoteUrl string) error {
+
 	opt := gitlab.ListProjectsOptions{
-		Search:     gitlab.String(projectName),
+		Simple:     gitlab.Bool(true),
 		Membership: gitlab.Bool(true),
 	}
 
-	projects, _, err := git.Projects.ListProjects(&opt)
+	projects, _, err := c.git.Projects.ListProjects(&opt)
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project named %s", projectName), err)
-	}
-
-	if len(projects) > 1 {
-		return fmt.Errorf("Query for \"%s\" returned %d projects, should return 1", projectName, len(projects))
+		return fmt.Errorf(fmt.Sprintf("Could not find project named %s", remoteUrl), err)
 	}
 
 	if len(projects) == 0 {
-		return fmt.Errorf("Query for \"%s\" returned no projects, should return 1", projectName)
+		return fmt.Errorf("Query for \"%s\" returned no projects", remoteUrl)
 	}
 
-	c.projectId = fmt.Sprint(projects[0].ID)
+	var project *gitlab.Project
+	for _, p := range projects {
+		if p.SSHURLToRepo == remoteUrl || p.HTTPURLToRepo == remoteUrl {
+			project = p
+			break
+		}
+	}
+
+	if project == nil {
+		return fmt.Errorf("No projects you are a member of contained remote URL %s", remoteUrl)
+	}
+
+	c.projectId = fmt.Sprint(project.ID)
 
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.String("all"),
@@ -145,7 +117,7 @@ func (c *Client) init(branchName string, projectName string) error {
 		SourceBranch: &branchName,
 	}
 
-	mergeRequests, _, err := git.MergeRequests.ListProjectMergeRequests(c.projectId, &options)
+	mergeRequests, _, err := c.git.MergeRequests.ListProjectMergeRequests(c.projectId, &options)
 	if err != nil {
 		return fmt.Errorf("Failed to list merge requests: %w", err)
 	}
@@ -161,7 +133,6 @@ func (c *Client) init(branchName string, projectName string) error {
 	}
 
 	c.mergeId = mergeIdInt
-	c.git = git
 
 	return nil
 }
@@ -178,4 +149,55 @@ func (c *Client) handleError(w http.ResponseWriter, err error, message string, s
 	if err != nil {
 		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
+}
+
+var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r *http.Request, i int) {
+	file := openLogFile()
+	defer file.Close()
+
+	token := r.Header.Get("Private-Token")
+	r.Header.Set("Private-Token", "REDACTED")
+	res, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		log.Fatalf("Error dumping request: %v", err)
+		os.Exit(1)
+	}
+	r.Header.Set("Private-Token", token)
+
+	_, err = file.Write([]byte("\n-- REQUEST --\n")) //nolint:all
+	_, err = file.Write(res)                         //nolint:all
+	_, err = file.Write([]byte("\n"))                //nolint:all
+}
+
+var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, response *http.Response) {
+	file := openLogFile()
+	defer file.Close()
+
+	res, err := httputil.DumpResponse(response, true)
+	if err != nil {
+		log.Fatalf("Error dumping response: %v", err)
+		os.Exit(1)
+	}
+
+	_, err = file.Write([]byte("\n-- RESPONSE --\n")) //nolint:all
+	_, err = file.Write(res)                          //nolint:all
+	_, err = file.Write([]byte("\n"))                 //nolint:all
+}
+
+func openLogFile() *os.File {
+	logFile := os.Args[len(os.Args)-1]
+	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("Log file %s does not exist", logFile)
+		} else if os.IsPermission(err) {
+			log.Printf("Permission denied for log file %s", logFile)
+		} else {
+			log.Printf("Error opening log file %s: %v", logFile, err)
+		}
+
+		os.Exit(1)
+	}
+
+	return file
 }
