@@ -11,17 +11,9 @@ import (
 )
 
 func main() {
-	branchName, err := GetCurrentBranch()
+	url, namespace, projectName, branchName, err := ExtractGitInfo()
 	if err != nil {
-		log.Fatalf("Failed to get current branch in git directory: %v", err)
-	}
-	if branchName == "main" || branchName == "master" {
-		log.Fatalf("Cannot run on %s branch", branchName)
-	}
-
-	url, namespace, projectName, err := ExtractGitInfo()
-	if err != nil || namespace == "" || projectName == "" {
-		log.Fatalf("Failed to get git group or project name: %v", err)
+		log.Fatalf("Failed to get git namespace, project, branch, or url: %v", err)
 	}
 
 	var c Client
