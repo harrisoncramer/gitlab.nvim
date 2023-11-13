@@ -33,8 +33,20 @@ func ExtractGitInfo(getProjectRemoteUrl func() (string, error), getCurrentBranch
 		return GitProjectInfo{}, fmt.Errorf("Could not get project Url: %v", err)
 	}
 
-  // play with regex at: https://regex101.com/r/P2jSGh/1
-	re := regexp.MustCompile(`(?:^git@.+:|^https?:\/\/.+?[^\/:]\/)(.+)\/([^\/]+)\.git$`)
+	// play with regex at: https://regex101.com/r/P2jSGh/1
+	/*
+	   This should match following formats:
+	       namespace: namespace, projectName: dummy-test-repo:
+	           https://gitlab.com/namespace/dummy-test-repo.git
+	           git@gitlab.com:namespace/dummy-test-repo.git
+	           ssh://git@gitlab.com/namespace/dummy-test-repo.git
+
+	       namespace: namespace/subnamespace, projectName: dummy-test-repo:
+	           ssh://git@gitlab.com/namespace/subnamespace/dummy-test-repo
+	           https://git@gitlab.com/namespace/subnamespace/dummy-test-repo.git
+	           git@git@gitlab.com:namespace/subnamespace/dummy-test-repo.git
+	*/
+	re := regexp.MustCompile(`(?:^https?:\/\/|^ssh:\/\/|^git@)(?:[^\/:]+)[\/:](.*)\/([^\/]+?)(?:\.git)?$`)
 	matches := re.FindStringSubmatch(url)
 	if len(matches) != 3 {
 		return GitProjectInfo{}, fmt.Errorf("Invalid Git URL format: %s", url)

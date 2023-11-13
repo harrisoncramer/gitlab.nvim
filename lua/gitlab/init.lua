@@ -24,6 +24,7 @@ return {
     state.merge_settings(args) -- Sets keymaps and other settings from setup function
     require("gitlab.colors") -- Sets colors
     reviewer.init()
+    discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
   -- Global Actions 🌎
   summary = async.sequence({ info }, summary.summary),
@@ -36,8 +37,9 @@ return {
   create_comment = async.sequence({ info, revisions }, comment.create_comment),
   create_multiline_comment = async.sequence({ info, revisions }, comment.create_multiline_comment),
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
+  move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
-  review = async.sequence({ u.merge(info, { refresh = true }) }, function()
+  review = async.sequence({ u.merge(info, { refresh = true }), revisions }, function()
     reviewer.open()
   end),
   pipeline = async.sequence({ info }, pipeline.open),

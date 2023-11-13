@@ -2,6 +2,7 @@
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local async_ok, async = pcall(require, "diffview.async")
+local diffview_lib = require("diffview.lib")
 
 local M = {
   bufnr = nil,
@@ -11,6 +12,17 @@ local M = {
 M.open = function()
   vim.api.nvim_command(string.format("DiffviewOpen %s", state.INFO.target_branch))
   M.tabnr = vim.api.nvim_get_current_tabpage()
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.close", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewViewClosed" },
+    group = group,
+    callback = function()
+      --Check if our diffview tab was closed
+      if vim.api.nvim_tabpage_is_valid(M.tabnr) then
+        M.tabnr = nil
+      end
+    end,
+  })
 end
 
 M.jump = function(file_name, new_line, old_line)
@@ -20,7 +32,7 @@ M.jump = function(file_name, new_line, old_line)
   end
   vim.api.nvim_set_current_tabpage(M.tabnr)
   vim.cmd("DiffviewFocusFiles")
-  local view = require("diffview.lib").get_current_view()
+  local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
@@ -66,7 +78,7 @@ M.get_location = function(range)
   end
 
   -- check if we are in the diffview buffer
-  local view = require("diffview.lib").get_current_view()
+  local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
@@ -147,6 +159,85 @@ end
 ---@return string[]
 M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+end
+
+---Get currently shown file
+M.get_current_file = function()
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  return view.panel.cur_file.path
+end
+
+---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
+---line for identifing lines before changes and both if line was not changed.
+---@param signs table table of signs. See :h sign_placelist
+---@param type string "new" if diagnostic should be in file after changes else "old"
+M.place_sign = function(signs, type)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  if type == "new" then
+    for _, sign in ipairs(signs) do
+      sign.buffer = view.cur_layout.b.file.bufnr
+    end
+  elseif type == "old" then
+    for _, sign in ipairs(signs) do
+      sign.buffer = view.cur_layout.a.file.bufnr
+    end
+  end
+  vim.fn.sign_placelist(signs)
+end
+
+---Set diagnostics in currently reviewed file.
+---@param namespace integer namespace for diagnostics
+---@param diagnostics table see :h vim.diagnostic.set
+---@param type string "new" if diagnostic should be in file after changes else "old"
+---@param opts table? see :h vim.diagnostic.set
+M.set_diagnostics = function(namespace, diagnostics, type, opts)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  if type == "new" and view.cur_layout.b.file.bufnr then
+    vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
+  elseif type == "old" and view.cur_layout.a.file.bufnr then
+    vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
+  else
+    vim.notify("Unknown diagnostic type", vim.log.levels.ERROR)
+  end
+end
+
+---Diffview exposes events which can be used to setup autocommands.
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+M.set_callback_for_file_changed = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewDiffBufWinEnter", "DiffviewViewEnter" },
+    group = group,
+    callback = function(...)
+      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+        callback(...)
+      end
+    end,
+  })
+end
+
+---Diffview exposes events which can be used to setup autocommands.
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+M.set_callback_for_reviewer_leave = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.leave", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
+    group = group,
+    callback = function(...)
+      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+        callback(...)
+      end
+    end,
+  })
 end
 
 return M
