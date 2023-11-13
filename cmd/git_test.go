@@ -28,6 +28,18 @@ func TestExtractGitInfo_Success(t *testing.T) {
 			},
 		},
 		{
+			desc: "Project configured in SSH under a single folder without .git extension",
+			getProjectRemoteUrl: func() (string, error) {
+				return "git@custom-gitlab.com:namespace-1/project-name", nil
+			},
+			expected: GitProjectInfo{
+				RemoteUrl:   "git@custom-gitlab.com:namespace-1/project-name",
+				BranchName:  "feature/abc",
+				ProjectName: "project-name",
+				Namespace:   "namespace-1",
+			},
+		},
+		{
 			desc: "Project configured in SSH under one nested folder",
 			getProjectRemoteUrl: func() (string, error) {
 				return "git@custom-gitlab.com:namespace-1/namespace-2/project-name.git", nil
@@ -49,6 +61,54 @@ func TestExtractGitInfo_Success(t *testing.T) {
 				BranchName:  "feature/abc",
 				ProjectName: "project-name",
 				Namespace:   "namespace-1/namespace-2/namespace-3",
+			},
+		},
+		{
+			desc: "Project configured in SSH:// under a single folder",
+			getProjectRemoteUrl: func() (string, error) {
+				return "ssh://custom-gitlab.com/namespace-1/project-name.git", nil
+			},
+			expected: GitProjectInfo{
+				RemoteUrl:   "ssh://custom-gitlab.com/namespace-1/project-name.git",
+				BranchName:  "feature/abc",
+				ProjectName: "project-name",
+				Namespace:   "namespace-1",
+			},
+		},
+		{
+			desc: "Project configured in SSH:// under a single folder without .git extension",
+			getProjectRemoteUrl: func() (string, error) {
+				return "ssh://custom-gitlab.com/namespace-1/project-name", nil
+			},
+			expected: GitProjectInfo{
+				RemoteUrl:   "ssh://custom-gitlab.com/namespace-1/project-name",
+				BranchName:  "feature/abc",
+				ProjectName: "project-name",
+				Namespace:   "namespace-1",
+			},
+		},
+		{
+			desc: "Project configured in SSH:// under two nested folders",
+			getProjectRemoteUrl: func() (string, error) {
+				return "ssh://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git", nil
+			},
+			expected: GitProjectInfo{
+				RemoteUrl:   "ssh://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
+				BranchName:  "feature/abc",
+				ProjectName: "project-name",
+				Namespace:   "namespace-1/namespace-2/namespace-3",
+			},
+		},
+		{
+			desc: "Project configured in HTTP and under a single folder without .git extension",
+			getProjectRemoteUrl: func() (string, error) {
+				return "http://custom-gitlab.com/namespace-1/project-name", nil
+			},
+			expected: GitProjectInfo{
+				RemoteUrl:   "http://custom-gitlab.com/namespace-1/project-name",
+				BranchName:  "feature/abc",
+				ProjectName: "project-name",
+				Namespace:   "namespace-1",
 			},
 		},
 		{
@@ -123,7 +183,7 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 			getProjectRemoteUrl: func() (string, error) {
 				return "git@invalid", nil
 			},
-      expectedErrorMessage: "Invalid Git URL format: git@invalid",
+			expectedErrorMessage: "Invalid Git URL format: git@invalid",
 		},
 	}
 	for _, tC := range testCases {
