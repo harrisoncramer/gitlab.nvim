@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	url, namespace, projectName, branchName, err := ExtractGitInfo()
+	g, err := ExtractGitInfo(GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
 	if err != nil {
 		log.Fatalf("Failed to get git namespace, project, branch, or url: %v", err)
 	}
@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	if err := c.initProjectSettings(url, namespace, projectName, branchName); err != nil {
+	if err := c.initProjectSettings(g); err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
@@ -82,7 +82,7 @@ func main() {
 	}
 }
 
-func PingHandler(w http.ResponseWriter, r *http.Request) {
+func PingHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "pong")
 }

@@ -80,21 +80,20 @@ func (c *Client) initGitlabClient() error {
 }
 
 /* This will fetch the project ID and merge request ID using the client */
-func (c *Client) initProjectSettings(remoteUrl string, namespace string, projectName string, branchName string) error {
+func (c *Client) initProjectSettings(g GitProjectInfo) error {
 
-	idStr := namespace + "/" + projectName
 	opt := gitlab.GetProjectOptions{}
-	project, _, err := c.git.Projects.GetProject(idStr, &opt)
+	project, _, err := c.git.Projects.GetProject(g.projectPath(), &opt)
 
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", remoteUrl), err)
+		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", g.RemoteUrl), err)
 	}
 	if project == nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", remoteUrl), err)
+		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", g.RemoteUrl), err)
 	}
 
 	if project == nil {
-		return fmt.Errorf("No projects you are a member of contained remote URL %s", remoteUrl)
+		return fmt.Errorf("No projects you are a member of contained remote URL %s", g.RemoteUrl)
 	}
 
 	c.projectId = fmt.Sprint(project.ID)
@@ -102,7 +101,7 @@ func (c *Client) initProjectSettings(remoteUrl string, namespace string, project
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.String("all"),
 		State:        gitlab.String("opened"),
-		SourceBranch: &branchName,
+		SourceBranch: &g.BranchName,
 	}
 
 	mergeRequests, _, err := c.git.MergeRequests.ListProjectMergeRequests(c.projectId, &options)
