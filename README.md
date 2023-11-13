@@ -25,7 +25,6 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/50f44eaf-5f99-4cb3
 - [Reviewing Diffs](#reviewing-diffs)
 - [Discussions and Notes](#discussions-and-notes)
 - [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
-- [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
 - [Uploading Files](#uploading-files)
 - [MR Approvals](#mr-approvals)
 - [Pipelines](#pipelines)
@@ -232,8 +231,6 @@ You can jump to the comment's location in the reviewer window by using the `stat
 
 Within the discussion tree, you can delete/edit/reply to comments with the `state.settings.discussion_tree.SOME_ACTION` keybindings.
 
-#### Notes
-
 If you'd like to create a note in an MR (like a comment, but not linked to a specific line) use the `create_note` action. The same keybindings for delete/edit/reply are available on the note tree.
 
 ```lua
@@ -248,19 +245,14 @@ By default when reviewing files you will see signs and diagnostics ( if enabled 
 require("gitlab").move_to_discussion_tree_from_diagnostic()
 ```
 
-The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. Keep in mind that the highlights provided here can be overridden by other highlights (for example from diffview.nvim). The `priority` setting controls the sign priority order (when multiple signs are placed on the same line, the sign with highest priority is used). The `helper_signs` table configures additional signs for multiline discussions in order to show the whole context.
+The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. Keep in mind that the highlights provided here can be overridden by other highlights (for example from diffview.nvim). This allows users to jump to comments in the current buffer in the reviewer pane directly.
 
-The `discussion_diagnostic` configuration customizes the diagnostic display for discussions. The `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options where you can configure values like (this is dirrectly used as opts in vim.diagnostic.set):
+These diagnostics are configurable in the same way that diagnostics are typically confiugrable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options where you can configure values like (this is dirrectly used as opts in vim.diagnostic.set):
 
 - `virtual_text` - Show virtual text for diagnostics.
 - `underline` - Underline text for diagnostics.
 
-Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details.
-
-Signs and diagnostics have common settings in `discussion_sign_and_diagnostics`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor:
-
-- `skip_resolved_discussion` - Whether to skip showing signs and diagnostics for resolved discussions. Default is `false`, meaning signs and diagnostics will be shown for resolved discussions.
-- `skip_old_revision_discussion` - Whether to skip showing signs and diagnostics for discussions on outdated diff revisions. Default is `true`, meaning signs and diagnostics won't be shown for discussions no longer relevant to the current diff.
+Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details. Signs and diagnostics have common settings in `discussion_sign_and_diagnostics`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor. The `skip_resolved_discussion` boolean will control visibility of resolved discussions, and `skip_old_revision_discussion` whether to show signs and diagnostics for discussions on outdated diff revisions.
 
 When interacting with multiline comments, the cursor must be on the "main" line of diagnostic, where the `discussion_sign.text` is shown, otherwise `vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not work.
 
