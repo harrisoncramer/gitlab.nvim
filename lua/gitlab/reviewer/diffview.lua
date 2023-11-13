@@ -163,7 +163,11 @@ end
 
 ---Get currently shown file
 M.get_current_file = function()
-  return diffview_lib.get_current_view().panel.cur_file.path
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  return view.panel.cur_file.path
 end
 
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
@@ -172,6 +176,9 @@ end
 ---@param type string "new" if diagnostic should be in file after changes else "old"
 M.place_sign = function(signs, type)
   local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
   if type == "new" then
     for _, sign in ipairs(signs) do
       sign.buffer = view.cur_layout.b.file.bufnr
@@ -191,6 +198,9 @@ end
 ---@param opts table? see :h vim.diagnostic.set
 M.set_diagnostics = function(namespace, diagnostics, type, opts)
   local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
   if type == "new" and view.cur_layout.b.file.bufnr then
     vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
   elseif type == "old" and view.cur_layout.a.file.bufnr then

@@ -125,6 +125,9 @@ M.filter_discussions_for_signs_and_diagnostics = function()
     return
   end
   local file = reviewer.get_current_file()
+  if not file then
+    return
+  end
   local discussions = {}
   for _, discussion in ipairs(M.discussions) do
     local first_note = discussion.notes[1]
