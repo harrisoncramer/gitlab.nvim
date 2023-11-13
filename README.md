@@ -15,24 +15,23 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/50f44eaf-5f99-4cb3
 
 ## Table of Contents 
 
-[Requirements](#requirements)  
-[Quick Start](#quick-start)  
-[Installation](#installation)  
-[Connecting to Gitlab](#connecting-to-gitlab)  
-[Configuring the Plugin](#configuring-the-plugin)  
-[Usage](#usage)  
-- [The summary command](#summary)
-- [Reviewing Diffs](#reviewing-diffs)
-- [Discussions and Notes](#discussions-and-notes)
-- [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
-- [Uploading Files](#uploading-files)
-- [MR Approvals](#mr-approvals)
-- [Pipelines](#pipelines)
-- [Reviewers and Assignees](#reviewers-and-assignees)
-[Keybindings](#keybindings)
-[Troubleshooting](#troubleshooting)
-[Extras](#extra-goodies)
-
+- [Requirements](#requirements)  
+- [Quick Start](#quick-start)  
+- [Installation](#installation)  
+- [Connecting to Gitlab](#connecting-to-gitlab)  
+- [Configuring the Plugin](#configuring-the-plugin)  
+- [Usage](#usage)  
+  - [The summary command](#summary)
+  - [Reviewing Diffs](#reviewing-diffs)
+  - [Discussions and Notes](#discussions-and-notes)
+  - [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
+  - [Uploading Files](#uploading-files)
+  - [MR Approvals](#mr-approvals)
+  - [Pipelines](#pipelines)
+  - [Reviewers and Assignees](#reviewers-and-assignees)
+- [Keybindings](#keybindings)
+- [Troubleshooting](#troubleshooting)
+- [Extras](#extra-goodies)
 
 ## Requirements
 
