@@ -31,6 +31,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
   - [Reviewers and Assignees](#reviewers-and-assignees)
 - [Keybindings](#keybindings)
 - [Troubleshooting](#troubleshooting)
+- [Using a Prebuilt Binary](#using-a-prebuilt-binary)  
 - [Extras](#extra-goodies)
 
 ## Requirements
@@ -109,6 +110,7 @@ Here is the default setup function. All of these values are optional, and if you
 ```lua
 require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
+  binary = nil, -- The path to a prebuilt binary instead of using the auto-installation, see "Using a Prebuilt Binary"
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   debug = { go_request = false, go_response = false }, -- Which values to log
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
@@ -342,6 +344,18 @@ The easiest way to debug what's going wrong is to turn on the `debug` options in
 
 ```
 curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
+```
+
+## Using a Prebuilt Binary
+
+This plugin works best when you have Go installed and allow your plugin manager (Lazy, Packer, etc) to rebuild the binary every time a new release is pulled down from Github. If you, however, are unable to get Go into the path where the plugin is running you can supply a prebuilt binary instead.
+
+To do this, provide the absolute path to the `binary` in the plugin's setup function:
+
+```lua
+require("gitlab").setup({
+    binary = "~/path/to/binary",
+})
 ```
 
 ## Extra Goodies

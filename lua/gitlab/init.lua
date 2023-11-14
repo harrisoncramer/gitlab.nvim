@@ -20,9 +20,9 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
