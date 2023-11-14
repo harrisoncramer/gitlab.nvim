@@ -348,17 +348,21 @@ curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
 
 ## Using a Prebuilt Binary
 
-This plugin works best when you have Go installed and allow your plugin manager (Lazy, Packer, etc) to rebuild the binary every time a new release is pulled down from Github. If you, however, are unable to get Go into the path where the plugin is running you can supply a prebuilt binary instead.
+This plugin works best when you have Go installed and allow your plugin manager (Lazy, Packer, etc) to rebuild the server binary every time a new release is pulled down from Github. If you, however, are unable to get Go into the path where the plugin is running you can supply a prebuilt binary instead. You can make the binary by cloning this repository and running:
 
-To do this, provide the absolute path to the `binary` in the plugin's setup function:
+```
+$ make compile
+```
+
+Then provide the absolute path to the `binary` in the plugin's setup function:
 
 ```lua
 require("gitlab").setup({
-    binary = "~/path/to/binary",
+  binary = "~/path/to/bin"
 })
 ```
 
-Please note that this approach may cause issues if you update the Neovim plugin, but do not rebuild your binary.
+Please note that this approach may cause issues if you update this plugin, but do not rebuild your binary. It's not the recommended approach.
 
 ## Extra Goodies
 
