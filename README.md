@@ -358,6 +358,8 @@ require("gitlab").setup({
 })
 ```
 
+Please note that this approach may cause issues if you update the Neovim plugin, but do not rebuild your binary.
+
 ## Extra Goodies
 
 If you are like me and want to quickly switch between recent branches and recent merge request reviews and assignments, check out the git scripts contained <a href="https://github.com/harrisoncramer/.dotfiles/blob/main/scripts/bin/git-reviews">here</a> and <a href="https://github.com/harrisoncramer/.dotfiles/blob/main/scripts/bin/git-authored">here</a> for inspiration.
