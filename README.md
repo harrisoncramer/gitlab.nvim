@@ -13,14 +13,14 @@ And a lot more!
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
-## Table of Contents 
+## Table of Contents
 
-- [Requirements](#requirements)  
-- [Quick Start](#quick-start)  
-- [Installation](#installation)  
-- [Connecting to Gitlab](#connecting-to-gitlab)  
-- [Configuring the Plugin](#configuring-the-plugin)  
-- [Usage](#usage)  
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Connecting to Gitlab](#connecting-to-gitlab)
+- [Configuring the Plugin](#configuring-the-plugin)
+- [Usage](#usage)
   - [The summary command](#summary)
   - [Reviewing Diffs](#reviewing-diffs)
   - [Discussions and Notes](#discussions-and-notes)
@@ -125,7 +125,8 @@ require("gitlab").setup({
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
-    toggle_resolved = "p", -- Toggles the resolved status of the discussion
+    toggle_comment_resolved = "p", -- Toggles the resolved status of the single comment
+    toggle_discussion_resolved = "P" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     size = "20%", -- Size of split
     relative = "editor", -- Position of tree split relative to "editor" or "window"

@@ -36,6 +36,7 @@ func main() {
 	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
 	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
 	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
+	m.Handle("/discussion/resolve", withGitlabContext(http.HandlerFunc(DiscussionResolveHandler), c))
 	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
 	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
 	m.Handle("/members", withGitlabContext(http.HandlerFunc(ProjectMembersHandler), c))
