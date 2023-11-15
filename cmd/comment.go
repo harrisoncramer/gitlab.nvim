@@ -214,15 +214,8 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
 
-	/* The PATCH can either be to the resolved status of
-	the discussion or or the text of the comment */
 	msg := "edit comment"
-	if editCommentRequest.Comment == "" {
-		options.Resolved = &editCommentRequest.Resolved
-		msg = "update discussion status"
-	} else {
-		options.Body = gitlab.String(editCommentRequest.Comment)
-	}
+	options.Body = gitlab.String(editCommentRequest.Comment)
 
 	note, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
