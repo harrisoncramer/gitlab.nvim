@@ -633,8 +633,8 @@ M.send_edits = function(discussion_id, note_id, unlinked)
   end
 end
 
--- This comment (settings.discussion_tree.toggle_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
-M.toggle_resolved = function(tree)
+-- This function (settings.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
+M.toggle_discussion_resolved = function(tree)
   local note = tree:get_node()
   if not note or not note.resolvable then
     return
@@ -642,11 +642,10 @@ M.toggle_resolved = function(tree)
 
   local body = {
     discussion_id = note.id,
-    note_id = note.root_note_id,
     resolved = not note.resolved,
   }
 
-  job.run_job("/comment", "PATCH", body, function(data)
+  job.run_job("/discussion/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
   end)
@@ -802,10 +801,10 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     M.delete_comment(tree, unlinked)
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
-    M.toggle_resolved(tree)
+    M.toggle_discussion_resolved(tree)
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
-    M.toggle_node(tree, unlinked)
+    M.toggle_node(tree)
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.reply, function()
     M.reply(tree)
