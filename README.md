@@ -125,7 +125,7 @@ require("gitlab").setup({
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
-    toggle_discussion_resolved = "p" -- Toggles the resolved status of the whole discussion
+    toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     size = "20%", -- Size of split
     relative = "editor", -- Position of tree split relative to "editor" or "window"
