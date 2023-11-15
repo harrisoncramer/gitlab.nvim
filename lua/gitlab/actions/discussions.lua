@@ -546,10 +546,9 @@ M.delete_comment = function(tree, unlinked)
   vim.ui.select({ "Confirm", "Cancel" }, {
     prompt = "Delete comment?",
   }, function(choice)
-    if choice == "Cancel" then
-      return
+    if choice == "Confirm" then
+      M.send_deletion(tree, unlinked)
     end
-    M.send_deletion(tree, unlinked)
   end)
 end
 
