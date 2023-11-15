@@ -47,7 +47,6 @@ return {
   toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment = async.sequence({ info }, discussions.edit_comment),
   delete_comment = async.sequence({ info }, discussions.delete_comment),
-  toggle_comment_resolved = async.sequence({ info }, discussions.toggle_comment_resolved),
   toggle_discussion_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),
   reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
