@@ -51,8 +51,14 @@ func DiscussionResolve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	var message string
+	if resolveDiscussionRequest.Resolved {
+		message = "Discussion resolved"
+	} else {
+		message = "Discussion unresolved"
+	}
 	response := SuccessResponse{
-		Message: "Resolve status of discussion updated",
+		Message: message,
 		Status:  http.StatusOK,
 	}
 
