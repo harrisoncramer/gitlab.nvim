@@ -34,20 +34,20 @@ M.summary = function()
     M.layout_visible = false
   end
 
-  vim.api.nvim_set_current_win(description_popup.winid)
-  local currentBuffer = vim.api.nvim_get_current_buf()
   local title = state.INFO.title
   local description = state.INFO.description
-  local lines = {}
+  local info_lines = M.build_info_lines()
+  local description_lines = {}
 
   for line in description:gmatch("[^\n]+") do
-    table.insert(lines, line)
-    table.insert(lines, "")
+    table.insert(description_lines, line)
+    table.insert(description_lines, "")
   end
 
   vim.schedule(function()
-    vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
+    vim.api.nvim_buf_set_lines(description_popup.bufnr, 0, -1, false, description_lines)
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
+    vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
     state.set_popup_keymaps(
       description_popup,
       M.edit_summary,
@@ -56,6 +56,19 @@ M.summary = function()
     )
     state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
   end)
+end
+
+
+M.build_info_lines = function()
+  local info = state.INFO
+  return {
+    "Author: " .. info.author.name,
+    "Created At: " .. u.format_to_local(info.created_at),
+    "Merge Status: " .. info.detailed_merge_status,
+    "Draft: " .. (info.draft and "Yes" or "No"),
+    "Has Conflicts: " .. (info.has_conflicts and "Yes" or "No"),
+    "Assignees: " .. u.make_readable_list(info.assignees, "name"),
+  }
 end
 
 -- This function will PUT the new description to the Go server
