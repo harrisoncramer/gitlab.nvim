@@ -34,14 +34,18 @@ M.settings = {
     unresolved = "",
   },
   info = {
-    "author",
-    "created_at",
-    "updated_at",
-    "merge_status",
-    "draft",
-    "conflicts",
-    "assignees",
-    "branch",
+    enabled = true,
+    horizontal = false,
+    fields = {
+      "author",
+      "created_at",
+      "updated_at",
+      "merge_status",
+      "draft",
+      "conflicts",
+      "assignees",
+      "branch",
+    }
   },
   discussion_sign_and_diagnostic = {
     skip_resolved_discussion = false,

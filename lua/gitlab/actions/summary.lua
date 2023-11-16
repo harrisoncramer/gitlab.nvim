@@ -74,7 +74,7 @@ M.build_info_lines = function()
   }
 
   local longest_used = ""
-  for _, v in ipairs(state.settings.info) do
+  for _, v in ipairs(state.settings.info.fields) do
     if string.len(v) > string.len(longest_used) then
       longest_used = v
     end
@@ -86,7 +86,7 @@ M.build_info_lines = function()
   end
 
   local lines = { "" }
-  for _, v in ipairs(state.settings.info) do
+  for _, v in ipairs(state.settings.info.fields) do
     local row = options[v]
     local line = "* " .. row.title .. row_offset(row.title) .. row.content
     table.insert(lines, line)
@@ -154,24 +154,42 @@ M.create_layout = function()
   M.description_bufnr = description_popup.bufnr
   local info_popup = Popup(right_popup)
 
-  -- TODO: Build layout depending on screen size
+  local internal_layout
+  if (state.settings.info.enabled) then
+    if state.settings.info.horizontal then
+      internal_layout = Layout.Box({
+        Layout.Box(title_popup, { size = { height = 3 } }),
+        Layout.Box({
+          Layout.Box(info_popup, { size = "25%" }),
+          Layout.Box(description_popup, { size = "75%" }),
+        }, { dir = "row", size = "100%" }),
+      }, { dir = "col" })
+    else
+      internal_layout = Layout.Box({
+        Layout.Box(title_popup, { size = { height = 3 } }),
+        Layout.Box({
+          Layout.Box(description_popup, { size = "75%" }),
+          Layout.Box(info_popup, { size = "25%" }),
+        }, { dir = "col", size = "100%" }),
+      }, { dir = "col" })
+    end
+  else
+    internal_layout = Layout.Box({
+      Layout.Box(title_popup, { size = { height = 3 } }),
+      Layout.Box(description_popup, { size = "100%" }),
+    }, { dir = "col" })
+  end
+
   local layout = Layout(
     {
-      position = "45%",
+      position = "50%",
       relative = "editor",
       size = {
-        width = "92%",
-        height = "80%",
+        width = "95%",
+        height = "95%",
       },
     },
-    Layout.Box({
-      Layout.Box(title_popup, { size = { height = 3 } }),
-      Layout.Box({
-        Layout.Box(info_popup, { size = "25%" }),
-        Layout.Box(description_popup, { size = "75%" }),
-      }, { dir = "row", size = "100%" }),
-    }, { dir = "col" })
-  )
+    internal_layout)
 
   layout:mount()
 
