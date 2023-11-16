@@ -7,6 +7,8 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
+local pipeline = require("gitlab.actions.pipeline")
+
 local M = {
   layout_visible = false,
   layout = nil,
@@ -63,32 +65,43 @@ end
 M.build_info_lines = function()
   local info = state.INFO
   local options = {
-    author = { title = "Author", content = info.author.name },
-    created_at = { title = "Created At", content = u.format_to_local(info.created_at) },
-    updated_at = { title = "Updated At", content = u.format_to_local(info.updated_at) },
-    merge_status = { title = "Merge Status", content = info.detailed_merge_status },
+    author = { title = "Author", content = '@' .. info.author.username .. " (" .. info.author.name .. ")" },
+    created_at = { title = "Created", content = u.format_to_local(info.created_at) },
+    updated_at = { title = "Updated", content = u.format_to_local(info.updated_at) },
+    merge_status = { title = "Status", content = info.detailed_merge_status },
     draft = { title = "Draft", content = (info.draft and "Yes" or "No") },
-    conflicts = { title = "Has Conflicts", content = (info.has_conflicts and "Yes" or "No") },
+    conflicts = { title = "Merge Conflicts", content = (info.has_conflicts and "Yes" or "No") },
     assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
     branch = { title = "Branch", content = info.source_branch },
+    pipeline = {
+      title = "Pipeline Status:",
+      content = function() return pipeline.get_pipeline_status() end
+    }
   }
 
   local longest_used = ""
   for _, v in ipairs(state.settings.info.fields) do
-    if string.len(v) > string.len(longest_used) then
-      longest_used = v
+    local title = options[v].title
+    if string.len(title) > string.len(longest_used) then
+      longest_used = title
     end
   end
 
   local function row_offset(row)
     local offset = string.len(longest_used) - string.len(row)
-    return string.rep(" ", offset + 5)
+    return string.rep(" ", offset + 3)
   end
 
   local lines = { "" }
   for _, v in ipairs(state.settings.info.fields) do
     local row = options[v]
-    local line = "* " .. row.title .. row_offset(row.title) .. row.content
+    local line = "* " .. row.title .. row_offset(row.title)
+    if type(row.content) == 'function' then
+      local content = row.content()
+      if content ~= nil then line = line .. row.content() end
+    else
+      line = line .. row.content
+    end
     table.insert(lines, line)
   end
 

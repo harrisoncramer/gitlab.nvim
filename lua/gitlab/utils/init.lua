@@ -47,17 +47,16 @@ M.press_enter             = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
 end
 
-function offset_to_seconds(offset)
+M.offset_to_seconds       = function(offset)
   local sign, hours, minutes = offset:match("([%+%-])(%d%d)(%d%d)")
-  print(sign, hours, minutes)
-  local offsetSeconds = tonumber(hours) * 3600 + tonumber(minutes) * 60
+  local offset_in_seconds = tonumber(hours) * 3600 + tonumber(minutes) * 60
   if sign == "-" then
-    offsetSeconds = -offsetSeconds
+    offset_in_seconds = -offset_in_seconds
   end
-  return offsetSeconds
+  return offset_in_seconds
 end
 
-M.format_to_local    = function(date_string)
+M.format_to_local         = function(date_string)
   local year, month, day, hour, min, sec, _ms, tzOffset = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
   local localTime = os.time({
     year = year,
@@ -70,12 +69,12 @@ M.format_to_local    = function(date_string)
   })
 
   local offset = vim.fn.strftime("%z")
-  local localTimestamp = localTime + offset_to_seconds(offset)
+  local localTimestamp = localTime + M.offset_to_seconds(offset)
 
   return os.date("%m/%d/%Y at%l:%M %Z", localTimestamp)
 end
 
-M.format_date        = function(date_string)
+M.format_date             = function(date_string)
   local date_table = os.date("!*t")
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
@@ -109,7 +108,7 @@ M.format_date        = function(date_string)
   end
 end
 
-M.make_readable_list = function(list_of_tables, key)
+M.make_readable_list      = function(list_of_tables, key)
   local res = ""
   for i, t in ipairs(list_of_tables) do
     res = res .. t[key]

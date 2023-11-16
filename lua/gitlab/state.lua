@@ -35,7 +35,7 @@ M.settings = {
   },
   info = {
     enabled = true,
-    horizontal = false,
+    horizontal = true,
     fields = {
       "author",
       "created_at",
@@ -45,6 +45,7 @@ M.settings = {
       "conflicts",
       "assignees",
       "branch",
+      "pipeline",
     }
   },
   discussion_sign_and_diagnostic = {

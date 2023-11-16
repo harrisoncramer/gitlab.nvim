@@ -20,6 +20,12 @@ local function get_pipeline()
   return pipeline
 end
 
+M.get_pipeline_status = function()
+  local pipeline = get_pipeline()
+  if pipeline == nil then return nil end
+  return string.format("%s (%s)", state.settings.pipeline[pipeline.status], pipeline.status)
+end
+
 -- The function will render the Pipeline state in a popup
 M.open = function()
   local pipeline = get_pipeline()
@@ -44,7 +50,7 @@ M.open = function()
     local lines = {}
 
     u.switch_can_edit_buf(bufnr, true)
-    table.insert(lines, string.format("Status: %s (%s)", state.settings.pipeline[pipeline.status], pipeline.status))
+    table.insert(lines, "Status: " .. M.get_pipeline_status())
     table.insert(lines, "")
     table.insert(lines, string.format("Last Run: %s", u.format_date(pipeline.created_at)))
     table.insert(lines, string.format("Url: %s", pipeline.web_url))
