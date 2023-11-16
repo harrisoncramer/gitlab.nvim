@@ -57,8 +57,7 @@ M.offset_to_seconds = function(offset)
 end
 
 M.format_to_local = function(date_string)
-  local year, month, day, hour, min, sec, _ms, tzOffset =
-    date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
+  local year, month, day, hour, min, sec, _, tzOffset = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
   local localTime = os.time({
     year = year,
     month = month,
