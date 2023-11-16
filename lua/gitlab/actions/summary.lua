@@ -17,7 +17,46 @@ local M = {
   description_bufnr = nil,
 }
 
--- The function will render the MR description in a popup
+local title_popup_settings = {
+  buf_options = {
+    filetype = "markdown",
+  },
+  focusable = true,
+  border = {
+    style = "rounded",
+  },
+}
+
+local details_popup_settings = {
+  buf_options = {
+    filetype = "markdown",
+  },
+  focusable = true,
+  border = {
+    style = "rounded",
+    text = {
+      top = "Details",
+    },
+  },
+}
+
+local description_popup_settings = {
+  buf_options = {
+    filetype = "markdown",
+  },
+  enter = true,
+  focusable = true,
+  border = {
+    style = "rounded",
+    text = {
+      top = "Description",
+    },
+  },
+}
+
+-- The function will render a popup containing the MR title and MR description, and optionally,
+-- any additional metadata that the user wants. The title and description are editable and
+-- can be changed via the local action keybinding, which also closes the popup
 M.summary = function()
   if M.layout_visible then
     M.layout:unmount()
@@ -25,7 +64,10 @@ M.summary = function()
     return
   end
 
+  local title = state.INFO.title
+  local description_lines = M.build_description_lines()
   local info_lines = state.settings.info.enabled and M.build_info_lines() or nil
+
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
 
   M.layout = layout
@@ -35,15 +77,6 @@ M.summary = function()
   local function exit()
     layout:unmount()
     M.layout_visible = false
-  end
-
-  local title = state.INFO.title
-  local description = state.INFO.description
-  local description_lines = {}
-
-  for line in description:gmatch("[^\n]+") do
-    table.insert(description_lines, line)
-    table.insert(description_lines, "")
   end
 
   vim.schedule(function()
@@ -68,6 +101,21 @@ M.summary = function()
   end)
 end
 
+-- Builds a lua list of strings that contain the MR description
+M.build_description_lines = function()
+  local description_lines = {}
+
+  local description = state.INFO.description
+  for line in description:gmatch("[^\n]+") do
+    table.insert(description_lines, line)
+    table.insert(description_lines, "")
+  end
+
+  return description_lines
+end
+
+-- Builds a lua list of strings that contain metadata about the current MR. Only builds the
+-- lines that users include in their state.settings.info.fields list.
 M.build_info_lines = function()
   local info = state.INFO
   local options = {
@@ -132,45 +180,8 @@ M.edit_summary = function()
   end)
 end
 
-local base_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-  },
-}
-
-local details_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Details",
-    },
-  },
-}
-
-local description_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  enter = true,
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Description",
-    },
-  },
-}
-
 M.create_layout = function(info_lines)
-  local title_popup = Popup(base_popup_settings)
+  local title_popup = Popup(title_popup_settings)
   M.title_bufnr = title_popup.bufnr
   local description_popup = Popup(description_popup_settings)
   M.description_bufnr = description_popup.bufnr
