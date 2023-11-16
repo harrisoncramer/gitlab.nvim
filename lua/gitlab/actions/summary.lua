@@ -204,7 +204,7 @@ M.create_layout = function(info_lines)
       internal_layout = Layout.Box({
         Layout.Box(title_popup, { size = 3 }),
         Layout.Box(description_popup, { grow = 1 }),
-        Layout.Box(details_popup, { size = #info_lines }),
+        Layout.Box(details_popup, { size = #info_lines + 3 }),
       }, { dir = "col" })
     end
   else
