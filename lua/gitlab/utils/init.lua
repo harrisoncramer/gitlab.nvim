@@ -1,11 +1,11 @@
-local Job                 = require("plenary.job")
-local M                   = {}
+local Job = require("plenary.job")
+local M = {}
 
-M.notify                  = function(msg, lvl)
+M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
-M.get_colors_for_group    = function(group)
+M.get_colors_for_group = function(group)
   local normal_fg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "fg")
   local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "bg")
   return { fg = normal_fg, bg = normal_bg }
@@ -15,14 +15,14 @@ M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
 end
 
-M.is_windows              = function()
+M.is_windows = function()
   if vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1 then
     return true
   end
   return false
 end
 
-M.P                       = function(...)
+M.P = function(...)
   local objects = {}
   for i = 1, select("#", ...) do
     local v = select(i, ...)
@@ -33,21 +33,21 @@ M.P                       = function(...)
   return ...
 end
 
-M.get_buffer_text         = function(bufnr)
+M.get_buffer_text = function(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
   return text
 end
 
-M.string_starts           = function(str, start)
+M.string_starts = function(str, start)
   return str:sub(1, #start) == start
 end
 
-M.press_enter             = function()
+M.press_enter = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
 end
 
-M.offset_to_seconds       = function(offset)
+M.offset_to_seconds = function(offset)
   local sign, hours, minutes = offset:match("([%+%-])(%d%d)(%d%d)")
   local offset_in_seconds = tonumber(hours) * 3600 + tonumber(minutes) * 60
   if sign == "-" then
@@ -56,8 +56,9 @@ M.offset_to_seconds       = function(offset)
   return offset_in_seconds
 end
 
-M.format_to_local         = function(date_string)
-  local year, month, day, hour, min, sec, _ms, tzOffset = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
+M.format_to_local = function(date_string)
+  local year, month, day, hour, min, sec, _ms, tzOffset =
+    date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
   local localTime = os.time({
     year = year,
     month = month,
@@ -74,7 +75,7 @@ M.format_to_local         = function(date_string)
   return os.date("%m/%d/%Y at%l:%M %Z", localTimestamp)
 end
 
-M.format_date             = function(date_string)
+M.format_date = function(date_string)
   local date_table = os.date("!*t")
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
@@ -108,7 +109,7 @@ M.format_date             = function(date_string)
   end
 end
 
-M.make_readable_list      = function(list_of_tables, key)
+M.make_readable_list = function(list_of_tables, key)
   local res = ""
   for i, t in ipairs(list_of_tables) do
     res = res .. t[key]
@@ -118,7 +119,6 @@ M.make_readable_list      = function(list_of_tables, key)
   end
   return res
 end
-
 
 M.jump_to_file = function(filename, line_number)
   if line_number == nil then
@@ -179,7 +179,7 @@ M.join = function(tbl, separator)
 
   -- Remove the trailing separator
   if separator ~= "" then
-    result = result:sub(1, - #separator - 1)
+    result = result:sub(1, -#separator - 1)
   end
 
   return result

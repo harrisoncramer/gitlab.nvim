@@ -22,7 +22,9 @@ end
 
 M.get_pipeline_status = function()
   local pipeline = get_pipeline()
-  if pipeline == nil then return nil end
+  if pipeline == nil then
+    return nil
+  end
   return string.format("%s (%s)", state.settings.pipeline[pipeline.status], pipeline.status)
 end
 

@@ -11,7 +11,6 @@ local opts = {
   },
 }
 
-
 local title_popup = Popup(opts)
 local description_popup = Popup(opts)
 local info_popup = Popup(opts)

@@ -65,7 +65,7 @@ end
 M.build_info_lines = function()
   local info = state.INFO
   local options = {
-    author = { title = "Author", content = '@' .. info.author.username .. " (" .. info.author.name .. ")" },
+    author = { title = "Author", content = "@" .. info.author.username .. " (" .. info.author.name .. ")" },
     created_at = { title = "Created", content = u.format_to_local(info.created_at) },
     updated_at = { title = "Updated", content = u.format_to_local(info.updated_at) },
     merge_status = { title = "Status", content = info.detailed_merge_status },
@@ -75,8 +75,10 @@ M.build_info_lines = function()
     branch = { title = "Branch", content = info.source_branch },
     pipeline = {
       title = "Pipeline Status:",
-      content = function() return pipeline.get_pipeline_status() end
-    }
+      content = function()
+        return pipeline.get_pipeline_status()
+      end,
+    },
   }
 
   local longest_used = ""
@@ -96,9 +98,11 @@ M.build_info_lines = function()
   for _, v in ipairs(state.settings.info.fields) do
     local row = options[v]
     local line = "* " .. row.title .. row_offset(row.title)
-    if type(row.content) == 'function' then
+    if type(row.content) == "function" then
       local content = row.content()
-      if content ~= nil then line = line .. row.content() end
+      if content ~= nil then
+        line = line .. row.content()
+      end
     else
       line = line .. row.content
     end
@@ -168,7 +172,7 @@ M.create_layout = function()
   local info_popup = Popup(right_popup)
 
   local internal_layout
-  if (state.settings.info.enabled) then
+  if state.settings.info.enabled then
     if state.settings.info.horizontal then
       internal_layout = Layout.Box({
         Layout.Box(title_popup, { size = { height = 3 } }),
@@ -193,16 +197,14 @@ M.create_layout = function()
     }, { dir = "col" })
   end
 
-  local layout = Layout(
-    {
-      position = "50%",
-      relative = "editor",
-      size = {
-        width = "95%",
-        height = "95%",
-      },
+  local layout = Layout({
+    position = "50%",
+    relative = "editor",
+    size = {
+      width = "95%",
+      height = "95%",
     },
-    internal_layout)
+  }, internal_layout)
 
   layout:mount()
 
