@@ -35,7 +35,7 @@ M.settings = {
   },
   info = {
     enabled = true,
-    horizontal = true,
+    horizontal = false,
     fields = {
       "author",
       "created_at",

@@ -25,7 +25,8 @@ M.summary = function()
     return
   end
 
-  local layout, title_popup, description_popup, info_popup = M.create_layout()
+  local info_lines = state.settings.info.enabled and M.build_info_lines() or nil
+  local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
 
   M.layout = layout
   M.layout_buf = layout.bufnr
@@ -38,7 +39,6 @@ M.summary = function()
 
   local title = state.INFO.title
   local description = state.INFO.description
-  local info_lines = M.build_info_lines()
   local description_lines = {}
 
   for line in description:gmatch("[^\n]+") do
@@ -49,9 +49,13 @@ M.summary = function()
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(description_popup.bufnr, 0, -1, false, description_lines)
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
-    vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
-    vim.api.nvim_set_option_value("modifiable", false, { buf = info_popup.bufnr })
-    vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
+
+    if info_popup then
+      vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
+      vim.api.nvim_set_option_value("modifiable", false, { buf = info_popup.bufnr })
+      vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
+    end
+
     state.set_popup_keymaps(
       description_popup,
       M.edit_summary,
@@ -59,6 +63,8 @@ M.summary = function()
       { cb = exit, action_before_close = true }
     )
     state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
+
+    vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
 end
 
@@ -94,7 +100,7 @@ M.build_info_lines = function()
     return string.rep(" ", offset + 3)
   end
 
-  local lines = { "" }
+  local lines = {}
   for _, v in ipairs(state.settings.info.fields) do
     local row = options[v]
     local line = "* " .. row.title .. row_offset(row.title)
@@ -126,7 +132,7 @@ M.edit_summary = function()
   end)
 end
 
-local top_popup = {
+local base_popup_settings = {
   buf_options = {
     filetype = "markdown",
   },
@@ -136,11 +142,10 @@ local top_popup = {
   },
 }
 
-local left_popup = {
+local details_popup_settings = {
   buf_options = {
     filetype = "markdown",
   },
-  enter = true,
   focusable = true,
   border = {
     style = "rounded",
@@ -150,7 +155,7 @@ local left_popup = {
   },
 }
 
-local right_popup = {
+local description_popup_settings = {
   buf_options = {
     filetype = "markdown",
   },
@@ -164,36 +169,37 @@ local right_popup = {
   },
 }
 
-M.create_layout = function()
-  local title_popup = Popup(top_popup)
+M.create_layout = function(info_lines)
+  local title_popup = Popup(base_popup_settings)
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(left_popup)
+  local description_popup = Popup(description_popup_settings)
   M.description_bufnr = description_popup.bufnr
-  local info_popup = Popup(right_popup)
+  local details_popup
 
   local internal_layout
   if state.settings.info.enabled then
+    details_popup = Popup(details_popup_settings)
     if state.settings.info.horizontal then
+      local longest_line = u.get_longest_string(info_lines)
+      print(longest_line)
       internal_layout = Layout.Box({
-        Layout.Box(title_popup, { size = { height = 3 } }),
+        Layout.Box(title_popup, { size = 3 }),
         Layout.Box({
-          Layout.Box(info_popup, { size = "25%" }),
-          Layout.Box(description_popup, { size = "75%" }),
+          Layout.Box(details_popup, { size = longest_line + 3 }),
+          Layout.Box(description_popup, { grow = 1 }),
         }, { dir = "row", size = "100%" }),
       }, { dir = "col" })
     else
       internal_layout = Layout.Box({
-        Layout.Box(title_popup, { size = { height = 3 } }),
-        Layout.Box({
-          Layout.Box(description_popup, { size = "75%" }),
-          Layout.Box(info_popup, { size = "25%" }),
-        }, { dir = "col", size = "100%" }),
+        Layout.Box(title_popup, { size = 3 }),
+        Layout.Box(description_popup, { grow = 1 }),
+        Layout.Box(details_popup, { size = #info_lines }),
       }, { dir = "col" })
     end
   else
     internal_layout = Layout.Box({
-      Layout.Box(title_popup, { size = { height = 3 } }),
-      Layout.Box(description_popup, { size = "100%" }),
+      Layout.Box(title_popup, { size = 3 }),
+      Layout.Box(description_popup, { grow = 1 }),
     }, { dir = "col" })
   end
 
@@ -208,7 +214,7 @@ M.create_layout = function()
 
   layout:mount()
 
-  return layout, title_popup, description_popup, info_popup
+  return layout, title_popup, description_popup, details_popup
 end
 
 return M

@@ -343,6 +343,16 @@ M.reverse = function(list)
   return rev
 end
 
+M.get_longest_string = function(list)
+  local longest = 0
+  for _, v in pairs(list) do
+    if string.len(v) > longest then
+      longest = string.len(v)
+    end
+  end
+  return longest
+end
+
 ---@class Hunk
 ---@field old_line integer
 ---@field old_range integer
