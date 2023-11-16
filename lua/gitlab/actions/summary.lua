@@ -23,7 +23,7 @@ M.summary = function()
     return
   end
 
-  local layout, title_popup, description_popup = M.create_layout()
+  local layout, title_popup, description_popup, info_popup = M.create_layout()
 
   M.layout = layout
   M.layout_buf = layout.bufnr
@@ -34,6 +34,7 @@ M.summary = function()
     M.layout_visible = false
   end
 
+  vim.api.nvim_set_current_win(description_popup.winid)
   local currentBuffer = vim.api.nvim_get_current_buf()
   local title = state.INFO.title
   local description = state.INFO.description
@@ -84,7 +85,18 @@ local top_popup = {
   },
 }
 
-local bottom_popup = {
+local left_popup = {
+  buf_options = {
+    filetype = "markdown",
+  },
+  enter = true,
+  focusable = true,
+  border = {
+    style = "rounded",
+  },
+}
+
+local right_popup = {
   buf_options = {
     filetype = "markdown",
   },
@@ -98,27 +110,31 @@ local bottom_popup = {
 M.create_layout = function()
   local title_popup = Popup(top_popup)
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(bottom_popup)
+  local description_popup = Popup(left_popup)
   M.description_bufnr = description_popup.bufnr
+  local info_popup = Popup(right_popup)
 
   local layout = Layout(
     {
-      position = "50%",
+      position = "45%",
       relative = "editor",
       size = {
-        width = "90%",
-        height = "70%",
+        width = "92%",
+        height = "80%",
       },
     },
     Layout.Box({
       Layout.Box(title_popup, { size = { height = 3 } }),
-      Layout.Box(description_popup, { size = "100%" }),
+      Layout.Box({
+        Layout.Box(info_popup, { size = "25%" }),
+        Layout.Box(description_popup, { size = "75%" }),
+      }, { dir = "row", size = "100%" }),
     }, { dir = "col" })
   )
 
   layout:mount()
 
-  return layout, title_popup, description_popup
+  return layout, title_popup, description_popup, info_popup
 end
 
 return M
