@@ -48,6 +48,8 @@ M.summary = function()
     vim.api.nvim_buf_set_lines(description_popup.bufnr, 0, -1, false, description_lines)
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
     vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
+    vim.api.nvim_set_option_value("modifiable", false, { buf = info_popup.bufnr })
+    vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
     state.set_popup_keymaps(
       description_popup,
       M.edit_summary,
@@ -58,17 +60,39 @@ M.summary = function()
   end)
 end
 
-
 M.build_info_lines = function()
   local info = state.INFO
-  return {
-    "Author: " .. info.author.name,
-    "Created At: " .. u.format_to_local(info.created_at),
-    "Merge Status: " .. info.detailed_merge_status,
-    "Draft: " .. (info.draft and "Yes" or "No"),
-    "Has Conflicts: " .. (info.has_conflicts and "Yes" or "No"),
-    "Assignees: " .. u.make_readable_list(info.assignees, "name"),
+  local options = {
+    author = { title = "Author", content = info.author.name },
+    created_at = { title = "Created At", content = u.format_to_local(info.created_at) },
+    updated_at = { title = "Updated At", content = u.format_to_local(info.updated_at) },
+    merge_status = { title = "Merge Status", content = info.detailed_merge_status },
+    draft = { title = "Draft", content = (info.draft and "Yes" or "No") },
+    conflicts = { title = "Has Conflicts", content = (info.has_conflicts and "Yes" or "No") },
+    assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
+    branch = { title = "Branch", content = info.source_branch },
   }
+
+  local longest_used = ""
+  for _, v in ipairs(state.settings.info) do
+    if string.len(v) > string.len(longest_used) then
+      longest_used = v
+    end
+  end
+
+  local function row_offset(row)
+    local offset = string.len(longest_used) - string.len(row)
+    return string.rep(" ", offset + 5)
+  end
+
+  local lines = { "" }
+  for _, v in ipairs(state.settings.info) do
+    local row = options[v]
+    local line = "* " .. row.title .. row_offset(row.title) .. row.content
+    table.insert(lines, line)
+  end
+
+  return lines
 end
 
 -- This function will PUT the new description to the Go server
@@ -92,9 +116,6 @@ local top_popup = {
   focusable = true,
   border = {
     style = "rounded",
-    text = {
-      top = "Merge Request",
-    },
   },
 }
 
@@ -106,6 +127,9 @@ local left_popup = {
   focusable = true,
   border = {
     style = "rounded",
+    text = {
+      top = "Details",
+    },
   },
 }
 
@@ -117,6 +141,9 @@ local right_popup = {
   focusable = true,
   border = {
     style = "rounded",
+    text = {
+      top = "Description",
+    },
   },
 }
 
@@ -127,6 +154,7 @@ M.create_layout = function()
   M.description_bufnr = description_popup.bufnr
   local info_popup = Popup(right_popup)
 
+  -- TODO: Build layout depending on screen size
   local layout = Layout(
     {
       position = "45%",

@@ -33,6 +33,16 @@ M.settings = {
     resolved = "✓",
     unresolved = "",
   },
+  info = {
+    "author",
+    "created_at",
+    "updated_at",
+    "merge_status",
+    "draft",
+    "conflicts",
+    "assignees",
+    "branch",
+  },
   discussion_sign_and_diagnostic = {
     skip_resolved_discussion = false,
     skip_old_revision_discussion = false,
@@ -60,7 +70,7 @@ M.settings = {
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
+    code = nil,        -- see :h diagnostic-structure
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
