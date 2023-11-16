@@ -4,6 +4,7 @@
 local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
+local NuiLine = require("nui.line")
 local Layout = require("nui.layout")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
@@ -145,7 +146,8 @@ M.filter_discussions_for_signs_and_diagnostics = function()
         --Skip discussions from old revisions
         and not (
           state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-          and first_note.position.base_sha ~= state.MR_REVISIONS[1].base_sha
+          and u.from_iso_format_date_to_timestamp(first_note.created_at)
+            <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
         )
       then
         table.insert(discussions, discussion)
@@ -684,12 +686,16 @@ M.toggle_node = function(tree)
   end
   if node:is_expanded() then
     node:collapse()
-    for _, child in ipairs(children) do
-      tree:get_node(child):collapse()
+    if M.is_node_note(node) then
+      for _, child in ipairs(children) do
+        tree:get_node(child):collapse()
+      end
     end
   else
-    for _, child in ipairs(children) do
-      tree:get_node(child):expand()
+    if M.is_node_note(node) then
+      for _, child in ipairs(children) do
+        tree:get_node(child):expand()
+      end
     end
     node:expand()
   end
@@ -700,12 +706,48 @@ end
 --
 -- 🌲 Helper Functions
 --
+---Inspired by default func https://github.com/MunifTanjim/nui.nvim/blob/main/lua/nui/tree/util.lua#L38
+local function nui_tree_prepare_node(node)
+  if not node.text then
+    error("missing node.text")
+  end
+
+  local texts = node.text
+
+  if type(node.text) ~= "table" or node.text.content then
+    texts = { node.text }
+  end
+
+  local lines = {}
+
+  for i, text in ipairs(texts) do
+    local line = NuiLine()
+
+    line:append(string.rep("  ", node._depth - 1))
+
+    if i == 1 and node:has_children() then
+      line:append(node:is_expanded() and " " or " ")
+      if node.icon then
+        line:append(node.icon .. " ", node.icon_hl)
+      end
+    else
+      line:append("  ")
+    end
+
+    line:append(text, node.text_hl)
+
+    table.insert(lines, line)
+  end
+
+  return lines
+end
 
 M.rebuild_discussion_tree = function()
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
-  local discussion_tree_nodes = M.add_discussions_to_table(M.discussions)
-  local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr })
+  local discussion_tree_nodes = M.add_discussions_to_table(M.discussions, false)
+  local discussion_tree =
+    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
@@ -716,8 +758,12 @@ end
 M.rebuild_unlinked_discussion_tree = function()
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.unlinked_section.bufnr, 0, -1, false, {})
-  local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions)
-  local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section.bufnr })
+  local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions, true)
+  local unlinked_discussion_tree = NuiTree({
+    nodes = unlinked_discussion_tree_nodes,
+    bufnr = M.unlinked_section.bufnr,
+    prepare_node = nui_tree_prepare_node,
+  })
   unlinked_discussion_tree:render()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section.bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
@@ -793,29 +839,57 @@ M.add_empty_titles = function(args)
   end
 end
 
+---Check if type of node is note or note body
+---@return boolean
+M.is_node_note = function(node)
+  if node.type == "note_body" or node.type == "note" then
+    return true
+  else
+    return false
+  end
+end
+
+---Check if type of current node is note or note body
+---@return boolean
+M.is_current_node_note = function(tree)
+  return M.is_node_note(tree:get_node())
+end
+
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
-    M.edit_comment(tree, unlinked)
+    if M.is_current_node_note(tree) then
+      M.edit_comment(tree, unlinked)
+    end
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
-    M.delete_comment(tree, unlinked)
+    if M.is_current_node_note(tree) then
+      M.delete_comment(tree, unlinked)
+    end
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
-    M.toggle_discussion_resolved(tree)
+    if M.is_current_node_note(tree) then
+      M.toggle_discussion_resolved(tree)
+    end
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
     M.toggle_node(tree)
   end, { buffer = bufnr })
   vim.keymap.set("n", state.settings.discussion_tree.reply, function()
-    M.reply(tree)
+    if M.is_current_node_note(tree) then
+      M.reply(tree)
+    end
   end, { buffer = bufnr })
 
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
-      M.jump_to_file(tree)
+      if M.is_current_node_note(tree) then
+        M.jump_to_file(tree)
+      end
     end, { buffer = bufnr })
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
-      M.jump_to_reviewer(tree)
+      if M.is_current_node_note(tree) then
+        M.jump_to_reviewer(tree)
+      end
     end, { buffer = bufnr })
   end
 end
@@ -864,22 +938,22 @@ M.replace_text = function(data, discussion_id, note_id, text)
 end
 
 M.get_root_node = function(tree, node)
-  if not node.is_root then
+  if node.type == "note_body" or node.type == "note" and not node.is_root then
     local parent_id = node:get_parent_id()
     return M.get_root_node(tree, tree:get_node(parent_id))
-  else
+  elseif node.is_root then
     return node
   end
 end
 
 M.get_note_node = function(tree, node)
-  if not node.is_note then
+  if node.type == "note_body" then
     local parent_id = node:get_parent_id()
     if parent_id == nil then
       return node
     end
     return M.get_note_node(tree, tree:get_node(parent_id))
-  else
+  elseif node.type == "note" then
     return node
   end
 end
@@ -906,7 +980,7 @@ M.build_note_body = function(note, resolve_info)
         old_line = (type(note.position) == "table" and note.position.old_line),
         text = line.text,
         id = line.id,
-        is_body = true,
+        type = "note_body",
       }, {})
     )
   end
@@ -930,7 +1004,7 @@ M.build_note = function(note, resolve_info)
     file_name = (type(note.position) == "table" and note.position.new_path),
     new_line = (type(note.position) == "table" and note.position.new_line),
     old_line = (type(note.position) == "table" and note.position.old_line),
-    is_note = true,
+    type = "note",
   }, text_nodes)
 
   return note_node, text, text_nodes
@@ -943,14 +1017,75 @@ M.add_reply_to_tree = function(tree, note, discussion_id)
   tree:render()
 end
 
-M.add_discussions_to_table = function(items)
+---Create path node
+local function create_path_node(relative_path, full_path, child_nodes)
+  return NuiTree.Node({
+    text = relative_path,
+    path = full_path,
+    id = full_path,
+    type = "path",
+    icon = " ",
+    icon_hl = "GitlabDirectoryIcon",
+    text_hl = "GitlabDirectory",
+  }, child_nodes or {})
+end
+
+---Create file name node
+local function create_file_name_node(file_name, full_file_path, child_nodes)
+  local icon, icon_hl = u.get_icon(file_name)
+  return NuiTree.Node({
+    text = file_name,
+    file_name = full_file_path,
+    id = full_file_path,
+    type = "file_name",
+    icon = icon,
+    icon_hl = icon_hl,
+    text_hl = "GitlabFileName",
+  }, child_nodes or {})
+end
+
+---Sort list of nodes of type "path" or "file_name"
+local function sort_nodes(nodes)
+  table.sort(nodes, function(node1, node2)
+    if node1.type == "path" and node2.type == "path" then
+      return node1.path < node2.path
+    elseif node1.type == "file_name" and node2.type == "file_name" then
+      return node1.file_name < node2.file_name
+    elseif node1.type == "path" and node2.type == "file_name" then
+      return true
+    else
+      return false
+    end
+  end)
+end
+local function flatten_nodes(node)
+  if node.type ~= "path" then
+    return
+  end
+  for _, child in ipairs(node.__children) do
+    flatten_nodes(child)
+  end
+  if #node.__children == 1 and node.__children[1].type == "path" then
+    local child = node.__children[1]
+    node.__children = child.__children
+    node.id = child.id
+    node.path = child.path
+    node.text = node.text .. u.path_separator .. child.text
+  end
+  sort_nodes(node.__children)
+end
+
+M.add_discussions_to_table = function(items, unlinked)
   local t = {}
   for _, discussion in ipairs(items) do
     local discussion_children = {}
 
     -- These properties are filled in by the first note
+    ---@type string?
     local root_text = ""
+    ---@type string?
     local root_note_id = ""
+    ---@type string?
     local root_file_name = ""
     local root_id = 0
     local root_text_nodes = {}
@@ -963,9 +1098,9 @@ M.add_discussions_to_table = function(items)
       if j == 1 then
         _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
 
-        root_file_name = (type(note.position) == "table" and note.position.new_path)
-        root_new_line = (type(note.position) == "table" and note.position.new_line)
-        root_old_line = (type(note.position) == "table" and note.position.old_line)
+        root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
+        root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
+        root_old_line = (type(note.position) == "table" and note.position.old_line or nil)
         root_id = discussion.id
         root_note_id = note.id
         resolvable = note.resolvable
@@ -980,7 +1115,7 @@ M.add_discussions_to_table = function(items)
     local body = u.spread(root_text_nodes, discussion_children)
     local root_node = NuiTree.Node({
       text = root_text,
-      is_note = true,
+      type = "note",
       is_root = true,
       id = root_id,
       root_note_id = root_note_id,
@@ -993,8 +1128,85 @@ M.add_discussions_to_table = function(items)
 
     table.insert(t, root_node)
   end
+  if state.settings.discussion_tree.tree_type == "simple" or unlinked then
+    return t
+  end
 
-  return t
+  -- Create all the folder and file name nodes.
+  local discussion_by_file_name = {}
+  local top_level_path_to_node = {}
+  for _, node in ipairs(t) do
+    local path = ""
+    local parent_node = nil
+    local path_parts = u.split_path(node.file_name)
+    local file_name = table.remove(path_parts, #path_parts)
+    -- Create folders
+    for i, path_part in ipairs(path_parts) do
+      path = path ~= nil and path .. u.path_separator .. path_part or path_part
+      if i == 1 then
+        if top_level_path_to_node[path] == nil then
+          parent_node = create_path_node(path_part, path)
+          top_level_path_to_node[path] = parent_node
+          table.insert(discussion_by_file_name, parent_node)
+        end
+        parent_node = top_level_path_to_node[path]
+      elseif parent_node then
+        local child_node = nil
+        for _, child in ipairs(parent_node.__children) do
+          if child.path == path then
+            child_node = child
+            break
+          end
+        end
+
+        if child_node == nil then
+          child_node = create_path_node(path_part, path)
+          table.insert(parent_node.__children, child_node)
+          parent_node:expand()
+          parent_node = child_node
+        else
+          parent_node = child_node
+        end
+      end
+    end
+
+    -- Create file name nodes
+    if parent_node == nil then
+      ---Top level file name
+      if top_level_path_to_node[node.file_name] ~= nil then
+        table.insert(top_level_path_to_node[node.file_name].__children, node)
+      else
+        local file_node = create_file_name_node(file_name, node.file_name, { node })
+        file_node:expand()
+        top_level_path_to_node[node.file_name] = file_node
+        table.insert(discussion_by_file_name, file_node)
+      end
+    else
+      local child_node = nil
+      for _, child in ipairs(parent_node.__children) do
+        if child.file_name == node.file_name then
+          child_node = child
+          break
+        end
+      end
+      if child_node == nil then
+        child_node = create_file_name_node(file_name, node.file_name, { node })
+        table.insert(parent_node.__children, child_node)
+        parent_node:expand()
+        child_node:expand()
+      else
+        table.insert(child_node.__children, node)
+      end
+    end
+  end
+
+  -- Flatten empty folders
+  for _, node in ipairs(discussion_by_file_name) do
+    flatten_nodes(node)
+  end
+  sort_nodes(discussion_by_file_name)
+
+  return discussion_by_file_name
 end
 
 M.get_note_location = function(tree)

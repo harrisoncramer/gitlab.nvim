@@ -1,3 +1,4 @@
+local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local M = {}
 
 ---Pulls out a list of values matching a given key from an array of tables
@@ -246,10 +247,85 @@ M.is_windows = function()
   return false
 end
 
+---Path separator based on current OS.
+---@type string
+M.path_separator = M.is_windows() and "\\" or "/"
+
+---Split path by OS path separator.
+---@param path string
+---@return string[]
+M.split_path = function(path)
+  local path_parts = {}
+  for part in string.gmatch(path, "([^" .. M.path_separator .. "]+)") do
+    table.insert(path_parts, part)
+  end
+  return path_parts
+end
+
+M.P = function(...)
+  local objects = {}
+  for i = 1, select("#", ...) do
+    local v = select(i, ...)
+    table.insert(objects, vim.inspect(v))
+  end
+
+  print(table.concat(objects, "\n"))
+  return ...
+end
+
 M.get_buffer_text = function(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
   return text
+end
+
+M.string_starts = function(str, start)
+  return str:sub(1, #start) == start
+end
+
+M.press_enter = function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
+end
+
+---Return timestamp from ISO 8601 formatted date string.
+---@param date_string string ISO 8601 formatted date string
+---@return integer timestamp
+M.from_iso_format_date_to_timestamp = function(date_string)
+  local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
+  return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+end
+
+M.format_date = function(date_string)
+  local date_table = os.date("!*t")
+  local date = M.from_iso_format_date_to_timestamp(date_string)
+
+  local current_date = os.time({
+    year = date_table.year,
+    month = date_table.month,
+    day = date_table.day,
+    hour = date_table.hour,
+    min = date_table.min,
+    sec = date_table.sec,
+  })
+
+  local time_diff = current_date - date
+
+  local function pluralize(num, word)
+    return num .. string.format(" %s", word) .. (num > 1 and "s" or "") .. " ago"
+  end
+
+  if time_diff < 60 then
+    return pluralize(time_diff, "second")
+  elseif time_diff < 3600 then
+    return pluralize(math.floor(time_diff / 60), "minute")
+  elseif time_diff < 86400 then
+    return pluralize(math.floor(time_diff / 3600), "hour")
+  elseif time_diff < 2592000 then
+    return pluralize(math.floor(time_diff / 86400), "day")
+  else
+    local formatted_date = os.date("%A, %B %e", date)
+    return formatted_date
+  end
 end
 
 M.jump_to_file = function(filename, line_number)
@@ -362,7 +438,7 @@ M.list_files_in_folder = function(folder_path)
   local files = {}
   if folder ~= nil then
     for _, file in ipairs(folder) do
-      local file_path = folder_path .. (M.is_windows() and "\\" or "/") .. file
+      local file_path = folder_path .. M.path_separator .. file
       local timestamp = vim.fn.getftime(file_path)
       table.insert(files, { name = file, timestamp = timestamp })
     end
@@ -526,6 +602,23 @@ M.get_visual_selection_boundaries = function()
   local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
   local end_line = vim.api.nvim_buf_get_mark(0, ">")[1]
   return start_line, end_line
+end
+
+---Get icon for filename if nvim-web-devicons plugin is available otherwise return empty string
+---@return string?
+---@return string?
+M.get_icon = function(filename)
+  if has_devicons then
+    local extension = vim.fn.fnamemodify(filename, ":e")
+    local icon, icon_hl = devicons.get_icon(filename, extension, { default = true })
+    if icon ~= nil then
+      return icon .. " ", icon_hl
+    else
+      return nil, nil
+    end
+  else
+    return nil, nil
+  end
 end
 
 return M

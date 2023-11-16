@@ -33,6 +33,7 @@ M.settings = {
     size = "20%",
     resolved = "✓",
     unresolved = "",
+    tree_type = "simple",
   },
   info = {
     enabled = true,
@@ -98,6 +99,9 @@ M.settings = {
       username = "Keyword",
       date = "Comment",
       chevron = "Comment",
+      directory = "Directory",
+      directory_icon = "Directory",
+      file_name = "Normal",
     },
   },
 }
