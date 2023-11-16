@@ -71,7 +71,7 @@ M.format_to_local = function(date_string)
   local offset = vim.fn.strftime("%z")
   local localTimestamp = localTime + M.offset_to_seconds(offset)
 
-  return os.date("%m/%d/%Y at%l:%M %Z", localTimestamp)
+  return os.date("%m/%d/%Y at %l:%M %Z", localTimestamp)
 end
 
 M.format_date = function(date_string)
