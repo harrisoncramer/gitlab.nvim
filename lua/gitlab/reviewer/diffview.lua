@@ -16,7 +16,7 @@ M.open = function()
     return
   end
 
-  vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.start_sha, diff_refs.head_sha))
+  vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
   if state.INFO.has_conflicts then
