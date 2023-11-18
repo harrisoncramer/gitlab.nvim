@@ -31,7 +31,6 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
   - [Reviewers and Assignees](#reviewers-and-assignees)
 - [Keybindings](#keybindings)
 - [Troubleshooting](#troubleshooting)
-- [Extras](#extra-goodies)
 
 ## Requirements
 
