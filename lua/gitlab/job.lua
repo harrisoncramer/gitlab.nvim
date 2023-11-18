@@ -22,6 +22,9 @@ M.run_job = function(endpoint, method, body, callback)
     args = args,
     on_stdout = function(_, output)
       vim.defer_fn(function()
+        if output == nil then
+          return
+        end
         local data_ok, data = pcall(vim.json.decode, output)
         if not data_ok then
           local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)

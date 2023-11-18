@@ -10,8 +10,19 @@ local M = {
 }
 
 M.open = function()
-  vim.api.nvim_command(string.format("DiffviewOpen %s", state.INFO.target_branch))
+  local diff_refs = state.INFO.diff_refs
+  if diff_refs == nil then
+    u.notify("Gitlab did not provide diff refs required to review this MR", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.start_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
+
+  if state.INFO.has_conflicts then
+    u.notify("This merge request has conflicts!", vim.log.levels.WARN)
+  end
+
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.close", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewViewClosed" },
@@ -127,7 +138,7 @@ M.get_location = function(range)
     return result
   end
 
-  result.range_info = { start = {}, ["end"] = {} }
+  result.range_info = { start = {},["end"] = {} }
   if current_line == range.start_line then
     result.range_info.start.old_line = current_line_info.old_line
     result.range_info.start.new_line = current_line_info.new_line

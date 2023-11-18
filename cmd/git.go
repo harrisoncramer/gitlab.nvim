@@ -27,10 +27,17 @@ Extracts information about the current repository and returns
 it to the client for initialization. The current directory must be a valid
 Gitlab project and the branch must be a feature branch
 */
-func ExtractGitInfo(getProjectRemoteUrl func() (string, error), getCurrentBranchName func() (string, error)) (GitProjectInfo, error) {
-	url, err := getProjectRemoteUrl()
+func ExtractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (string, error), getCurrentBranchName func() (string, error)) (GitProjectInfo, error) {
+
+	err := refreshGitInfo()
 	if err != nil {
-		return GitProjectInfo{}, fmt.Errorf("Could not get project Url: %v", err)
+		return GitProjectInfo{}, fmt.Errorf("Could not get latest information from remote: %v", err)
+	}
+
+	url, err := getProjectRemoteUrl()
+
+	if err != nil {
+		return GitProjectInfo{}, fmt.Errorf("Could not get project url: %v", err)
 	}
 
 	// play with regex at: https://regex101.com/r/P2jSGh/1
@@ -96,4 +103,15 @@ func GetProjectUrlFromNativeGitCmd() (string, error) {
 	}
 
 	return strings.TrimSpace(string(url)), nil
+}
+
+/* Pulls down latest commit information from Gitlab */
+func RefreshProjectInfo() error {
+	cmd := exec.Command("git", "fetch", "origin")
+	_, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("Failed to run `git fetch origin`: %v", err)
+	}
+
+	return nil
 }
