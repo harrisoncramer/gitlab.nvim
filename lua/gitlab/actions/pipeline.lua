@@ -141,6 +141,7 @@ M.see_logs = function()
     bufnr = vim.api.nvim_get_current_buf()
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
+    -- TODO: Fix for Windows
     local job_file_path = string.format("/tmp/gitlab.nvim.job-%d", j.id)
     vim.cmd("w! " .. job_file_path)
     vim.cmd.bd()
