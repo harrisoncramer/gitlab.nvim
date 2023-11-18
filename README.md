@@ -31,7 +31,6 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
   - [Reviewers and Assignees](#reviewers-and-assignees)
 - [Keybindings](#keybindings)
 - [Troubleshooting](#troubleshooting)
-- [Extras](#extra-goodies)
 
 ## Requirements
 
@@ -343,7 +342,3 @@ The easiest way to debug what's going wrong is to turn on the `debug` options in
 ```
 curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
 ```
-
-## Extra Goodies
-
-If you are like me and want to quickly switch between recent branches and recent merge request reviews and assignments, check out the git scripts contained <a href="https://github.com/harrisoncramer/.dotfiles/blob/main/scripts/bin/git-reviews">here</a> and <a href="https://github.com/harrisoncramer/.dotfiles/blob/main/scripts/bin/git-authored">here</a> for inspiration.
