@@ -115,6 +115,8 @@ M.merge_settings = function(args)
     )
   end
 
+  M.settings.file_separator = (u.is_windows() and "\\" or "/")
+
   return true
 end
 
@@ -130,7 +132,15 @@ M.setPluginConfiguration = function()
   if M.initialized then
     return true
   end
-  local config_file_path = vim.fn.getcwd() .. "/.gitlab.nvim"
+
+  local base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
+  if vim.v.shell_error ~= 0 then
+    u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
+    return false
+  end
+
+  local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
+
   local config_file_content = u.read_file(config_file_path)
 
   local file_properties = {}
