@@ -37,7 +37,7 @@ func ExtractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (str
 	url, err := getProjectRemoteUrl()
 
 	if err != nil {
-		return GitProjectInfo{}, fmt.Errorf("Could not get project url: %v", err)
+		return GitProjectInfo{}, fmt.Errorf("Could not get project Url: %v", err)
 	}
 
 	// play with regex at: https://regex101.com/r/P2jSGh/1
