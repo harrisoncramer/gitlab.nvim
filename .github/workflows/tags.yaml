@@ -19,3 +19,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PRERELEASE: false
         WITH_V: true
+        MAJOR_STRING_TOKEN: MAJOR
+        MINOR_STRING_TOKEN: MINOR
+        PATCH_STRING_TOKEN: PATCH
+        NONE_STRING_TOKEN: NONE
