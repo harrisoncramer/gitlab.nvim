@@ -1,40 +1,25 @@
-name: Tag + Bump Version
+name: Tag + Bump version
 on:
   push:
     branches:
       - main
 jobs:
-  build_tags:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: '0'
-    - name: Run action
-      id: taggerDryRun
-      uses: anothrNick/github-tag-action@1.64.0 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        WITH_V: true
-        DRY_RUN: true
-    - name: Echo new tag
-      run: |
-        echo "The next tag version will be: ${{ steps.taggerDryRun.outputs.new_tag }}"
-    - name: Echo change version type
-      run: |
-        echo "The version increment was: ${{ steps.taggerDryRun.outputs.part }}"
-
-    # BUILD HERE, WILL ONLY EXECUTE IF PREVIOUS STEPS SUCCEEDED
     - uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.pull_request.merge_commit_sha }}
         fetch-depth: '0'
     - name: Bump version and push tag
-      uses: anothrNick/github-tag-action@1.64.0
+      uses: anothrNick/github-tag-action@1.64.0 # Don't use @master or @v1 unless you're happy to test the latest version
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         DEFAULT_BUMP: patch
-        WITH_V: true
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PRERELEASE: false
+        WITH_V: true
+        MAJOR_STRING_TOKEN: MAJOR
+        MINOR_STRING_TOKEN: MINOR
+        PATCH_STRING_TOKEN: PATCH
+        NONE_STRING_TOKEN: NONE
