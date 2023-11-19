@@ -61,10 +61,10 @@ describe("utils/init.lua", function()
       sec = 44,
       wday = 1,
       yday = 323,
-      year = 2023
+      year = 2023,
     }
     it("Returns days since a valid UTC timestamp", function()
-      local stamp = '2023-11-16T19:52:36.946Z'
+      local stamp = "2023-11-16T19:52:36.946Z"
       local u = require("gitlab.utils")
       local got = u.time_since(stamp, current_date)
       local want = "3 days ago"
@@ -72,14 +72,14 @@ describe("utils/init.lua", function()
     end)
 
     it("Returns hours since a valid UTC timestamp", function()
-      local stamp = '2023-11-19T19:52:36.946Z'
+      local stamp = "2023-11-19T19:52:36.946Z"
       local u = require("gitlab.utils")
       local got = u.time_since(stamp, current_date)
       local want = "2 hours ago"
       assert.are.same(want, got)
     end)
     it("Returns readable time if > 1 year", function()
-      local stamp = '2011-11-19T19:52:36.946Z'
+      local stamp = "2011-11-19T19:52:36.946Z"
       local u = require("gitlab.utils")
       local got = u.time_since(stamp, current_date)
       local want = "November 19, 2011"
