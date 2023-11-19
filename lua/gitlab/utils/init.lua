@@ -38,14 +38,6 @@ M.get_buffer_text = function(bufnr)
   return text
 end
 
-M.string_starts = function(str, start)
-  return str:sub(1, #start) == start
-end
-
-M.press_enter = function()
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
-end
-
 M.format_date = function(date_string)
   local date_table = os.date("!*t")
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
@@ -127,22 +119,6 @@ M.merge = function(defaults, overrides)
     return overrides
   end
   return vim.tbl_deep_extend("force", defaults, overrides)
-end
-
-M.join = function(tbl, separator)
-  separator = separator or " "
-
-  local result = ""
-  for _, value in pairs(tbl) do
-    result = result .. tostring(value) .. separator
-  end
-
-  -- Remove the trailing separator
-  if separator ~= "" then
-    result = result:sub(1, -#separator - 1)
-  end
-
-  return result
 end
 
 M.remove_first_value = function(tbl)
