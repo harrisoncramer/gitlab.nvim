@@ -180,11 +180,15 @@ M.contains = function(array, search_value)
   return false
 end
 
-M.extract = function(t, property)
+---Pulls out a list of values matching a given key from an array of tables
+---@param t table List of tables to search
+---@param key string Value to search for in the list
+---@return table List List of values that were extracted
+M.extract = function(t, key)
   local resultTable = {}
   for _, value in ipairs(t) do
-    if value[property] then
-      table.insert(resultTable, value[property])
+    if value[key] then
+      table.insert(resultTable, value[key])
     end
   end
   return resultTable
@@ -200,15 +204,11 @@ M.remove_last_chunk = function(sentence)
   return sentence_without_last
 end
 
-M.get_first_chunk = function(sentence, divider)
-  local words = {}
-  for word in sentence:gmatch(divider or "%S+") do
-    table.insert(words, word)
-  end
-  return words[1]
-end
-
-M.get_last_chunk = function(sentence, divider)
+-- Get the last word in a sentence
+---@param sentence string The string to get the last word from
+---@param divider string The divider to split the sentence by, defaults to whitespace
+---@return word string The last word in the sentence
+M.get_last_word = function(sentence, divider)
   local words = {}
   for word in sentence:gmatch(divider or "%S+") do
     table.insert(words, word)
@@ -407,7 +407,7 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
 end
 
 ---Check if current mode is visual mode
----@return boolean true if current mode is visual mode
+---@return boolean is_visual true if current mode is visual mode
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
@@ -419,7 +419,7 @@ end
 
 ---Return start line and end line of visual selection.
 ---Exists visual mode in order to access marks "<" , ">"
----@return integer,integer start line and end line
+---@return integer start,integer end Start line and end line
 M.get_visual_selection_boundaries = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
   local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
