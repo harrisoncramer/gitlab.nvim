@@ -28,7 +28,7 @@ jobs:
           args: --check .
   lua_test:
     name: Test Lua 🧪 
-    needs: [formatting,linting]
+    needs: [lua_format,lua_lint]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
