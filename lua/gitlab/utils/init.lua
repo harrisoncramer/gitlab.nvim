@@ -1,4 +1,3 @@
-local Job = require("plenary.job")
 local M = {}
 
 M.notify = function(msg, lvl)
@@ -140,7 +139,7 @@ M.join = function(tbl, separator)
 
   -- Remove the trailing separator
   if separator ~= "" then
-    result = result:sub(1, -#separator - 1)
+    result = result:sub(1, - #separator - 1)
   end
 
   return result
@@ -317,6 +316,8 @@ end
 ---@return Hunk[] list of hunks.
 M.parse_hunk_headers = function(file_path, base_branch)
   local hunks = {}
+
+  local Job = require("plenary.job")
 
   local diff_job = Job:new({
     command = "git",
