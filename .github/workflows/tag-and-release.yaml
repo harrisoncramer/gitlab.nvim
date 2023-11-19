@@ -1,10 +1,10 @@
-name: Tag + Bump version
+name: Tag + Create Release
 on:
   push:
     branches:
       - main
 jobs:
-  build:
+  tag:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -13,8 +13,9 @@ jobs:
       with:
         ref: ${{ github.event.pull_request.merge_commit_sha }}
         fetch-depth: '0'
-    - name: Bump version and push tag
-      uses: anothrNick/github-tag-action@1.64.0 # Don't use @master or @v1 unless you're happy to test the latest version
+    - name: Create Tag 🏷️
+      id: create_tag
+      uses: anothrNick/github-tag-action@1.64.0
       env:
         DEFAULT_BUMP: patch
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -24,3 +25,17 @@ jobs:
         MINOR_STRING_TOKEN: MINOR
         PATCH_STRING_TOKEN: PATCH
         NONE_STRING_TOKEN: NONE
+        BRANCH_HISTORY: last
+    outputs:
+      tag: ${{ steps.create_tag.outputs.tag }}
+  release:
+    needs: [tag]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: 🛎️ Create release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.tag.outputs.tag }}
