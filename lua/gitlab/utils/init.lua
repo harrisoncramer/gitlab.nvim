@@ -79,13 +79,17 @@ M.time_since = function(date_string, current_date_table)
   end
 end
 
+---Removes the first value from a list and returns the new, smaller list
+---@param tbl table The table
+---@return table
 M.remove_first_value = function(tbl)
-  local sliced_table = {}
+  local sliced_list = {}
+  if M.table_size(tbl) <= 1 then return sliced_list end
   for i = 2, #tbl do
-    table.insert(sliced_table, tbl[i])
+    table.insert(sliced_list, tbl[i])
   end
 
-  return sliced_table
+  return sliced_list
 end
 
 M.join_tables = function(table1, table2)
