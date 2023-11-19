@@ -1,5 +1,44 @@
 local M = {}
 
+---Pulls out a list of values matching a given key from an array of tables
+---@param t table List of tables to search
+---@param key string Value to search for in the list
+---@return table List List of values that were extracted
+M.extract = function(t, key)
+  local resultTable = {}
+  for _, value in ipairs(t) do
+    if value[key] then
+      table.insert(resultTable, value[key])
+    end
+  end
+  return resultTable
+end
+
+-- Get the last word in a sentence
+---@param sentence string The string to get the last word from
+---@param divider string The regex to split the sentence by, defaults to whitespace
+---@return string
+M.get_last_word = function(sentence, divider)
+  local words = {}
+  local pattern = string.format("([^%s]+)", divider or " ")
+  for word in sentence:gmatch(pattern) do
+    table.insert(words, word)
+  end
+  return words[#words] or ""
+end
+
+-- Merges two deeply nested tables together, overriding values from the first with conflicts
+---@param defaults table The first table
+---@param overrides table The second table
+---@return table
+M.merge = function(defaults, overrides)
+  if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
+    return overrides
+  end
+  return vim.tbl_deep_extend("force", defaults, overrides)
+end
+
+
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
@@ -114,13 +153,6 @@ M.create_popup_state = function(title, width, height)
   }
 end
 
-M.merge = function(defaults, overrides)
-  if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
-    return overrides
-  end
-  return vim.tbl_deep_extend("force", defaults, overrides)
-end
-
 M.remove_first_value = function(tbl)
   local sliced_table = {}
   for i = 2, #tbl do
@@ -180,19 +212,7 @@ M.contains = function(array, search_value)
   return false
 end
 
----Pulls out a list of values matching a given key from an array of tables
----@param t table List of tables to search
----@param key string Value to search for in the list
----@return table List List of values that were extracted
-M.extract = function(t, key)
-  local resultTable = {}
-  for _, value in ipairs(t) do
-    if value[key] then
-      table.insert(resultTable, value[key])
-    end
-  end
-  return resultTable
-end
+
 
 M.remove_last_chunk = function(sentence)
   local words = {}
@@ -202,18 +222,6 @@ M.remove_last_chunk = function(sentence)
   table.remove(words, #words)
   local sentence_without_last = table.concat(words, " ")
   return sentence_without_last
-end
-
--- Get the last word in a sentence
----@param sentence string The string to get the last word from
----@param divider string The divider to split the sentence by, defaults to whitespace
----@return word string The last word in the sentence
-M.get_last_word = function(sentence, divider)
-  local words = {}
-  for word in sentence:gmatch(divider or "%S+") do
-    table.insert(words, word)
-  end
-  return words[#words]
 end
 
 M.trim = function(s)

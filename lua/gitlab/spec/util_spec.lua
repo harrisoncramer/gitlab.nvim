@@ -10,14 +10,14 @@ describe("utils/init.lua", function()
       local t = { { one = 1, two = 2 }, { three = 3, four = 4 } }
       local got = u.extract(t, "one")
       local want = { 1 }
-      assert.are.same(got, want)
+      assert.are.same(want, got)
     end)
     it("Returns nothing with empty table", function()
       local u = require("gitlab.utils")
       local t = {}
       local got = u.extract(t, "one")
       local want = {}
-      assert.are.same(got, want)
+      assert.are.same(want, got)
     end)
   end)
 
@@ -27,7 +27,27 @@ describe("utils/init.lua", function()
       local sentence = "Hello world!"
       local got = u.get_last_word(sentence)
       local want = "world!"
-      assert.True(got == want)
+      assert.are.same(want, got)
+    end)
+    it("Returns an empty string without text", function()
+      local u = require("gitlab.utils")
+      local sentence = ""
+      local got = u.get_last_word(sentence)
+      local want = ""
+      assert.are.same(want, got)
+    end)
+    it("Returns whole string w/out divider", function()
+      local u = require("gitlab.utils")
+      local sentence = "Thisdoesnothavebreaks"
+      local got = u.get_last_word(sentence)
+      assert.are.same(sentence, got)
+    end)
+    it("Returns correct word w/ different divider", function()
+      local u = require("gitlab.utils")
+      local sentence = "this|uses|a|different|divider"
+      local got = u.get_last_word(sentence, "|")
+      local want = "divider"
+      assert.are.same(want, got)
     end)
   end)
 end)
