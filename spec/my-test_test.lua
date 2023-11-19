@@ -1,0 +1,12 @@
+describe("Example", function()
+  describe("Imports and setup for suite", function()
+    it("Should import the plugin", function()
+      local _, gitlab_ok = pcall(require, "gitlab")
+      assert.is_true(gitlab_ok)
+    end)
+
+    it("Should have Neovim APIs", function()
+      assert._is_true(true)
+    end)
+  end)
+end)

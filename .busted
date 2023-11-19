@@ -1,0 +1,12 @@
+return {
+  _all = {
+    pattern = "_test",
+  },
+  default = {
+    verbose = true
+  },
+  api = {
+    ROOT = {"spec"},
+    verbose = true
+  }
+}
