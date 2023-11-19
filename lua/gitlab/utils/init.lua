@@ -108,8 +108,11 @@ M.table_size = function(t)
   return count
 end
 
-M.contains = function(array, search_value)
-  for _, value in ipairs(array) do
+---Returns whether a given value is in a list or not
+---@param list table The list to search
+---@return table
+M.contains = function(list, search_value)
+  for _, value in pairs(list) do
     if value == search_value then
       return true
     end
