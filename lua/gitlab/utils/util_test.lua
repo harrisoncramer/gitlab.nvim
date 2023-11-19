@@ -1,0 +1,7 @@
+describe("util.lua", function()
+  describe("Functions", function()
+    it("Should have Neovim APIs", function()
+      assert._is_true(true)
+    end)
+  end)
+end)

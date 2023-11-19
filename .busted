@@ -1,12 +1,13 @@
 return {
   _all = {
     pattern = "_test",
+    lpath = "lua/?.lua;lua/?/init.lua",
+    ROOT = {"lua/gitlab"},
   },
   default = {
     verbose = true
   },
-  api = {
-    ROOT = {"spec"},
-    verbose = true
-  }
+  tests = {
+    verbose = true,
+  },
 }
