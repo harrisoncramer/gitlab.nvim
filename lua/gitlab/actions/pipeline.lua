@@ -46,7 +46,7 @@ M.open = function()
     u.switch_can_edit_buf(bufnr, true)
     table.insert(lines, string.format("Status: %s (%s)", state.settings.pipeline[pipeline.status], pipeline.status))
     table.insert(lines, "")
-    table.insert(lines, string.format("Last Run: %s", u.format_date(pipeline.created_at)))
+    table.insert(lines, string.format("Last Run: %s", u.time_since(pipeline.created_at)))
     table.insert(lines, string.format("Url: %s", pipeline.web_url))
     table.insert(lines, string.format("Triggered By: %s", pipeline.source))
 

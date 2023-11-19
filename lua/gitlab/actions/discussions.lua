@@ -132,21 +132,21 @@ M.filter_discussions_for_signs_and_diagnostics = function()
   for _, discussion in ipairs(M.discussions) do
     local first_note = discussion.notes[1]
     if
-      type(first_note.position) == "table"
-      and (first_note.position.new_path == file or first_note.position.old_path == file)
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-        --Skip resolved discussions
-        not (
-          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-          and first_note.resolvable
-          and first_note.resolved
-        )
-        --Skip discussions from old revisions
-        and not (
-          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-          and first_note.position.base_sha ~= state.MR_REVISIONS[1].base_sha
-        )
+      --Skip resolved discussions
+          not (
+            state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+            and first_note.resolvable
+            and first_note.resolved
+          )
+          --Skip discussions from old revisions
+          and not (
+            state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+            and first_note.position.base_sha ~= state.MR_REVISIONS[1].base_sha
+          )
       then
         table.insert(discussions, discussion)
       end
@@ -424,7 +424,7 @@ M.refresh_discussion_tree = function()
 
   M.switch_can_edit_bufs(true)
   M.add_empty_titles({
-    { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+    { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
     { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
   })
   M.switch_can_edit_bufs(false)
@@ -578,7 +578,7 @@ M.send_deletion = function(tree, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -892,7 +892,7 @@ end
 ---@param note Note
 ---@return string
 M.build_note_header = function(note)
-  return "@" .. note.author.username .. " " .. u.format_date(note.created_at)
+  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
 
 M.build_note_body = function(note, resolve_info)
@@ -914,7 +914,7 @@ M.build_note_body = function(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-      or state.settings.discussion_tree.unresolved
+        or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
