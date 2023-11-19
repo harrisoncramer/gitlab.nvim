@@ -4,7 +4,8 @@ on:
     branches:
       - main
 jobs:
-  lint:
+  go_lint:
+    name: Lint Go 💅 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -17,7 +18,8 @@ jobs:
         with:
           version: v1.54
           only-new-issues: true
-  build:
+  go_test:
+    name: Test Go 🧪 
     needs: [lint]
     runs-on: ubuntu-latest
     steps:

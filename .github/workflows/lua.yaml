@@ -4,7 +4,8 @@ on:
     branches:
       - main
 jobs:
-  linting:
+  lua_lint:
+    name: Lint Lua 💅 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -13,7 +14,8 @@ jobs:
         uses: lunarmodules/luacheck@v1
         with:
           args: --globals vim --no-max-line-length -- .
-  formatting:
+  lua_format:
+    name: Formatting Lua 💅 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +26,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check .
-  tests:
+  lua_test:
+    name: Test Lua 🧪 
     needs: [formatting,linting]
     runs-on: ubuntu-latest
     steps:
