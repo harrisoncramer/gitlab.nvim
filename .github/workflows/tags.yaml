@@ -14,7 +14,7 @@ jobs:
         ref: ${{ github.event.pull_request.merge_commit_sha }}
         fetch-depth: '0'
     - name: Bump version and push tag
-      uses: anothrNick/github-tag-action@1.64.0 # Don't use @master or @v1 unless you're happy to test the latest version
+      uses: anothrNick/github-tag-action@1.64.0
       env:
         DEFAULT_BUMP: patch
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -24,3 +24,4 @@ jobs:
         MINOR_STRING_TOKEN: MINOR
         PATCH_STRING_TOKEN: PATCH
         NONE_STRING_TOKEN: NONE
+        BRANCH_HISTORY: last
