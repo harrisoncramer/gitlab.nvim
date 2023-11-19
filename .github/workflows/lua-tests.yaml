@@ -10,6 +10,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Run Busted
-        uses: lunarmodules/busted@v0
-        with:
-            args: --run=api
+        uses: lunarmodules/busted@v2.2.0
+        # with:
+        #     args: --run=api

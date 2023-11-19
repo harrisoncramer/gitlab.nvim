@@ -1,10 +1,10 @@
-name: Linting and Formatting
+name: Lua
 on:
   pull_request:
     branches:
       - main
 jobs:
-  luacheck:
+  linting:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -13,7 +13,7 @@ jobs:
         uses: lunarmodules/luacheck@v1
         with:
           args: --globals vim --no-max-line-length -- .
-  stylua:
+  formatting:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,16 +24,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check .
-  golangci:
+  tests:
+    needs: [formatting,linting]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.19'
-          cache: false
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.54
-          only-new-issues: true
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Run Busted
+        uses: lunarmodules/busted@v2.2.0

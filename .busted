@@ -1,6 +1,6 @@
 return {
   _all = {
-    pattern = "_test",
+    pattern = "_spec",
     lpath = "lua/?.lua;lua/?/init.lua",
     ROOT = {"lua/gitlab"},
   },
