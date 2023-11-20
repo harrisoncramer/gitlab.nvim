@@ -94,12 +94,16 @@ M.remove_first_value = function(tbl)
   return sliced_list
 end
 
-M.join_tables = function(table1, table2)
-  for _, value in ipairs(table2) do
-    table.insert(table1, value)
+---Spreads all the values from t2 into t1
+---@param t1 table The first table (gets the values)
+---@param t2 table The second table
+---@return table
+M.spread = function(t1, t2)
+  for _, value in ipairs(t2) do
+    table.insert(t1, value)
   end
 
-  return table1
+  return t1
 end
 
 ---Returns the number of keys or values in a table
@@ -129,10 +133,15 @@ end
 ---@param s string The string to trim
 ---@return string
 M.trim = function(s)
-  return s:gsub("^%s+", ""):gsub("%s+$", "")
+  local res = s:gsub("^%s+", ""):gsub("%s+$", "")
+  return res
 end
 
+-- Reverses the order of elements in a list
+---@param list table The list to reverse
+---@return table
 M.reverse = function(list)
+  if (#list == 0) then return list end
   local rev = {}
   for i = #list, 1, -1 do
     rev[#rev + 1] = list[i]

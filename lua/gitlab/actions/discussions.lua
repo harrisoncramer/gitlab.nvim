@@ -977,7 +977,7 @@ M.add_discussions_to_table = function(items)
     end
 
     -- Creates the first node in the discussion, and attaches children
-    local body = u.join_tables(root_text_nodes, discussion_children)
+    local body = u.spread(root_text_nodes, discussion_children)
     local root_node = NuiTree.Node({
       text = root_text,
       is_note = true,
