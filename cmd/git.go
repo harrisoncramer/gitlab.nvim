@@ -19,7 +19,7 @@ func ExtractGitInfo() (string, string, string, error) {
 		return "", "", "", fmt.Errorf("Could not get project Url: %v", err)
 	}
 
-	re := regexp.MustCompile(`(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)\.git`)
+	re := regexp.MustCompile(`(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)`)
 	matches := re.FindStringSubmatch(url)
 	// matches[0] - url itself
 	// matches[1] - protocol (ssh, http(s))
@@ -27,24 +27,25 @@ func ExtractGitInfo() (string, string, string, error) {
 	// matches[3] - gitlab server name
 	// matches[4] - port
 	// matches[5] - project full path
-	// i.e. 'https://gitlab.organization.com/some.compex.path.to/project' will be parsed as
-	// matches[0] - https://gitlab.organization.com/some.compex.path.to/project
+	// i.e. 'https://gitlab.organization.com/some.compex.path.to/project.git' will be parsed as
+	// matches[0] - https://gitlab.organization.com/some.compex.path.to/project.git
 	// matches[1] - http://
 	// matches[2] -
 	// matches[3] - gitlab.organization.com
 	// matches[4] -
-	// matches[5] - some.complex.path.to/project
-
-	if matches[5] == "" {
+	// matches[5] - some.complex.path.to/project.git
+	if len(matches) != 6 || matches[5] == "" {
 		return "", "", "", fmt.Errorf("Failed to retrieve project path from Git URL: %s", url)
 	}
+
+	projectPath := strings.TrimSuffix(matches[5], ".git")
 
 	branch, err := getCurrentBranch()
 	if err != nil {
 		return "", "", "", fmt.Errorf("Failed to get current branch: %v", err)
 	}
 
-	return url, matches[5], branch, nil
+	return url, projectPath, branch, nil
 }
 
 /* Gets the current branch */
