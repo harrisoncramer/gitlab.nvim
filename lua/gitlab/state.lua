@@ -11,6 +11,7 @@ M.settings = {
   port = nil, -- choose random port
   debug = { go_request = false, go_response = false },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
+  config_path = nil,
   reviewer = "diffview",
   attachment_dir = "",
   popup = {
@@ -60,7 +61,7 @@ M.settings = {
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
+    code = nil,        -- see :h diagnostic-structure
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
@@ -133,14 +134,18 @@ M.setPluginConfiguration = function()
     return true
   end
 
-  local base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
-  if vim.v.shell_error ~= 0 then
-    u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
-    return false
+  local base_path
+  if M.settings.config_path ~= nil then
+    base_path = M.settings.config_path
+  else
+    base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
+    if vim.v.shell_error ~= 0 then
+      u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
+      return false
+    end
   end
 
   local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
-
   local config_file_content = u.read_file(config_file_path)
 
   local file_properties = {}

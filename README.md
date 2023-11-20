@@ -87,19 +87,22 @@ use {
 
 This plugin requires an <a href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token">auth token</a> to connect to Gitlab. The token can be set in the root directory of the project in a `.gitlab.nvim` environment file, or can be set via a shell environment variable called `GITLAB_TOKEN` instead. If both are present, the `.gitlab.nvim` file will take precedence.
 
-Optionally provide a GITLAB_URL environment variable (or gitlab_url value in the `.gitlab.nvim` file) to connect to a self-hosted Gitlab instance. This is optional, use ONLY for self-hosted instances.
+Optionally provide a GITLAB_URL environment variable (or gitlab_url value in the `.gitlab.nvim` file) to connect to a self-hosted Gitlab instance. This is optional, use ONLY for self-hosted instances. Here's what they'd look like as environment variables:
+
+```bash
+export GITLAB_TOKEN="your_gitlab_token"
+export GITLAB_URL="https://my-personal-gitlab-instance.com/"
+```
+
+And as a `.gitlab.nvim` file:
 
 ```
 auth_token=your_gitlab_token
 gitlab_url=https://my-personal-gitlab-instance.com/
 ```
 
-If you don't want to write these into a dotfile, you may provide them via shell variables. These will be overridden by the dotfile if it is present:
+The plugin will look for the `.gitlab.nvim` file in the root of the current project by default. However, you may provide a custom path to the configuration file via the `config_path` option. This must be an absolute path to the directory that holds your `.gitlab.nvim` file.
 
-```bash
-export GITLAB_TOKEN="your_gitlab_token"
-export GITLAB_URL="https://my-personal-gitlab-instance.com/"
-```
 
 ## Configuring the Plugin
 
@@ -109,6 +112,7 @@ Here is the default setup function. All of these values are optional, and if you
 require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
+  config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
   debug = { go_request = false, go_response = false }, -- Which values to log
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   popup = { -- The popup for comment creation, editing, and replying
