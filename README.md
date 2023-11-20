@@ -135,6 +135,21 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
   },
+  info = { -- Show additional fields in the summary pane
+    enabled = true,
+    horizontal = false, -- Display metadata to the left of the summary rather than underneath
+    fields = { -- The fields listed here will be displayed, in whatever order you choose
+      "author",
+      "created_at",
+      "updated_at",
+      "merge_status",
+      "draft",
+      "conflicts",
+      "assignees",
+      "branch",
+      "pipeline",
+    },
+  },
   discussion_sign_and_diagnostic = {
     skip_resolved_discussion = false,
     skip_old_revision_discussion = true,
@@ -205,6 +220,8 @@ require("gitlab").summary()
 ```
 
 After editing the description or title, you may save your changes via the `settings.popup.perform_action` keybinding.
+
+By default this plugin will also show additional metadata about the MR in a separate pane underneath the description. This can be disabled, and these fields can be reordered or removed. Please see the `settings.info` section of the configuration.
 
 ### Reviewing Diffs
 

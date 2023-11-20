@@ -151,6 +151,67 @@ M.reverse = function(list)
   return rev
 end
 
+---Returns the difference between a time offset and UTC time, in seconds
+---@param offset string The offset to compare, e.g. -0500 for EST
+---@return number
+M.offset_to_seconds = function(offset)
+  local sign, hours, minutes = offset:match("([%+%-])(%d%d)(%d%d)")
+  local offset_in_seconds = tonumber(hours) * 3600 + tonumber(minutes) * 60
+  if sign == "-" then
+    offset_in_seconds = -offset_in_seconds
+  end
+  return offset_in_seconds
+end
+
+---Converts a UTC timestamp and offset to a human readable datestring
+---@param date_string string The time stamp
+---@param offset string The offset of the user's local time zone, e.g. -0500 for EST
+---@return string
+M.format_to_local = function(date_string, offset)
+  local year, month, day, hour, min, sec, _, tzOffset = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
+  local localTime = os.time({
+    year = year,
+    month = month,
+    day = day,
+    hour = hour,
+    min = min,
+    sec = sec,
+    tzOffset = tzOffset,
+  })
+
+  local localTimestamp = localTime + M.offset_to_seconds(offset)
+
+  return tostring(os.date("%m/%d/%Y at %H:%M", localTimestamp))
+end
+
+-- Returns a comma separated (human readable) list of values from a list of associative tables
+---@param list_of_tables table The list to traverse
+---@param key string The key of the values to pull from the tables
+---@return string
+M.make_readable_list = function(list_of_tables, key)
+  local res = ""
+  for i, t in ipairs(list_of_tables) do
+    res = res .. t[key]
+    if i < #list_of_tables then
+      res = res .. ", "
+    end
+  end
+  return res
+end
+
+-- Returns the length of the longest string in a list of strings
+---@param list table The list of strings
+---@return number
+M.get_longest_string = function(list)
+  local longest = 0
+  for _, v in pairs(list) do
+    if string.len(v) > longest then
+      longest = string.len(v)
+    end
+  end
+  return longest
+end
+
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
