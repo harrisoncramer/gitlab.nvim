@@ -11,9 +11,9 @@ import (
 )
 
 func main() {
-	g, err := ExtractGitInfo(GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
+	g, err := ExtractGitInfo(RefreshProjectInfo, GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
 	if err != nil {
-		log.Fatalf("Failed to get git namespace, project, branch, or url: %v", err)
+		log.Fatalf("Failure initializing plugin with `git` commands: %v", err)
 	}
 
 	var c Client
