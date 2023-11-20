@@ -102,6 +102,9 @@ M.join_tables = function(table1, table2)
   return table1
 end
 
+---Returns the number of keys or values in a table
+---@param t table The table to count
+---@return integer
 M.table_size = function(t)
   local count = 0
   for _ in pairs(t) do
@@ -112,7 +115,7 @@ end
 
 ---Returns whether a given value is in a list or not
 ---@param list table The list to search
----@return table
+---@return boolean
 M.contains = function(list, search_value)
   for _, value in pairs(list) do
     if value == search_value then
@@ -122,6 +125,9 @@ M.contains = function(list, search_value)
   return false
 end
 
+---Trims whitespace from a string
+---@param s string The string to trim
+---@return string
 M.trim = function(s)
   return s:gsub("^%s+", ""):gsub("%s+$", "")
 end
