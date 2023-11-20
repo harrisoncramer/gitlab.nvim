@@ -120,8 +120,8 @@ M.build_info_lines = function()
   local info = state.INFO
   local options = {
     author = { title = "Author", content = "@" .. info.author.username .. " (" .. info.author.name .. ")" },
-    created_at = { title = "Created", content = u.format_to_local(info.created_at) },
-    updated_at = { title = "Updated", content = u.format_to_local(info.updated_at) },
+    created_at = { title = "Created", content = u.format_to_local(info.created_at, vim.fn.strftime("%z")) },
+    updated_at = { title = "Updated", content = u.format_to_local(info.updated_at, vim.fn.strftime("%z")) },
     merge_status = { title = "Status", content = info.detailed_merge_status },
     draft = { title = "Draft", content = (info.draft and "Yes" or "No") },
     conflicts = { title = "Merge Conflicts", content = (info.has_conflicts and "Yes" or "No") },

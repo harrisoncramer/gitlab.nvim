@@ -152,7 +152,7 @@ M.reverse = function(list)
 end
 
 ---Returns the difference between a time offset and UTC time, in seconds
----@param offset string The offset to compare, e.g. -0500
+---@param offset string The offset to compare, e.g. -0500 for EST
 ---@return number
 M.offset_to_seconds = function(offset)
   local sign, hours, minutes = offset:match("([%+%-])(%d%d)(%d%d)")
@@ -163,10 +163,11 @@ M.offset_to_seconds = function(offset)
   return offset_in_seconds
 end
 
----Converts a UTC timestamp to a human readable string
+---Converts a UTC timestamp and offset to a human readable datestring
 ---@param date_string string The time stamp
+---@param offset string The offset of the user's local time zone, e.g. -0500 for EST
 ---@return string
-M.format_to_local = function(date_string)
+M.format_to_local = function(date_string, offset)
   local year, month, day, hour, min, sec, _, tzOffset = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
   local localTime = os.time({
     year = year,
@@ -178,10 +179,9 @@ M.format_to_local = function(date_string)
     tzOffset = tzOffset,
   })
 
-  local offset = vim.fn.strftime("%z")
   local localTimestamp = localTime + M.offset_to_seconds(offset)
 
-  return tostring(os.date("%m/%d/%Y at %l:%M %Z", localTimestamp))
+  return tostring(os.date("%m/%d/%Y at %H:%M", localTimestamp))
 end
 
 -- Returns a comma separated (human readable) list of values from a list of associative tables

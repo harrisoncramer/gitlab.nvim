@@ -178,4 +178,38 @@ describe("utils/init.lua", function()
       assert.are.same(got, want)
     end)
   end)
+
+  describe("offset_to_seconds", function()
+    local tests = {
+      est = { '-0500', -18000 },
+      pst = { '-0800', -28800 },
+      gmt = { '+0000', 0 },
+      cet = { '+0100', 360 },
+      jst = { '+0900', 32400 },
+      ist = { '+0530', 19800 },
+      art = { '-0300', -10800 },
+      aest = { '+1100', 39600 },
+      mmt = { '+0630', 23400 },
+    }
+
+    for _, val in ipairs(tests) do
+      local got = u.offset_to_seconds(val[1])
+      local want = val[2]
+      assert.are.same(got, want)
+    end
+  end)
+
+  describe("format_to_local", function()
+    local tests = {
+      { '2023-10-28T16:25:09.482Z', '-0500', '10/28/2023 at 11:25' },
+      { '2016-11-22T1:25:09.482Z',  '-0500', '11/21/2016 at 20:25' },
+      { '2016-11-22T1:25:09.482Z',  '-0000', '11/22/2016 at 01:25' },
+      { '2017-3-22T13:25:09.482Z',  '+0700', '03/22/2017 at 20:25' },
+    }
+    for _, val in ipairs(tests) do
+      local got = u.format_to_local(val[1], val[2])
+      local want = val[3]
+      assert.are.same(got, want)
+    end
+  end)
 end)
