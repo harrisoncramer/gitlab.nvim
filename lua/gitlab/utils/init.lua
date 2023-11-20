@@ -1,5 +1,155 @@
-local Job = require("plenary.job")
 local M = {}
+
+---Pulls out a list of values matching a given key from an array of tables
+---@param t table List of tables to search
+---@param key string Value to search for in the list
+---@return table List List of values that were extracted
+M.extract = function(t, key)
+  local resultTable = {}
+  for _, value in ipairs(t) do
+    if value[key] then
+      table.insert(resultTable, value[key])
+    end
+  end
+  return resultTable
+end
+
+---Get the last word in a sentence
+---@param sentence string The string to get the last word from
+---@param divider string The regex to split the sentence by, defaults to whitespace
+---@return string
+M.get_last_word = function(sentence, divider)
+  local words = {}
+  local pattern = string.format("([^%s]+)", divider or " ")
+  for word in sentence:gmatch(pattern) do
+    table.insert(words, word)
+  end
+  return words[#words] or ""
+end
+
+---Merges two deeply nested tables together, overriding values from the first with conflicts
+---@param defaults table The first table
+---@param overrides table The second table
+---@return table
+M.merge = function(defaults, overrides)
+  if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
+    return overrides
+  end
+  return vim.tbl_deep_extend("force", defaults, overrides)
+end
+
+---Pluralizes the input word, e.g. "3 cows"
+---@param num integer The count of the item/word
+---@param word string The word to pluralize
+---@return string
+local function pluralize(num, word)
+  return num .. string.format(" %s", word) .. ((num > 1 or num <= 0) and "s" or "")
+end
+
+--- Provides a human readable time since a given ISO date string
+---@param date_string string -- The ISO time stamp to compare with the current time
+---@return string
+M.time_since = function(date_string, current_date_table)
+  local dt = current_date_table or os.date("!*t")
+  local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
+  local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
+
+  local current_date = os.time({
+    year = dt.year,
+    month = dt.month,
+    day = dt.day,
+    hour = dt.hour,
+    min = dt.min,
+    sec = dt.sec,
+  })
+
+  local time_diff = current_date - date
+
+  if time_diff < 60 then
+    return pluralize(time_diff, "second") .. " ago"
+  elseif time_diff < 3600 then
+    return pluralize(math.floor(time_diff / 60), "minute") .. " ago"
+  elseif time_diff < 86400 then
+    return pluralize(math.floor(time_diff / 3600), "hour") .. " ago"
+  elseif time_diff < 2592000 then
+    return pluralize(math.floor(time_diff / 86400), "day") .. " ago"
+  else
+    local formatted_date = os.date("%B %e, %Y", date)
+    return tostring(formatted_date)
+  end
+end
+
+---Removes the first value from a list and returns the new, smaller list
+---@param tbl table The table
+---@return table
+M.remove_first_value = function(tbl)
+  local sliced_list = {}
+  if M.table_size(tbl) <= 1 then
+    return sliced_list
+  end
+  for i = 2, #tbl do
+    table.insert(sliced_list, tbl[i])
+  end
+
+  return sliced_list
+end
+
+---Spreads all the values from t2 into t1
+---@param t1 table The first table (gets the values)
+---@param t2 table The second table
+---@return table
+M.spread = function(t1, t2)
+  for _, value in ipairs(t2) do
+    table.insert(t1, value)
+  end
+
+  return t1
+end
+
+---Returns the number of keys or values in a table
+---@param t table The table to count
+---@return integer
+M.table_size = function(t)
+  local count = 0
+  for _ in pairs(t) do
+    count = count + 1
+  end
+  return count
+end
+
+---Returns whether a given value is in a list or not
+---@param list table The list to search
+---@return boolean
+M.contains = function(list, search_value)
+  for _, value in pairs(list) do
+    if value == search_value then
+      return true
+    end
+  end
+  return false
+end
+
+---Trims whitespace from a string
+---@param s string The string to trim
+---@return string
+M.trim = function(s)
+  local res = s:gsub("^%s+", ""):gsub("%s+$", "")
+  return res
+end
+
+-- Reverses the order of elements in a list
+---@param list table The list to reverse
+---@return table
+M.reverse = function(list)
+  if #list == 0 then
+    return list
+  end
+  local rev = {}
+  for i = #list, 1, -1 do
+    rev[#rev + 1] = list[i]
+  end
+  return rev
+end
 
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
@@ -22,63 +172,10 @@ M.is_windows = function()
   return false
 end
 
-M.P = function(...)
-  local objects = {}
-  for i = 1, select("#", ...) do
-    local v = select(i, ...)
-    table.insert(objects, vim.inspect(v))
-  end
-
-  print(table.concat(objects, "\n"))
-  return ...
-end
-
 M.get_buffer_text = function(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
   return text
-end
-
-M.string_starts = function(str, start)
-  return str:sub(1, #start) == start
-end
-
-M.press_enter = function()
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
-end
-
-M.format_date = function(date_string)
-  local date_table = os.date("!*t")
-  local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
-  local date = os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
-
-  local current_date = os.time({
-    year = date_table.year,
-    month = date_table.month,
-    day = date_table.day,
-    hour = date_table.hour,
-    min = date_table.min,
-    sec = date_table.sec,
-  })
-
-  local time_diff = current_date - date
-
-  local function pluralize(num, word)
-    return num .. string.format(" %s", word) .. (num > 1 and "s" or "") .. " ago"
-  end
-
-  if time_diff < 60 then
-    return pluralize(time_diff, "second")
-  elseif time_diff < 3600 then
-    return pluralize(math.floor(time_diff / 60), "minute")
-  elseif time_diff < 86400 then
-    return pluralize(math.floor(time_diff / 3600), "hour")
-  elseif time_diff < 2592000 then
-    return pluralize(math.floor(time_diff / 86400), "day")
-  else
-    local formatted_date = os.date("%A, %B %e", date)
-    return formatted_date
-  end
 end
 
 M.jump_to_file = function(filename, line_number)
@@ -123,38 +220,6 @@ M.create_popup_state = function(title, width, height)
   }
 end
 
-M.merge = function(defaults, overrides)
-  if type(defaults) == "table" and M.table_size(defaults) == 0 and type(overrides) == "table" then
-    return overrides
-  end
-  return vim.tbl_deep_extend("force", defaults, overrides)
-end
-
-M.join = function(tbl, separator)
-  separator = separator or " "
-
-  local result = ""
-  for _, value in pairs(tbl) do
-    result = result .. tostring(value) .. separator
-  end
-
-  -- Remove the trailing separator
-  if separator ~= "" then
-    result = result:sub(1, -#separator - 1)
-  end
-
-  return result
-end
-
-M.remove_first_value = function(tbl)
-  local sliced_table = {}
-  for i = 2, #tbl do
-    table.insert(sliced_table, tbl[i])
-  end
-
-  return sliced_table
-end
-
 M.read_file = function(file_path)
   local file = io.open(file_path, "r")
   if file == nil then
@@ -180,41 +245,6 @@ M.uuid = function()
   end)
 end
 
-M.join_tables = function(table1, table2)
-  for _, value in ipairs(table2) do
-    table.insert(table1, value)
-  end
-
-  return table1
-end
-
-M.table_size = function(t)
-  local count = 0
-  for _ in pairs(t) do
-    count = count + 1
-  end
-  return count
-end
-
-M.contains = function(array, search_value)
-  for _, value in ipairs(array) do
-    if value == search_value then
-      return true
-    end
-  end
-  return false
-end
-
-M.extract = function(t, property)
-  local resultTable = {}
-  for _, value in ipairs(t) do
-    if value[property] then
-      table.insert(resultTable, value[property])
-    end
-  end
-  return resultTable
-end
-
 M.remove_last_chunk = function(sentence)
   local words = {}
   for word in sentence:gmatch("%S+") do
@@ -223,26 +253,6 @@ M.remove_last_chunk = function(sentence)
   table.remove(words, #words)
   local sentence_without_last = table.concat(words, " ")
   return sentence_without_last
-end
-
-M.get_first_chunk = function(sentence, divider)
-  local words = {}
-  for word in sentence:gmatch(divider or "%S+") do
-    table.insert(words, word)
-  end
-  return words[1]
-end
-
-M.get_last_chunk = function(sentence, divider)
-  local words = {}
-  for word in sentence:gmatch(divider or "%S+") do
-    table.insert(words, word)
-  end
-  return words[#words]
-end
-
-M.trim = function(s)
-  return s:gsub("^%s+", ""):gsub("%s+$", "")
 end
 
 M.get_line_content = function(bufnr, start)
@@ -297,14 +307,6 @@ M.list_files_in_folder = function(folder_path)
   return result
 end
 
-M.reverse = function(list)
-  local rev = {}
-  for i = #list, 1, -1 do
-    rev[#rev + 1] = list[i]
-  end
-  return rev
-end
-
 ---@class Hunk
 ---@field old_line integer
 ---@field old_range integer
@@ -317,6 +319,8 @@ end
 ---@return Hunk[] list of hunks.
 M.parse_hunk_headers = function(file_path, base_branch)
   local hunks = {}
+
+  local Job = require("plenary.job")
 
   local diff_job = Job:new({
     command = "git",
@@ -430,7 +434,7 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
 end
 
 ---Check if current mode is visual mode
----@return boolean true if current mode is visual mode
+---@return boolean is_visual true if current mode is visual mode
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
@@ -442,7 +446,7 @@ end
 
 ---Return start line and end line of visual selection.
 ---Exists visual mode in order to access marks "<" , ">"
----@return integer,integer start line and end line
+---@return integer start,integer end Start line and end line
 M.get_visual_selection_boundaries = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
   local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]

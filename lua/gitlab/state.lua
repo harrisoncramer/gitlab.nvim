@@ -122,7 +122,7 @@ M.merge_settings = function(args)
 end
 
 M.print_settings = function()
-  u.P(M.settings)
+  vim.print(M.settings)
 end
 
 -- First reads environment variables into the settings module,
