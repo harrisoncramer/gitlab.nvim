@@ -21,18 +21,30 @@ func ExtractGitInfo() (string, string, string, error) {
 
 	re := regexp.MustCompile(`(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)\.git`)
 	matches := re.FindStringSubmatch(url)
-	if len(matches) > 5 {
-		return "", "", "", fmt.Errorf("Invalid Git URL format: %s", url)
-	}
+	// matches[0] - url itself
+	// matches[1] - protocol (ssh, http(s))
+	// matches[2] - user (in case of ssh)
+	// matches[3] - gitlab server name
+	// matches[4] - port
+	// matches[5] - project full path
+	// i.e. 'https://gitlab.organization.com/some.compex.path.to/project' will be parsed as
+	// matches[0] - https://gitlab.organization.com/some.compex.path.to/project
+	// matches[1] - http://
+	// matches[2] -
+	// matches[3] - gitlab.organization.com
+	// matches[4] -
+	// matches[5] - some.complex.path.to/project
 
-	projectPath := matches[5]
+	if matches[5] == "" {
+		return "", "", "", fmt.Errorf("Failed to retrieve project path from Git URL: %s", url)
+	}
 
 	branch, err := getCurrentBranch()
 	if err != nil {
 		return "", "", "", fmt.Errorf("Failed to get current branch: %v", err)
 	}
 
-	return url, projectPath, branch, nil
+	return url, matches[5], branch, nil
 }
 
 /* Gets the current branch */
