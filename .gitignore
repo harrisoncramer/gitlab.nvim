@@ -1,2 +1,5 @@
 bin
 .luarc.json
+/luarocks
+/lua_modules
+/.luarocks

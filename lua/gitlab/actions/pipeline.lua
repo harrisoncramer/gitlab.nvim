@@ -54,7 +54,7 @@ M.open = function()
     u.switch_can_edit_buf(bufnr, true)
     table.insert(lines, "Status: " .. M.get_pipeline_status())
     table.insert(lines, "")
-    table.insert(lines, string.format("Last Run: %s", u.format_date(pipeline.created_at)))
+    table.insert(lines, string.format("Last Run: %s", u.time_since(pipeline.created_at)))
     table.insert(lines, string.format("Url: %s", pipeline.web_url))
     table.insert(lines, string.format("Triggered By: %s", pipeline.source))
 
@@ -107,7 +107,7 @@ M.see_logs = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local linnr = vim.api.nvim_win_get_cursor(0)[1]
   local text = u.get_line_content(bufnr, linnr)
-  local last_word = u.get_last_chunk(text)
+  local last_word = u.get_last_word(text)
   if last_word == nil then
     u.notify("Cannot find job name", vim.log.levels.ERROR)
     return
