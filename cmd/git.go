@@ -12,28 +12,27 @@ Extracts information about the current repository and returns
 it to the client for initialization. The current directory must be a valid
 Gitlab project and the branch must be a feature branch
 */
-func ExtractGitInfo() (string, string, string, string, error) {
+func ExtractGitInfo() (string, string, string, error) {
 
 	url, err := getProjectUrl()
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("Could not get project Url: %v", err)
+		return "", "", "", fmt.Errorf("Could not get project Url: %v", err)
 	}
 
-	re := regexp.MustCompile(`(?:[:\/])([^\/]+)\/([^\/]+)\.git$`)
+	re := regexp.MustCompile(`(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)\.git`)
 	matches := re.FindStringSubmatch(url)
-	if len(matches) != 3 {
-		return "", "", "", "", fmt.Errorf("Invalid Git URL format: %s", url)
+	if len(matches) > 5 {
+		return "", "", "", fmt.Errorf("Invalid Git URL format: %s", url)
 	}
 
-	namespace := matches[1]
-	projectName := matches[2]
+	projectPath := matches[5]
 
 	branch, err := getCurrentBranch()
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("Failed to get current branch: %v", err)
+		return "", "", "", fmt.Errorf("Failed to get current branch: %v", err)
 	}
 
-	return url, namespace, projectName, branch, nil
+	return url, projectPath, branch, nil
 }
 
 /* Gets the current branch */

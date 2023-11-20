@@ -80,9 +80,8 @@ func (c *Client) initGitlabClient() error {
 }
 
 /* This will fetch the project ID and merge request ID using the client */
-func (c *Client) initProjectSettings(remoteUrl string, namespace string, projectName string, branchName string) error {
+func (c *Client) initProjectSettings(remoteUrl string, idStr string, branchName string) error {
 
-	idStr := namespace + "/" + projectName
 	opt := gitlab.GetProjectOptions{}
 	project, _, err := c.git.Projects.GetProject(idStr, &opt)
 

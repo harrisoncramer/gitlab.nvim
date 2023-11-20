@@ -11,17 +11,17 @@ import (
 )
 
 func main() {
-	url, namespace, projectName, branchName, err := ExtractGitInfo()
+	url, projectPath, branchName, err := ExtractGitInfo()
 	if err != nil {
 		log.Fatalf("Failed to get git namespace, project, branch, or url: %v", err)
 	}
 
 	var c Client
-	if err := c.initGitlabClient(); err != nil {
+	if err = c.initGitlabClient(); err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	if err := c.initProjectSettings(url, namespace, projectName, branchName); err != nil {
+	if err = c.initProjectSettings(url, projectPath, branchName); err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
