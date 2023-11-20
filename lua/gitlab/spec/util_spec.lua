@@ -1,6 +1,6 @@
 describe("utils/init.lua", function()
   it("Loads package", function()
-    local utils_ok, u = pcall(require, "gitlab.utils")
+    local utils_ok, _ = pcall(require, "gitlab.utils")
     assert._is_true(utils_ok)
   end)
 

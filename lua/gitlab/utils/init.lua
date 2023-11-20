@@ -141,7 +141,9 @@ end
 ---@param list table The list to reverse
 ---@return table
 M.reverse = function(list)
-  if (#list == 0) then return list end
+  if #list == 0 then
+    return list
+  end
   local rev = {}
   for i = #list, 1, -1 do
     rev[#rev + 1] = list[i]
