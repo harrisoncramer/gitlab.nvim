@@ -10,6 +10,9 @@ func TestExtractGitInfo_Success(t *testing.T) {
 	getCurrentBranchName := func() (string, error) {
 		return "feature/abc", nil
 	}
+	refreshGitInfo := func() error {
+		return nil
+	}
 	testCases := []struct {
 		getProjectRemoteUrl func() (string, error)
 		expected            GitProjectInfo
@@ -150,7 +153,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			actual, err := ExtractGitInfo(tC.getProjectRemoteUrl, getCurrentBranchName)
+			actual, err := ExtractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
 			if err != nil {
 				t.Errorf("No error was expected, got %s", err)
 			}
@@ -165,7 +168,9 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	getCurrentBranchName := func() (string, error) {
 		return "feature/abc", nil
 	}
-
+	refreshGitInfo := func() error {
+		return nil
+	}
 	testCases := []struct {
 		getProjectRemoteUrl  func() (string, error)
 		expectedErrorMessage string
@@ -188,7 +193,7 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			_, actualErr := ExtractGitInfo(tC.getProjectRemoteUrl, getCurrentBranchName)
+			_, actualErr := ExtractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
 			if actualErr == nil {
 				t.Errorf("Expected an error, got none")
 			}
@@ -201,16 +206,45 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 
 func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 	expectedErrNestedMsg := "error when getting current branch name"
-	_, actualErr := ExtractGitInfo(func() (string, error) {
-		return "git@custom-gitlab.com:namespace/project.git", nil
-	}, func() (string, error) {
-		return "", errors.New(expectedErrNestedMsg)
-	})
+
+	refreshGitInfo := func() error {
+		return nil
+	}
+	_, actualErr := ExtractGitInfo(refreshGitInfo,
+		func() (string, error) {
+			return "git@custom-gitlab.com:namespace/project.git", nil
+		},
+		func() (string, error) {
+			return "", errors.New(expectedErrNestedMsg)
+		})
 
 	if actualErr == nil {
 		t.Errorf("Expected an error, got none")
 	}
 	expectedErr := fmt.Errorf("Failed to get current branch: %s", expectedErrNestedMsg)
+	if actualErr.Error() != expectedErr.Error() {
+		t.Errorf("\nExpected: %s\nActual:   %s", expectedErr, actualErr)
+	}
+}
+
+func TestRefreshGitRemote_FailToRefreshRemote(t *testing.T) {
+	expectedErrNestedMsg := "error when fetching origin commits"
+	_, actualErr := ExtractGitInfo(
+		func() error {
+			return errors.New(expectedErrNestedMsg)
+		},
+		func() (string, error) {
+			return "git@custom-gitlab.com:namespace/project.git", nil
+		},
+		func() (string, error) {
+			return "feature/abc", nil
+		},
+	)
+
+	if actualErr == nil {
+		t.Errorf("Expected an error, got none")
+	}
+	expectedErr := fmt.Errorf("Could not get latest information from remote: %s", expectedErrNestedMsg)
 	if actualErr.Error() != expectedErr.Error() {
 		t.Errorf("\nExpected: %s\nActual:   %s", expectedErr, actualErr)
 	}
