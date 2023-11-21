@@ -126,6 +126,7 @@ M.build_info_lines = function()
     draft = { title = "Draft", content = (info.draft and "Yes" or "No") },
     conflicts = { title = "Merge Conflicts", content = (info.has_conflicts and "Yes" or "No") },
     assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
+    reviewers = { title = "Reviewers", content = u.make_readable_list(info.reviewers, "name") },
     branch = { title = "Branch", content = info.source_branch },
     pipeline = {
       title = "Pipeline Status:",
