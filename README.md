@@ -146,6 +146,7 @@ require("gitlab").setup({
       "draft",
       "conflicts",
       "assignees",
+      "reviewers",
       "branch",
       "pipeline",
     },
