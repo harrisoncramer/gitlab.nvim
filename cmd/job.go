@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 type JobTraceRequest struct {
@@ -18,17 +20,18 @@ type JobTraceResponse struct {
 
 func JobHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 	}
 
 	defer r.Body.Close()
@@ -36,18 +39,18 @@ func JobHandler(w http.ResponseWriter, r *http.Request) {
 	var jobTraceRequest JobTraceRequest
 	err = json.Unmarshal(body, &jobTraceRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 	}
 
-	reader, _, err := c.git.Jobs.GetTraceFile(c.projectId, jobTraceRequest.JobId)
+	reader, _, err := c.Jobs.GetTraceFile(d.ProjectId, jobTraceRequest.JobId)
 	if err != nil {
-		c.handleError(w, err, "Could not get trace file for job", http.StatusBadRequest)
+		HandleError(w, err, "Could not get trace file for job", http.StatusBadRequest)
 	}
 
 	file, err := io.ReadAll(reader)
 
 	if err != nil {
-		c.handleError(w, err, "Could not read job trace file", http.StatusBadRequest)
+		HandleError(w, err, "Could not read job trace file", http.StatusBadRequest)
 	}
 
 	response := JobTraceResponse{
@@ -60,6 +63,6 @@ func JobHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

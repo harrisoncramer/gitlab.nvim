@@ -35,11 +35,12 @@ func PipelineHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -48,13 +49,13 @@ func GetJobs(w http.ResponseWriter, r *http.Request) {
 	var pipelineRequest PipelineRequest
 	err = json.Unmarshal(body, &pipelineRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON", http.StatusBadRequest)
+		HandleError(w, err, "Could not read JSON", http.StatusBadRequest)
 	}
 
-	jobs, res, err := c.git.Jobs.ListPipelineJobs(c.projectId, pipelineRequest.PipelineId, &gitlab.ListJobsOptions{})
+	jobs, res, err := c.Jobs.ListPipelineJobs(d.ProjectId, pipelineRequest.PipelineId, &gitlab.ListJobsOptions{})
 
 	if err != nil {
-		c.handleError(w, err, "Could not get pipeline jobs", res.StatusCode)
+		HandleError(w, err, "Could not get pipeline jobs", res.StatusCode)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -69,18 +70,19 @@ func GetJobs(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 
 }
 
 func RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -89,13 +91,13 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 	var pipelineRequest PipelineRequest
 	err = json.Unmarshal(body, &pipelineRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON", http.StatusBadRequest)
+		HandleError(w, err, "Could not read JSON", http.StatusBadRequest)
 	}
 
-	pipeline, res, err := c.git.Pipelines.RetryPipelineBuild(c.projectId, pipelineRequest.PipelineId)
+	pipeline, res, err := c.Pipelines.RetryPipelineBuild(d.ProjectId, pipelineRequest.PipelineId)
 
 	if err != nil {
-		c.handleError(w, err, "Could not retrigger pipeline", res.StatusCode)
+		HandleError(w, err, "Could not retrigger pipeline", res.StatusCode)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -109,6 +111,6 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

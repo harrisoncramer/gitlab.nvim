@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 type AttachmentRequest struct {
@@ -25,13 +27,14 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	var attachmentRequest AttachmentRequest
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -39,21 +42,21 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &attachmentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
+		HandleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
 		return
 	}
 
 	file, err := os.Open(attachmentRequest.FilePath)
 	if err != nil {
-		c.handleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
+		HandleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
 		return
 	}
 
 	defer file.Close()
 
-	projectFile, res, err := c.git.Projects.UploadFile(c.projectId, file, attachmentRequest.FileName)
+	projectFile, res, err := c.Projects.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
-		c.handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FilePath), res.StatusCode)
+		HandleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FilePath), res.StatusCode)
 		return
 	}
 
@@ -69,6 +72,6 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

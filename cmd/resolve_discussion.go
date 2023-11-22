@@ -23,30 +23,31 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request) {
 }
 func DiscussionResolve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 	var resolveDiscussionRequest DiscussionResolveRequest
 	err = json.Unmarshal(body, &resolveDiscussionRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	_, res, err := c.git.Discussions.ResolveMergeRequestDiscussion(
-		c.projectId,
-		c.mergeId,
+	_, res, err := c.Discussions.ResolveMergeRequestDiscussion(
+		d.ProjectId,
+		d.MergeId,
 		resolveDiscussionRequest.DiscussionID,
 		&gitlab.ResolveMergeRequestDiscussionOptions{Resolved: &resolveDiscussionRequest.Resolved},
 	)
 
 	if err != nil {
-		c.handleError(w, err, "Could not update resolve status of discussion", res.StatusCode)
+		HandleError(w, err, "Could not update resolve status of discussion", res.StatusCode)
 		return
 	}
 
@@ -64,6 +65,6 @@ func DiscussionResolve(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

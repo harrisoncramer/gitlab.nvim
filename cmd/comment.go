@@ -70,11 +70,12 @@ func CommentHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -83,14 +84,14 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	var deleteCommentRequest DeleteCommentRequest
 	err = json.Unmarshal(body, &deleteCommentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	res, err := c.git.Discussions.DeleteMergeRequestDiscussionNote(c.projectId, c.mergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+	res, err := c.Discussions.DeleteMergeRequestDiscussionNote(d.ProjectId, d.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
 	if err != nil {
-		c.handleError(w, err, "Could not delete comment", res.StatusCode)
+		HandleError(w, err, "Could not delete comment", res.StatusCode)
 		return
 	}
 
@@ -103,17 +104,18 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
 func PostComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -122,7 +124,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	var postCommentRequest PostCommentRequest
 	err = json.Unmarshal(body, &postCommentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -171,10 +173,10 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &opt)
+	discussion, _, err := c.Discussions.CreateMergeRequestDiscussion(d.ProjectId, d.MergeId, &opt)
 
 	if err != nil {
-		c.handleError(w, err, "Could not create comment", http.StatusBadRequest)
+		HandleError(w, err, "Could not create comment", http.StatusBadRequest)
 		return
 	}
 
@@ -189,17 +191,18 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
 func EditComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -208,7 +211,7 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	var editCommentRequest EditCommentRequest
 	err = json.Unmarshal(body, &editCommentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -217,17 +220,17 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	msg := "edit comment"
 	options.Body = gitlab.String(editCommentRequest.Comment)
 
-	note, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+	note, res, err := c.Discussions.UpdateMergeRequestDiscussionNote(d.ProjectId, d.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
-		c.handleError(w, err, "Could not "+msg, res.StatusCode)
+		HandleError(w, err, "Could not "+msg, res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(res.StatusCode)
 
 	if res.StatusCode != http.StatusOK {
-		c.handleError(w, errors.New("Non-200 status code recieved"), "Could not "+msg, res.StatusCode)
+		HandleError(w, errors.New("Non-200 status code recieved"), "Could not "+msg, res.StatusCode)
 	}
 
 	response := CommentResponse{
@@ -240,6 +243,6 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

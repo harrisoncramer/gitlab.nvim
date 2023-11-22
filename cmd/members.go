@@ -13,8 +13,9 @@ type ProjectMembersResponse struct {
 }
 
 func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	projectMemberOptions := gitlab.ListProjectMembersOptions{
 		ListOptions: gitlab.ListOptions{
@@ -22,9 +23,9 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	projectMembers, res, err := c.git.ProjectMembers.ListAllProjectMembers(c.projectId, &projectMemberOptions)
+	projectMembers, res, err := c.ProjectMembers.ListAllProjectMembers(d.ProjectId, &projectMemberOptions)
 	if err != nil {
-		c.handleError(w, err, "Could not fetch project users", res.StatusCode)
+		HandleError(w, err, "Could not fetch project users", res.StatusCode)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -39,6 +40,6 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

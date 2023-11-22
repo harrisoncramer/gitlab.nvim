@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -38,16 +37,38 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func (c *Client) ListDiscussions(blacklist []string) ([]*gitlab.Discussion, []*gitlab.Discussion, int, error) {
+func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
+
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+	}
+
+	var requestBody DiscussionsRequest
+	err = json.Unmarshal(body, &requestBody)
+	if err != nil {
+		HandleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
+	}
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
 		PerPage: 250,
 	}
-	discussions, res, err := c.git.Discussions.ListMergeRequestDiscussions(c.projectId, c.mergeId, &mergeRequestDiscussionOptions, nil)
+
+	discussions, res, err := c.Discussions.ListMergeRequestDiscussions(d.ProjectId, d.MergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
-		return nil, nil, res.Response.StatusCode, fmt.Errorf("Listing discussions failed: %w", err)
+		HandleError(w, err, "Listing discussions failed: %w", res.Response.StatusCode)
 	}
 
 	/* Filter out any discussions started by a blacklisted user
@@ -55,7 +76,7 @@ func (c *Client) ListDiscussions(blacklist []string) ([]*gitlab.Discussion, []*g
 	var unlinkedDiscussions []*gitlab.Discussion
 	var linkedDiscussions []*gitlab.Discussion
 	for _, discussion := range discussions {
-		if Contains(blacklist, discussion.Notes[0].Author.Username) > -1 {
+		if Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
 			continue
 		}
 		for _, note := range discussion.Notes {
@@ -75,40 +96,13 @@ func (c *Client) ListDiscussions(blacklist []string) ([]*gitlab.Discussion, []*g
 	sort.Sort(sortedLinkedDiscussions)
 	sort.Sort(sortedUnlinkedDiscussions)
 
-	return sortedLinkedDiscussions, sortedUnlinkedDiscussions, http.StatusOK, nil
-}
-
-func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
-
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
-	}
-
-	var requestBody DiscussionsRequest
-	err = json.Unmarshal(body, &requestBody)
-	if err != nil {
-		c.handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-	}
-
-	linkedDiscussions, unlinkedDiscussions, status, err := c.ListDiscussions(requestBody.Blacklist)
-
-	if err != nil {
-		c.handleError(w, err, "Could not list discussions", http.StatusBadRequest)
+		HandleError(w, err, "Could not list discussions", http.StatusBadRequest)
 		return
 	}
 
 	/* TODO: Check for non-200 statuses */
-	w.WriteHeader(status)
+	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{
 		SuccessResponse: SuccessResponse{
 			Message: "Discussions successfully fetched.",
@@ -120,6 +114,6 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

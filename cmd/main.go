@@ -8,40 +8,43 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 func main() {
-	g, err := ExtractGitInfo(RefreshProjectInfo, GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
+	gitInfo, err := ExtractGitInfo(RefreshProjectInfo, GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
 	if err != nil {
 		log.Fatalf("Failure initializing plugin with `git` commands: %v", err)
 	}
 
-	var c Client
-	if err := c.initGitlabClient(); err != nil {
+	err, client := InitGitlabClient()
+	if err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	if err := c.initProjectSettings(g); err != nil {
+	err, projectInfo := InitProjectSettings(client, gitInfo)
+	if err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
 	m := http.NewServeMux()
 	m.Handle("/ping", http.HandlerFunc(PingHandler))
-	m.Handle("/mr/summary", withGitlabContext(http.HandlerFunc(SummaryHandler), c))
-	m.Handle("/mr/attachment", withGitlabContext(http.HandlerFunc(AttachmentHandler), c))
-	m.Handle("/mr/reviewer", withGitlabContext(http.HandlerFunc(ReviewersHandler), c))
-	m.Handle("/mr/revisions", withGitlabContext(http.HandlerFunc(RevisionsHandler), c))
-	m.Handle("/mr/assignee", withGitlabContext(http.HandlerFunc(AssigneesHandler), c))
-	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), c))
-	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), c))
-	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), c))
-	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), c))
-	m.Handle("/discussion/resolve", withGitlabContext(http.HandlerFunc(DiscussionResolveHandler), c))
-	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), c))
-	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), c))
-	m.Handle("/members", withGitlabContext(http.HandlerFunc(ProjectMembersHandler), c))
-	m.Handle("/pipeline", withGitlabContext(http.HandlerFunc(PipelineHandler), c))
-	m.Handle("/job", withGitlabContext(http.HandlerFunc(JobHandler), c))
+	m.Handle("/mr/summary", withGitlabContext(http.HandlerFunc(SummaryHandler), client, projectInfo))
+	m.Handle("/mr/attachment", withGitlabContext(http.HandlerFunc(AttachmentHandler), client, projectInfo))
+	m.Handle("/mr/reviewer", withGitlabContext(http.HandlerFunc(ReviewersHandler), client, projectInfo))
+	m.Handle("/mr/revisions", withGitlabContext(http.HandlerFunc(RevisionsHandler), client, projectInfo))
+	m.Handle("/mr/assignee", withGitlabContext(http.HandlerFunc(AssigneesHandler), client, projectInfo))
+	m.Handle("/approve", withGitlabContext(http.HandlerFunc(ApproveHandler), client, projectInfo))
+	m.Handle("/revoke", withGitlabContext(http.HandlerFunc(RevokeHandler), client, projectInfo))
+	m.Handle("/info", withGitlabContext(http.HandlerFunc(InfoHandler), client, projectInfo))
+	m.Handle("/discussions", withGitlabContext(http.HandlerFunc(ListDiscussionsHandler), client, projectInfo))
+	m.Handle("/discussion/resolve", withGitlabContext(http.HandlerFunc(DiscussionResolveHandler), client, projectInfo))
+	m.Handle("/comment", withGitlabContext(http.HandlerFunc(CommentHandler), client, projectInfo))
+	m.Handle("/reply", withGitlabContext(http.HandlerFunc(ReplyHandler), client, projectInfo))
+	m.Handle("/members", withGitlabContext(http.HandlerFunc(ProjectMembersHandler), client, projectInfo))
+	m.Handle("/pipeline", withGitlabContext(http.HandlerFunc(PipelineHandler), client, projectInfo))
+	m.Handle("/job", withGitlabContext(http.HandlerFunc(JobHandler), client, projectInfo))
 
 	port := os.Args[2]
 	if port == "" {
@@ -88,9 +91,10 @@ func PingHandler(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintln(w, "pong")
 }
 
-func withGitlabContext(next http.HandlerFunc, c Client) http.Handler {
+func withGitlabContext(next http.HandlerFunc, c *gitlab.Client, d *ProjectInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(context.Background(), "client", c) //nolint:all
-		next.ServeHTTP(w, r.WithContext(ctx))
+		ctxWithClient := context.WithValue(context.Background(), "client", c) //nolint:all
+		ctxWithData := context.WithValue(ctxWithClient, "data", d)            //nolint:all
+		next.ServeHTTP(w, r.WithContext(ctxWithData))
 	})
 }

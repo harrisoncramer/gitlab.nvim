@@ -15,22 +15,23 @@ type InfoResponse struct {
 
 func InfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	mr, res, err := c.git.MergeRequests.GetMergeRequest(c.projectId, c.mergeId, &gitlab.GetMergeRequestsOptions{})
+	mr, res, err := c.MergeRequests.GetMergeRequest(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestsOptions{})
 	if err != nil {
-		c.handleError(w, err, "Could not get project info and initialize gitlab.nvim plugin", http.StatusBadRequest)
+		HandleError(w, err, "Could not get project info and initialize gitlab.nvim plugin", http.StatusBadRequest)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		c.handleError(w, err, "Gitlab returned non-200 status for info call", http.StatusBadRequest)
+		HandleError(w, err, "Gitlab returned non-200 status for info call", http.StatusBadRequest)
 		return
 	}
 
@@ -45,6 +46,6 @@ func InfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

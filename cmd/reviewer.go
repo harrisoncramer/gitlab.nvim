@@ -23,12 +23,13 @@ type ReviewersRequestResponse struct {
 }
 
 func ReviewersHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -37,21 +38,21 @@ func ReviewersHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &reviewerUpdateRequest)
 
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	mr, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{
+	mr, res, err := c.MergeRequests.UpdateMergeRequest(d.ProjectId, d.MergeId, &gitlab.UpdateMergeRequestOptions{
 		ReviewerIDs: &reviewerUpdateRequest.Ids,
 	})
 
 	if err != nil {
-		c.handleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
+		HandleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
-		c.handleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
+		HandleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
 		return
 	}
 
@@ -67,6 +68,6 @@ func ReviewersHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

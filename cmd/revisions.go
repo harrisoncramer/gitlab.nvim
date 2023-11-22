@@ -14,19 +14,20 @@ type RevisionsResponse struct {
 }
 
 func RevisionsHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
 	w.Header().Set("Content-Type", "application/json")
+	c := r.Context().Value("client").(*gitlab.Client)
+	d := r.Context().Value("data").(*ProjectInfo)
 
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	versionInfo, _, err := c.git.MergeRequests.GetMergeRequestDiffVersions(c.projectId, c.mergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
+	versionInfo, _, err := c.MergeRequests.GetMergeRequestDiffVersions(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
 	if err != nil {
-		c.handleError(w, err, "Could not get diff version info", http.StatusBadRequest)
+		HandleError(w, err, "Could not get diff version info", http.StatusBadRequest)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -40,7 +41,7 @@ func RevisionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 
 }
