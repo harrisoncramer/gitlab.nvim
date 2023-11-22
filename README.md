@@ -124,7 +124,7 @@ require("gitlab").setup({
     blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
     jump_to_file = "o", -- Jump to comment location in file
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
-    edit_comment = "e", -- Edit coment
+    edit_comment = "e", -- Edit comment
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
@@ -267,18 +267,18 @@ require("gitlab").move_to_discussion_tree_from_diagnostic()
 
 The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. Keep in mind that the highlights provided here can be overridden by other highlights (for example from diffview.nvim). This allows users to jump to comments in the current buffer in the reviewer pane directly.
 
-These diagnostics are configurable in the same way that diagnostics are typically confiugrable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options where you can configure values like (this is dirrectly used as opts in vim.diagnostic.set):
+These diagnostics are configurable in the same way that diagnostics are typically configurable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options where you can configure values like (this is directly used as opts in vim.diagnostic.set):
 
 - `virtual_text` - Show virtual text for diagnostics.
 - `underline` - Underline text for diagnostics.
 
-Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details. Signs and diagnostics have common settings in `discussion_sign_and_diagnostics`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor. The `skip_resolved_discussion` boolean will control visibility of resolved discussions, and `skip_old_revision_discussion` whether to show signs and diagnostics for discussions on outdated diff revisions.
+Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details. Signs and diagnostics have common settings in `discussion_sign_and_diagnostics`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor. The `skip_resolved_discussion` Boolean will control visibility of resolved discussions, and `skip_old_revision_discussion` whether to show signs and diagnostics for discussions on outdated diff revisions.
 
 When interacting with multiline comments, the cursor must be on the "main" line of diagnostic, where the `discussion_sign.text` is shown, otherwise `vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not work.
 
 ### Uploading Files
 
-To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files.
+To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files.
 
 When you have picked the file, it will be added to the current buffer at the current line.
 
@@ -305,7 +305,7 @@ To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perf
 
 ### Reviewers and Assignees
 
-The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are availble in the current project:
+The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are available in the current project:
 
 ```lua
 require("gitlab").add_reviewer()
@@ -326,26 +326,29 @@ require("dressing").setup({
 
 ## Keybindings
 
-The plugin does not set up any keybindings outside of these buffers, you need to set them up yourself. Here's what I'm using:
+The plugin does not set up any keybindings outside of the special buffers it creates,
+you need to set them up yourself.
+Here's what I'm using (note that the `<leader>` prefix is not necessary,
+as `gl` does not have a special meaning in normal mode):
 
 ```lua
 local gitlab = require("gitlab")
-vim.keymap.set("n", "<leader>glr", gitlab.review)
-vim.keymap.set("n", "<leader>gls", gitlab.summary)
-vim.keymap.set("n", "<leader>glA", gitlab.approve)
-vim.keymap.set("n", "<leader>glR", gitlab.revoke)
-vim.keymap.set("n", "<leader>glc", gitlab.create_comment)
-vim.keymap.set("v", "<leader>glc", gitlab.create_multiline_comment)
-vim.keymap.set("v", "<leader>glC", gitlab.create_comment_suggestion)
-vim.keymap.set("n", "<leader>glm", gitlab.move_to_discussion_tree_from_diagnostic)
-vim.keymap.set("n", "<leader>gln", gitlab.create_note)
-vim.keymap.set("n", "<leader>gld", gitlab.toggle_discussions)
-vim.keymap.set("n", "<leader>glaa", gitlab.add_assignee)
-vim.keymap.set("n", "<leader>glad", gitlab.delete_assignee)
-vim.keymap.set("n", "<leader>glra", gitlab.add_reviewer)
-vim.keymap.set("n", "<leader>glrd", gitlab.delete_reviewer)
-vim.keymap.set("n", "<leader>glp", gitlab.pipeline)
-vim.keymap.set("n", "<leader>glo", gitlab.open_in_browser)
+vim.keymap.set("n", "glr", gitlab.review)
+vim.keymap.set("n", "gls", gitlab.summary)
+vim.keymap.set("n", "glA", gitlab.approve)
+vim.keymap.set("n", "glR", gitlab.revoke)
+vim.keymap.set("n", "glc", gitlab.create_comment)
+vim.keymap.set("v", "glc", gitlab.create_multiline_comment)
+vim.keymap.set("v", "glC", gitlab.create_comment_suggestion)
+vim.keymap.set("n", "glm", gitlab.move_to_discussion_tree_from_diagnostic)
+vim.keymap.set("n", "gln", gitlab.create_note)
+vim.keymap.set("n", "gld", gitlab.toggle_discussions)
+vim.keymap.set("n", "glaa", gitlab.add_assignee)
+vim.keymap.set("n", "glad", gitlab.delete_assignee)
+vim.keymap.set("n", "glra", gitlab.add_reviewer)
+vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
+vim.keymap.set("n", "glp", gitlab.pipeline)
+vim.keymap.set("n", "glo", gitlab.open_in_browser)
 ```
 
 ## Troubleshooting
