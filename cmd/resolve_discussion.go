@@ -13,7 +13,7 @@ type DiscussionResolveRequest struct {
 	Resolved     bool   `json:"resolved"`
 }
 
-func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request) {
+func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodPut:
 		DiscussionResolve(w, r)

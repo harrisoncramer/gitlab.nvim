@@ -12,10 +12,8 @@ type ProjectMembersResponse struct {
 	ProjectMembers []*gitlab.ProjectMember
 }
 
-func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
+func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	projectMemberOptions := gitlab.ListProjectMembersOptions{
 		ListOptions: gitlab.ListOptions{

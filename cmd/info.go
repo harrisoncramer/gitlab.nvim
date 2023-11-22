@@ -13,11 +13,8 @@ type InfoResponse struct {
 	Info *gitlab.MergeRequest `json:"info"`
 }
 
-func InfoHandler(w http.ResponseWriter, r *http.Request) {
+func InfoHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
-
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
 		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)

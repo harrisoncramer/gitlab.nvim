@@ -24,10 +24,6 @@ type ProjectInfo struct {
 	MergeId   int
 }
 
-type GitlabClient struct {
-	*gitlab.Client
-}
-
 /* This will parse and validate the project settings and then initialize the Gitlab client */
 func InitGitlabClient() (e error, client *gitlab.Client) {
 

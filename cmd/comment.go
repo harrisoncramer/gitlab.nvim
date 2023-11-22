@@ -55,23 +55,21 @@ type CommentResponse struct {
 	Discussion *gitlab.Discussion `json:"discussion"`
 }
 
-func CommentHandler(w http.ResponseWriter, r *http.Request) {
+func CommentHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodDelete:
-		DeleteComment(w, r)
+		DeleteComment(w, r, c, d)
 	case http.MethodPost:
-		PostComment(w, r)
+		PostComment(w, r, c, d)
 	case http.MethodPatch:
-		EditComment(w, r)
+		EditComment(w, r, c, d)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func DeleteComment(w http.ResponseWriter, r *http.Request) {
+func DeleteComment(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -108,10 +106,8 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PostComment(w http.ResponseWriter, r *http.Request) {
+func PostComment(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -195,10 +191,8 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func EditComment(w http.ResponseWriter, r *http.Request) {
+func EditComment(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

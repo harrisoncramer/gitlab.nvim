@@ -22,10 +22,8 @@ type ReviewersRequestResponse struct {
 	Reviewers []int `json:"reviewers"`
 }
 
-func ReviewersHandler(w http.ResponseWriter, r *http.Request) {
+func ReviewersHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

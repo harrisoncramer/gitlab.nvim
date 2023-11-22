@@ -37,10 +37,8 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)

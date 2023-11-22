@@ -19,10 +19,8 @@ type SummaryUpdateResponse struct {
 	MergeRequest *gitlab.MergeRequest `json:"mr"`
 }
 
-func SummaryHandler(w http.ResponseWriter, r *http.Request) {
+func SummaryHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	if r.Method != http.MethodPut {
 		w.Header().Set("Allow", http.MethodPut)

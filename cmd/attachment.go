@@ -22,14 +22,12 @@ type AttachmentResponse struct {
 	Url      string `json:"url"`
 }
 
-func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
+func AttachmentHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	var attachmentRequest AttachmentRequest
 	body, err := io.ReadAll(r.Body)

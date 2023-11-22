@@ -22,21 +22,19 @@ type GetJobsResponse struct {
 	Jobs []*gitlab.Job
 }
 
-func PipelineHandler(w http.ResponseWriter, r *http.Request) {
+func PipelineHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodGet:
-		GetJobs(w, r)
+		GetJobs(w, r, c, d)
 	case http.MethodPost:
-		RetriggerPipeline(w, r)
+		RetriggerPipeline(w, r, c, d)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
-func GetJobs(w http.ResponseWriter, r *http.Request) {
+func GetJobs(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -75,10 +73,8 @@ func GetJobs(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
+func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
