@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type f func(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo)
+type handlerFunc func(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo)
 
 func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
 	m := http.NewServeMux()
@@ -32,8 +32,7 @@ func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
 	startServer(m)
 }
 
-func Middleware(client HandlerClient, projectInfo *ProjectInfo, handler f) http.HandlerFunc {
-
+func Middleware(client HandlerClient, projectInfo *ProjectInfo, handler handlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		handler(w, r, client, projectInfo)
 	}

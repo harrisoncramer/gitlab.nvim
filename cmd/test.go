@@ -16,9 +16,10 @@ import (
 The FakeHandlerClient is used to create a fake gitlab client for testing our handlers, where the gitlab APIs are all mocked depending on what is provided during the variable initialization, so that we can simulate different responses from Gitlab
 */
 type FakeHandlerClient struct {
-	Title      string
-	StatusCode int
-	Error      string
+	Title       string
+	Description string
+	StatusCode  int
+	Error       string
 }
 
 func (f FakeHandlerClient) GetMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
@@ -120,10 +121,10 @@ func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *
 }
 
 /* Will serve and parse the JSON from an endpoint into the given type */
-func serveRequest[T interface{}](t *testing.T, client FakeHandlerClient, request *http.Request, target T) T {
+func serveRequest[T interface{}](t *testing.T, h handlerFunc, client FakeHandlerClient, request *http.Request, target T) T {
 	recorder := httptest.NewRecorder()
 	projectInfo := ProjectInfo{}
-	handler := http.HandlerFunc(Middleware(client, &projectInfo, InfoHandler))
+	handler := http.HandlerFunc(Middleware(client, &projectInfo, h))
 	handler.ServeHTTP(recorder, request)
 	result := recorder.Result()
 	decoder := json.NewDecoder(result.Body)
