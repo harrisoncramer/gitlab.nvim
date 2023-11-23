@@ -24,11 +24,11 @@ func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
 	m.Handle("/revoke", Middleware(client, projectInfo, RevokeHandler))
 	m.Handle("/discussions", Middleware(client, projectInfo, ListDiscussionsHandler))
 	m.Handle("/discussion/resolve", Middleware(client, projectInfo, DiscussionResolveHandler))
-	// m.Handle("/comment", Middleware(client, projectInfo, CommentHandler))
-	// m.Handle("/reply", Middleware(client, projectInfo, ReplyHandler))
-	// m.Handle("/members", Middleware(client, projectInfo, ProjectMembersHandler))
-	// m.Handle("/pipeline", Middleware(client, projectInfo, PipelineHandler))
-	// m.Handle("/job", Middleware(client, projectInfo, JobHandler))
+	m.Handle("/comment", Middleware(client, projectInfo, CommentHandler))
+	m.Handle("/reply", Middleware(client, projectInfo, ReplyHandler))
+	m.Handle("/members", Middleware(client, projectInfo, ProjectMembersHandler))
+	m.Handle("/pipeline", Middleware(client, projectInfo, PipelineHandler))
+	m.Handle("/job", Middleware(client, projectInfo, JobHandler))
 	startServer(m)
 }
 

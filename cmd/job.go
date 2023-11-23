@@ -5,8 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-
-	"github.com/xanzy/go-gitlab"
 )
 
 type JobTraceRequest struct {
@@ -18,7 +16,7 @@ type JobTraceResponse struct {
 	File string `json:"file"`
 }
 
-func JobHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func JobHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -40,7 +38,7 @@ func JobHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *Pro
 		HandleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 	}
 
-	reader, _, err := c.Jobs.GetTraceFile(d.ProjectId, jobTraceRequest.JobId)
+	reader, _, err := c.GetTraceFile(d.ProjectId, jobTraceRequest.JobId)
 	if err != nil {
 		HandleError(w, err, "Could not get trace file for job", http.StatusBadRequest)
 	}

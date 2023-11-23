@@ -22,7 +22,7 @@ type GetJobsResponse struct {
 	Jobs []*gitlab.Job
 }
 
-func PipelineHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func PipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodGet:
 		GetJobs(w, r, c, d)
@@ -33,7 +33,7 @@ func PipelineHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d
 	}
 }
 
-func GetJobs(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -50,7 +50,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *Projec
 		HandleError(w, err, "Could not read JSON", http.StatusBadRequest)
 	}
 
-	jobs, res, err := c.Jobs.ListPipelineJobs(d.ProjectId, pipelineRequest.PipelineId, &gitlab.ListJobsOptions{})
+	jobs, res, err := c.ListPipelineJobs(d.ProjectId, pipelineRequest.PipelineId, &gitlab.ListJobsOptions{})
 
 	if err != nil {
 		HandleError(w, err, "Could not get pipeline jobs", res.StatusCode)
@@ -73,7 +73,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *Projec
 
 }
 
-func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -90,7 +90,7 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c *gitlab.Client,
 		HandleError(w, err, "Could not read JSON", http.StatusBadRequest)
 	}
 
-	pipeline, res, err := c.Pipelines.RetryPipelineBuild(d.ProjectId, pipelineRequest.PipelineId)
+	pipeline, res, err := c.RetryPipelineBuild(d.ProjectId, pipelineRequest.PipelineId)
 
 	if err != nil {
 		HandleError(w, err, "Could not retrigger pipeline", res.StatusCode)

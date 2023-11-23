@@ -21,7 +21,7 @@ type ReplyResponse struct {
 	Note *gitlab.Note `json:"note"`
 }
 
-func ReplyHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -51,7 +51,7 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *P
 		CreatedAt: &now,
 	}
 
-	note, res, err := c.Discussions.AddMergeRequestDiscussionNote(d.ProjectId, d.MergeId, replyRequest.DiscussionId, &options)
+	note, res, err := c.AddMergeRequestDiscussionNote(d.ProjectId, d.MergeId, replyRequest.DiscussionId, &options)
 
 	if err != nil {
 		HandleError(w, err, "Could not leave reply", res.StatusCode)

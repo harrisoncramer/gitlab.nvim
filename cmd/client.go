@@ -74,6 +74,7 @@ func InitGitlabClient() (error, *Client) {
 		MergeRequestApprovalsService: client.MergeRequestApprovals,
 		DiscussionsService:           client.Discussions,
 		ProjectsService:              client.Projects,
+		ProjectMembersService:        client.ProjectMembers,
 	}
 }
 

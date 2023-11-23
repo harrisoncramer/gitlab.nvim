@@ -12,7 +12,7 @@ type ProjectMembersResponse struct {
 	ProjectMembers []*gitlab.ProjectMember
 }
 
-func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	projectMemberOptions := gitlab.ListProjectMembersOptions{
@@ -21,7 +21,7 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Cli
 		},
 	}
 
-	projectMembers, res, err := c.ProjectMembers.ListAllProjectMembers(d.ProjectId, &projectMemberOptions)
+	projectMembers, res, err := c.ListAllProjectMembers(d.ProjectId, &projectMemberOptions)
 	if err != nil {
 		HandleError(w, err, "Could not fetch project users", res.StatusCode)
 	}
