@@ -19,7 +19,11 @@ type SummaryUpdateResponse struct {
 	MergeRequest *gitlab.MergeRequest `json:"mr"`
 }
 
-func SummaryHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+type MrUpdater interface {
+	UpdateMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+func SummaryHandler(w http.ResponseWriter, r *http.Request, c GitlabClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
@@ -43,7 +47,7 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d 
 		return
 	}
 
-	mr, res, err := c.MergeRequests.UpdateMergeRequest(d.ProjectId, d.MergeId, &gitlab.UpdateMergeRequestOptions{
+	mr, res, err := c.UpdateMergeRequest(d.ProjectId, d.MergeId, &gitlab.UpdateMergeRequestOptions{
 		Description: &SummaryUpdateRequest.Description,
 		Title:       &SummaryUpdateRequest.Title,
 	})

@@ -13,7 +13,11 @@ type InfoResponse struct {
 	Info *gitlab.MergeRequest `json:"info"`
 }
 
-func InfoHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+type MrRequester interface {
+	GetMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+func InfoHandler(w http.ResponseWriter, r *http.Request, c GitlabClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
@@ -21,7 +25,7 @@ func InfoHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *Pr
 		return
 	}
 
-	mr, res, err := c.MergeRequests.GetMergeRequest(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestsOptions{})
+	mr, res, err := c.GetMergeRequest(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestsOptions{})
 	if err != nil {
 		HandleError(w, err, "Could not get project info and initialize gitlab.nvim plugin", http.StatusBadRequest)
 		return

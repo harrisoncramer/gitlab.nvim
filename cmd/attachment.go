@@ -22,7 +22,11 @@ type AttachmentResponse struct {
 	Url      string `json:"url"`
 }
 
-func AttachmentHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+type FileUploader interface {
+	UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
+}
+
+func AttachmentHandler(w http.ResponseWriter, r *http.Request, c GitlabClient, d *ProjectInfo) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -52,7 +56,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client,
 
 	defer file.Close()
 
-	projectFile, res, err := c.Projects.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
+	projectFile, res, err := c.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
 		HandleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FilePath), res.StatusCode)
 		return
