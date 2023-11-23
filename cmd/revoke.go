@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"github.com/xanzy/go-gitlab"
 )
 
-func RevokeHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func RevokeHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -18,7 +16,7 @@ func RevokeHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *
 		return
 	}
 
-	res, err := c.MergeRequestApprovals.UnapproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
+	res, err := c.UnapproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
 
 	if err != nil {
 		HandleError(w, err, "Could not revoke approval", http.StatusBadRequest)

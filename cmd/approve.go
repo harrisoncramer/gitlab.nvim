@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"github.com/xanzy/go-gitlab"
 )
 
-func ApproveHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func ApproveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -17,7 +15,7 @@ func ApproveHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d 
 		return
 	}
 
-	_, res, err := c.MergeRequestApprovals.ApproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
+	_, res, err := c.ApproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
 
 	if err != nil {
 		HandleError(w, err, "Could not approve MR", http.StatusBadRequest)

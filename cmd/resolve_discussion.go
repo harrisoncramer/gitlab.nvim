@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -13,19 +14,15 @@ type DiscussionResolveRequest struct {
 	Resolved     bool   `json:"resolved"`
 }
 
-func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
-	switch r.Method {
-	case http.MethodPut:
-		DiscussionResolve(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	}
-}
-func DiscussionResolve(w http.ResponseWriter, r *http.Request) {
+func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(*gitlab.Client)
-	d := r.Context().Value("data").(*ProjectInfo)
+	if r.Method != http.MethodPut {
+		w.Header().Set("Allow", http.MethodPut)
+		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
+	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -39,7 +36,7 @@ func DiscussionResolve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, res, err := c.Discussions.ResolveMergeRequestDiscussion(
+	_, res, err := c.ResolveMergeRequestDiscussion(
 		d.ProjectId,
 		d.MergeId,
 		resolveDiscussionRequest.DiscussionID,

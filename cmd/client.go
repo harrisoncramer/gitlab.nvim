@@ -70,8 +70,10 @@ func InitGitlabClient() (error, *Client) {
 	}
 
 	return nil, &Client{
-		MergeRequestsService: client.MergeRequests,
-		ProjectsService:      client.Projects,
+		MergeRequestsService:         client.MergeRequests,
+		MergeRequestApprovalsService: client.MergeRequestApprovals,
+		DiscussionsService:           client.Discussions,
+		ProjectsService:              client.Projects,
 	}
 }
 

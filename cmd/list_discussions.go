@@ -37,7 +37,7 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -63,7 +63,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Cl
 		PerPage: 250,
 	}
 
-	discussions, res, err := c.Discussions.ListMergeRequestDiscussions(d.ProjectId, d.MergeId, &mergeRequestDiscussionOptions, nil)
+	discussions, res, err := c.ListMergeRequestDiscussions(d.ProjectId, d.MergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
 		HandleError(w, err, "Listing discussions failed: %w", res.Response.StatusCode)
