@@ -11,8 +11,8 @@ import (
 func TestInfoHandler(t *testing.T) {
 	t.Run("Returns normal information", func(t *testing.T) {
 		request := makeRequest(t, "GET", "/info", nil)
-		client := FakeGitlabClient{
-			MrTitle: "Some Title",
+		client := FakeHandlerClient{
+			Title: "Some Title",
 		}
 
 		var data InfoResponse
@@ -22,14 +22,14 @@ func TestInfoHandler(t *testing.T) {
 			t.Fatalf("Failed to read JSON: %v", err)
 		}
 
-		assert(t, data.Info.Title, client.MrTitle)
+		assert(t, data.Info.Title, client.Title)
 		assert(t, data.SuccessResponse.Message, "Merge requests retrieved")
 		assert(t, data.SuccessResponse.Status, 200)
 	})
 
 	t.Run("Disallows non-GET method", func(t *testing.T) {
 		request := makeRequest(t, "POST", "/info", nil)
-		client := FakeGitlabClient{}
+		client := FakeHandlerClient{}
 
 		var data ErrorResponse
 		decoder := serveRequest(t, client, request)
@@ -44,7 +44,7 @@ func TestInfoHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, "GET", "/info", nil)
-		client := FakeGitlabClient{
+		client := FakeHandlerClient{
 			Error: "Some error from Gitlab",
 		}
 
@@ -62,7 +62,7 @@ func TestInfoHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, "GET", "/info", nil)
-		client := FakeGitlabClient{
+		client := FakeHandlerClient{
 			StatusCode: 302,
 		}
 
@@ -95,7 +95,7 @@ func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *
 	return request
 }
 
-func serveRequest(t *testing.T, client FakeGitlabClient, request *http.Request) *json.Decoder {
+func serveRequest(t *testing.T, client FakeHandlerClient, request *http.Request) *json.Decoder {
 	recorder := httptest.NewRecorder()
 	projectInfo := ProjectInfo{}
 	handler := http.HandlerFunc(Middleware(client, &projectInfo, InfoHandler))

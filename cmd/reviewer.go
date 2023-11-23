@@ -22,7 +22,7 @@ type ReviewersRequestResponse struct {
 	Reviewers []int `json:"reviewers"`
 }
 
-func ReviewersHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, d *ProjectInfo) {
+func ReviewersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -40,7 +40,7 @@ func ReviewersHandler(w http.ResponseWriter, r *http.Request, c *gitlab.Client, 
 		return
 	}
 
-	mr, res, err := c.MergeRequests.UpdateMergeRequest(d.ProjectId, d.MergeId, &gitlab.UpdateMergeRequestOptions{
+	mr, res, err := c.UpdateMergeRequest(d.ProjectId, d.MergeId, &gitlab.UpdateMergeRequestOptions{
 		ReviewerIDs: &reviewerUpdateRequest.Ids,
 	})
 

@@ -9,22 +9,16 @@ import (
 	"time"
 )
 
-type GitlabClient interface {
-	MrUpdater
-	MrRequester
-	FileUploader
-}
+type f func(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo)
 
-type f func(w http.ResponseWriter, r *http.Request, c GitlabClient, d *ProjectInfo)
-
-func StartServer(client GitlabClient, projectInfo *ProjectInfo) {
+func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
 	m := http.NewServeMux()
 	m.Handle("/ping", http.HandlerFunc(PingHandler))
 	m.Handle("/info", Middleware(client, projectInfo, InfoHandler))
 	m.Handle("/mr/summary", Middleware(client, projectInfo, SummaryHandler))
 	m.Handle("/mr/attachment", Middleware(client, projectInfo, AttachmentHandler))
-	// m.Handle("/mr/reviewer", Middleware(client, projectInfo, ReviewersHandler))
-	// m.Handle("/mr/revisions", Middleware(client, projectInfo, RevisionsHandler))
+	m.Handle("/mr/reviewer", Middleware(client, projectInfo, ReviewersHandler))
+	m.Handle("/mr/revisions", Middleware(client, projectInfo, RevisionsHandler))
 	// m.Handle("/mr/assignee", Middleware(client, projectInfo, AssigneesHandler))
 	// m.Handle("/approve", Middleware(client, projectInfo, ApproveHandler))
 	// m.Handle("/revoke", Middleware(client, projectInfo, RevokeHandler))
@@ -38,7 +32,7 @@ func StartServer(client GitlabClient, projectInfo *ProjectInfo) {
 	startServer(m)
 }
 
-func Middleware(client GitlabClient, projectInfo *ProjectInfo, handler f) http.HandlerFunc {
+func Middleware(client HandlerClient, projectInfo *ProjectInfo, handler f) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		handler(w, r, client, projectInfo)

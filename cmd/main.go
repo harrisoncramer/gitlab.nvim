@@ -20,11 +20,6 @@ func main() {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
-	c := MyClient{
-		MergeRequests: client.MergeRequests,
-		Projects:      client.Projects,
-	}
-
-	StartServer(c, projectInfo)
+	StartServer(client, projectInfo)
 
 }

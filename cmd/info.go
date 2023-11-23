@@ -13,11 +13,7 @@ type InfoResponse struct {
 	Info *gitlab.MergeRequest `json:"info"`
 }
 
-type MrRequester interface {
-	GetMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-}
-
-func InfoHandler(w http.ResponseWriter, r *http.Request, c GitlabClient, d *ProjectInfo) {
+func InfoHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)

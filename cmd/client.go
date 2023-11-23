@@ -25,7 +25,7 @@ type ProjectInfo struct {
 }
 
 /* This will parse and validate the project settings and then initialize the Gitlab client */
-func InitGitlabClient() (e error, client *gitlab.Client) {
+func InitGitlabClient() (error, *Client) {
 
 	if len(os.Args) < 6 {
 		return errors.New("Must provide gitlab url, port, auth token, debug settings, and log path"), nil
@@ -63,20 +63,23 @@ func InitGitlabClient() (e error, client *gitlab.Client) {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
 	}
 
-	client, err = gitlab.NewClient(authToken, gitlabOptions...)
+	client, err := gitlab.NewClient(authToken, gitlabOptions...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create client: %v", err), nil
 	}
 
-	return nil, client
+	return nil, &Client{
+		MergeRequestsService: client.MergeRequests,
+		ProjectsService:      client.Projects,
+	}
 }
 
 /* This will fetch the project ID and merge request ID using the client */
-func InitProjectSettings(c *gitlab.Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
+func InitProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
 
 	opt := gitlab.GetProjectOptions{}
-	project, _, err := c.Projects.GetProject(gitInfo.projectPath(), &opt)
+	project, _, err := c.GetProject(gitInfo.projectPath(), &opt)
 
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err), nil
@@ -97,7 +100,7 @@ func InitProjectSettings(c *gitlab.Client, gitInfo GitProjectInfo) (error, *Proj
 		SourceBranch: &gitInfo.BranchName,
 	}
 
-	mergeRequests, _, err := c.MergeRequests.ListProjectMergeRequests(projectId, &options)
+	mergeRequests, _, err := c.ListProjectMergeRequests(projectId, &options)
 	if err != nil {
 		return fmt.Errorf("Failed to list merge requests: %w", err), nil
 	}

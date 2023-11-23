@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/xanzy/go-gitlab"
 )
 
 type AttachmentRequest struct {
@@ -22,11 +20,7 @@ type AttachmentResponse struct {
 	Url      string `json:"url"`
 }
 
-type FileUploader interface {
-	UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
-}
-
-func AttachmentHandler(w http.ResponseWriter, r *http.Request, c GitlabClient, d *ProjectInfo) {
+func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return

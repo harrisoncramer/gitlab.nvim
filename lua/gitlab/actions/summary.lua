@@ -58,7 +58,6 @@ local description_popup_settings = {
 -- any additional metadata that the user wants. The title and description are editable and
 -- can be changed via the local action keybinding, which also closes the popup
 M.summary = function()
-  vim.print(state.INFO)
   if M.layout_visible then
     M.layout:unmount()
     M.layout_visible = false
