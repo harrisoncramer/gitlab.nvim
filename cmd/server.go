@@ -39,6 +39,7 @@ func StartServer(client GitlabClient, projectInfo *ProjectInfo) {
 }
 
 func Middleware(client GitlabClient, projectInfo *ProjectInfo, handler f) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		handler(w, r, client, projectInfo)
 	}
