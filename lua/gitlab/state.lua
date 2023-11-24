@@ -45,6 +45,7 @@ M.settings = {
       "draft",
       "conflicts",
       "assignees",
+      "reviewers",
       "branch",
       "pipeline",
     },
