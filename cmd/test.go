@@ -42,6 +42,13 @@ func (f FakeHandlerClient) UpdateMergeRequest(pid interface{}, mergeRequest int,
 	}, makeResponse(f), nil
 }
 
+func (f FakeHandlerClient) UnapproveMergeRequest(pid interface{}, mr int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	if f.Error != "" {
+		return nil, errors.New(f.Error)
+	}
+	return makeResponse(f), nil
+}
+
 func (f FakeHandlerClient) UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
 	return &gitlab.ProjectFile{}, makeResponse(f), nil
 }
@@ -52,10 +59,6 @@ func (f FakeHandlerClient) GetMergeRequestDiffVersions(pid interface{}, mergeReq
 
 func (f FakeHandlerClient) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
 	return &gitlab.MergeRequestApprovals{}, &gitlab.Response{}, nil
-}
-
-func (f FakeHandlerClient) UnapproveMergeRequest(pid interface{}, mr int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return &gitlab.Response{}, nil
 }
 
 func (f FakeHandlerClient) ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {

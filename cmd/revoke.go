@@ -8,25 +8,27 @@ import (
 
 func RevokeHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
-		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	res, err := c.UnapproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
 
 	if err != nil {
-		HandleError(w, err, "Could not revoke approval", http.StatusBadRequest)
+		HandleError(w, err, "Could not revoke approval", http.StatusInternalServerError)
 		return
 	}
 
-	/* TODO: Check for non-200 status codes */
-	w.WriteHeader(res.StatusCode)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/revoke"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := SuccessResponse{
-		Message: "Success! Revoked MR approval.",
+		Message: "Success! Revoked MR approval",
 		Status:  http.StatusOK,
 	}
 
