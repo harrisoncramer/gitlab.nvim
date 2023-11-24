@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,11 +22,12 @@ type AttachmentResponse struct {
 }
 
 func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Allow", http.MethodPost)
+		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 
 	var attachmentRequest AttachmentRequest
 	body, err := io.ReadAll(r.Body)

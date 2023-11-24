@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -24,7 +25,7 @@ func TestSummaryHandler(t *testing.T) {
 		var data SummaryUpdateResponse
 		data = serveRequest(t, SummaryHandler, client, request, data)
 		assert(t, data.SuccessResponse.Message, "Summary updated")
-		assert(t, data.SuccessResponse.Status, 200)
+		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Disallows non-PUT methods", func(t *testing.T) {
@@ -33,7 +34,7 @@ func TestSummaryHandler(t *testing.T) {
 		client := FakeHandlerClient{}
 		var data ErrorResponse
 		data = serveRequest(t, SummaryHandler, client, request, data)
-		assert(t, data.Status, 405)
+		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Message, "That request type is not allowed")
 	})
 
