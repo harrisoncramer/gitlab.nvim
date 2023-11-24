@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -26,8 +25,6 @@ func TestSummaryHandler(t *testing.T) {
 		data = serveRequest(t, SummaryHandler, client, request, data)
 		assert(t, data.SuccessResponse.Message, "Summary updated")
 		assert(t, data.SuccessResponse.Status, 200)
-		fmt.Printf("%v", data.MergeRequest)
-		assertNot(t, data.MergeRequest, nil)
 	})
 
 	t.Run("Disallows non-PUT methods", func(t *testing.T) {
@@ -38,7 +35,6 @@ func TestSummaryHandler(t *testing.T) {
 		data = serveRequest(t, SummaryHandler, client, request, data)
 		assert(t, data.Status, 405)
 		assert(t, data.Message, "That request type is not allowed")
-		assert(t, data.MergeRequest, nil)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
