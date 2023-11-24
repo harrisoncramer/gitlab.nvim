@@ -26,32 +26,28 @@ func (f FakeHandlerClient) GetMergeRequest(pid interface{}, mergeRequest int, op
 	if f.Error != "" {
 		return nil, nil, errors.New(f.Error)
 	}
-
-	if f.StatusCode == 0 {
-		f.StatusCode = 200
-	}
-
 	return &gitlab.MergeRequest{
-			Title: f.Title,
-		},
-		&gitlab.Response{
-			Response: &http.Response{
-				StatusCode: f.StatusCode,
-			},
-		},
-		nil
+		Title:       f.Title,
+		Description: f.Description,
+	}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) UpdateMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return &gitlab.MergeRequest{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.MergeRequest{
+		Title:       f.Title,
+		Description: f.Description,
+	}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
-	return &gitlab.ProjectFile{}, &gitlab.Response{}, nil
+	return &gitlab.ProjectFile{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) GetMergeRequestDiffVersions(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestDiffVersionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequestDiffVersion, *gitlab.Response, error) {
-	return []*gitlab.MergeRequestDiffVersion{}, &gitlab.Response{}, nil
+	return []*gitlab.MergeRequestDiffVersion{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
@@ -110,6 +106,14 @@ func assert[T comparable](t *testing.T, got T, want T) {
 	}
 }
 
+/* The assertNot function is a helper function used to check that two comparables are NOT equal */
+func assertNot[T comparable](t *testing.T, got T, want T) {
+	t.Helper()
+	if got == want {
+		t.Errorf("Got %v but wanted %v", got, want)
+	}
+}
+
 /* Will create a new request with the given method, endpoint and body */
 func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *http.Request {
 	request, err := http.NewRequest(method, endpoint, body)
@@ -134,4 +138,17 @@ func serveRequest[T interface{}](t *testing.T, h handlerFunc, client FakeHandler
 	}
 
 	return target
+}
+
+/* Make response makes a simple response value with the right status code */
+func makeResponse(f FakeHandlerClient) *gitlab.Response {
+
+	if f.StatusCode == 0 {
+		f.StatusCode = 200
+	}
+	return &gitlab.Response{
+		Response: &http.Response{
+			StatusCode: f.StatusCode,
+		},
+	}
 }

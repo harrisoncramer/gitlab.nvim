@@ -10,7 +10,7 @@ func TestInfoHandler(t *testing.T) {
 		client := FakeHandlerClient{Title: "Some Title"}
 		var data InfoResponse
 		data = serveRequest(t, InfoHandler, client, request, data)
-		assert(t, data.Info.Title, client.Title)
+		assert(t, data.Info.Title, "Some Title")
 		assert(t, data.SuccessResponse.Message, "Merge requests retrieved")
 		assert(t, data.SuccessResponse.Status, 200)
 	})

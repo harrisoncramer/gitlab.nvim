@@ -49,12 +49,12 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	})
 
 	if err != nil {
-		HandleError(w, err, "Could not edit merge request summary", http.StatusBadRequest)
+		HandleError(w, err, "Could not edit merge request summary", http.StatusInternalServerError)
 		return
 	}
 
-	if res.StatusCode != http.StatusOK {
-		HandleError(w, err, "Could not edit merge request summary", http.StatusBadRequest)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/summary"}, "Gitlab returned non-200 status", res.StatusCode)
 		return
 	}
 
