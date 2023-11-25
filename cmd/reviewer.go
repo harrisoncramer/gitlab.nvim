@@ -26,7 +26,10 @@ func ReviewersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Allow", http.MethodPut)
+		HandleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
+		return
 	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		HandleError(w, err, "Could not read request body", http.StatusBadRequest)

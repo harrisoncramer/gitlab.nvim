@@ -19,7 +19,7 @@ func TestSummaryHandler(t *testing.T) {
 		}
 
 		reader := bytes.NewReader(body)
-		request := makeRequest(t, "PUT", "/mr/summary", reader)
+		request := makeRequest(t, http.MethodPut, "/mr/summary", reader)
 
 		client := FakeHandlerClient{}
 		var data SummaryUpdateResponse
@@ -30,7 +30,7 @@ func TestSummaryHandler(t *testing.T) {
 
 	t.Run("Disallows non-PUT methods", func(t *testing.T) {
 		body := strings.NewReader("")
-		request := makeRequest(t, "POST", "/info", body)
+		request := makeRequest(t, http.MethodPost, "/info", body)
 		client := FakeHandlerClient{}
 		var data ErrorResponse
 		data = serveRequest(t, SummaryHandler, client, request, data)
@@ -48,11 +48,11 @@ func TestSummaryHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		reader := bytes.NewReader(body)
-		request := makeRequest(t, "PUT", "/mr/summary", reader)
+		request := makeRequest(t, http.MethodPut, "/mr/summary", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
 		var data ErrorResponse
 		data = serveRequest(t, SummaryHandler, client, request, data)
-		assert(t, data.Status, 500)
+		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not edit merge request summary")
 		assert(t, data.Details, "Some error from Gitlab")
 	})
@@ -66,11 +66,11 @@ func TestSummaryHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		reader := bytes.NewReader(body)
-		request := makeRequest(t, "PUT", "/mr/summary", reader)
-		client := FakeHandlerClient{StatusCode: 302}
+		request := makeRequest(t, http.MethodPut, "/mr/summary", reader)
+		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		var data ErrorResponse
 		data = serveRequest(t, SummaryHandler, client, request, data)
-		assert(t, data.Status, 302)
+		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Gitlab returned non-200 status")
 		assert(t, data.Details, "An error occured on the /summary endpoint")
 	})
