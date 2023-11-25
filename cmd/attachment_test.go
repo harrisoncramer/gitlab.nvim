@@ -34,9 +34,7 @@ func TestAttachmentHandler(t *testing.T) {
 		rwq := request.WithContext(ctx)
 
 		client := FakeHandlerClient{}
-		var data AttachmentResponse
-
-		data = serveRequest(t, AttachmentHandler, client, rwq, data)
+		data := serveRequest(t, AttachmentHandler, client, rwq, AttachmentResponse{})
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "File uploaded successfully")
 	})
@@ -44,8 +42,7 @@ func TestAttachmentHandler(t *testing.T) {
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
 		client := FakeHandlerClient{}
-		var data ErrorResponse
-		data = serveRequest(t, AttachmentHandler, client, request, data)
+		data := serveRequest(t, AttachmentHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Details, "Invalid request type")
 		assert(t, data.Message, "Expected POST")
@@ -67,11 +64,8 @@ func TestAttachmentHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
 		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
-
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-
-		var data ErrorResponse
-		data = serveRequest(t, AttachmentHandler, client, rwq, data)
+		data := serveRequest(t, AttachmentHandler, client, rwq, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
@@ -94,11 +88,9 @@ func TestAttachmentHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
 		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
-
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
+		data := serveRequest(t, AttachmentHandler, client, rwq, ErrorResponse{})
 
-		var data ErrorResponse
-		data = serveRequest(t, AttachmentHandler, client, rwq, data)
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Gitlab returned non-200 status")
 		assert(t, data.Details, "An error occured on the /mr/attachment endpoint")
