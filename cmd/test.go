@@ -123,7 +123,7 @@ func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *
 	return request
 }
 
-/* Will serve and parse the JSON from an endpoint into the given type */
+/* Serves and parses the JSON from an endpoint into the given type */
 func serveRequest[T interface{}](t *testing.T, h handlerFunc, client FakeHandlerClient, request *http.Request, target T) T {
 	recorder := httptest.NewRecorder()
 	projectInfo := ProjectInfo{}

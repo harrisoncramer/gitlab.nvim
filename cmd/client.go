@@ -124,6 +124,7 @@ func InitProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo
 	}
 }
 
+/* The error handler for all of our handlers. Returns error details to the client */
 func HandleError(w http.ResponseWriter, err error, message string, status int) {
 	w.WriteHeader(status)
 	response := ErrorResponse{
@@ -134,7 +135,7 @@ func HandleError(w http.ResponseWriter, err error, message string, status int) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		HandleError(w, err, "Could not encode error response", http.StatusInternalServerError)
 	}
 }
 

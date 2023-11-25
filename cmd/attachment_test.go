@@ -46,7 +46,8 @@ func TestAttachmentHandler(t *testing.T) {
 		var data ErrorResponse
 		data = serveRequest(t, AttachmentHandler, client, request, data)
 		assert(t, data.Status, 405)
-		assert(t, data.Message, "That request type is not allowed")
+		assert(t, data.Details, "Invalid request type")
+		assert(t, data.Message, "Expected POST")
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {

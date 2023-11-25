@@ -35,7 +35,8 @@ func TestSummaryHandler(t *testing.T) {
 		var data ErrorResponse
 		data = serveRequest(t, SummaryHandler, client, request, data)
 		assert(t, data.Status, http.StatusMethodNotAllowed)
-		assert(t, data.Message, "That request type is not allowed")
+		assert(t, data.Details, "Invalid request type")
+		assert(t, data.Message, "Expected PUT")
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {

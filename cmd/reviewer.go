@@ -24,7 +24,9 @@ type ReviewersRequestResponse struct {
 
 func ReviewersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-
+	if r.Method != http.MethodPut {
+		w.Header().Set("Allow", http.MethodPut)
+	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		HandleError(w, err, "Could not read request body", http.StatusBadRequest)

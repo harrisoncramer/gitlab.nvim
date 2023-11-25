@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 
@@ -24,7 +23,7 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 
 	if r.Method != http.MethodPut {
 		w.Header().Set("Allow", http.MethodPut)
-		HandleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		HandleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
 		return
 	}
 

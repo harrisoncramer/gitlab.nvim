@@ -21,7 +21,8 @@ func TestInfoHandler(t *testing.T) {
 		var data ErrorResponse
 		data = serveRequest(t, InfoHandler, client, request, data)
 		assert(t, data.Status, 405)
-		assert(t, data.Message, "That request type is not allowed")
+		assert(t, data.Details, "Invalid request type")
+		assert(t, data.Message, "Expected GET")
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
