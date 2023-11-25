@@ -50,6 +50,10 @@ func (f FakeHandlerClient) UnapproveMergeRequest(pid interface{}, mr int, option
 }
 
 func (f FakeHandlerClient) UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+
 	return &gitlab.ProjectFile{}, makeResponse(f), nil
 }
 

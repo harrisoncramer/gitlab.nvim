@@ -39,16 +39,16 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 		return
 	}
 
-	if err != nil {
-		HandleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
-		return
-	}
-
 	file := r.Context().Value("fileReader").(io.Reader)
 
 	projectFile, res, err := c.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
-		HandleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FilePath), res.StatusCode)
+		HandleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/mr/attachment"}, "Gitlab returned non-200 status", res.StatusCode)
 		return
 	}
 
