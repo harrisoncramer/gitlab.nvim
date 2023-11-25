@@ -7,7 +7,6 @@ import (
 
 func ApproveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		HandleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
@@ -17,14 +16,18 @@ func ApproveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	_, res, err := c.ApproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
 
 	if err != nil {
-		HandleError(w, err, "Could not approve MR", http.StatusBadRequest)
+		HandleError(w, err, "Could not approve MR", http.StatusInternalServerError)
 		return
 	}
 
-	/* TODO: Check for non-200 status codes */
-	w.WriteHeader(res.StatusCode)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/approve"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := SuccessResponse{
-		Message: "Success! Approved MR.",
+		Message: "Approved MR",
 		Status:  http.StatusOK,
 	}
 

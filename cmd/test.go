@@ -65,47 +65,81 @@ func (f FakeHandlerClient) GetMergeRequestDiffVersions(pid interface{}, mergeReq
 }
 
 func (f FakeHandlerClient) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
-	return &gitlab.MergeRequestApprovals{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.MergeRequestApprovals{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
-	return []*gitlab.Discussion{}, &gitlab.Response{}, nil
+
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return []*gitlab.Discussion{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) ResolveMergeRequestDiscussion(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return &gitlab.Discussion{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.Discussion{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) CreateMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return &gitlab.Discussion{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.Discussion{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return &gitlab.Note{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.Note{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, errors.New(f.Error)
+	}
+	return makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) AddMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, opt *gitlab.AddMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return &gitlab.Note{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.Note{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) ListAllProjectMembers(pid interface{}, opt *gitlab.ListProjectMembersOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.ProjectMember, *gitlab.Response, error) {
-	return []*gitlab.ProjectMember{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return []*gitlab.ProjectMember{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) RetryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
-	return &gitlab.Pipeline{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &gitlab.Pipeline{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) ListPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error) {
-	return []*gitlab.Job{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return []*gitlab.Job{}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error) {
-	return &bytes.Reader{}, &gitlab.Response{}, nil
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
+	return &bytes.Reader{}, makeResponse(f), nil
 }
 
 /* The assert function is a helper function used to check two comparables */
