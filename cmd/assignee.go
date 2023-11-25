@@ -24,6 +24,11 @@ type AssigneesRequestResponse struct {
 
 func AssigneesHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPut {
+		w.Header().Set("Allow", http.MethodPut)
+		HandleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -45,17 +50,16 @@ func AssigneesHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d
 	})
 
 	if err != nil {
-		HandleError(w, err, "Could not modify merge request assignees", http.StatusBadRequest)
+		HandleError(w, err, "Could not modify merge request assignees", http.StatusInternalServerError)
 		return
 	}
 
-	if res.StatusCode != http.StatusOK {
-		HandleError(w, err, "Could not modify merge request assignees", http.StatusBadRequest)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/mr/assignee"}, "Gitlab returned non-200 status", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 	response := AssigneeUpdateResponse{
 		SuccessResponse: SuccessResponse{
 			Message: "Assignees updated",
