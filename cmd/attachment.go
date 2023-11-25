@@ -6,13 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
-
-type AttachmentRequest struct {
-	FilePath string `json:"file_path"`
-	FileName string `json:"file_name"`
-}
 
 type AttachmentResponse struct {
 	SuccessResponse
@@ -30,6 +24,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 	}
 
 	var attachmentRequest AttachmentRequest
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -44,13 +39,12 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 		return
 	}
 
-	file, err := os.Open(attachmentRequest.FilePath)
 	if err != nil {
 		HandleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
 		return
 	}
 
-	defer file.Close()
+	file := r.Context().Value("fileReader").(io.Reader)
 
 	projectFile, res, err := c.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
