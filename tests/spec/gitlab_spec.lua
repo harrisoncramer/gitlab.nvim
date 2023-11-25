@@ -1,0 +1,7 @@
+describe("gitlab", function()
+  it("Loads module", function()
+    require("gitlab")
+    local utils_ok, _ = pcall(require, "gitlab")
+    assert._is_true(utils_ok)
+  end)
+end)
