@@ -310,10 +310,6 @@ M.format_date = function(date_string)
 
   local time_diff = current_date - date
 
-  local function pluralize(num, word)
-    return num .. string.format(" %s", word) .. (num > 1 and "s" or "") .. " ago"
-  end
-
   if time_diff < 60 then
     return pluralize(time_diff, "second")
   elseif time_diff < 3600 then
