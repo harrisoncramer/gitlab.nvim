@@ -50,17 +50,16 @@ func ReviewersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d
 	})
 
 	if err != nil {
-		HandleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
+		HandleError(w, err, "Could not modify merge request reviewers", http.StatusInternalServerError)
 		return
 	}
 
-	if res.StatusCode != http.StatusOK {
-		HandleError(w, err, "Could not modify merge request reviewers", http.StatusBadRequest)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/mr/reviewer"}, "Gitlab returned non-200 status", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 	response := ReviewerUpdateResponse{
 		SuccessResponse: SuccessResponse{
 			Message: "Reviewers updated",
