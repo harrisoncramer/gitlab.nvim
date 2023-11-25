@@ -20,9 +20,15 @@ func RevisionsHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d
 		return
 	}
 
-	versionInfo, _, err := c.GetMergeRequestDiffVersions(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
+	versionInfo, res, err := c.GetMergeRequestDiffVersions(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
 	if err != nil {
-		HandleError(w, err, "Could not get diff version info", http.StatusBadRequest)
+		HandleError(w, err, "Could not get diff version info", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/mr/revisions"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

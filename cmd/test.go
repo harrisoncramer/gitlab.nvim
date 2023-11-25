@@ -58,6 +58,9 @@ func (f FakeHandlerClient) UploadFile(pid interface{}, content io.Reader, filena
 }
 
 func (f FakeHandlerClient) GetMergeRequestDiffVersions(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestDiffVersionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequestDiffVersion, *gitlab.Response, error) {
+	if f.Error != "" {
+		return nil, nil, errors.New(f.Error)
+	}
 	return []*gitlab.MergeRequestDiffVersion{}, makeResponse(f), nil
 }
 
