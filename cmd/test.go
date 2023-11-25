@@ -113,14 +113,6 @@ func assert[T comparable](t *testing.T, got T, want T) {
 	}
 }
 
-/* The assertNot function is a helper function used to check that two comparables are NOT equal */
-func assertNot[T comparable](t *testing.T, got T, want T) {
-	t.Helper()
-	if got == want {
-		t.Errorf("Got %v but wanted %v", got, want)
-	}
-}
-
 /* Will create a new request with the given method, endpoint and body */
 func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *http.Request {
 	request, err := http.NewRequest(method, endpoint, body)

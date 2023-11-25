@@ -39,7 +39,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 		return
 	}
 
-	file := r.Context().Value("fileReader").(io.Reader)
+	file := r.Context().Value(fileReaderKey).(io.Reader)
 
 	projectFile, res, err := c.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {

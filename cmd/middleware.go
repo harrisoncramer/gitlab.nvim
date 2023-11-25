@@ -21,6 +21,12 @@ type AttachmentRequest struct {
 	FileName string `json:"file_name"`
 }
 
+type contextKey string
+
+var (
+	fileReaderKey = contextKey("fileReader")
+)
+
 /* FileMiddleware reads a file and passes the contens to the next path */
 func FileMiddleware(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +65,7 @@ func FileMiddleware(next http.Handler) http.HandlerFunc {
 		defer file.Close()
 
 		reader := bytes.NewReader(data)
-		ctx := context.WithValue(context.Background(), "fileReader", reader)
+		ctx := context.WithValue(context.Background(), fileReaderKey, reader)
 		requestWithReader := r.WithContext(ctx)
 		requestWithReader.Body = io.NopCloser(bytes.NewReader(body))
 

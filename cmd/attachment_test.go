@@ -29,7 +29,7 @@ func TestAttachmentHandler(t *testing.T) {
 		mockFileReader := MockFileReader{}
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, "POST", "/mr/attachment", reader)
-		ctx := context.WithValue(context.Background(), "fileReader", mockFileReader)
+		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
 
 		client := FakeHandlerClient{}
@@ -63,7 +63,7 @@ func TestAttachmentHandler(t *testing.T) {
 		mockFileReader := MockFileReader{}
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, "POST", "/mr/attachment", reader)
-		ctx := context.WithValue(context.Background(), "fileReader", mockFileReader)
+		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
 
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
@@ -90,7 +90,7 @@ func TestAttachmentHandler(t *testing.T) {
 		mockFileReader := MockFileReader{}
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, "POST", "/mr/attachment", reader)
-		ctx := context.WithValue(context.Background(), "fileReader", mockFileReader)
+		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
 
 		client := FakeHandlerClient{StatusCode: 302}
