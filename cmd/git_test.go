@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestextractGitInfo_Success(t *testing.T) {
+func TestExtractGitInfo_Success(t *testing.T) {
 	getCurrentBranchName := func() (string, error) {
 		return "feature/abc", nil
 	}
@@ -164,7 +164,7 @@ func TestextractGitInfo_Success(t *testing.T) {
 	}
 }
 
-func TestextractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
+func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	getCurrentBranchName := func() (string, error) {
 		return "feature/abc", nil
 	}
@@ -204,7 +204,7 @@ func TestextractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	}
 }
 
-func TestextractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
+func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 	expectedErrNestedMsg := "error when getting current branch name"
 
 	refreshGitInfo := func() error {
