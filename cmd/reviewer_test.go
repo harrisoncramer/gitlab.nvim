@@ -21,7 +21,7 @@ func TestReviewerHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/reviewer", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, ReviewersHandler, client, request, ReviewerUpdateResponse{})
+		data := serveRequest(t, reviewersHandler, client, request, ReviewerUpdateResponse{})
 
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "Reviewers updated")
@@ -30,7 +30,7 @@ func TestReviewerHandler(t *testing.T) {
 	t.Run("Disallows non-PUT methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/reviewer", nil)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, ReviewersHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, reviewersHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Message, "Expected PUT")
@@ -50,7 +50,7 @@ func TestReviewerHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/reviewer", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, ReviewersHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, reviewersHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not modify merge request reviewers")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -69,7 +69,7 @@ func TestReviewerHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/reviewer", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, ReviewersHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, reviewersHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not modify merge request reviewers")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -88,7 +88,7 @@ func TestReviewerHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/reviewer", reader)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, ReviewersHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, reviewersHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not modify merge request reviewers")

@@ -5,23 +5,23 @@ import (
 	"net/http"
 )
 
-func ApproveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func approveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		HandleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
 	_, res, err := c.ApproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
 
 	if err != nil {
-		HandleError(w, err, "Could not approve merge request", http.StatusInternalServerError)
+		handleError(w, err, "Could not approve merge request", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/approve"}, "Could not approve merge request", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/approve"}, "Could not approve merge request", res.StatusCode)
 		return
 	}
 
@@ -33,6 +33,6 @@ func ApproveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

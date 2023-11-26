@@ -207,7 +207,7 @@ func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *
 func serveRequest[T interface{}](t *testing.T, h handlerFunc, client FakeHandlerClient, request *http.Request, target T) T {
 	recorder := httptest.NewRecorder()
 	projectInfo := ProjectInfo{}
-	handler := http.HandlerFunc(ClientMiddleware(client, &projectInfo, h))
+	handler := http.HandlerFunc(withClient(client, &projectInfo, h))
 	handler.ServeHTTP(recorder, request)
 	result := recorder.Result()
 	decoder := json.NewDecoder(result.Body)

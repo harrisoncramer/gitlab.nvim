@@ -54,7 +54,7 @@ type CommentResponse struct {
 	Discussion *gitlab.Discussion `json:"discussion"`
 }
 
-func CommentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func commentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodDelete:
 		DeleteComment(w, r, c, d)
@@ -65,7 +65,7 @@ func CommentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
-		HandleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -73,7 +73,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *P
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -82,19 +82,19 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *P
 	var deleteCommentRequest DeleteCommentRequest
 	err = json.Unmarshal(body, &deleteCommentRequest)
 	if err != nil {
-		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
 	res, err := c.DeleteMergeRequestDiscussionNote(d.ProjectId, d.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
 	if err != nil {
-		HandleError(w, err, "Could not delete comment", http.StatusInternalServerError)
+		handleError(w, err, "Could not delete comment", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/comment"}, "Could not delete comment", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not delete comment", res.StatusCode)
 		return
 	}
 
@@ -106,7 +106,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *P
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
@@ -115,7 +115,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -124,7 +124,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	var postCommentRequest PostCommentRequest
 	err = json.Unmarshal(body, &postCommentRequest)
 	if err != nil {
-		HandleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -176,12 +176,12 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	discussion, res, err := c.CreateMergeRequestDiscussion(d.ProjectId, d.MergeId, &opt)
 
 	if err != nil {
-		HandleError(w, err, "Could not create comment", http.StatusBadRequest)
+		handleError(w, err, "Could not create comment", http.StatusBadRequest)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/comment"}, "Could not create comment", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not create comment", res.StatusCode)
 		return
 	}
 
@@ -197,7 +197,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
@@ -206,7 +206,7 @@ func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -215,7 +215,7 @@ func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	var editCommentRequest EditCommentRequest
 	err = json.Unmarshal(body, &editCommentRequest)
 	if err != nil {
-		HandleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -225,12 +225,12 @@ func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	note, res, err := c.UpdateMergeRequestDiscussionNote(d.ProjectId, d.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
-		HandleError(w, err, "Could not update comment", http.StatusInternalServerError)
+		handleError(w, err, "Could not update comment", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/comment"}, "Could not update comment", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not update comment", res.StatusCode)
 		return
 	}
 
@@ -245,6 +245,6 @@ func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

@@ -21,7 +21,7 @@ func TestAssigneeHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, AssigneesHandler, client, request, AssigneeUpdateResponse{})
+		data := serveRequest(t, assigneesHandler, client, request, AssigneeUpdateResponse{})
 
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "Assignees updated")
@@ -30,7 +30,7 @@ func TestAssigneeHandler(t *testing.T) {
 	t.Run("Disallows non-PUT methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/assignee", nil)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, AssigneesHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, assigneesHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Message, "Expected PUT")
@@ -50,7 +50,7 @@ func TestAssigneeHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, AssigneesHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, assigneesHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not modify merge request assignees")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -69,7 +69,7 @@ func TestAssigneeHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, AssigneesHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, assigneesHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not modify merge request assignees")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -88,7 +88,7 @@ func TestAssigneeHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", reader)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, AssigneesHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, assigneesHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not modify merge request assignees")

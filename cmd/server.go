@@ -11,28 +11,30 @@ import (
 
 type handlerFunc func(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo)
 
-func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
+/* This function wires up the router and attaches all handlers to their respective routes. It then starts up the server on the port specified or on a random port */
+func Start(client HandlerClient, projectInfo *ProjectInfo) {
 	m := http.NewServeMux()
 
-	m.Handle("/ping", http.HandlerFunc(PingHandler))
-	m.Handle("/info", ClientMiddleware(client, projectInfo, InfoHandler))
-	m.Handle("/mr/summary", ClientMiddleware(client, projectInfo, SummaryHandler))
-	m.Handle("/mr/attachment", FileMiddleware(ClientMiddleware(client, projectInfo, AttachmentHandler)))
-	m.Handle("/mr/reviewer", ClientMiddleware(client, projectInfo, ReviewersHandler))
-	m.Handle("/mr/revisions", ClientMiddleware(client, projectInfo, RevisionsHandler))
-	m.Handle("/mr/assignee", ClientMiddleware(client, projectInfo, AssigneesHandler))
-	m.Handle("/approve", ClientMiddleware(client, projectInfo, ApproveHandler))
-	m.Handle("/revoke", ClientMiddleware(client, projectInfo, RevokeHandler))
-	m.Handle("/discussions/list", ClientMiddleware(client, projectInfo, ListDiscussionsHandler))
-	m.Handle("/discussions/resolve", ClientMiddleware(client, projectInfo, DiscussionResolveHandler))
-	m.Handle("/comment", ClientMiddleware(client, projectInfo, CommentHandler))
-	m.Handle("/reply", ClientMiddleware(client, projectInfo, ReplyHandler))
-	m.Handle("/project/members", ClientMiddleware(client, projectInfo, ProjectMembersHandler))
-	m.Handle("/pipeline/", ClientMiddleware(client, projectInfo, PipelineHandler))
-	m.Handle("/job", ClientMiddleware(client, projectInfo, JobHandler))
+	m.Handle("/ping", http.HandlerFunc(pingHandler))
+	m.Handle("/info", withClient(client, projectInfo, infoHandler))
+	m.Handle("/mr/summary", withClient(client, projectInfo, summaryHandler))
+	m.Handle("/mr/attachment", withFileReader(withClient(client, projectInfo, attachmentHandler)))
+	m.Handle("/mr/reviewer", withClient(client, projectInfo, reviewersHandler))
+	m.Handle("/mr/revisions", withClient(client, projectInfo, revisionsHandler))
+	m.Handle("/mr/assignee", withClient(client, projectInfo, assigneesHandler))
+	m.Handle("/approve", withClient(client, projectInfo, approveHandler))
+	m.Handle("/revoke", withClient(client, projectInfo, revokeHandler))
+	m.Handle("/discussions/list", withClient(client, projectInfo, listDiscussionsHandler))
+	m.Handle("/discussions/resolve", withClient(client, projectInfo, discussionsResolveHandler))
+	m.Handle("/comment", withClient(client, projectInfo, commentHandler))
+	m.Handle("/reply", withClient(client, projectInfo, replyHandler))
+	m.Handle("/project/members", withClient(client, projectInfo, projectMembersHandler))
+	m.Handle("/pipeline/", withClient(client, projectInfo, pipelineHandler))
+	m.Handle("/job", withClient(client, projectInfo, jobHandler))
 	startServer(m)
 }
 
+/* This function attempts to start the port on the port specified in the configuration if present, otherwise it chooses a random port */
 func startServer(m *http.ServeMux) {
 	port := os.Args[2]
 	if port == "" {
@@ -74,7 +76,7 @@ func startServer(m *http.ServeMux) {
 	}
 }
 
-func PingHandler(w http.ResponseWriter, _ *http.Request) {
+func pingHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "pong")
 }

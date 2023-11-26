@@ -25,7 +25,7 @@ type ProjectInfo struct {
 }
 
 /* This will parse and validate the project settings and then initialize the Gitlab client */
-func InitGitlabClient() (error, *Client) {
+func initGitlabClient() (error, *Client) {
 
 	if len(os.Args) < 6 {
 		return errors.New("Must provide gitlab url, port, auth token, debug settings, and log path"), nil
@@ -79,7 +79,7 @@ func InitGitlabClient() (error, *Client) {
 }
 
 /* This will fetch the project ID and merge request ID using the client */
-func InitProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
+func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
 
 	opt := gitlab.GetProjectOptions{}
 	project, _, err := c.GetProject(gitInfo.projectPath(), &opt)
@@ -125,7 +125,7 @@ func InitProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo
 }
 
 /* The error handler for all of our handlers. Returns error details to the client */
-func HandleError(w http.ResponseWriter, err error, message string, status int) {
+func handleError(w http.ResponseWriter, err error, message string, status int) {
 	w.WriteHeader(status)
 	response := ErrorResponse{
 		Message: message,
@@ -135,7 +135,7 @@ func HandleError(w http.ResponseWriter, err error, message string, status int) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode error response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode error response", http.StatusInternalServerError)
 	}
 }
 

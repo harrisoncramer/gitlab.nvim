@@ -23,7 +23,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 
 		request := makeRequest(t, http.MethodPut, "/discussions/resolve", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, DiscussionResolveHandler, client, request, SuccessResponse{})
+		data := serveRequest(t, discussionsResolveHandler, client, request, SuccessResponse{})
 
 		assert(t, data.Message, "Discussion resolved")
 		assert(t, data.Status, http.StatusOK)
@@ -44,7 +44,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 
 		request := makeRequest(t, http.MethodPut, "/discussions/resolve", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, DiscussionResolveHandler, client, request, SuccessResponse{})
+		data := serveRequest(t, discussionsResolveHandler, client, request, SuccessResponse{})
 
 		assert(t, data.Message, "Discussion unresolved")
 		assert(t, data.Status, http.StatusOK)
@@ -65,7 +65,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 
 		request := makeRequest(t, http.MethodPost, "/discussions/resolve", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, DiscussionResolveHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, discussionsResolveHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Details, "Invalid request type")
@@ -87,7 +87,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 
 		request := makeRequest(t, http.MethodPut, "/discussions/resolve", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, DiscussionResolveHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, discussionsResolveHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not resolve discussion")
@@ -110,7 +110,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 
 		request := makeRequest(t, http.MethodPut, "/discussions/resolve", reader)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, DiscussionResolveHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, discussionsResolveHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not unresolve discussion")

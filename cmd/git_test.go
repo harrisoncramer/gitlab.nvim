@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestExtractGitInfo_Success(t *testing.T) {
+func TestextractGitInfo_Success(t *testing.T) {
 	getCurrentBranchName := func() (string, error) {
 		return "feature/abc", nil
 	}
@@ -153,7 +153,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			actual, err := ExtractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
+			actual, err := extractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
 			if err != nil {
 				t.Errorf("No error was expected, got %s", err)
 			}
@@ -164,7 +164,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 	}
 }
 
-func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
+func TestextractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	getCurrentBranchName := func() (string, error) {
 		return "feature/abc", nil
 	}
@@ -193,7 +193,7 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			_, actualErr := ExtractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
+			_, actualErr := extractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
 			if actualErr == nil {
 				t.Errorf("Expected an error, got none")
 			}
@@ -204,13 +204,13 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	}
 }
 
-func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
+func TestextractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 	expectedErrNestedMsg := "error when getting current branch name"
 
 	refreshGitInfo := func() error {
 		return nil
 	}
-	_, actualErr := ExtractGitInfo(refreshGitInfo,
+	_, actualErr := extractGitInfo(refreshGitInfo,
 		func() (string, error) {
 			return "git@custom-gitlab.com:namespace/project.git", nil
 		},
@@ -229,7 +229,7 @@ func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 
 func TestRefreshGitRemote_FailToRefreshRemote(t *testing.T) {
 	expectedErrNestedMsg := "error when fetching origin commits"
-	_, actualErr := ExtractGitInfo(
+	_, actualErr := extractGitInfo(
 		func() error {
 			return errors.New(expectedErrNestedMsg)
 		},

@@ -19,17 +19,17 @@ type ReplyResponse struct {
 	Note *gitlab.Note `json:"note"`
 }
 
-func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func replyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		HandleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -38,7 +38,7 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pr
 	err = json.Unmarshal(body, &replyRequest)
 
 	if err != nil {
-		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
@@ -51,12 +51,12 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pr
 	note, res, err := c.AddMergeRequestDiscussionNote(d.ProjectId, d.MergeId, replyRequest.DiscussionId, &options)
 
 	if err != nil {
-		HandleError(w, err, "Could not leave reply", http.StatusInternalServerError)
+		handleError(w, err, "Could not leave reply", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/reply"}, "Could not leave reply", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/reply"}, "Could not leave reply", res.StatusCode)
 		return
 	}
 
@@ -71,6 +71,6 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pr
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

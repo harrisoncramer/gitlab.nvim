@@ -27,7 +27,7 @@ Extracts information about the current repository and returns
 it to the client for initialization. The current directory must be a valid
 Gitlab project and the branch must be a feature branch
 */
-func ExtractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (string, error), getCurrentBranchName func() (string, error)) (GitProjectInfo, error) {
+func extractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (string, error), getCurrentBranchName func() (string, error)) (GitProjectInfo, error) {
 
 	err := refreshGitInfo()
 	if err != nil {

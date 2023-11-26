@@ -34,7 +34,7 @@ func TestAttachmentHandler(t *testing.T) {
 		rwq := request.WithContext(ctx)
 
 		client := FakeHandlerClient{}
-		data := serveRequest(t, AttachmentHandler, client, rwq, AttachmentResponse{})
+		data := serveRequest(t, attachmentHandler, client, rwq, AttachmentResponse{})
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "File uploaded successfully")
 	})
@@ -42,7 +42,7 @@ func TestAttachmentHandler(t *testing.T) {
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, AttachmentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, attachmentHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Details, "Invalid request type")
 		assert(t, data.Message, "Expected POST")
@@ -65,7 +65,7 @@ func TestAttachmentHandler(t *testing.T) {
 		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, AttachmentHandler, client, rwq, ErrorResponse{})
+		data := serveRequest(t, attachmentHandler, client, rwq, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
@@ -89,7 +89,7 @@ func TestAttachmentHandler(t *testing.T) {
 		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
 		rwq := request.WithContext(ctx)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, AttachmentHandler, client, rwq, ErrorResponse{})
+		data := serveRequest(t, attachmentHandler, client, rwq, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not upload some_file_name to Gitlab")

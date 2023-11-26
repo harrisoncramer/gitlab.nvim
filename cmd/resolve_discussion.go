@@ -14,17 +14,17 @@ type DiscussionResolveRequest struct {
 	Resolved     bool   `json:"resolved"`
 }
 
-func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func discussionsResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		HandleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -34,7 +34,7 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerC
 	err = json.Unmarshal(body, &resolveDiscussionRequest)
 
 	if err != nil {
-		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
@@ -51,12 +51,12 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerC
 	}
 
 	if err != nil {
-		HandleError(w, err, fmt.Sprintf("Could not %s discussion", friendlyName), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Could not %s discussion", friendlyName), http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
+		handleError(w, GenericError{endpoint: "/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
 		return
 	}
 
@@ -68,6 +68,6 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerC
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

@@ -20,7 +20,7 @@ type GetJobsResponse struct {
 	Jobs []*gitlab.Job
 }
 
-func PipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func pipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodGet:
 		GetJobs(w, r, c, d)
@@ -29,7 +29,7 @@ func PipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d 
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
-		HandleError(w, InvalidRequestError{}, "Expected GET or POST", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected GET or POST", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -40,19 +40,19 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 	idInt, err := strconv.Atoi(id)
 
 	if err != nil {
-		HandleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
+		handleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
 		return
 	}
 
 	jobs, res, err := c.ListPipelineJobs(d.ProjectId, idInt, &gitlab.ListJobsOptions{})
 
 	if err != nil {
-		HandleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
+		handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/pipeline"}, "Could not get pipeline jobs", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not get pipeline jobs", res.StatusCode)
 		return
 	}
 
@@ -67,7 +67,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
@@ -78,14 +78,14 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		HandleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
+		handleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
 		return
 	}
 
 	pipeline, res, err := c.RetryPipelineBuild(d.ProjectId, idInt)
 
 	if err != nil {
-		HandleError(w, err, "Could not retrigger pipeline", res.StatusCode)
+		handleError(w, err, "Could not retrigger pipeline", res.StatusCode)
 		return
 	}
 
@@ -100,6 +100,6 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

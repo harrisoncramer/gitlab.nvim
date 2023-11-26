@@ -12,11 +12,11 @@ type ProjectMembersResponse struct {
 	ProjectMembers []*gitlab.ProjectMember
 }
 
-func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func projectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		HandleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -29,12 +29,12 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClie
 	projectMembers, res, err := c.ListAllProjectMembers(d.ProjectId, &projectMemberOptions)
 
 	if err != nil {
-		HandleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)
+		handleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/project/members"}, "Could not retrieve project members", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/project/members"}, "Could not retrieve project members", res.StatusCode)
 		return
 	}
 
@@ -50,6 +50,6 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClie
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

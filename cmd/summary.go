@@ -18,18 +18,18 @@ type SummaryUpdateResponse struct {
 	MergeRequest *gitlab.MergeRequest `json:"mr"`
 }
 
-func SummaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func summaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		HandleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -38,7 +38,7 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	err = json.Unmarshal(body, &SummaryUpdateRequest)
 
 	if err != nil {
-		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
@@ -48,12 +48,12 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	})
 
 	if err != nil {
-		HandleError(w, err, "Could not edit merge request summary", http.StatusInternalServerError)
+		handleError(w, err, "Could not edit merge request summary", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/summary"}, "Could not edit merge request summary", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/summary"}, "Could not edit merge request summary", res.StatusCode)
 		return
 	}
 
@@ -69,7 +69,7 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 
 }

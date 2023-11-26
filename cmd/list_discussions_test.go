@@ -17,7 +17,7 @@ func TestListDiscussions(t *testing.T) {
 		reader := bytes.NewReader(j)
 		request := makeRequest(t, http.MethodPost, "/discussions/list", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, ListDiscussionsHandler, client, request, DiscussionsResponse{})
+		data := serveRequest(t, listDiscussionsHandler, client, request, DiscussionsResponse{})
 		assert(t, data.SuccessResponse.Message, "Discussions fetched")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 
@@ -30,7 +30,7 @@ func TestListDiscussions(t *testing.T) {
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/discussions/list", nil)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, ListDiscussionsHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, listDiscussionsHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Details, "Invalid request type")
 		assert(t, data.Message, "Expected POST")
@@ -45,7 +45,7 @@ func TestListDiscussions(t *testing.T) {
 		reader := bytes.NewReader(j)
 		request := makeRequest(t, http.MethodPost, "/discussions/list", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, ListDiscussionsHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, listDiscussionsHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not list discussions")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -60,7 +60,7 @@ func TestListDiscussions(t *testing.T) {
 		reader := bytes.NewReader(j)
 		request := makeRequest(t, http.MethodPost, "/discussions/list", reader)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, ListDiscussionsHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, listDiscussionsHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not list discussions")
 		assert(t, data.Details, "An error occurred on the /discussions/list endpoint")

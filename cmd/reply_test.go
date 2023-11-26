@@ -18,7 +18,7 @@ func TestReplyHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/reply", reader)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, ReplyHandler, client, request, SuccessResponse{})
+		data := serveRequest(t, replyHandler, client, request, SuccessResponse{})
 		assert(t, data.Message, "Replied to comment")
 		assert(t, data.Status, http.StatusOK)
 	})
@@ -26,7 +26,7 @@ func TestReplyHandler(t *testing.T) {
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/reply", nil)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, ReplyHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, replyHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Details, "Invalid request type")
 		assert(t, data.Message, "Expected POST")
@@ -42,7 +42,7 @@ func TestReplyHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/reply", reader)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, ReplyHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, replyHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not leave reply")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -58,7 +58,7 @@ func TestReplyHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/reply", reader)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, ReplyHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, replyHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not leave reply")
 		assert(t, data.Details, "An error occurred on the /reply endpoint")

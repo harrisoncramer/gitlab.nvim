@@ -17,7 +17,7 @@ func TestDeleteComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodDelete, "/comment", body)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, CommentHandler, client, request, SuccessResponse{})
+		data := serveRequest(t, commentHandler, client, request, SuccessResponse{})
 		assert(t, data.Message, "Comment deleted successfully")
 		assert(t, data.Status, http.StatusOK)
 	})
@@ -31,7 +31,7 @@ func TestDeleteComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodDelete, "/comment", body)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, commentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Could not delete comment")
 		assert(t, data.Details, "Some error from Gitlab")
 	})
@@ -48,7 +48,7 @@ func TestDeleteComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodDelete, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, commentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Could not delete comment")
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})
@@ -64,7 +64,7 @@ func TestEditComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPatch, "/comment", body)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, CommentHandler, client, request, SuccessResponse{})
+		data := serveRequest(t, commentHandler, client, request, SuccessResponse{})
 		assert(t, data.Message, "Comment updated successfully")
 		assert(t, data.Status, http.StatusOK)
 	})
@@ -78,7 +78,7 @@ func TestEditComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPatch, "/comment", body)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, commentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Could not update comment")
 		assert(t, data.Details, "Some error from Gitlab")
 	})
@@ -97,7 +97,7 @@ func TestEditComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPatch, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, commentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Could not update comment")
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})
@@ -113,7 +113,7 @@ func TestPostComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/comment", body)
 		client := FakeHandlerClient{}
-		data := serveRequest(t, CommentHandler, client, request, CommentResponse{})
+		data := serveRequest(t, commentHandler, client, request, CommentResponse{})
 		assert(t, data.Message, "Comment created successfully")
 		assert(t, data.Status, http.StatusOK)
 	})
@@ -126,7 +126,7 @@ func TestPostComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/comment", body)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
-		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, commentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Could not create comment")
 		assert(t, data.Details, "Some error from Gitlab")
 	})
@@ -140,7 +140,7 @@ func TestPostComment(t *testing.T) {
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		data := serveRequest(t, commentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Could not create comment")
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})

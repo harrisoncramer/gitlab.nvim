@@ -10,7 +10,8 @@ import (
 	"os"
 )
 
-func ClientMiddleware(client HandlerClient, projectInfo *ProjectInfo, handler handlerFunc) http.HandlerFunc {
+/* withClient passes the project information and Gitlab client to the handler for the given route */
+func withClient(client HandlerClient, projectInfo *ProjectInfo, handler handlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		handler(w, r, client, projectInfo)
 	}
@@ -27,14 +28,14 @@ var (
 	fileReaderKey = contextKey("fileReader")
 )
 
-/* FileMiddleware reads a file and passes the contens to the next path */
-func FileMiddleware(next http.Handler) http.HandlerFunc {
+/* withFileReader reads a file and passes the contents to the next path */
+func withFileReader(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var attachmentRequest AttachmentRequest
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+			handleError(w, err, "Could not read request body", http.StatusBadRequest)
 			return
 		}
 
@@ -42,24 +43,24 @@ func FileMiddleware(next http.Handler) http.HandlerFunc {
 
 		err = json.Unmarshal(body, &attachmentRequest)
 		if err != nil {
-			HandleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
+			handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
 			return
 		}
 
 		if err != nil {
-			HandleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
+			handleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
 			return
 		}
 
 		file, err := os.Open(attachmentRequest.FilePath)
 		if err != nil {
-			HandleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
+			handleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
 			return
 		}
 
 		data, err := io.ReadAll(file)
 		if err != nil {
-			HandleError(w, err, fmt.Sprintf("Error reading file %s", attachmentRequest.FilePath), http.StatusBadRequest)
+			handleError(w, err, fmt.Sprintf("Error reading file %s", attachmentRequest.FilePath), http.StatusBadRequest)
 		}
 
 		defer file.Close()

@@ -14,11 +14,11 @@ type AttachmentResponse struct {
 	Url      string `json:"url"`
 }
 
-func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func attachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		HandleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -26,7 +26,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -34,7 +34,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	err = json.Unmarshal(body, &attachmentRequest)
 	if err != nil {
-		HandleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
+		handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
 		return
 	}
 
@@ -42,12 +42,12 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	projectFile, res, err := c.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
-		HandleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/mr/attachment"}, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/attachment"}, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), res.StatusCode)
 		return
 	}
 
@@ -63,6 +63,6 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
