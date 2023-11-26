@@ -16,7 +16,7 @@ type DiscussionResolveRequest struct {
 func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
-		w.Header().Set("Allow", http.MethodPut)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
 		HandleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
 		return
 	}

@@ -15,7 +15,7 @@ type ProjectMembersResponse struct {
 func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 		HandleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
 		return
 	}

@@ -28,7 +28,7 @@ func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
 	m.Handle("/comment", ClientMiddleware(client, projectInfo, CommentHandler))
 	m.Handle("/reply", ClientMiddleware(client, projectInfo, ReplyHandler))
 	m.Handle("/project/members", ClientMiddleware(client, projectInfo, ProjectMembersHandler))
-	m.Handle("/pipeline", ClientMiddleware(client, projectInfo, PipelineHandler))
+	m.Handle("/pipeline/", ClientMiddleware(client, projectInfo, PipelineHandler))
 	m.Handle("/job", ClientMiddleware(client, projectInfo, JobHandler))
 	startServer(m)
 }

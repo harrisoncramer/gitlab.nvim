@@ -40,7 +40,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerCli
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
 		HandleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}

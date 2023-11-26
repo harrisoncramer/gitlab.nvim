@@ -63,7 +63,9 @@ func CommentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	case http.MethodPatch:
 		EditComment(w, r, c, d)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
+		HandleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
 	}
 }
 

@@ -2,15 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"io"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/xanzy/go-gitlab"
 )
-
-type PipelineRequest struct {
-	PipelineId int `json:"pipeline_id"`
-}
 
 type RetriggerPipelineResponse struct {
 	SuccessResponse
@@ -29,71 +27,71 @@ func PipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d 
 	case http.MethodPost:
 		RetriggerPipeline(w, r, c, d)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
+		HandleError(w, InvalidRequestError{}, "Expected GET or POST", http.StatusMethodNotAllowed)
 	}
 }
 
 func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
-	body, err := io.ReadAll(r.Body)
+	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
+	idInt, err := strconv.Atoi(id)
+
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
 		return
 	}
 
-	defer r.Body.Close()
+	jobs, res, err := c.ListPipelineJobs(d.ProjectId, idInt, &gitlab.ListJobsOptions{})
 
-	var pipelineRequest PipelineRequest
-	err = json.Unmarshal(body, &pipelineRequest)
 	if err != nil {
-		HandleError(w, err, "Could not read JSON", http.StatusBadRequest)
+		HandleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
+		return
 	}
 
-	jobs, res, err := c.ListPipelineJobs(d.ProjectId, pipelineRequest.PipelineId, &gitlab.ListJobsOptions{})
-
-	if err != nil {
-		HandleError(w, err, "Could not get pipeline jobs", res.StatusCode)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/pipeline"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 	response := GetJobsResponse{
 		SuccessResponse: SuccessResponse{
 			Status:  http.StatusOK,
-			Message: "Jobs fetched successfully",
+			Message: "Pipeline jobs retrieved",
 		},
 		Jobs: jobs,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(response)
 	if err != nil {
 		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
-
 }
 
 func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
-	body, err := io.ReadAll(r.Body)
+	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
+
+	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
+		HandleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
 		return
 	}
 
-	defer r.Body.Close()
+	pipeline, res, err := c.RetryPipelineBuild(d.ProjectId, idInt)
 
-	var pipelineRequest PipelineRequest
-	err = json.Unmarshal(body, &pipelineRequest)
-	if err != nil {
-		HandleError(w, err, "Could not read JSON", http.StatusBadRequest)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/pipeline"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
-	pipeline, res, err := c.RetryPipelineBuild(d.ProjectId, pipelineRequest.PipelineId)
-
 	if err != nil {
-		HandleError(w, err, "Could not retrigger pipeline", res.StatusCode)
+		HandleError(w, err, "Could not retrigger pipeline", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
