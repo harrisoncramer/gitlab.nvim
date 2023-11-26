@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCommentHandler(t *testing.T) {
+func TestDeleteComment(t *testing.T) {
 	t.Run("Should delete a comment", func(t *testing.T) {
 		b, err := json.Marshal(DeleteCommentRequest{
 			NoteId:       1,
@@ -53,6 +53,63 @@ func TestCommentHandler(t *testing.T) {
 
 		body := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodDelete, "/comment", body)
+		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
+		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Details, "An error occurred on the /comment endpoint")
+	})
+}
+
+func TestEditComment(t *testing.T) {
+	t.Run("Should edit a comment", func(t *testing.T) {
+		b, err := json.Marshal(EditCommentRequest{
+			NoteId:       1,
+			DiscussionId: "2",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := bytes.NewReader(b)
+		request := makeRequest(t, http.MethodPatch, "/comment", body)
+		client := FakeHandlerClient{}
+		data := serveRequest(t, CommentHandler, client, request, SuccessResponse{})
+		assert(t, data.Message, "Comment updated successfully")
+		assert(t, data.Status, http.StatusOK)
+	})
+
+	t.Run("Edit handles errors from Gitlab client", func(t *testing.T) {
+		b, err := json.Marshal(EditCommentRequest{
+			Comment:      "Hi there",
+			NoteId:       1,
+			DiscussionId: "2",
+			Resolved:     false,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := bytes.NewReader(b)
+		request := makeRequest(t, http.MethodPatch, "/comment", body)
+		client := FakeHandlerClient{Error: "Some error from Gitlab"}
+		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		assert(t, data.Message, "Could not update comment")
+		assert(t, data.Details, "Some error from Gitlab")
+	})
+
+	t.Run("Edit handles non-200s from Gitlab client", func(t *testing.T) {
+		b, err := json.Marshal(EditCommentRequest{
+			Comment:      "Hi there",
+			NoteId:       1,
+			DiscussionId: "2",
+			Resolved:     false,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := bytes.NewReader(b)
+		request := makeRequest(t, http.MethodPatch, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
 		assert(t, data.Message, "Gitlab returned non-200 status")

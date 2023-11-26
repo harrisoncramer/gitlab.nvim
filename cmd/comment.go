@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -172,16 +171,22 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 		}
 	}
 
-	discussion, _, err := c.CreateMergeRequestDiscussion(d.ProjectId, d.MergeId, &opt)
+	discussion, res, err := c.CreateMergeRequestDiscussion(d.ProjectId, d.MergeId, &opt)
 
 	if err != nil {
 		HandleError(w, err, "Could not create comment", http.StatusBadRequest)
 		return
 	}
 
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/comment"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment updated succesfully",
+			Message: "Comment updated successfully",
 			Status:  http.StatusOK,
 		},
 		Comment:    discussion.Notes[0],
@@ -196,8 +201,8 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 
 func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-
 	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
 		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
@@ -213,26 +218,24 @@ func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	}
 
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
-
-	msg := "edit comment"
 	options.Body = gitlab.String(editCommentRequest.Comment)
 
 	note, res, err := c.UpdateMergeRequestDiscussionNote(d.ProjectId, d.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
-		HandleError(w, err, "Could not "+msg, res.StatusCode)
+		HandleError(w, err, "Could not update comment", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(res.StatusCode)
-
-	if res.StatusCode != http.StatusOK {
-		HandleError(w, errors.New("Non-200 status code recieved"), "Could not "+msg, res.StatusCode)
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/comment"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment updated succesfully",
+			Message: "Comment updated successfully",
 			Status:  http.StatusOK,
 		},
 		Comment: note,
