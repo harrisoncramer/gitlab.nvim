@@ -14,6 +14,11 @@ type ProjectMembersResponse struct {
 
 func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		HandleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
+		return
+	}
 
 	projectMemberOptions := gitlab.ListProjectMembersOptions{
 		ListOptions: gitlab.ListOptions{
@@ -22,8 +27,15 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClie
 	}
 
 	projectMembers, res, err := c.ListAllProjectMembers(d.ProjectId, &projectMemberOptions)
+
 	if err != nil {
-		HandleError(w, err, "Could not fetch project users", res.StatusCode)
+		HandleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/project/members"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -31,7 +43,7 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClie
 	response := ProjectMembersResponse{
 		SuccessResponse: SuccessResponse{
 			Status:  http.StatusOK,
-			Message: "Project users fetched successfully",
+			Message: "Project members retrieved",
 		},
 		ProjectMembers: projectMembers,
 	}
