@@ -4,12 +4,30 @@ on:
     branches:
       - main
 jobs:
-  build:
+  tests:
+    name: Run tests
+    strategy:
+      matrix:
+        nvim_version: [stable, nightly]
+
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Run Busted
-        uses: lunarmodules/busted@v2.2.0
-        # with:
-        #     args: --run=api
+        uses: actions/checkout@v4
+      - name: Install neovim
+        uses: rhysd/action-setup-vim@v1
+        id: vim
+        with:
+          neovim: true
+          version: ${{ matrix.nvim_version }}
+      - name: Install luajit
+        uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: "luajit-2.1.0-beta3"
+      - name: Install luarocks
+        uses: leafo/gh-actions-luarocks@v4
+      - name: Run tests
+        shell: bash
+        run: |
+          chmod +x lua-test.sh
+          ./lua-test.sh
