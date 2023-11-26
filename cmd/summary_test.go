@@ -68,6 +68,6 @@ func TestSummaryHandler(t *testing.T) {
 		data := serveRequest(t, SummaryHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Gitlab returned non-200 status")
-		assert(t, data.Details, "An error occured on the /summary endpoint")
+		assert(t, data.Details, "An error occurred on the /summary endpoint")
 	})
 }

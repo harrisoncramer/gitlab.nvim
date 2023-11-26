@@ -93,6 +93,6 @@ func TestAttachmentHandler(t *testing.T) {
 
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Gitlab returned non-200 status")
-		assert(t, data.Details, "An error occured on the /mr/attachment endpoint")
+		assert(t, data.Details, "An error occurred on the /mr/attachment endpoint")
 	})
 }

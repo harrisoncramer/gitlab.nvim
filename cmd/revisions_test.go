@@ -38,6 +38,6 @@ func TestRevisionsHandler(t *testing.T) {
 		data := serveRequest(t, RevisionsHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Gitlab returned non-200 status")
-		assert(t, data.Details, "An error occured on the /mr/revisions endpoint")
+		assert(t, data.Details, "An error occurred on the /mr/revisions endpoint")
 	})
 }

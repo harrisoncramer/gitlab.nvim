@@ -88,14 +88,18 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *P
 	res, err := c.DeleteMergeRequestDiscussionNote(d.ProjectId, d.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
 	if err != nil {
-		HandleError(w, err, "Could not delete comment", res.StatusCode)
+		HandleError(w, err, "Could not delete comment", http.StatusInternalServerError)
 		return
 	}
 
-	/* TODO: Check status code */
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/comment"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	response := SuccessResponse{
-		Message: "Comment deleted succesfully",
+		Message: "Comment deleted successfully",
 		Status:  http.StatusOK,
 	}
 
