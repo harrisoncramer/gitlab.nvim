@@ -24,7 +24,7 @@ func TestPipelineHandler(t *testing.T) {
 	})
 
 	t.Run("GET: Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
+		request := makeRequest(t, http.MethodGet, "/pipeline/1", nil)
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
 		data := serveRequest(t, PipelineHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
@@ -33,7 +33,7 @@ func TestPipelineHandler(t *testing.T) {
 	})
 
 	t.Run("GET: Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
+		request := makeRequest(t, http.MethodGet, "/pipeline/1", nil)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, PipelineHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)

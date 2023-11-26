@@ -47,7 +47,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 	jobs, res, err := c.ListPipelineJobs(d.ProjectId, idInt, &gitlab.ListJobsOptions{})
 
 	if err != nil {
-		HandleError(w, err, "Could not get pipeline jobs", res.StatusCode)
+		HandleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
 		return
 	}
 
