@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -22,7 +21,6 @@ type ReplyResponse struct {
 
 func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
 		HandleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
@@ -53,13 +51,19 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pr
 	note, res, err := c.AddMergeRequestDiscussionNote(d.ProjectId, d.MergeId, replyRequest.DiscussionId, &options)
 
 	if err != nil {
-		HandleError(w, err, "Could not leave reply", res.StatusCode)
+		HandleError(w, err, "Could not leave reply", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/reply"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := ReplyResponse{
 		SuccessResponse: SuccessResponse{
-			Message: fmt.Sprintf("Replied: %s", note.Body),
+			Message: "Replied to comment",
 			Status:  http.StatusOK,
 		},
 		Note: note,
