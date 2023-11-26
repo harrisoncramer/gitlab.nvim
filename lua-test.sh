@@ -9,9 +9,7 @@
 #
 set -e
 
-BUSTED_VERSION="2.2.0-1"
 LUA_VERSION="5.1"
-BUSTED_LOCATION="lua_modules/lib/luarocks/rocks-$LUA_VERSION/busted/$BUSTED_VERSION/bin/busted"
 PLUGINS_FOLDER="tests/plugins"
 PLUGINS=(
     "https://github.com/MunifTanjim/nui.nvim"
@@ -29,11 +27,11 @@ if ! command -v git > /dev/null 2>&1; then
     exit 1
 fi
 
-if ! [[ -f "$BUSTED_LOCATION" ]]; then
+if ! luarocks --lua-version=$LUA_VERSION which busted > /dev/null 2>&1; then
     echo "Installing busted."
     luarocks init
     luarocks config --scope project lua_version "$LUA_VERSION"
-    luarocks install busted "$BUSTED_VERSION"
+    luarocks install --lua-version="$LUA_VERSION" busted
 fi
 
 for plugin in "${PLUGINS[@]}"; do

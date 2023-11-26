@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   lua_lint:
-    name: Lint Lua 💅 
+    name: Lint Lua 💅
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -15,7 +15,7 @@ jobs:
         with:
           args: --globals vim --no-max-line-length -- .
   lua_format:
-    name: Formatting Lua 💅 
+    name: Formatting Lua 💅
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,12 +26,3 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check .
-  lua_test:
-    name: Test Lua 🧪 
-    needs: [lua_format,lua_lint]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Run Busted
-        uses: lunarmodules/busted@v2.2.0

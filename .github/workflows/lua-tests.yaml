@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   tests:
-    name: Run tests
+    name: Run tests 🧪
     strategy:
       matrix:
         nvim_version: [stable, nightly]
