@@ -90,7 +90,11 @@ func (f FakeHandlerClient) CreateMergeRequestDiscussion(pid interface{}, mergeRe
 	if f.Error != "" {
 		return nil, nil, errors.New(f.Error)
 	}
-	return &gitlab.Discussion{}, makeResponse(f), nil
+	return &gitlab.Discussion{
+		Notes: []*gitlab.Note{
+			{},
+		},
+	}, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {

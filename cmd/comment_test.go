@@ -116,3 +116,46 @@ func TestEditComment(t *testing.T) {
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})
 }
+
+func TestPostComment(t *testing.T) {
+	t.Run("Should create new comment thread", func(t *testing.T) {
+		b, err := json.Marshal(PostCommentRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := bytes.NewReader(b)
+		request := makeRequest(t, http.MethodPost, "/comment", body)
+		client := FakeHandlerClient{}
+		data := serveRequest(t, CommentHandler, client, request, CommentResponse{})
+		assert(t, data.Message, "Comment created successfully")
+		assert(t, data.Status, http.StatusOK)
+	})
+	t.Run("Edit handles errors from Gitlab client", func(t *testing.T) {
+		b, err := json.Marshal(PostCommentRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := bytes.NewReader(b)
+		request := makeRequest(t, http.MethodPost, "/comment", body)
+		client := FakeHandlerClient{Error: "Some error from Gitlab"}
+		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		assert(t, data.Message, "Could not create comment")
+		assert(t, data.Details, "Some error from Gitlab")
+	})
+
+	t.Run("Edit handles non-200s from Gitlab client", func(t *testing.T) {
+		b, err := json.Marshal(PostCommentRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := bytes.NewReader(b)
+		request := makeRequest(t, http.MethodPost, "/comment", body)
+		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
+		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
+		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Details, "An error occurred on the /comment endpoint")
+	})
+}

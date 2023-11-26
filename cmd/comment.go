@@ -186,7 +186,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment updated successfully",
+			Message: "Comment created successfully",
 			Status:  http.StatusOK,
 		},
 		Comment:    discussion.Notes[0],
