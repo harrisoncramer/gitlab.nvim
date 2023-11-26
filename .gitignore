@@ -6,3 +6,4 @@ bin
 *.rockspec
 tests/plugins
 !tests/plugins/.placeholder
+luacov.*

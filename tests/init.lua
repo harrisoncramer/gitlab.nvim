@@ -1,25 +1,28 @@
 ---Initialize neovim to use lua modules from luarocks and prepare correct search paths for
 ---modules, neovim plugins and load busted frameworks.
-
+local current_dir = vim.fn.getcwd() .. "/"
 local modules = {
-  "lua_modules/share/lua/5.1",
+  "lua",
   "tests/plugins/diffview.nvim/lua",
   "tests/plugins/nui.nvim/lua",
   "tests/plugins/plenary.nvim/lua",
+  "lua_modules/share/lua/5.1",
 }
 local lua_path_extensions = { "/?.lua", "/?/init.lua" }
 
 local path = ""
 for _, module_path in ipairs(modules) do
   for _, lua_path_extension in ipairs(lua_path_extensions) do
-    path = path .. module_path .. lua_path_extension .. ";"
+    path = path .. current_dir .. module_path .. lua_path_extension .. ";"
   end
 end
 
 package.path = path .. package.path
-package.cpath = "lua_modules/lib/lua/5.1/?.so;" .. package.cpath
-local k, l, _ = pcall(require, "luarocks.loader")
-_ = k and l.add_context("busted", "$BUSTED_VERSION")
+package.cpath = "lua_modules/lib/lua/5.1/?.so;" .. "lua_modules/lib/lua/5.1/?/init.so;" .. package.cpath
 
 -- Initialize required plugins which needs it
 require("diffview").setup()
+
+-- Run busted -
+require("busted.runner")({ standalone = false })
+os.exit(0)
