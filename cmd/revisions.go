@@ -27,7 +27,7 @@ func RevisionsHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/mr/revisions"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/mr/revisions"}, "Could not get diff version info", res.StatusCode)
 		return
 	}
 

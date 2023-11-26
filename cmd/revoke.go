@@ -21,7 +21,7 @@ func RevokeHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *P
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/revoke"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/revoke"}, "Could not revoke approval", res.StatusCode)
 		return
 	}
 

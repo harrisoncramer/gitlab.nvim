@@ -29,7 +29,7 @@ func TestInfoHandler(t *testing.T) {
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
 		data := serveRequest(t, InfoHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
-		assert(t, data.Message, "Could not get project info and initialize gitlab.nvim plugin")
+		assert(t, data.Message, "Could not get project info")
 		assert(t, data.Details, "Some error from Gitlab")
 	})
 
@@ -38,7 +38,7 @@ func TestInfoHandler(t *testing.T) {
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, InfoHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not get project info")
 		assert(t, data.Details, "An error occurred on the /info endpoint")
 	})
 }

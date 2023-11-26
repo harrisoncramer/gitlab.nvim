@@ -52,7 +52,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/pipeline"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/pipeline"}, "Could not get pipeline jobs", res.StatusCode)
 		return
 	}
 

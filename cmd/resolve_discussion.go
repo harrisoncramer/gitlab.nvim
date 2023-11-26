@@ -56,7 +56,7 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerC
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/discussions/resolve"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
 		return
 	}
 

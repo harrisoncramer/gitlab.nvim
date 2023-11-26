@@ -49,7 +49,7 @@ func TestDeleteComment(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not delete comment")
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})
 }
@@ -98,7 +98,7 @@ func TestEditComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not update comment")
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})
 }
@@ -141,7 +141,7 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/comment", body)
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, CommentHandler, client, request, ErrorResponse{})
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not create comment")
 		assert(t, data.Details, "An error occurred on the /comment endpoint")
 	})
 }

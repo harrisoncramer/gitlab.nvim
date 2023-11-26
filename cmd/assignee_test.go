@@ -91,7 +91,7 @@ func TestAssigneeHandler(t *testing.T) {
 		data := serveRequest(t, AssigneesHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not modify merge request assignees")
 		assert(t, data.Details, "An error occurred on the /mr/assignee endpoint")
 	})
 }

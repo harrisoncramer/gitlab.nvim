@@ -47,7 +47,7 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/mr/attachment"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/mr/attachment"}, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), res.StatusCode)
 		return
 	}
 

@@ -28,7 +28,7 @@ func TestApproveHandler(t *testing.T) {
 		client := FakeHandlerClient{Error: "Some error from Gitlab"}
 		data := serveRequest(t, ApproveHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
-		assert(t, data.Message, "Could not approve MR")
+		assert(t, data.Message, "Could not approve merge request")
 		assert(t, data.Details, "Some error from Gitlab")
 	})
 
@@ -37,7 +37,7 @@ func TestApproveHandler(t *testing.T) {
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, ApproveHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not approve merge request")
 		assert(t, data.Details, "An error occurred on the /approve endpoint")
 	})
 }

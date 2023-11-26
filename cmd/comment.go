@@ -94,7 +94,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *P
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/comment"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/comment"}, "Could not delete comment", res.StatusCode)
 		return
 	}
 
@@ -181,7 +181,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/comment"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/comment"}, "Could not create comment", res.StatusCode)
 		return
 	}
 
@@ -230,7 +230,7 @@ func EditComment(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/comment"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/comment"}, "Could not update comment", res.StatusCode)
 		return
 	}
 

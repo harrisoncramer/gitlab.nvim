@@ -22,12 +22,12 @@ func InfoHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 
 	mr, res, err := c.GetMergeRequest(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestsOptions{})
 	if err != nil {
-		HandleError(w, err, "Could not get project info and initialize gitlab.nvim plugin", http.StatusInternalServerError)
+		HandleError(w, err, "Could not get project info", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/info"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/info"}, "Could not get project info", res.StatusCode)
 		return
 	}
 

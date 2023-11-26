@@ -56,7 +56,7 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pr
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/reply"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/reply"}, "Could not leave reply", res.StatusCode)
 		return
 	}
 

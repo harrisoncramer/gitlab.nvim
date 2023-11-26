@@ -37,7 +37,7 @@ func TestRevisionsHandler(t *testing.T) {
 		client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
 		data := serveRequest(t, RevisionsHandler, client, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not get diff version info")
 		assert(t, data.Details, "An error occurred on the /mr/revisions endpoint")
 	})
 }

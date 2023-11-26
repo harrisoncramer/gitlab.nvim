@@ -70,7 +70,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerCli
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/discussions/list"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/discussions/list"}, "Could not list discussions", res.StatusCode)
 		return
 	}
 

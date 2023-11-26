@@ -92,7 +92,7 @@ func TestAttachmentHandler(t *testing.T) {
 		data := serveRequest(t, AttachmentHandler, client, rwq, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
 		assert(t, data.Details, "An error occurred on the /mr/attachment endpoint")
 	})
 }

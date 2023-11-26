@@ -55,7 +55,7 @@ func AssigneesHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/mr/assignee"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/mr/assignee"}, "Could not modify merge request assignees", res.StatusCode)
 		return
 	}
 

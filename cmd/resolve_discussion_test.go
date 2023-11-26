@@ -63,7 +63,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 
 		reader := bytes.NewReader(j)
 
-		request := makeRequest(t, http.MethodPut, "/discussions/resolve", reader)
+		request := makeRequest(t, http.MethodPost, "/discussions/resolve", reader)
 		client := FakeHandlerClient{}
 		data := serveRequest(t, DiscussionResolveHandler, client, request, ErrorResponse{})
 
@@ -113,7 +113,7 @@ func TestDiscussionResolveHandler(t *testing.T) {
 		data := serveRequest(t, DiscussionResolveHandler, client, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Gitlab returned non-200 status")
+		assert(t, data.Message, "Could not unresolve discussion")
 		assert(t, data.Details, "An error occurred on the /discussions/resolve endpoint")
 	})
 }

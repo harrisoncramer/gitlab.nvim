@@ -16,12 +16,12 @@ func ApproveHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *
 	_, res, err := c.ApproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
 
 	if err != nil {
-		HandleError(w, err, "Could not approve MR", http.StatusInternalServerError)
+		HandleError(w, err, "Could not approve merge request", http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/approve"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/approve"}, "Could not approve merge request", res.StatusCode)
 		return
 	}
 

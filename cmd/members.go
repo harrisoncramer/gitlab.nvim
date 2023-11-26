@@ -34,7 +34,7 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request, c HandlerClie
 	}
 
 	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/project/members"}, "Gitlab returned non-200 status", res.StatusCode)
+		HandleError(w, GenericError{endpoint: "/project/members"}, "Could not retrieve project members", res.StatusCode)
 		return
 	}
 
