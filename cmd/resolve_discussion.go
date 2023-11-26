@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -21,15 +22,17 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerC
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		HandleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
+
 	var resolveDiscussionRequest DiscussionResolveRequest
 	err = json.Unmarshal(body, &resolveDiscussionRequest)
+
 	if err != nil {
 		HandleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
@@ -42,20 +45,24 @@ func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request, c HandlerC
 		&gitlab.ResolveMergeRequestDiscussionOptions{Resolved: &resolveDiscussionRequest.Resolved},
 	)
 
+	friendlyName := "unresolve"
+	if resolveDiscussionRequest.Resolved {
+		friendlyName = "resolve"
+	}
+
 	if err != nil {
-		HandleError(w, err, "Could not update resolve status of discussion", res.StatusCode)
+		HandleError(w, err, fmt.Sprintf("Could not %s discussion", friendlyName), http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/discussions/resolve"}, "Gitlab returned non-200 status", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	var message string
-	if resolveDiscussionRequest.Resolved {
-		message = "Discussion resolved"
-	} else {
-		message = "Discussion unresolved"
-	}
 	response := SuccessResponse{
-		Message: message,
+		Message: fmt.Sprintf("Discussion %sd", friendlyName),
 		Status:  http.StatusOK,
 	}
 
