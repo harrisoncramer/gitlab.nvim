@@ -9,10 +9,7 @@ import (
 
 func TestDeleteComment(t *testing.T) {
 	t.Run("Should delete a comment", func(t *testing.T) {
-		b, err := json.Marshal(DeleteCommentRequest{
-			NoteId:       1,
-			DiscussionId: "2",
-		})
+		b, err := json.Marshal(DeleteCommentRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -26,10 +23,7 @@ func TestDeleteComment(t *testing.T) {
 	})
 
 	t.Run("Delete handles errors from Gitlab client", func(t *testing.T) {
-		b, err := json.Marshal(DeleteCommentRequest{
-			NoteId:       1,
-			DiscussionId: "2",
-		})
+		b, err := json.Marshal(DeleteCommentRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -62,10 +56,7 @@ func TestDeleteComment(t *testing.T) {
 
 func TestEditComment(t *testing.T) {
 	t.Run("Should edit a comment", func(t *testing.T) {
-		b, err := json.Marshal(EditCommentRequest{
-			NoteId:       1,
-			DiscussionId: "2",
-		})
+		b, err := json.Marshal(EditCommentRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -79,12 +70,7 @@ func TestEditComment(t *testing.T) {
 	})
 
 	t.Run("Edit handles errors from Gitlab client", func(t *testing.T) {
-		b, err := json.Marshal(EditCommentRequest{
-			Comment:      "Hi there",
-			NoteId:       1,
-			DiscussionId: "2",
-			Resolved:     false,
-		})
+		b, err := json.Marshal(EditCommentRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}
