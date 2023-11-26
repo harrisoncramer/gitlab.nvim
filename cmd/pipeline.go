@@ -47,7 +47,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 	jobs, res, err := c.ListPipelineJobs(d.ProjectId, idInt, &gitlab.ListJobsOptions{})
 
 	if err != nil {
-		HandleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
+		HandleError(w, err, "Could not get pipeline jobs", res.StatusCode)
 		return
 	}
 
@@ -65,7 +65,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 		Jobs: jobs,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		HandleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
@@ -84,13 +84,8 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	pipeline, res, err := c.RetryPipelineBuild(d.ProjectId, idInt)
 
-	if res.StatusCode >= 300 {
-		HandleError(w, GenericError{endpoint: "/pipeline"}, "Gitlab returned non-200 status", res.StatusCode)
-		return
-	}
-
 	if err != nil {
-		HandleError(w, err, "Could not retrigger pipeline", http.StatusInternalServerError)
+		HandleError(w, err, "Could not retrigger pipeline", res.StatusCode)
 		return
 	}
 
