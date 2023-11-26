@@ -65,7 +65,13 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerCli
 	discussions, res, err := c.ListMergeRequestDiscussions(d.ProjectId, d.MergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
-		HandleError(w, err, "Listing discussions failed: %w", res.Response.StatusCode)
+		HandleError(w, err, "Could not list discussions", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		HandleError(w, GenericError{endpoint: "/discussions/list"}, "Gitlab returned non-200 status", res.StatusCode)
+		return
 	}
 
 	/* Filter out any discussions started by a blacklisted user
@@ -73,7 +79,7 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerCli
 	var unlinkedDiscussions []*gitlab.Discussion
 	var linkedDiscussions []*gitlab.Discussion
 	for _, discussion := range discussions {
-		if Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
+		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
 			continue
 		}
 		for _, note := range discussion.Notes {
@@ -98,11 +104,10 @@ func ListDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerCli
 		return
 	}
 
-	/* TODO: Check for non-200 statuses */
 	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Discussions successfully fetched.",
+			Message: "Discussions fetched",
 			Status:  http.StatusOK,
 		},
 		Discussions:         linkedDiscussions,

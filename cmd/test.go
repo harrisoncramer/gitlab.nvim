@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/xanzy/go-gitlab"
 )
@@ -20,6 +21,16 @@ type FakeHandlerClient struct {
 	Description string
 	StatusCode  int
 	Error       string
+}
+
+type Author struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	State     string `json:"state"`
+	AvatarURL string `json:"avatar_url"`
+	WebURL    string `json:"web_url"`
 }
 
 func (f FakeHandlerClient) GetMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
@@ -76,7 +87,35 @@ func (f FakeHandlerClient) ListMergeRequestDiscussions(pid interface{}, mergeReq
 	if f.Error != "" {
 		return nil, nil, errors.New(f.Error)
 	}
-	return []*gitlab.Discussion{}, makeResponse(f), nil
+
+	now := time.Now()
+	later := now.Add(time.Second * 100)
+
+	discussions := []*gitlab.Discussion{
+		{
+			Notes: []*gitlab.Note{
+				{
+					CreatedAt: &now,
+					Type:      "DiffNote",
+					Author: Author{
+						Username: "hcramer",
+					},
+				},
+			},
+		},
+		{
+			Notes: []*gitlab.Note{
+				{
+					CreatedAt: &later,
+					Type:      "DiffNote",
+					Author: Author{
+						Username: "hcramer2",
+					},
+				},
+			},
+		},
+	}
+	return discussions, makeResponse(f), nil
 }
 
 func (f FakeHandlerClient) ResolveMergeRequestDiscussion(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {

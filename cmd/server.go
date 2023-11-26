@@ -23,7 +23,7 @@ func StartServer(client HandlerClient, projectInfo *ProjectInfo) {
 	m.Handle("/mr/assignee", ClientMiddleware(client, projectInfo, AssigneesHandler))
 	m.Handle("/approve", ClientMiddleware(client, projectInfo, ApproveHandler))
 	m.Handle("/revoke", ClientMiddleware(client, projectInfo, RevokeHandler))
-	m.Handle("/discussions", ClientMiddleware(client, projectInfo, ListDiscussionsHandler))
+	m.Handle("/discussions/list", ClientMiddleware(client, projectInfo, ListDiscussionsHandler))
 	m.Handle("/discussion/resolve", ClientMiddleware(client, projectInfo, DiscussionResolveHandler))
 	m.Handle("/comment", ClientMiddleware(client, projectInfo, CommentHandler))
 	m.Handle("/reply", ClientMiddleware(client, projectInfo, ReplyHandler))
