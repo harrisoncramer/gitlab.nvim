@@ -168,7 +168,18 @@ end
 ---@param offset string The offset of the user's local time zone, e.g. -0500 for EST
 ---@return string
 M.format_to_local = function(date_string, offset)
+  -- ISO 8601 format
+  -- 2021-01-01T00:00:00.000Z
   local year, month, day, hour, min, sec, _, tzOffset = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)Z")
+  if year == nil then
+    -- ISO 8601 format with timezone offset
+    -- 2021-01-01T00:00:00.000-05:00
+    local tzOffsetSign, tzOffsetHour, tzOffsetMin
+    year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
+      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+    tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
+  end
+
   local localTime = os.time({
     year = year,
     month = month,
@@ -179,7 +190,9 @@ M.format_to_local = function(date_string, offset)
     tzOffset = tzOffset,
   })
 
-  local localTimestamp = localTime + M.offset_to_seconds(offset)
+  -- Subtract the tzOffset from the local time to get the UTC time
+  local localTimestamp = tzOffset ~= nil and localTime - M.offset_to_seconds(tzOffset) or localTime
+  localTimestamp = localTimestamp + M.offset_to_seconds(offset)
 
   return tostring(os.date("%m/%d/%Y at %H:%M", localTimestamp))
 end
