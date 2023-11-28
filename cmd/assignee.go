@@ -22,7 +22,7 @@ type AssigneesRequestResponse struct {
 	Assignees []int `json:"assignees"`
 }
 
-func assigneesHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func assigneesHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)

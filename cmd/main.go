@@ -20,6 +20,6 @@ func main() {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
-	m := createServer(client, projectInfo)
+	m := createServer(client, projectInfo, attachmentReader{})
 	startServer(m)
 }

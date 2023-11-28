@@ -15,7 +15,7 @@ type JobTraceResponse struct {
 	File string `json:"file"`
 }
 
-func jobHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func jobHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {

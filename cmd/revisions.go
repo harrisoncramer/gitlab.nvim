@@ -12,7 +12,7 @@ type RevisionsResponse struct {
 	Revisions []*gitlab.MergeRequestDiffVersion
 }
 
-func revisionsHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func revisionsHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)

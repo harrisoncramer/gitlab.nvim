@@ -20,7 +20,7 @@ type GetJobsResponse struct {
 	Jobs []*gitlab.Job
 }
 
-func pipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func pipelineHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	switch r.Method {
 	case http.MethodGet:
 		GetJobs(w, r, c, d)
@@ -33,7 +33,7 @@ func pipelineHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d 
 	}
 }
 
-func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func GetJobs(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
@@ -71,7 +71,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Project
 	}
 }
 
-func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")

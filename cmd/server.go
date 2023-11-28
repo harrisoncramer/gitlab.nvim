@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -9,48 +8,33 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/xanzy/go-gitlab"
 )
 
-type ClientInterface interface {
-	GetMergeRequest(pid interface{}, mr int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	UpdateMergeRequest(pid interface{}, mr int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
-	GetMergeRequestDiffVersions(pid interface{}, mr int, opt *gitlab.GetMergeRequestDiffVersionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequestDiffVersion, *gitlab.Response, error)
-	ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error)
-	UnapproveMergeRequest(pid interface{}, mr int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
-	ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error)
-	ResolveMergeRequestDiscussion(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
-	CreateMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
-	UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
-	DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
-	AddMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, opt *gitlab.AddMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
-	ListAllProjectMembers(pid interface{}, opt *gitlab.ListProjectMembersOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.ProjectMember, *gitlab.Response, error)
-	RetryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
-	ListPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
-	GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
+/* TODO: Convert this into optional function pattern */
+type FileReader interface {
+	ReadFile(path string) (io.Reader, error)
 }
 
 type api struct {
 	client      ClientInterface
 	projectInfo *ProjectInfo
+	fileReader  FileReader
 }
 
-
 /* This function wires up the router and attaches all handlers to their respective routes. It then starts up the server on the port specified or on a random port */
-func createServer(client HandlerClient, projectInfo *ProjectInfo) *http.ServeMux {
+func createServer(client ClientInterface, projectInfo *ProjectInfo, fileReader FileReader) *http.ServeMux {
 	m := http.NewServeMux()
 
 	c := api{
 		client:      client,
 		projectInfo: projectInfo,
+		fileReader:  fileReader,
 	}
 
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 	m.HandleFunc("/info", c.infoHandler)
 	m.HandleFunc("/mr/summary", c.summaryHandler)
-	m.HandleFunc("/mr/attachment", withFileReader(http.HandlerFunc(c.attachmentHandler)))
+	m.HandleFunc("/mr/attachment", c.attachmentHandler)
 	// m.Handle("/mr/reviewer", withClient(client, projectInfo, reviewersHandler))
 	// m.Handle("/mr/revisions", withClient(client, projectInfo, revisionsHandler))
 	// m.Handle("/mr/assignee", withClient(client, projectInfo, assigneesHandler))

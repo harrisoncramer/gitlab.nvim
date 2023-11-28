@@ -36,7 +36,7 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func listDiscussionsHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func listDiscussionsHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,10 +10,10 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type MockFileReader struct{}
+type MockAttachmentReader struct{}
 
-func (mf MockFileReader) Read(p []byte) (n int, err error) {
-	return 0, nil
+func (mf MockAttachmentReader) ReadFile(path string) (io.Reader, error) {
+	return bytes.NewReader([]byte{}), nil
 }
 
 func uploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
@@ -34,14 +33,10 @@ func TestAttachmentHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mockFileReader := MockFileReader{}
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
-		ctx := context.WithValue(context.Background(), fileReaderKey, mockFileReader)
-		rwq := request.WithContext(ctx)
-
-		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{})
-		data, err := serveRequest(server, rwq, InfoResponse{})
+		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
+		data, err := serveRequest(server, request, InfoResponse{})
 
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "File uploaded successfully")

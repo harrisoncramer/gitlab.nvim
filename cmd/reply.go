@@ -19,7 +19,7 @@ type ReplyResponse struct {
 	Note *gitlab.Note `json:"note"`
 }
 
-func replyHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func replyHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

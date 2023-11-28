@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 type AttachmentResponse struct {
@@ -12,6 +14,26 @@ type AttachmentResponse struct {
 	Markdown string `json:"markdown"`
 	Alt      string `json:"alt"`
 	Url      string `json:"url"`
+}
+
+type attachmentReader struct{}
+
+func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	reader := bytes.NewReader(data)
+
+	return nil, reader
 }
 
 func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +60,10 @@ func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file := r.Context().Value(fileReaderKey).(io.Reader)
+	file, err := a.fileReader.ReadFile(attachmentRequest.FileName)
+	if err != nil {
+		handleError(w, err, fmt.Sprintf("Could not read %s file", attachmentRequest.FileName), http.StatusInternalServerError)
+	}
 
 	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {

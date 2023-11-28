@@ -23,7 +23,7 @@ func getInfoErr(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsO
 func TestInfoHandler(t *testing.T) {
 	t.Run("Returns normal information", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
-		server := createServer(fakeClient{getMergeRequestFn: getInfo}, &ProjectInfo{})
+		server := createServer(fakeClient{getMergeRequestFn: getInfo}, &ProjectInfo{}, MockAttachmentReader{})
 		data, err := serveRequest(server, request, InfoResponse{})
 		if err != nil {
 			t.Fatalf("Failed to read JSON: %v", err)
@@ -36,7 +36,7 @@ func TestInfoHandler(t *testing.T) {
 
 	t.Run("Disallows non-GET method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/info", nil)
-		server := createServer(fakeClient{getMergeRequestFn: getInfo}, &ProjectInfo{})
+		server := createServer(fakeClient{getMergeRequestFn: getInfo}, &ProjectInfo{}, MockAttachmentReader{})
 		data, err := serveRequest(server, request, ErrorResponse{})
 		if err != nil {
 			t.Fatalf("Failed to read JSON: %v", err)
@@ -49,7 +49,7 @@ func TestInfoHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
-		server := createServer(fakeClient{getMergeRequestFn: getInfoErr}, &ProjectInfo{})
+		server := createServer(fakeClient{getMergeRequestFn: getInfoErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data, err := serveRequest(server, request, ErrorResponse{})
 		if err != nil {
 			t.Fatalf("Failed to read JSON: %v", err)
@@ -61,7 +61,7 @@ func TestInfoHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
-		server := createServer(fakeClient{getMergeRequestFn: getInfoNon200}, &ProjectInfo{})
+		server := createServer(fakeClient{getMergeRequestFn: getInfoNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data, err := serveRequest(server, request, ErrorResponse{})
 		if err != nil {
 			t.Fatalf("Failed to read JSON: %v", err)
