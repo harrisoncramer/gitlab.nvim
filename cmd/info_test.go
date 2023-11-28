@@ -9,7 +9,7 @@ import (
 )
 
 func getInfo(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return &gitlab.MergeRequest{Title: "Some Title"}, makeResponse(200), nil
+	return &gitlab.MergeRequest{Title: "Some Title"}, makeResponse(http.StatusOK), nil
 }
 
 func getInfoNon200(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {

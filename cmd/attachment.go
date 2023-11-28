@@ -33,7 +33,7 @@ func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
 
 	reader := bytes.NewReader(data)
 
-	return nil, reader
+	return reader, nil
 }
 
 func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
