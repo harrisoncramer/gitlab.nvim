@@ -12,7 +12,7 @@ type InfoResponse struct {
 	Info *gitlab.MergeRequest `json:"info"`
 }
 
-func infoHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func (a *api) infoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
@@ -20,7 +20,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *Pro
 		return
 	}
 
-	mr, res, err := c.GetMergeRequest(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestsOptions{})
+	mr, res, err := a.client.GetMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.GetMergeRequestsOptions{})
 	if err != nil {
 		handleError(w, err, "Could not get project info", http.StatusInternalServerError)
 		return

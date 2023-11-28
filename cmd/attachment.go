@@ -14,7 +14,7 @@ type AttachmentResponse struct {
 	Url      string `json:"url"`
 }
 
-func attachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, d *ProjectInfo) {
+func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
@@ -40,7 +40,7 @@ func attachmentHandler(w http.ResponseWriter, r *http.Request, c HandlerClient, 
 
 	file := r.Context().Value(fileReaderKey).(io.Reader)
 
-	projectFile, res, err := c.UploadFile(d.ProjectId, file, attachmentRequest.FileName)
+	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
 		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
 		return

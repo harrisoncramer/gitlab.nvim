@@ -10,13 +10,6 @@ import (
 	"os"
 )
 
-/* withClient passes the project information and Gitlab client to the handler for the given route */
-func withClient(client HandlerClient, projectInfo *ProjectInfo, handler handlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		handler(w, r, client, projectInfo)
-	}
-}
-
 type AttachmentRequest struct {
 	FilePath string `json:"file_path"`
 	FileName string `json:"file_name"`
