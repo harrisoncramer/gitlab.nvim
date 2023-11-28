@@ -45,8 +45,7 @@ func TestAttachmentHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
 		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
-		data, err := serveRequest(server, request, InfoResponse{})
-
+		data := serveRequest(t, server, request, AttachmentResponse{})
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "File uploaded successfully")
 	})
@@ -65,10 +64,7 @@ func TestAttachmentHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPut, "/mr/attachment", reader)
 		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
-		data, err := serveRequest(server, request, ErrorResponse{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Details, "Invalid request type")
 		assert(t, data.Message, "Expected POST")
 	})
@@ -87,11 +83,7 @@ func TestAttachmentHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
 		server := createServer(fakeClient{uploadFile: uploadFileErr}, &ProjectInfo{}, MockAttachmentReader{})
-		data, err := serveRequest(server, request, ErrorResponse{})
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
 		assert(t, data.Details, "Some error from Gitlab")
@@ -111,11 +103,7 @@ func TestAttachmentHandler(t *testing.T) {
 		reader := bytes.NewReader(b)
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
 		server := createServer(fakeClient{uploadFile: uploadFileNon200}, &ProjectInfo{}, MockAttachmentReader{})
-		data, err := serveRequest(server, request, ErrorResponse{})
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
 		assert(t, data.Details, "An error occurred on the /mr/attachment endpoint")

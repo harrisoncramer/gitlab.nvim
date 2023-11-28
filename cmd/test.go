@@ -147,6 +147,7 @@ func assert[T comparable](t *testing.T, got T, want T) {
 
 /* Will create a new request with the given method, endpoint and body */
 func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *http.Request {
+	t.Helper()
 	request, err := http.NewRequest(method, endpoint, body)
 	if err != nil {
 		t.Fatal(err)
@@ -156,17 +157,19 @@ func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *
 }
 
 /* Serves and parses the JSON from an endpoint into the given type */
-func serveRequest[T any](s *http.ServeMux, request *http.Request, i T) (*T, error) {
+func serveRequest[T any](t *testing.T, s *http.ServeMux, request *http.Request, i T) *T {
+	t.Helper()
 	recorder := httptest.NewRecorder()
 	s.ServeHTTP(recorder, request)
 	result := recorder.Result()
 	decoder := json.NewDecoder(result.Body)
 	err := decoder.Decode(&i)
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
+		return nil
 	}
 
-	return &i, nil
+	return &i
 }
 
 /* Make response makes a simple response value with the right status code */
