@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -31,19 +30,7 @@ func uploadFileErr(pid interface{}, content io.Reader, filename string, options 
 
 func TestAttachmentHandler(t *testing.T) {
 	t.Run("Returns 200-status response after upload", func(t *testing.T) {
-
-		body := AttachmentRequest{
-			FilePath: "some_file_path",
-			FileName: "some_file_name",
-		}
-
-		b, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		reader := bytes.NewReader(b)
-		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
+		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, AttachmentResponse{})
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -51,18 +38,7 @@ func TestAttachmentHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
-		body := AttachmentRequest{
-			FilePath: "some_file_path",
-			FileName: "some_file_name",
-		}
-
-		b, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		reader := bytes.NewReader(b)
-		request := makeRequest(t, http.MethodPut, "/mr/attachment", reader)
+		request := makeRequest(t, http.MethodPut, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Details, "Invalid request type")
@@ -70,18 +46,7 @@ func TestAttachmentHandler(t *testing.T) {
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		body := AttachmentRequest{
-			FilePath: "some_file_path",
-			FileName: "some_file_name",
-		}
-
-		b, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		reader := bytes.NewReader(b)
-		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
+		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFileErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
@@ -90,18 +55,7 @@ func TestAttachmentHandler(t *testing.T) {
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		body := AttachmentRequest{
-			FilePath: "some_file_path",
-			FileName: "some_file_name",
-		}
-
-		b, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		reader := bytes.NewReader(b)
-		request := makeRequest(t, http.MethodPost, "/mr/attachment", reader)
+		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFileNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)

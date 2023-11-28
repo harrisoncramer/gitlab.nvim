@@ -146,9 +146,19 @@ func assert[T comparable](t *testing.T, got T, want T) {
 }
 
 /* Will create a new request with the given method, endpoint and body */
-func makeRequest(t *testing.T, method string, endpoint string, body io.Reader) *http.Request {
+func makeRequest(t *testing.T, method string, endpoint string, body any) *http.Request {
 	t.Helper()
-	request, err := http.NewRequest(method, endpoint, body)
+
+	var reader io.Reader
+	if body != nil {
+		j, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		reader = bytes.NewReader(j)
+	}
+
+	request, err := http.NewRequest(method, endpoint, reader)
 	if err != nil {
 		t.Fatal(err)
 	}
