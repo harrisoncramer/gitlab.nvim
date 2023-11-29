@@ -38,7 +38,6 @@ func (n SortableDiscussions) Swap(i, j int) {
 
 func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
 		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
@@ -107,7 +106,7 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Discussions fetched",
+			Message: "Discussions retrieved",
 			Status:  http.StatusOK,
 		},
 		Discussions:         linkedDiscussions,
