@@ -32,17 +32,18 @@ func createServer(client ClientInterface, projectInfo *ProjectInfo, fileReader F
 	}
 
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
+
+	m.HandleFunc("/approve", c.approveHandler)
+	m.HandleFunc("/comment", c.commentHandler)
 	m.HandleFunc("/info", c.infoHandler)
 	m.HandleFunc("/mr/summary", c.summaryHandler)
 	m.HandleFunc("/mr/attachment", c.attachmentHandler)
 	// m.Handle("/mr/reviewer", withClient(client, projectInfo, reviewersHandler))
 	// m.Handle("/mr/revisions", withClient(client, projectInfo, revisionsHandler))
 	// m.Handle("/mr/assignee", withClient(client, projectInfo, assigneesHandler))
-	// m.Handle("/approve", withClient(client, projectInfo, approveHandler))
-	m.HandleFunc("/approve", c.approveHandler)
+	// m.Handle("/revoke", withClient(client, projectInfo, revokeHandler))
 	// m.Handle("/discussions/list", withClient(client, projectInfo, listDiscussionsHandler))
 	// m.Handle("/discussions/resolve", withClient(client, projectInfo, discussionsResolveHandler))
-	// m.Handle("/comment", withClient(client, projectInfo, commentHandler))
 	// m.Handle("/reply", withClient(client, projectInfo, replyHandler))
 	// m.Handle("/project/members", withClient(client, projectInfo, projectMembersHandler))
 	// m.Handle("/pipeline/", withClient(client, projectInfo, pipelineHandler))

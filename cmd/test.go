@@ -24,6 +24,7 @@ type fakeClient struct {
 	approveMergeRequest              func(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error)
 	listMergeRequestDiscussions      func(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error)
 	resolveMergeRequestDiscussion    func(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
+	createMergeRequestDiscussion     func(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
 	updateMergeRequestDiscussionNote func(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
 	deleteMergeRequestDiscussionNote func(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	addMergeRequestDiscussionNote    func(pid interface{}, mergeRequest int, discussion string, opt *gitlab.AddMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
@@ -102,11 +103,11 @@ func (f fakeClient) ListMergeRequestDiscussions(pid interface{}, mergeRequest in
 }
 
 func (f fakeClient) ResolveMergeRequestDiscussion(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return f.ResolveMergeRequestDiscussion(pid, mergeRequest, discussion, opt, options...)
+	return f.resolveMergeRequestDiscussion(pid, mergeRequest, discussion, opt, options...)
 }
 
 func (f fakeClient) CreateMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return f.CreateMergeRequestDiscussion(pid, mergeRequest, opt, options...)
+	return f.createMergeRequestDiscussion(pid, mergeRequest, opt, options...)
 }
 
 func (f fakeClient) UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {

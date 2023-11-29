@@ -54,14 +54,14 @@ type CommentResponse struct {
 	Discussion *gitlab.Discussion `json:"discussion"`
 }
 
-func commentHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodDelete:
-		DeleteComment(w, r, c, d)
+		a.DeleteComment(w, r)
 	case http.MethodPost:
-		PostComment(w, r, c, d)
+		a.PostComment(w, r)
 	case http.MethodPatch:
-		EditComment(w, r, c, d)
+		a.EditComment(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
@@ -69,7 +69,7 @@ func commentHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d
 	}
 }
 
-func DeleteComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -86,7 +86,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d 
 		return
 	}
 
-	res, err := c.DeleteMergeRequestDiscussionNote(d.ProjectId, d.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
 	if err != nil {
 		handleError(w, err, "Could not delete comment", http.StatusInternalServerError)
@@ -110,7 +110,7 @@ func DeleteComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d 
 	}
 }
 
-func PostComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -173,7 +173,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d *P
 		}
 	}
 
-	discussion, res, err := c.CreateMergeRequestDiscussion(d.ProjectId, d.MergeId, &opt)
+	discussion, res, err := a.client.CreateMergeRequestDiscussion(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
 
 	if err != nil {
 		handleError(w, err, "Could not create comment", http.StatusBadRequest)
@@ -201,7 +201,7 @@ func PostComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d *P
 	}
 }
 
-func EditComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) EditComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 
@@ -222,7 +222,7 @@ func EditComment(w http.ResponseWriter, r *http.Request, c ClientInterface, d *P
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
 	options.Body = gitlab.String(editCommentRequest.Comment)
 
-	note, res, err := c.UpdateMergeRequestDiscussionNote(d.ProjectId, d.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
 		handleError(w, err, "Could not update comment", http.StatusInternalServerError)
