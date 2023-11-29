@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -190,4 +191,25 @@ func makeResponse(status int) *gitlab.Response {
 			StatusCode: status,
 		},
 	}
+}
+
+func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
+	t.Helper()
+	assert(t, data.Status, http.StatusInternalServerError)
+	assert(t, data.Message, msg)
+	assert(t, data.Details, "Some error from Gitlab")
+}
+
+func checkBadMethod(t *testing.T, data ErrorResponse, method string) {
+	t.Helper()
+	assert(t, data.Status, http.StatusMethodNotAllowed)
+	assert(t, data.Details, "Invalid request type")
+	assert(t, data.Message, fmt.Sprintf("Expected %s", method))
+}
+
+func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
+	t.Helper()
+	assert(t, data.Status, http.StatusSeeOther)
+	assert(t, data.Message, msg)
+	assert(t, data.Details, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
 }

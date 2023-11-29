@@ -34,26 +34,20 @@ func TestInfoHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/info", nil)
 		server := createServer(fakeClient{getMergeRequestFn: getInfo}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Status, http.StatusMethodNotAllowed)
-		assert(t, data.Details, "Invalid request type")
-		assert(t, data.Message, "Expected GET")
+		checkBadMethod(t, *data, http.MethodGet)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
 		server := createServer(fakeClient{getMergeRequestFn: getInfoErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Status, http.StatusInternalServerError)
-		assert(t, data.Message, "Could not get project info")
-		assert(t, data.Details, "Some error from Gitlab")
+		checkErrorFromGitlab(t, *data, "Could not get project info")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/info", nil)
 		server := createServer(fakeClient{getMergeRequestFn: getInfoNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Could not get project info")
-		assert(t, data.Details, "An error occurred on the /info endpoint")
+		checkNon200(t, *data, "Could not get project info", "/info")
 	})
 }

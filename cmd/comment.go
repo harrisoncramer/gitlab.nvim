@@ -181,7 +181,7 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 	discussion, res, err := a.client.CreateMergeRequestDiscussion(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
 
 	if err != nil {
-		handleError(w, err, "Could not create discussion", http.StatusBadRequest)
+		handleError(w, err, "Could not create discussion", http.StatusInternalServerError)
 		return
 	}
 

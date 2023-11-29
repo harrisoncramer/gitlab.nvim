@@ -41,25 +41,20 @@ func TestAttachmentHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Details, "Invalid request type")
-		assert(t, data.Message, "Expected POST")
+		checkBadMethod(t, *data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFileErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Status, http.StatusInternalServerError)
-		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
-		assert(t, data.Details, "Some error from Gitlab")
+		checkErrorFromGitlab(t, *data, "Could not upload some_file_name to Gitlab")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
 		server := createServer(fakeClient{uploadFile: uploadFileNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Status, http.StatusSeeOther)
-		assert(t, data.Message, "Could not upload some_file_name to Gitlab")
-		assert(t, data.Details, "An error occurred on the /mr/attachment endpoint")
+		checkNon200(t, *data, "Could not upload some_file_name to Gitlab", "/mr/attachment")
 	})
 }

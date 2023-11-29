@@ -55,16 +55,14 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/comment", PostCommentRequest{})
 		server := createServer(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussionErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Message, "Could not create discussion")
-		assert(t, data.Details, "Some error from Gitlab")
+		checkErrorFromGitlab(t, *data, "Could not create discussion")
 	})
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/comment", PostCommentRequest{})
 		server := createServer(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussionNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Message, "Could not create discussion")
-		assert(t, data.Details, "An error occurred on the /comment endpoint")
+		checkNon200(t, *data, "Could not create discussion", "/comment")
 	})
 }
 
@@ -93,16 +91,14 @@ func TestDeleteComment(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/comment", DeleteCommentRequest{})
 		server := createServer(fakeClient{deleteMergeRequestDiscussionNote: deleteMergeRequestDiscussionNoteErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Message, "Could not delete comment")
-		assert(t, data.Details, "Some error from Gitlab")
+		checkErrorFromGitlab(t, *data, "Could not delete comment")
 	})
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/comment", DeleteCommentRequest{})
 		server := createServer(fakeClient{deleteMergeRequestDiscussionNote: deleteMergeRequestDiscussionNoteNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Message, "Could not delete comment")
-		assert(t, data.Details, "An error occurred on the /comment endpoint")
+		checkNon200(t, *data, "Could not delete comment", "/comment")
 	})
 }
 
@@ -131,15 +127,13 @@ func TestEditComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/comment", EditCommentRequest{})
 		server := createServer(fakeClient{updateMergeRequestDiscussionNote: updateMergeRequestDiscussionNoteErr}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Message, "Could not update comment")
-		assert(t, data.Details, "Some error from Gitlab")
+		checkErrorFromGitlab(t, *data, "Could not update comment")
 	})
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/comment", EditCommentRequest{})
 		server := createServer(fakeClient{updateMergeRequestDiscussionNote: updateMergeRequestDiscussionNoteNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		assert(t, data.Message, "Could not update comment")
-		assert(t, data.Details, "An error occurred on the /comment endpoint")
+		checkNon200(t, *data, "Could not update comment", "/comment")
 	})
 }
