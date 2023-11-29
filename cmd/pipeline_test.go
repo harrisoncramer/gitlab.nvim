@@ -20,6 +20,18 @@ func listPipelineJobsNon200(pid interface{}, pipelineID int, opts *gitlab.ListJo
 	return nil, makeResponse(http.StatusSeeOther), nil
 }
 
+func retryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
+	return &gitlab.Pipeline{}, makeResponse(http.StatusOK), nil
+}
+
+func retryPipelineBuildErr(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
+	return nil, nil, errors.New("Some error from Gitlab")
+}
+
+func retryPipelineBuildNon200(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
+	return nil, makeResponse(http.StatusSeeOther), nil
+}
+
 func TestPipelineHandler(t *testing.T) {
 	t.Run("Gets all pipeline jobs", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline/1", nil)
@@ -48,5 +60,27 @@ func TestPipelineHandler(t *testing.T) {
 		server := createServer(fakeClient{listPipelineJobs: listPipelineJobsNon200}, &ProjectInfo{}, MockAttachmentReader{})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not get pipeline jobs", "/pipeline")
+	})
+
+	t.Run("Retriggers pipeline", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/pipeline/1", nil)
+		server := createServer(fakeClient{retryPipelineBuild: retryPipelineBuild}, &ProjectInfo{}, MockAttachmentReader{})
+		data := serveRequest(t, server, request, GetJobsResponse{})
+		assert(t, data.SuccessResponse.Message, "Pipeline retriggered")
+		assert(t, data.SuccessResponse.Status, http.StatusOK)
+	})
+
+	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/pipeline/1", nil)
+		server := createServer(fakeClient{retryPipelineBuild: retryPipelineBuildErr}, &ProjectInfo{}, MockAttachmentReader{})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		checkErrorFromGitlab(t, *data, "Could not retrigger pipeline")
+	})
+
+	t.Run("Handles non-200s from Gitlab client on retrigger", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/pipeline/1", nil)
+		server := createServer(fakeClient{retryPipelineBuild: retryPipelineBuildNon200}, &ProjectInfo{}, MockAttachmentReader{})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		checkNon200(t, *data, "Could not retrigger pipeline", "/pipeline")
 	})
 }

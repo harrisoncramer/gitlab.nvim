@@ -85,7 +85,12 @@ func (a *api) RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 	pipeline, res, err := a.client.RetryPipelineBuild(a.projectInfo.ProjectId, idInt)
 
 	if err != nil {
-		handleError(w, err, "Could not retrigger pipeline", res.StatusCode)
+		handleError(w, err, "Could not retrigger pipeline", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not retrigger pipeline", res.StatusCode)
 		return
 	}
 
