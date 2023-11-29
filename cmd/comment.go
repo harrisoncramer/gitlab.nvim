@@ -56,12 +56,12 @@ type CommentResponse struct {
 
 func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodDelete:
-		a.DeleteComment(w, r)
 	case http.MethodPost:
 		a.PostComment(w, r)
 	case http.MethodPatch:
 		a.EditComment(w, r)
+	case http.MethodDelete:
+		a.DeleteComment(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
@@ -69,6 +69,7 @@ func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* Deletes a note, multiline comment, or comment, which are all considered discussion notes. */
 func (a *api) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
@@ -110,6 +111,7 @@ func (a *api) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* Creates a note, multiline comment, or comment */
 func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -134,7 +136,9 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 
 	/* If we are leaving a comment on a line, leave position. Otherwise,
 	we are leaving a note (unlinked comment) */
+	var friendlyName = "Note"
 	if postCommentRequest.FileName != "" {
+		friendlyName = "Comment"
 		opt.Position = &gitlab.PositionOptions{
 			PositionType: &postCommentRequest.Type,
 			StartSHA:     &postCommentRequest.StartCommitSHA,
@@ -147,15 +151,16 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if postCommentRequest.LineRange != nil {
-			var format = "%x_%d_%d"
-			var start_filename_sha1 = fmt.Sprintf(
-				format,
+			friendlyName = "Multiline Comment"
+			shaFormat := "%x_%d_%d"
+			startFilenameSha := fmt.Sprintf(
+				shaFormat,
 				sha1.Sum([]byte(postCommentRequest.FileName)),
 				postCommentRequest.LineRange.StartRange.OldLine,
 				postCommentRequest.LineRange.StartRange.NewLine,
 			)
-			var end_filename_sha1 = fmt.Sprintf(
-				format,
+			endFilenameSha := fmt.Sprintf(
+				shaFormat,
 				sha1.Sum([]byte(postCommentRequest.FileName)),
 				postCommentRequest.LineRange.EndRange.OldLine,
 				postCommentRequest.LineRange.EndRange.NewLine,
@@ -163,11 +168,11 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 			opt.Position.LineRange = &gitlab.LineRangeOptions{
 				Start: &gitlab.LinePositionOptions{
 					Type:     &postCommentRequest.LineRange.StartRange.Type,
-					LineCode: &start_filename_sha1,
+					LineCode: &startFilenameSha,
 				},
 				End: &gitlab.LinePositionOptions{
 					Type:     &postCommentRequest.LineRange.EndRange.Type,
-					LineCode: &end_filename_sha1,
+					LineCode: &endFilenameSha,
 				},
 			}
 		}
@@ -176,19 +181,19 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 	discussion, res, err := a.client.CreateMergeRequestDiscussion(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
 
 	if err != nil {
-		handleError(w, err, "Could not create comment", http.StatusBadRequest)
+		handleError(w, err, "Could not create discussion", http.StatusBadRequest)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/comment"}, "Could not create comment", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not create discussion", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment created successfully",
+			Message: fmt.Sprintf("%s created successfully", friendlyName),
 			Status:  http.StatusOK,
 		},
 		Comment:    discussion.Notes[0],
@@ -201,6 +206,7 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* Changes the text of a comment or changes it's resolved status. */
 func (a *api) EditComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)

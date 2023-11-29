@@ -111,7 +111,7 @@ func (f fakeClient) CreateMergeRequestDiscussion(pid interface{}, mergeRequest i
 }
 
 func (f fakeClient) UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return f.UpdateMergeRequestDiscussionNote(pid, mergeRequest, discussion, note, opt, options...)
+	return f.updateMergeRequestDiscussionNote(pid, mergeRequest, discussion, note, opt, options...)
 }
 
 func (f fakeClient) DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
