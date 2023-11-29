@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/xanzy/go-gitlab"
@@ -200,11 +201,12 @@ func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
 	assert(t, data.Details, "Some error from Gitlab")
 }
 
-func checkBadMethod(t *testing.T, data ErrorResponse, method string) {
+func checkBadMethod(t *testing.T, data ErrorResponse, methods ...string) {
 	t.Helper()
 	assert(t, data.Status, http.StatusMethodNotAllowed)
 	assert(t, data.Details, "Invalid request type")
-	assert(t, data.Message, fmt.Sprintf("Expected %s", method))
+	expectedMethods := strings.Join(methods, " or ")
+	assert(t, data.Message, fmt.Sprintf("Expected %s", expectedMethods))
 }
 
 func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
