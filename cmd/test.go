@@ -65,7 +65,7 @@ func (f fakeClient) GetMergeRequestDiffVersions(pid interface{}, mergeRequest in
 }
 
 func (f fakeClient) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
-	return f.ApproveMergeRequest(pid, mr, opt, options...)
+	return f.approveMergeRequest(pid, mr, opt, options...)
 }
 
 func (f fakeClient) ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {

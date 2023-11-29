@@ -39,7 +39,7 @@ func createServer(client ClientInterface, projectInfo *ProjectInfo, fileReader F
 	// m.Handle("/mr/revisions", withClient(client, projectInfo, revisionsHandler))
 	// m.Handle("/mr/assignee", withClient(client, projectInfo, assigneesHandler))
 	// m.Handle("/approve", withClient(client, projectInfo, approveHandler))
-	// m.Handle("/revoke", withClient(client, projectInfo, revokeHandler))
+	m.HandleFunc("/approve", c.approveHandler)
 	// m.Handle("/discussions/list", withClient(client, projectInfo, listDiscussionsHandler))
 	// m.Handle("/discussions/resolve", withClient(client, projectInfo, discussionsResolveHandler))
 	// m.Handle("/comment", withClient(client, projectInfo, commentHandler))

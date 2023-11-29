@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func approveHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) approveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
@@ -13,7 +13,7 @@ func approveHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d
 		return
 	}
 
-	_, res, err := c.ApproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
+	_, res, err := a.client.ApproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
 	if err != nil {
 		handleError(w, err, "Could not approve merge request", http.StatusInternalServerError)
