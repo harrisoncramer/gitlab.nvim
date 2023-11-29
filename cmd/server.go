@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-/* TODO: Convert this into optional function pattern */
+/* TODO: Convert the server configuration + this into optional function pattern */
 type FileReader interface {
 	ReadFile(path string) (io.Reader, error)
 }
@@ -35,19 +35,19 @@ func createServer(client ClientInterface, projectInfo *ProjectInfo, fileReader F
 
 	m.HandleFunc("/approve", c.approveHandler)
 	m.HandleFunc("/comment", c.commentHandler)
-	m.HandleFunc("/info", c.infoHandler)
-	m.HandleFunc("/mr/summary", c.summaryHandler)
-	m.HandleFunc("/mr/attachment", c.attachmentHandler)
-	m.HandleFunc("/mr/reviewer", c.reviewersHandler)
-	m.HandleFunc("/mr/revisions", c.revisionsHandler)
-	m.HandleFunc("/mr/assignee", c.assigneesHandler)
-	m.HandleFunc("/revoke", c.revokeHandler)
 	m.HandleFunc("/discussions/list", c.listDiscussionsHandler)
 	m.HandleFunc("/discussions/resolve", c.discussionsResolveHandler)
-	m.HandleFunc("/reply", c.replyHandler)
-	m.HandleFunc("/project/members", c.projectMembersHandler)
-	m.HandleFunc("/pipeline/", c.pipelineHandler)
+	m.HandleFunc("/info", c.infoHandler)
 	m.HandleFunc("/job", c.jobHandler)
+	m.HandleFunc("/mr/attachment", c.attachmentHandler)
+	m.HandleFunc("/mr/assignee", c.assigneesHandler)
+	m.HandleFunc("/mr/summary", c.summaryHandler)
+	m.HandleFunc("/mr/reviewer", c.reviewersHandler)
+	m.HandleFunc("/mr/revisions", c.revisionsHandler)
+	m.HandleFunc("/pipeline/", c.pipelineHandler)
+	m.HandleFunc("/project/members", c.projectMembersHandler)
+	m.HandleFunc("/reply", c.replyHandler)
+	m.HandleFunc("/revoke", c.revokeHandler)
 
 	return m
 }
