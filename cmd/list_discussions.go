@@ -50,6 +50,8 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 	}
 
+	defer r.Body.Close()
+
 	var requestBody DiscussionsRequest
 	err = json.Unmarshal(body, &requestBody)
 	if err != nil {
