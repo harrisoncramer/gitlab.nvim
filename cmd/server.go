@@ -38,16 +38,17 @@ func createServer(client ClientInterface, projectInfo *ProjectInfo, fileReader F
 	m.HandleFunc("/info", c.infoHandler)
 	m.HandleFunc("/mr/summary", c.summaryHandler)
 	m.HandleFunc("/mr/attachment", c.attachmentHandler)
-	// m.Handle("/mr/reviewer", withClient(client, projectInfo, reviewersHandler))
-	// m.Handle("/mr/revisions", withClient(client, projectInfo, revisionsHandler))
-	// m.Handle("/mr/assignee", withClient(client, projectInfo, assigneesHandler))
-	// m.Handle("/revoke", withClient(client, projectInfo, revokeHandler))
-	// m.Handle("/discussions/list", withClient(client, projectInfo, listDiscussionsHandler))
-	// m.Handle("/discussions/resolve", withClient(client, projectInfo, discussionsResolveHandler))
-	// m.Handle("/reply", withClient(client, projectInfo, replyHandler))
-	// m.Handle("/project/members", withClient(client, projectInfo, projectMembersHandler))
-	// m.Handle("/pipeline/", withClient(client, projectInfo, pipelineHandler))
-	// m.Handle("/job", withClient(client, projectInfo, jobHandler))
+	m.HandleFunc("/mr/reviewer", c.reviewersHandler)
+	m.HandleFunc("/mr/revisions", c.revisionsHandler)
+	m.HandleFunc("/mr/assignee", c.assigneesHandler)
+	m.HandleFunc("/revoke", c.revokeHandler)
+	m.HandleFunc("/discussions/list", c.listDiscussionsHandler)
+	m.HandleFunc("/discussions/resolve", c.discussionsResolveHandler)
+	m.HandleFunc("/reply", c.replyHandler)
+	m.HandleFunc("/project/members", c.projectMembersHandler)
+	m.HandleFunc("/pipeline/", c.pipelineHandler)
+	m.HandleFunc("/job", c.jobHandler)
+
 	return m
 }
 

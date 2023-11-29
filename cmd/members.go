@@ -12,7 +12,7 @@ type ProjectMembersResponse struct {
 	ProjectMembers []*gitlab.ProjectMember
 }
 
-func projectMembersHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) projectMembersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
@@ -26,7 +26,7 @@ func projectMembersHandler(w http.ResponseWriter, r *http.Request, c ClientInter
 		},
 	}
 
-	projectMembers, res, err := c.ListAllProjectMembers(d.ProjectId, &projectMemberOptions)
+	projectMembers, res, err := a.client.ListAllProjectMembers(a.projectInfo.ProjectId, &projectMemberOptions)
 
 	if err != nil {
 		handleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)

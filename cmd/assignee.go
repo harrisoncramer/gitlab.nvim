@@ -22,7 +22,7 @@ type AssigneesRequestResponse struct {
 	Assignees []int `json:"assignees"`
 }
 
-func assigneesHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) assigneesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
@@ -45,7 +45,7 @@ func assigneesHandler(w http.ResponseWriter, r *http.Request, c ClientInterface,
 		return
 	}
 
-	mr, res, err := c.UpdateMergeRequest(d.ProjectId, d.MergeId, &gitlab.UpdateMergeRequestOptions{
+	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
 		AssigneeIDs: &assigneeUpdateRequest.Ids,
 	})
 

@@ -15,7 +15,7 @@ type JobTraceResponse struct {
 	File string `json:"file"`
 }
 
-func jobHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) jobHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodGet {
@@ -37,7 +37,7 @@ func jobHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *Pr
 		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 	}
 
-	reader, _, err := c.GetTraceFile(d.ProjectId, jobTraceRequest.JobId)
+	reader, _, err := a.client.GetTraceFile(a.projectInfo.ProjectId, jobTraceRequest.JobId)
 	if err != nil {
 		handleError(w, err, "Could not get trace file for job", http.StatusBadRequest)
 	}

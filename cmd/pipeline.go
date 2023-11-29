@@ -20,12 +20,12 @@ type GetJobsResponse struct {
 	Jobs []*gitlab.Job
 }
 
-func pipelineHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		GetJobs(w, r, c, d)
+		a.GetJobs(w, r)
 	case http.MethodPost:
-		RetriggerPipeline(w, r, c, d)
+		a.RetriggerPipeline(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
@@ -33,7 +33,7 @@ func pipelineHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, 
 	}
 }
 
-func GetJobs(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) GetJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
@@ -44,7 +44,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c ClientInterface, d *Proje
 		return
 	}
 
-	jobs, res, err := c.ListPipelineJobs(d.ProjectId, idInt, &gitlab.ListJobsOptions{})
+	jobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, idInt, &gitlab.ListJobsOptions{})
 
 	if err != nil {
 		handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
@@ -71,7 +71,7 @@ func GetJobs(w http.ResponseWriter, r *http.Request, c ClientInterface, d *Proje
 	}
 }
 
-func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
@@ -82,7 +82,7 @@ func RetriggerPipeline(w http.ResponseWriter, r *http.Request, c ClientInterface
 		return
 	}
 
-	pipeline, res, err := c.RetryPipelineBuild(d.ProjectId, idInt)
+	pipeline, res, err := a.client.RetryPipelineBuild(a.projectInfo.ProjectId, idInt)
 
 	if err != nil {
 		handleError(w, err, "Could not retrigger pipeline", res.StatusCode)

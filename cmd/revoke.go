@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func revokeHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) revokeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
@@ -13,7 +13,7 @@ func revokeHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d 
 		return
 	}
 
-	res, err := c.UnapproveMergeRequest(d.ProjectId, d.MergeId, nil, nil)
+	res, err := a.client.UnapproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
 	if err != nil {
 		handleError(w, err, "Could not revoke approval", http.StatusInternalServerError)

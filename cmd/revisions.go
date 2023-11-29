@@ -12,7 +12,7 @@ type RevisionsResponse struct {
 	Revisions []*gitlab.MergeRequestDiffVersion
 }
 
-func revisionsHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) revisionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
@@ -20,7 +20,7 @@ func revisionsHandler(w http.ResponseWriter, r *http.Request, c ClientInterface,
 		return
 	}
 
-	versionInfo, res, err := c.GetMergeRequestDiffVersions(d.ProjectId, d.MergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
+	versionInfo, res, err := a.client.GetMergeRequestDiffVersions(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
 	if err != nil {
 		handleError(w, err, "Could not get diff version info", http.StatusInternalServerError)
 		return

@@ -36,7 +36,7 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
-func listDiscussionsHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -62,7 +62,7 @@ func listDiscussionsHandler(w http.ResponseWriter, r *http.Request, c ClientInte
 		PerPage: 250,
 	}
 
-	discussions, res, err := c.ListMergeRequestDiscussions(d.ProjectId, d.MergeId, &mergeRequestDiscussionOptions, nil)
+	discussions, res, err := a.client.ListMergeRequestDiscussions(a.projectInfo.ProjectId, a.projectInfo.MergeId, &mergeRequestDiscussionOptions, nil)
 
 	if err != nil {
 		handleError(w, err, "Could not list discussions", http.StatusInternalServerError)

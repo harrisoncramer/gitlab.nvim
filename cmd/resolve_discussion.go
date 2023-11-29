@@ -14,7 +14,7 @@ type DiscussionResolveRequest struct {
 	Resolved     bool   `json:"resolved"`
 }
 
-func discussionsResolveHandler(w http.ResponseWriter, r *http.Request, c ClientInterface, d *ProjectInfo) {
+func (a *api) discussionsResolveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
@@ -38,9 +38,9 @@ func discussionsResolveHandler(w http.ResponseWriter, r *http.Request, c ClientI
 		return
 	}
 
-	_, res, err := c.ResolveMergeRequestDiscussion(
-		d.ProjectId,
-		d.MergeId,
+	_, res, err := a.client.ResolveMergeRequestDiscussion(
+		a.projectInfo.ProjectId,
+		a.projectInfo.MergeId,
 		resolveDiscussionRequest.DiscussionID,
 		&gitlab.ResolveMergeRequestDiscussionOptions{Resolved: &resolveDiscussionRequest.Resolved},
 	)
