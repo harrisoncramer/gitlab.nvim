@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -9,6 +10,14 @@ import (
 
 func approveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
 	return &gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil
+}
+
+func approveMergeRequestNon200(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
+	return &gitlab.MergeRequestApprovals{}, makeResponse(http.StatusSeeOther), nil
+}
+
+func approveMergeRequestErr(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
+	return &gitlab.MergeRequestApprovals{}, nil, errors.New("Some error from Gitlab")
 }
 
 func TestApproveHandler(t *testing.T) {
@@ -29,21 +38,21 @@ func TestApproveHandler(t *testing.T) {
 		assert(t, data.Message, "Expected POST")
 	})
 
-	// t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-	// 	request := makeRequest(t, http.MethodPost, "/approve", nil)
-	// 	client := FakeHandlerClient{Error: "Some error from Gitlab"}
-	// 	data := serveRequest(t, approveHandler, client, request, ErrorResponse{})
-	// 	assert(t, data.Status, http.StatusInternalServerError)
-	// 	assert(t, data.Message, "Could not approve merge request")
-	// 	assert(t, data.Details, "Some error from Gitlab")
-	// })
-	//
-	// t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-	// 	request := makeRequest(t, http.MethodPost, "/approve", nil)
-	// 	client := FakeHandlerClient{StatusCode: http.StatusSeeOther}
-	// 	data := serveRequest(t, approveHandler, client, request, ErrorResponse{})
-	// 	assert(t, data.Status, http.StatusSeeOther)
-	// 	assert(t, data.Message, "Could not approve merge request")
-	// 	assert(t, data.Details, "An error occurred on the /approve endpoint")
-	// })
+	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/approve", nil)
+		server := createServer(fakeClient{approveMergeRequest: approveMergeRequestErr}, &ProjectInfo{}, MockAttachmentReader{})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, data.Details, "Some error from Gitlab")
+		assert(t, data.Message, "Could not approve merge request")
+	})
+
+	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/approve", nil)
+		server := createServer(fakeClient{approveMergeRequest: approveMergeRequestNon200}, &ProjectInfo{}, MockAttachmentReader{})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Status, http.StatusSeeOther)
+		assert(t, data.Details, "An error occurred on the /approve endpoint")
+		assert(t, data.Message, "Could not approve merge request")
+	})
 }
