@@ -16,15 +16,9 @@ M.open = function()
     return
   end
 
-  vim.api.nvim_command(string.format("DiffviewOpen %s", diff_refs.base_sha))
+  vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
-  if vim.fn.trim(vim.fn.system("git rev-parse HEAD")) ~= diff_refs.head_sha then
-    u.notify(
-      "Current branch does not have correct HEAD revision, please pull " .. diff_refs.head_sha,
-      vim.log.levels.WARN
-    )
-  end
   if state.INFO.has_conflicts then
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end
