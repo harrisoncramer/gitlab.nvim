@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -62,7 +61,6 @@ func startServer(m *http.ServeMux) {
 	addr := fmt.Sprintf("localhost:%s", port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal(err)
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
 		os.Exit(1)
 	}

@@ -34,7 +34,6 @@ type fakeClient struct {
 	retryPipelineBuild               func(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
 	listPipelineJobs                 func(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
 	getTraceFile                     func(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
-	error                            bool
 }
 
 type Author struct {

@@ -9,6 +9,11 @@ import (
 	"os"
 )
 
+type AttachmentRequest struct {
+	FilePath string `json:"file_path"`
+	FileName string `json:"file_name"`
+}
+
 type AttachmentResponse struct {
 	SuccessResponse
 	Markdown string `json:"markdown"`
