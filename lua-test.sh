@@ -34,6 +34,14 @@ if ! luarocks --lua-version=$LUA_VERSION which busted > /dev/null 2>&1; then
     luarocks install --lua-version="$LUA_VERSION" busted
 fi
 
+for arg in "$@"; do
+if [[ $arg =~ "--coverage" ]] && ! luarocks --lua-version=$LUA_VERSION which luacov > /dev/null 2>&1; then
+    luarocks install --lua-version="$LUA_VERSION" luacov
+    # lcov reporter for luacov - lcov format is supported by `nvim-coverage`
+    luarocks install --lua-version="$LUA_VERSION" luacov-reporter-lcov
+fi
+done
+
 for plugin in "${PLUGINS[@]}"; do
     plugin_name=${plugin##*/}
     plugin_folder="$PLUGINS_FOLDER/$plugin_name"
