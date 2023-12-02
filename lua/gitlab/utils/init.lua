@@ -272,7 +272,7 @@ M.jump_to_buffer = function(bufnr, line_number)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
-M.create_popup_state = function(title, width, height)
+M.create_popup_state = function(title, border, width, height, opacity)
   return {
     buf_options = {
       filetype = "markdown",
@@ -281,7 +281,7 @@ M.create_popup_state = function(title, width, height)
     enter = true,
     focusable = true,
     border = {
-      style = "rounded",
+      style = border,
       text = {
         top = title,
       },
@@ -291,6 +291,7 @@ M.create_popup_state = function(title, width, height)
       width = width,
       height = height,
     },
+    opacity = opacity,
   }
 end
 

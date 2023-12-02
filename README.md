@@ -119,6 +119,20 @@ require("gitlab").setup({
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
     perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
+    -- Default popup settings
+    width = "40%",
+    height = "60%",
+    border = "rounded", -- One of "rounded", "single", "double", "solid"
+    opacity = 1.0, -- From 0.0 (fully transparent) to 1.0 (fully opaque)
+    -- Override default popup settings for individual popups, e.g.,
+    -- note = { width = "80%" },
+    edit = { width = nil, height = nil, border = nil, opacity = nil },
+    reply = { width = nil, height = nil, border = nil, opacity = nil },
+    comment = { width = nil, height = nil, border = nil, opacity = nil },
+    note = { width = nil, height = nil, border = nil, opacity = nil },
+    -- Default width and height for the pipeline popup are not the global popup values
+    -- from above, but are calculated dynamically so that the content fits in nicely
+    pipeline = { width = nil, height = nil, border = nil, opacity = nil },
   },
   discussion_tree = { -- The discussion tree that holds all comments
     blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
