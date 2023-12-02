@@ -1,4 +1,4 @@
--- This module is responsible for the MR pipline
+-- This module is responsible for the MR pipeline
 -- This lets the user see the current status of the pipeline
 -- and retrigger the pipeline from within the editor
 local Popup = require("nui.popup")
