@@ -3,3 +3,4 @@ bin
 /luarocks
 /lua_modules
 /.luarocks
+tags
