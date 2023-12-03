@@ -29,6 +29,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
   - [MR Approvals](#mr-approvals)
   - [Pipelines](#pipelines)
   - [Reviewers and Assignees](#reviewers-and-assignees)
+  - [Restarting or Shutting down](#restarting-or-shutting-down)
 - [Keybindings](#keybindings)
 - [Troubleshooting](#troubleshooting)
 
@@ -324,6 +325,27 @@ require("dressing").setup({
 })
 ```
 
+### Restarting or Shutting Down
+
+The `gitlab.nvim` server will shut down automatically when you exit Neovim. However, if you would like to manage this yourself (for instance, restart the server when you check out a new branch) you may do so via the `restart` command, or `shutdown` commands, which
+both accept callbacks.
+
+```lua
+require("gitlab.server").restart()
+```
+
+For instance you could set up the following keybinding to close and reopen the reviewer when checking out a new branch:
+
+```lua
+local gitlab = require("gitlab")
+vim.keymap.set("n", "glB", function ()
+    require("gitlab.server").restart(function () 
+        vim.cmd.tabclose()
+        gitlab.review() -- Reopen the reviewer after the server restarts
+    end)
+end)
+```
+
 ## Keybindings
 
 The plugin does not set up any keybindings outside of the special buffers it creates,
@@ -333,6 +355,7 @@ as `gl` does not have a special meaning in normal mode):
 
 ```lua
 local gitlab = require("gitlab")
+local gitlab_server = require("gitlab.server")
 vim.keymap.set("n", "glr", gitlab.review)
 vim.keymap.set("n", "gls", gitlab.summary)
 vim.keymap.set("n", "glA", gitlab.approve)

@@ -102,7 +102,7 @@ M.build = function(override)
 end
 
 -- Shuts down the Go server and clears out all old gitlab.nvim state
-M.shutdown = function()
+M.shutdown = function(cb)
   if not state.go_server_running then
     vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
     return
@@ -110,12 +110,16 @@ M.shutdown = function()
   job.run_job("/shutdown", "POST", { restart = false }, function(data)
     state.go_server_running = false
     state.clear_data()
-    u.notify(data.message, vim.log.levels.INFO)
+    if cb then
+      cb()
+    else
+      u.notify(data.message, vim.log.levels.INFO)
+    end
   end)
 end
 
 -- Restarts the Go server and clears out all gitlab.nvim state
-M.restart = function()
+M.restart = function(cb)
   if not state.go_server_running then
     vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
     return
@@ -125,7 +129,11 @@ M.restart = function()
     M.start(function()
       state.go_server_running = true
       state.clear_data()
-      u.notify(data.message, vim.log.levels.INFO)
+      if cb then
+        cb()
+      else
+        u.notify(data.message, vim.log.levels.INFO)
+      end
     end)
   end)
 end
