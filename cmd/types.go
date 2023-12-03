@@ -18,18 +18,7 @@ type SuccessResponse struct {
 	Status  int    `json:"status"`
 }
 
-/* The Client struct embeds all the methods from Gitlab for the different services */
-type Client struct {
-	*gitlab.MergeRequestsService
-	*gitlab.MergeRequestApprovalsService
-	*gitlab.DiscussionsService
-	*gitlab.ProjectsService
-	*gitlab.ProjectMembersService
-	*gitlab.JobsService
-	*gitlab.PipelinesService
-}
-
-/* The HandlerClient interface implements all the methods that our handlers need */
+/* The ClientInterface interface implements all the methods that our handlers need */
 type ClientInterface interface {
 	GetMergeRequest(pid interface{}, mr int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	UpdateMergeRequest(pid interface{}, mr int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)

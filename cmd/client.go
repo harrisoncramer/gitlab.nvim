@@ -24,6 +24,17 @@ type ProjectInfo struct {
 	MergeId   int
 }
 
+/* The Client struct embeds all the methods from Gitlab for the different services */
+type Client struct {
+	*gitlab.MergeRequestsService
+	*gitlab.MergeRequestApprovalsService
+	*gitlab.DiscussionsService
+	*gitlab.ProjectsService
+	*gitlab.ProjectMembersService
+	*gitlab.JobsService
+	*gitlab.PipelinesService
+}
+
 /* This will parse and validate the project settings and then initialize the Gitlab client */
 func initGitlabClient() (error, *Client) {
 
