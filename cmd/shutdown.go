@@ -38,9 +38,9 @@ func (a *api) shutdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var text = "Shut down Go server!"
+	var text = "Shut down server"
 	if shutdownRequest.Restart {
-		text = "Restarted Go server!"
+		text = "Restarted server"
 	}
 
 	w.WriteHeader(http.StatusOK)

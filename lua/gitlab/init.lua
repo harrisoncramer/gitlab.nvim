@@ -10,7 +10,6 @@ local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
 local approvals = require("gitlab.actions.approvals")
 local miscellaneous = require("gitlab.actions.miscellaneous")
-local system = require("gitlab.actions.system")
 
 local info = state.dependencies.info
 local project_members = state.dependencies.project_members
@@ -50,9 +49,6 @@ return {
   delete_comment = async.sequence({ info }, discussions.delete_comment),
   toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),
   reply = async.sequence({ info }, discussions.reply),
-  -- System Actions 💻
-  shutdown = system.shutdown,
-  restart = system.restart,
   -- Other functions 🤷
   state = state,
   print_settings = state.print_settings,

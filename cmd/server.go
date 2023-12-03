@@ -74,12 +74,14 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 	go func() {
 		<-sigCh
 		server.Shutdown(context.Background())
+		os.Exit(0)
 	}()
 
 	/* Handles errors */
 	go func() {
 		<-sigCh
 		server.Shutdown(context.Background())
+		os.Exit(0)
 	}()
 
 	/* Alerts Lua when the server has started */
