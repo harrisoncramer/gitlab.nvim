@@ -1,9 +1,8 @@
-local async = require("gitlab.async")
+local server = require("gitlab.server")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 
--- local info = state.dependencies.info
 return {
   shutdown = function()
     if not state.go_server_running then
@@ -12,6 +11,7 @@ return {
     end
     job.run_job("/shutdown", "POST", { restart = false }, function(data)
       state.go_server_running = false
+      state.clear_data()
       u.notify(data.message, vim.log.levels.INFO)
     end)
   end,
@@ -22,7 +22,11 @@ return {
     end
     job.run_job("/shutdown", "POST", { restart = true }, function(data)
       state.go_server_running = false
-      u.notify(data.message, vim.log.levels.INFO)
+      server.start(function()
+        state.go_server_running = true
+        state.clear_data()
+        u.notify(data.message, vim.log.levels.INFO)
+      end)
     end)
-  end
+  end,
 }
