@@ -22,6 +22,7 @@ type AssigneesRequestResponse struct {
 	Assignees []int `json:"assignees"`
 }
 
+/* assigneesHandler adds or removes assignees from a merge request. */
 func (a *api) assigneesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {

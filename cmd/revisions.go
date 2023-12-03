@@ -12,6 +12,10 @@ type RevisionsResponse struct {
 	Revisions []*gitlab.MergeRequestDiffVersion
 }
 
+/*
+revisionsHandler gets revision information about the current MR. This data is not used directly but is
+a precursor API call for other functionality
+*/
 func (a *api) revisionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {

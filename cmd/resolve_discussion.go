@@ -14,6 +14,7 @@ type DiscussionResolveRequest struct {
 	Resolved     bool   `json:"resolved"`
 }
 
+/* discussionsResolveHandler sets a discussion to be "resolved" or not resolved, depending on the payload */
 func (a *api) discussionsResolveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {

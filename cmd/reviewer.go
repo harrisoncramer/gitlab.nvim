@@ -22,6 +22,7 @@ type ReviewersRequestResponse struct {
 	Reviewers []int `json:"reviewers"`
 }
 
+/* reviewersHandler adds or removes reviewers from an MR */
 func (a *api) reviewersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {

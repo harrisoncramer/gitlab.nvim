@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+/* revokeHandler revokes approval for the current merge request */
 func (a *api) revokeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {

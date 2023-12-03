@@ -22,14 +22,13 @@ type PostCommentRequest struct {
 	LineRange      *LineRange `json:"line_range,omitempty"`
 }
 
-// LineRange represents the range of a note.
+/* LineRange represents the range of a note. */
 type LineRange struct {
 	StartRange *LinePosition `json:"start"`
 	EndRange   *LinePosition `json:"end"`
 }
 
-// LinePosition represents a position in a line range.
-// unlike gitlab struct this does not contain LineCode with sha1 of filename
+/* LinePosition represents a position in a line range. Unlike the Gitlab struct, this does not contain LineCode with a sha1 of the filename */
 type LinePosition struct {
 	Type    string `json:"type"`
 	OldLine int    `json:"old_line"`
@@ -54,14 +53,15 @@ type CommentResponse struct {
 	Discussion *gitlab.Discussion `json:"discussion"`
 }
 
+/* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
 func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		a.PostComment(w, r)
+		a.postComment(w, r)
 	case http.MethodPatch:
-		a.EditComment(w, r)
+		a.editComment(w, r)
 	case http.MethodDelete:
-		a.DeleteComment(w, r)
+		a.deleteComment(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
@@ -69,8 +69,8 @@ func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/* Deletes a note, multiline comment, or comment, which are all considered discussion notes. */
-func (a *api) DeleteComment(w http.ResponseWriter, r *http.Request) {
+/* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
+func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -111,8 +111,8 @@ func (a *api) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/* Creates a note, multiline comment, or comment */
-func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
+/* postComment creates a note, multiline comment, or comment. */
+func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
@@ -206,8 +206,8 @@ func (a *api) PostComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/* Changes the text of a comment or changes it's resolved status. */
-func (a *api) EditComment(w http.ResponseWriter, r *http.Request) {
+/* editComment changes the text of a comment or changes it's resolved status. */
+func (a *api) editComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 

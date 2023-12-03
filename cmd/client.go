@@ -35,7 +35,7 @@ type Client struct {
 	*gitlab.PipelinesService
 }
 
-/* This will parse and validate the project settings and then initialize the Gitlab client */
+/* initGitlabClient parses and validates the project settings and initializes the Gitlab client. */
 func initGitlabClient() (error, *Client) {
 
 	if len(os.Args) < 6 {
@@ -89,7 +89,7 @@ func initGitlabClient() (error, *Client) {
 	}
 }
 
-/* This will fetch the project ID and merge request ID using the client */
+/* initProjectSettings fetch the project ID and merge request ID using the client. */
 func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
 
 	opt := gitlab.GetProjectOptions{}
@@ -135,7 +135,7 @@ func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo
 	}
 }
 
-/* The error handler for all of our handlers. Returns error details to the client */
+/* handleError is a utililty handler that returns errors to the client along with their statuses and messages */
 func handleError(w http.ResponseWriter, err error, message string, status int) {
 	w.WriteHeader(status)
 	response := ErrorResponse{

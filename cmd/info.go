@@ -12,6 +12,7 @@ type InfoResponse struct {
 	Info *gitlab.MergeRequest `json:"info"`
 }
 
+/* infoHandler fetches infomation about the current git project. The data returned here is used in many other API calls */
 func (a *api) infoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {

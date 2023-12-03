@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/xanzy/go-gitlab"
@@ -16,6 +17,20 @@ type ErrorResponse struct {
 type SuccessResponse struct {
 	Message string `json:"message"`
 	Status  int    `json:"status"`
+}
+
+type GenericError struct {
+	endpoint string
+}
+
+func (e GenericError) Error() string {
+	return fmt.Sprintf("An error occurred on the %s endpoint", e.endpoint)
+}
+
+type InvalidRequestError struct{}
+
+func (e InvalidRequestError) Error() string {
+	return "Invalid request type"
 }
 
 /* The ClientInterface interface implements all the methods that our handlers need */

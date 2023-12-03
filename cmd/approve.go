@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+/* approveHandler approves a merge request. */
 func (a *api) approveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {

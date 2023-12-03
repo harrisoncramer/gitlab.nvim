@@ -36,6 +36,10 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
+/*
+listDiscussionsHandler lists all discusions for a given merge request, both those linked and unlinked to particular points in the code.
+The responses are sorted by date created, and blacklisted users are not included
+*/
 func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {

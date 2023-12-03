@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-/* Initializes the api, router, and server and starts the server */
+/*
+startSever and starts the server. It also runs three concurrent goroutines
+to handle potential errors on startup, shutdown requests, and incoming HTTP requests.
+*/
 func startServer(client *Client, projectInfo *ProjectInfo) {
 
 	/* Adds the server configuration to the API struct */
@@ -55,6 +58,13 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 	}
 }
 
+/*
+The api struct contains common configuration that's accessible to all handlers, such as the gitlab
+client, the project information, and the channels for signaling error or shutdown requests
+
+The handlers for different Gitlab operations are are all methods on the api struct and interact
+with the client value, which is a go-gitlab client.
+*/
 type api struct {
 	client      ClientInterface
 	projectInfo *ProjectInfo
@@ -65,17 +75,18 @@ type api struct {
 
 type optFunc func(a *api) error
 
-/* Wires up the router and attaches all handlers to their respective routes. */
+/* createRouterAndApi wires up the router and attaches all handlers to their respective routes. */
 func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
 	m := http.NewServeMux()
 	a := api{
 		client:      client,
 		projectInfo: &ProjectInfo{},
-		fileReader:  attachmentReader{},
+		fileReader:  nil,
 		sigCh:       make(chan os.Signal, 1),
 		errCh:       make(chan error),
 	}
 
+	/* Mutates the API struct as necessary with configuration functions */
 	for _, optFunc := range optFuncs {
 		err := optFunc(&a)
 		if err != nil {

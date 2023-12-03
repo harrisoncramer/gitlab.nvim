@@ -20,6 +20,10 @@ type GetJobsResponse struct {
 	Jobs []*gitlab.Job
 }
 
+/*
+pipelineHandler fetches information about the current pipeline, and retriggers a pipeline run. For more detailed information
+about a given job in a pipeline, see the jobHandler function
+*/
 func (a *api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:

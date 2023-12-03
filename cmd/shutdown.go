@@ -18,6 +18,7 @@ type ShutdownRequest struct {
 	Restart bool `json:"restart"`
 }
 
+/* shutdownHandler will shutdown the HTTP server and exit the process by signaling to the shutdown channel */
 func (a *api) shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)

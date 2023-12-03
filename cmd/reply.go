@@ -19,6 +19,7 @@ type ReplyResponse struct {
 	Note *gitlab.Note `json:"note"`
 }
 
+/* replyHandler sends a reply to a note or comment */
 func (a *api) replyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
