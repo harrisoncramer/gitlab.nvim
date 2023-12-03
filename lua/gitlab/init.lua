@@ -10,6 +10,7 @@ local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
 local approvals = require("gitlab.actions.approvals")
 local miscellaneous = require("gitlab.actions.miscellaneous")
+local system = require("gitlab.actions.system")
 
 local info = state.dependencies.info
 local project_members = state.dependencies.project_members
@@ -20,9 +21,9 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
@@ -49,6 +50,9 @@ return {
   delete_comment = async.sequence({ info }, discussions.delete_comment),
   toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),
   reply = async.sequence({ info }, discussions.reply),
+  -- System Actions 💻
+  shutdown = system.shutdown,
+  restart = system.restart,
   -- Other functions 🤷
   state = state,
   print_settings = state.print_settings,
