@@ -28,33 +28,39 @@ func uploadFileErr(pid interface{}, content io.Reader, filename string, options 
 	return nil, nil, errors.New("Some error from Gitlab")
 }
 
+func withMockFileReader(a *api) error {
+	reader := MockAttachmentReader{}
+	a.fileReader = reader
+	return nil
+}
+
 func TestAttachmentHandler(t *testing.T) {
 	t.Run("Returns 200-status response after upload", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
-		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
-		data := serveRequest(t, server, request, AttachmentResponse{})
+		router, _ := createRouterAndApi(fakeClient{uploadFile: uploadFile}, withMockFileReader)
+		data := serveRequest(t, router, request, AttachmentResponse{})
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.SuccessResponse.Message, "File uploaded successfully")
 	})
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
-		server := createServer(fakeClient{uploadFile: uploadFile}, &ProjectInfo{}, MockAttachmentReader{})
-		data := serveRequest(t, server, request, ErrorResponse{})
+		router, _ := createRouterAndApi(fakeClient{uploadFile: uploadFile}, withMockFileReader)
+		data := serveRequest(t, router, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
-		server := createServer(fakeClient{uploadFile: uploadFileErr}, &ProjectInfo{}, MockAttachmentReader{})
-		data := serveRequest(t, server, request, ErrorResponse{})
+		router, _ := createRouterAndApi(fakeClient{uploadFile: uploadFileErr}, withMockFileReader)
+		data := serveRequest(t, router, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not upload some_file_name to Gitlab")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/attachment", AttachmentRequest{FilePath: "some_file_path", FileName: "some_file_name"})
-		server := createServer(fakeClient{uploadFile: uploadFileNon200}, &ProjectInfo{}, MockAttachmentReader{})
-		data := serveRequest(t, server, request, ErrorResponse{})
+		router, _ := createRouterAndApi(fakeClient{uploadFile: uploadFileNon200}, withMockFileReader)
+		data := serveRequest(t, router, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not upload some_file_name to Gitlab", "/mr/attachment")
 	})
 }

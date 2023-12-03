@@ -9,6 +9,10 @@ import (
 	"os"
 )
 
+type FileReader interface {
+	ReadFile(path string) (io.Reader, error)
+}
+
 type AttachmentRequest struct {
 	FilePath string `json:"file_path"`
 	FileName string `json:"file_name"`

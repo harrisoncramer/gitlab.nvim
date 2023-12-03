@@ -3,17 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
 	"time"
 )
-
-/* TODO: Convert the server configuration + this into optional function pattern */
-type FileReader interface {
-	ReadFile(path string) (io.Reader, error)
-}
 
 type api struct {
 	client      ClientInterface
@@ -23,44 +17,64 @@ type api struct {
 	errCh       chan error
 }
 
+type optFunc func(a *api) error
+
 /* This function wires up the router and attaches all handlers to their respective routes. It then starts up the server on the port specified or on a random port */
-func createServer(client ClientInterface, projectInfo *ProjectInfo, fileReader FileReader, sigCh chan os.Signal, errCh chan error) *http.ServeMux {
+func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
 	m := http.NewServeMux()
-	c := api{
+	a := api{
 		client:      client,
-		projectInfo: projectInfo,
-		fileReader:  fileReader,
-		sigCh:       sigCh,
-		errCh:       errCh,
+		projectInfo: &ProjectInfo{},
+		fileReader:  attachmentReader{},
+		sigCh:       make(chan os.Signal, 1),
+		errCh:       make(chan error),
+	}
+
+	for _, optFunc := range optFuncs {
+		err := optFunc(&a)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	err := checkOpts(a)
+	if err != nil {
+		panic(err)
 	}
 
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
-	m.HandleFunc("/shutdown", c.shutdownHandler)
-	m.HandleFunc("/approve", c.approveHandler)
-	m.HandleFunc("/comment", c.commentHandler)
-	m.HandleFunc("/discussions/list", c.listDiscussionsHandler)
-	m.HandleFunc("/discussions/resolve", c.discussionsResolveHandler)
-	m.HandleFunc("/info", c.infoHandler)
-	m.HandleFunc("/job", c.jobHandler)
-	m.HandleFunc("/mr/attachment", c.attachmentHandler)
-	m.HandleFunc("/mr/assignee", c.assigneesHandler)
-	m.HandleFunc("/mr/summary", c.summaryHandler)
-	m.HandleFunc("/mr/reviewer", c.reviewersHandler)
-	m.HandleFunc("/mr/revisions", c.revisionsHandler)
-	m.HandleFunc("/pipeline/", c.pipelineHandler)
-	m.HandleFunc("/project/members", c.projectMembersHandler)
-	m.HandleFunc("/reply", c.replyHandler)
-	m.HandleFunc("/revoke", c.revokeHandler)
+	m.HandleFunc("/shutdown", a.shutdownHandler)
+	m.HandleFunc("/approve", a.approveHandler)
+	m.HandleFunc("/comment", a.commentHandler)
+	m.HandleFunc("/discussions/list", a.listDiscussionsHandler)
+	m.HandleFunc("/discussions/resolve", a.discussionsResolveHandler)
+	m.HandleFunc("/info", a.infoHandler)
+	m.HandleFunc("/job", a.jobHandler)
+	m.HandleFunc("/mr/attachment", a.attachmentHandler)
+	m.HandleFunc("/mr/assignee", a.assigneesHandler)
+	m.HandleFunc("/mr/summary", a.summaryHandler)
+	m.HandleFunc("/mr/reviewer", a.reviewersHandler)
+	m.HandleFunc("/mr/revisions", a.revisionsHandler)
+	m.HandleFunc("/pipeline/", a.pipelineHandler)
+	m.HandleFunc("/project/members", a.projectMembersHandler)
+	m.HandleFunc("/reply", a.replyHandler)
+	m.HandleFunc("/revoke", a.revokeHandler)
 
-	return m
+	return m, a
 }
 
 /* This function attempts to start the port on the port specified in the configuration if present, otherwise it chooses a random port */
 func startServer(client *Client, projectInfo *ProjectInfo) {
 
-	sigCh := make(chan os.Signal, 1)
-	errCh := make(chan error)
-	m := createServer(client, projectInfo, attachmentReader{}, sigCh, errCh)
+	m, a := createRouterAndApi(client,
+		func(a *api) error {
+			a.projectInfo = projectInfo
+			return nil
+		},
+		func(a *api) error {
+			a.fileReader = attachmentReader{}
+			return nil
+		})
 
 	l := createListener()
 	server := &http.Server{Handler: m}
@@ -72,23 +86,23 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 
 	/* Handles shutdown requests */
 	go func() {
-		<-sigCh
+		<-a.sigCh
 		server.Shutdown(context.Background())
 		os.Exit(0)
 	}()
 
 	/* Handles errors */
 	go func() {
-		<-sigCh
+		<-a.sigCh
 		server.Shutdown(context.Background())
 		os.Exit(0)
 	}()
 
 	/* Alerts Lua when the server has started */
 	port := l.Addr().(*net.TCPAddr).Port
-	go start(errCh, port)
+	go start(a.errCh, port)
 
-	if err := <-errCh; err != nil {
+	if err := <-a.errCh; err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
 		os.Exit(1)
 	}
@@ -132,5 +146,9 @@ func createListener() (l net.Listener) {
 	}
 
 	return l
+}
 
+/* Validates that all API configuration changes are valid */
+func checkOpts(a api) error {
+	return nil
 }

@@ -50,7 +50,7 @@ func listMergeRequestDiscussionsNon200(pid interface{}, mergeRequest int, opt *g
 func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Returns sorted discussions", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/discussions/list", DiscussionsRequest{})
-		server := createServer(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions}, &ProjectInfo{}, MockAttachmentReader{})
+		server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions})
 		data := serveRequest(t, server, request, DiscussionsResponse{})
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -60,7 +60,7 @@ func TestListDiscussionsHandler(t *testing.T) {
 
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer"}})
-		server := createServer(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions}, &ProjectInfo{}, MockAttachmentReader{})
+		server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions})
 		data := serveRequest(t, server, request, DiscussionsResponse{})
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -70,21 +70,21 @@ func TestListDiscussionsHandler(t *testing.T) {
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/discussions/list", DiscussionsRequest{})
-		server := createServer(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions}, &ProjectInfo{}, MockAttachmentReader{})
+		server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/discussions/list", DiscussionsRequest{})
-		server := createServer(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsErr}, &ProjectInfo{}, MockAttachmentReader{})
+		server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not list discussions")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/discussions/list", DiscussionsRequest{})
-		server := createServer(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsNon200}, &ProjectInfo{}, MockAttachmentReader{})
+		server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsNon200})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not list discussions", "/discussions/list")
 	})
