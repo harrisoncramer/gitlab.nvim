@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,12 +11,11 @@ import (
 )
 
 /*
-startSever and starts the server. It also runs three concurrent goroutines
-to handle potential errors on startup, shutdown requests, and incoming HTTP requests.
+startSever starts the server and runs concurrent goroutines
+to handle potential shutdown requests and incoming HTTP requests.
 */
 func startServer(client *Client, projectInfo *ProjectInfo) {
 
-	/* Adds the server configuration to the API struct */
 	m, a := createRouterAndApi(client,
 		func(a *api) error {
 			a.projectInfo = projectInfo
@@ -34,28 +34,19 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 		server.Serve(l)
 	}()
 
-	/* Handles shutdown requests */
-	go func() {
-		<-a.sigCh
-		server.Shutdown(context.Background())
-		os.Exit(0)
-	}()
-
-	/* Handles errors */
-	go func() {
-		<-a.sigCh
-		server.Shutdown(context.Background())
-		os.Exit(0)
-	}()
-
-	/* Alerts Lua when the server has started */
 	port := l.Addr().(*net.TCPAddr).Port
-	go start(a.errCh, port)
+	err := checkServer(port)
+	fmt.Println("Server started on port: ", port) /* This print is detected by the Lua code */
 
-	if err := <-a.errCh; err != nil {
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
 		os.Exit(1)
 	}
+
+	/* Handles shutdown requests */
+	<-a.sigCh
+	server.Shutdown(context.Background())
+	os.Exit(0)
 }
 
 /*
@@ -70,12 +61,15 @@ type api struct {
 	projectInfo *ProjectInfo
 	fileReader  FileReader
 	sigCh       chan os.Signal
-	errCh       chan error
 }
 
 type optFunc func(a *api) error
 
-/* createRouterAndApi wires up the router and attaches all handlers to their respective routes. */
+/*
+createRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
+iterates over all option functions to configure API fields such as the project information and default
+file reader functionality
+*/
 func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
 	m := http.NewServeMux()
 	a := api{
@@ -83,7 +77,6 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		projectInfo: &ProjectInfo{},
 		fileReader:  nil,
 		sigCh:       make(chan os.Signal, 1),
-		errCh:       make(chan error),
 	}
 
 	/* Mutates the API struct as necessary with configuration functions */
@@ -121,21 +114,17 @@ func pingHandler(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintln(w, "pong")
 }
 
-/* Checks the server for 1 full second after startup in order to notify the plugin that the server is ready */
-func start(eChan chan error, port int) {
-	var err error
+/* checkServer pings the server repeatedly for 1 full second after startup in order to notify the plugin that the server is ready */
+func checkServer(port int) error {
 	for i := 0; i < 10; i++ {
 		resp, err := http.Get("http://localhost:" + fmt.Sprintf("%d", port) + "/ping")
 		if resp.StatusCode == 200 && err == nil {
-			fmt.Println("Server started on port: ", port) /* This print is detected by the Lua code */
-			return
+			return nil
 		}
 		time.Sleep(100 * time.Microsecond)
 	}
 
-	if err != nil {
-		eChan <- err
-	}
+	return errors.New("Could not start server!")
 }
 
 /* Creates a TCP listener on the port specified by the user or a random port */
