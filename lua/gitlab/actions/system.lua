@@ -1,18 +1,18 @@
 local async = require("gitlab.async")
+local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 
-local info = state.dependencies.info
+-- local info = state.dependencies.info
 return {
   shutdown = function()
     if not state.go_server_running then
       vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
       return
     end
-
-    job.run_job("/shutdown", "DELETE", nil, function()
+    job.run_job("/shutdown", "POST", { restart = false }, function(data)
       state.go_server_running = false
-      vim.notify("The gitlab.nvim server was shut down", vim.log.levels.INFO)
+      u.notify(data.message, vim.log.levels.INFO)
     end)
   end,
   restart = function()
@@ -20,11 +20,9 @@ return {
       vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
       return
     end
-    job.run_job("/shutdown", "DELETE", nil, function()
-      async.sequence({ info }, function()
-        state.go_server_running = false
-        vim.notify("The gitlab.nvim server was restarted", vim.log.levels.INFO)
-      end)
+    job.run_job("/shutdown", "POST", { restart = true }, function(data)
+      state.go_server_running = false
+      u.notify(data.message, vim.log.levels.INFO)
     end)
   end
 }
