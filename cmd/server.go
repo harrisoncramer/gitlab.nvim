@@ -37,11 +37,6 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		}
 	}
 
-	err := checkOpts(a)
-	if err != nil {
-		panic(err)
-	}
-
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 	m.HandleFunc("/shutdown", a.shutdownHandler)
 	m.HandleFunc("/approve", a.approveHandler)
@@ -146,9 +141,4 @@ func createListener() (l net.Listener) {
 	}
 
 	return l
-}
-
-/* Validates that all API configuration changes are valid */
-func checkOpts(a api) error {
-	return nil
 }
