@@ -36,12 +36,13 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 
 	port := l.Addr().(*net.TCPAddr).Port
 	err := checkServer(port)
-	fmt.Println("Server started on port: ", port) /* This print is detected by the Lua code */
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
 		os.Exit(1)
 	}
+
+	/* This print is detected by the Lua code */
+	fmt.Println("Server started on port: ", port)
 
 	/* Handles shutdown requests */
 	<-a.sigCh
