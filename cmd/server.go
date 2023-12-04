@@ -31,13 +31,17 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 
 	/* Starts the Go server */
 	go func() {
-		server.Serve(l)
+		err := server.Serve(l)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
+			os.Exit(1)
+		}
 	}()
 
 	port := l.Addr().(*net.TCPAddr).Port
 	err := checkServer(port)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Server did not respond: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -46,8 +50,13 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 
 	/* Handles shutdown requests */
 	<-a.sigCh
-	server.Shutdown(context.Background())
-	os.Exit(0)
+	err = server.Shutdown(context.Background())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Server could not shut down gracefully: %s\n", err)
+		os.Exit(1)
+	} else {
+		os.Exit(0)
+	}
 }
 
 /*
