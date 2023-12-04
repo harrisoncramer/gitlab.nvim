@@ -33,6 +33,7 @@ M.settings = {
     size = "20%",
     resolved = "✓",
     unresolved = "",
+    tree_type = "simple",
   },
   info = {
     enabled = true,
@@ -97,7 +98,10 @@ M.settings = {
     discussion_tree = {
       username = "Keyword",
       date = "Comment",
-      chevron = "Comment",
+      chevron = "DiffviewNonText",
+      directory = "Directory",
+      directory_icon = "DiffviewFolderSign",
+      file_name = "Normal",
     },
   },
 }

@@ -3,3 +3,7 @@ bin
 /luarocks
 /lua_modules
 /.luarocks
+*.rockspec
+tests/plugins
+!tests/plugins/.placeholder
+luacov.*

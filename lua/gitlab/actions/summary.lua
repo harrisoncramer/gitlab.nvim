@@ -193,7 +193,6 @@ M.create_layout = function(info_lines)
     details_popup = Popup(details_popup_settings)
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
-      print(longest_line)
       internal_layout = Layout.Box({
         Layout.Box(title_popup, { size = 3 }),
         Layout.Box({

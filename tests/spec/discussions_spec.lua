@@ -1,0 +1,6 @@
+describe("gitlab/actions/discussions/init.lua", function()
+  it("Loads package", function()
+    local utils_ok, _ = pcall(require, "gitlab.actions.discussions")
+    assert._is_true(utils_ok)
+  end)
+end)

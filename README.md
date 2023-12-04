@@ -57,6 +57,7 @@ return {
     "nvim-lua/plenary.nvim",
     "sindrets/diffview.nvim",
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+    "nvim-tree/nvim-web-devicons" -- Recommended but not required. Icons in discussion tree.
     enabled = true,
   },
   build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
@@ -104,7 +105,6 @@ gitlab_url=https://my-personal-gitlab-instance.com/
 
 The plugin will look for the `.gitlab.nvim` file in the root of the current project by default. However, you may provide a custom path to the configuration file via the `config_path` option. This must be an absolute path to the directory that holds your `.gitlab.nvim` file.
 
-
 ## Configuring the Plugin
 
 Here is the default setup function. All of these values are optional, and if you call this function with no values the defaults will be used:
@@ -135,6 +135,7 @@ require("gitlab").setup({
     relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
+    tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
   },
   info = { -- Show additional fields in the summary pane
     enabled = true,
@@ -195,10 +196,13 @@ require("gitlab").setup({
   },
   colors = {
     discussion_tree = {
-      username = 'Keyword', -- The highlight group used, for instance 'DiagnosticSignWarn'
-      date = 'Comment',
-      chevron = 'Comment',
-    }
+      username = "Keyword",
+      date = "Comment",
+      chevron = "DiffviewNonText",
+      directory = "Directory",
+      directory_icon = "DiffviewFolderSign",
+      file_name = "Normal",
+      }
   }
 })
 ```
