@@ -70,9 +70,10 @@ func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := a.fileReader.ReadFile(attachmentRequest.FileName)
-	if err != nil {
+	file, err := a.fileReader.ReadFile(attachmentRequest.FilePath)
+	if err != nil || file == nil {
 		handleError(w, err, fmt.Sprintf("Could not read %s file", attachmentRequest.FileName), http.StatusInternalServerError)
+		return
 	}
 
 	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
