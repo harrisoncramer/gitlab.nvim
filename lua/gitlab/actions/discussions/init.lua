@@ -36,12 +36,14 @@ local M = {
 
 ---Load the discussion data, storage them in M.discussions and M.unlinked_discussions and call
 ---callback with data
----@param callback fun(data: DiscussionData): nil
+---@param callback (fun(data: DiscussionData): nil)?
 M.load_discussions = function(callback)
   job.run_job("/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     M.discussions = data.discussions
     M.unlinked_discussions = data.unlinked_discussions
-    callback(data)
+    if type(callback) == "function" then
+      callback(data)
+    end
   end)
 end
 
@@ -482,6 +484,7 @@ M.send_reply = function(tree, discussion_id)
     job.run_job("/reply", "POST", body, function(data)
       u.notify("Sent reply!", vim.log.levels.INFO)
       M.add_reply_to_tree(tree, data.note, discussion_id)
+      M.load_discussions()
     end)
   end
 end
@@ -506,7 +509,7 @@ M.send_deletion = function(tree, unlinked)
   local root_node = M.get_root_node(tree, current_node)
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-  local body = { discussion_id = root_node.id, note_id = note_id }
+  local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
 
   job.run_job("/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
@@ -553,11 +556,14 @@ M.edit_comment = function(tree, unlinked)
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
   state.set_popup_keymaps(
     edit_popup,
-    M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id, unlinked)
+    M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked)
   )
 end
 
--- This function sends the edited comment to the Go server
+---This function sends the edited comment to the Go server
+---@param discussion_id string
+---@param note_id integer
+---@param unlinked boolean
 M.send_edits = function(discussion_id, note_id, unlinked)
   return function(text)
     local body = {
@@ -568,10 +574,10 @@ M.send_edits = function(discussion_id, note_id, unlinked)
     job.run_job("/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       if unlinked then
-        M.unlinked_discussions = M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
+        M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
       else
-        M.discussions = M.replace_text(M.discussions, discussion_id, note_id, text)
+        M.replace_text(M.discussions, discussion_id, note_id, text)
         M.rebuild_discussion_tree()
       end
     end)
@@ -869,13 +875,17 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   tree:render()
 end
 
+---Replace text in discussion after note update.
+---@param data Discussion[]|UnlinkedDiscussion[]
+---@param discussion_id string
+---@param note_id integer
+---@param text string
 M.replace_text = function(data, discussion_id, note_id, text)
   for i, discussion in ipairs(data) do
     if discussion.id == discussion_id then
       for j, note in ipairs(discussion.notes) do
         if note.id == note_id then
           data[i].notes[j].body = text
-          return data
         end
       end
     end
@@ -919,7 +929,7 @@ M.get_note_node = function(tree, node)
 end
 
 M.add_reply_to_tree = function(tree, note, discussion_id)
-  local note_node = M.build_note(note)
+  local note_node = discussions_tree.build_note(note)
   note_node:expand()
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()

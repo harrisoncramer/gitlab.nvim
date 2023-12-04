@@ -123,7 +123,7 @@ end
 ---@return NuiTree.Node
 ---@return string
 ---@return NuiTree.Node[]
-local function build_note(note, resolve_info)
+M.build_note = function(note, resolve_info)
   local text, text_nodes = build_note_body(note, resolve_info)
   local note_node = NuiTree.Node({
     text = text,
@@ -163,7 +163,7 @@ M.add_discussions_to_table = function(items, unlinked)
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        _, root_text, root_text_nodes = build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
+        _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
 
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
@@ -173,7 +173,7 @@ M.add_discussions_to_table = function(items, unlinked)
         resolvable = note.resolvable
         resolved = note.resolved
       else -- Otherwise insert it as a child node...
-        local note_node = build_note(note)
+        local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
       end
     end
