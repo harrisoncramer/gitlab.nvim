@@ -179,7 +179,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               author = author,
               body = "Test just unlinked note",
               commit_id = "",
-              created_at = "2023-11-20T20:15:49.648Z",
+              created_at = "2021-05-20T10:10:00.648Z",
               expires_at = vim.NIL,
               file_name = "",
               id = 165260,
@@ -207,7 +207,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               author = author,
               body = "Other unlinked note",
               commit_id = "",
-              created_at = "2023-11-16T20:15:49.648Z",
+              created_at = "2022-10-25T12:20:30.648Z",
               expires_at = vim.NIL,
               file_name = "",
               id = 165260,
@@ -659,8 +659,8 @@ describe("gitlab/actions/discussions/tree.lua", function()
           },
         },
       })
-      assert.spy(spy_time_since).was.called_with("2023-11-20T20:15:49.648Z")
-      assert.spy(spy_time_since).was.called_with("2023-11-16T20:15:49.648Z")
+      assert.spy(spy_time_since).was.called_with("2021-05-20T10:10:00.648Z")
+      assert.spy(spy_time_since).was.called_with("2022-10-25T12:20:30.648Z")
       assert.spy(spy_time_since).was.called_with("2023-11-18T20:15:49.648Z")
     end)
 
