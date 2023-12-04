@@ -33,8 +33,12 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 	go func() {
 		err := server.Serve(l)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)
-			os.Exit(1)
+			if errors.Is(err, http.ErrServerClosed) {
+				os.Exit(0)
+			} else {
+				fmt.Fprintf(os.Stderr, "Server did not respond: %s\n", err)
+				os.Exit(1)
+			}
 		}
 	}()
 
