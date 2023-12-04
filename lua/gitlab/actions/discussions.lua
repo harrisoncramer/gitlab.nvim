@@ -101,7 +101,7 @@ local M = {
 ---callback with data
 ---@param callback fun(data: DiscussionData): nil
 M.load_discussions = function(callback)
-  job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
+  job.run_job("/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     M.discussions = data.discussions
     M.unlinked_discussions = data.unlinked_discussions
     callback(data)
@@ -645,7 +645,7 @@ M.toggle_discussion_resolved = function(tree)
     resolved = not note.resolved,
   }
 
-  job.run_job("/discussion/resolve", "PUT", body, function(data)
+  job.run_job("/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
   end)

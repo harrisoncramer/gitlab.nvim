@@ -235,7 +235,21 @@ end
 M.dependencies = {
   info = { endpoint = "/info", key = "info", state = "INFO", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
-  project_members = { endpoint = "/members", key = "ProjectMembers", state = "PROJECT_MEMBERS", refresh = false },
+  project_members = {
+    endpoint = "/project/members",
+    key = "ProjectMembers",
+    state = "PROJECT_MEMBERS",
+    refresh = false,
+  },
 }
+
+-- This function clears out all of the previously fetched data. It's used
+-- to reset the plugin state when the Go server is restarted
+M.clear_data = function()
+  M.INFO = nil
+  for _, dep in ipairs(M.dependencies) do
+    M[dep.state] = nil
+  end
+end
 
 return M

@@ -12,9 +12,14 @@ type ProjectMembersResponse struct {
 	ProjectMembers []*gitlab.ProjectMember
 }
 
-func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
+/* projectMembersHandler returns all members of the current Gitlab project */
+func (a *api) projectMembersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
+		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
+		return
+	}
 
 	projectMemberOptions := gitlab.ListProjectMembersOptions{
 		ListOptions: gitlab.ListOptions{
@@ -22,9 +27,16 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	projectMembers, res, err := c.git.ProjectMembers.ListAllProjectMembers(c.projectId, &projectMemberOptions)
+	projectMembers, res, err := a.client.ListAllProjectMembers(a.projectInfo.ProjectId, &projectMemberOptions)
+
 	if err != nil {
-		c.handleError(w, err, "Could not fetch project users", res.StatusCode)
+		handleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/project/members"}, "Could not retrieve project members", res.StatusCode)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -32,13 +44,13 @@ func ProjectMembersHandler(w http.ResponseWriter, r *http.Request) {
 	response := ProjectMembersResponse{
 		SuccessResponse: SuccessResponse{
 			Status:  http.StatusOK,
-			Message: "Project users fetched successfully",
+			Message: "Project members retrieved",
 		},
 		ProjectMembers: projectMembers,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

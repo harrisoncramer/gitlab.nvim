@@ -34,8 +34,8 @@ M.open = function()
   if not pipeline then
     return
   end
-  local body = { pipeline_id = pipeline.id }
-  job.run_job("/pipeline", "GET", body, function(data)
+
+  job.run_job("/pipeline/" .. pipeline.id, "GET", nil, function(data)
     local pipeline_jobs = u.reverse(type(data.Jobs) == "table" and data.Jobs or {})
     M.pipeline_jobs = pipeline_jobs
 
@@ -92,13 +92,12 @@ M.retrigger = function()
   if not pipeline then
     return
   end
-  local body = { pipeline_id = pipeline.id }
   if pipeline.status ~= "failed" then
     u.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
     return
   end
 
-  job.run_job("/pipeline", "POST", body, function()
+  job.run_job("/pipeline/" .. pipeline.id, "POST", nil, function()
     u.notify("Pipeline re-triggered!", vim.log.levels.INFO)
   end)
 end

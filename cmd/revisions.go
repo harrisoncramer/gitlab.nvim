@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -13,20 +12,27 @@ type RevisionsResponse struct {
 	Revisions []*gitlab.MergeRequestDiffVersion
 }
 
-func RevisionsHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
+/*
+revisionsHandler gets revision information about the current MR. This data is not used directly but is
+a precursor API call for other functionality
+*/
+func (a *api) revisionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
+		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
 		return
 	}
 
-	versionInfo, _, err := c.git.MergeRequests.GetMergeRequestDiffVersions(c.projectId, c.mergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
+	versionInfo, res, err := a.client.GetMergeRequestDiffVersions(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.GetMergeRequestDiffVersionsOptions{})
 	if err != nil {
-		c.handleError(w, err, "Could not get diff version info", http.StatusBadRequest)
+		handleError(w, err, "Could not get diff version info", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/revisions"}, "Could not get diff version info", res.StatusCode)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -40,7 +46,7 @@ func RevisionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 
 }

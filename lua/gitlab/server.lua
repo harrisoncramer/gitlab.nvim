@@ -3,6 +3,7 @@
 -- to Gitlab and returning the data
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
+local job = require("gitlab.job")
 local M = {}
 
 -- Starts the Go server and call the callback provided
@@ -60,7 +61,12 @@ M.start = function(callback)
       end
     end,
     on_exit = function(job_id, exit_code)
-      u.notify("Golang gitlab server exited: job_id: " .. job_id .. ", exit_code: " .. exit_code, vim.log.levels.ERROR)
+      if exit_code ~= 0 then
+        u.notify(
+          "Golang gitlab server exited: job_id: " .. job_id .. ", exit_code: " .. exit_code,
+          vim.log.levels.ERROR
+        )
+      end
     end,
   })
   if job_id <= 0 then
@@ -93,6 +99,43 @@ M.build = function(override)
     return false
   end
   return true
+end
+
+-- Shuts down the Go server and clears out all old gitlab.nvim state
+M.shutdown = function(cb)
+  if not state.go_server_running then
+    vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
+    return
+  end
+  job.run_job("/shutdown", "POST", { restart = false }, function(data)
+    state.go_server_running = false
+    state.clear_data()
+    if cb then
+      cb()
+    else
+      u.notify(data.message, vim.log.levels.INFO)
+    end
+  end)
+end
+
+-- Restarts the Go server and clears out all gitlab.nvim state
+M.restart = function(cb)
+  if not state.go_server_running then
+    vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
+    return
+  end
+  job.run_job("/shutdown", "POST", { restart = true }, function(data)
+    state.go_server_running = false
+    M.start(function()
+      state.go_server_running = true
+      state.clear_data()
+      if cb then
+        cb()
+      else
+        u.notify(data.message, vim.log.levels.INFO)
+      end
+    end)
+  end)
 end
 
 return M

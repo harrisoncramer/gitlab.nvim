@@ -2,36 +2,38 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 )
 
-func ApproveHandler(w http.ResponseWriter, r *http.Request) {
+/* approveHandler approves a merge request. */
+func (a *api) approveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
-
 	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
-	_, res, err := c.git.MergeRequestApprovals.ApproveMergeRequest(c.projectId, c.mergeId, nil, nil)
+	_, res, err := a.client.ApproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
 	if err != nil {
-		c.handleError(w, err, "Could not approve MR", http.StatusBadRequest)
+		handleError(w, err, "Could not approve merge request", http.StatusInternalServerError)
 		return
 	}
 
-	/* TODO: Check for non-200 status codes */
-	w.WriteHeader(res.StatusCode)
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/approve"}, "Could not approve merge request", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := SuccessResponse{
-		Message: "Success! Approved MR.",
+		Message: "Approved MR",
 		Status:  http.StatusOK,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

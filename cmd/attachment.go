@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 )
+
+type FileReader interface {
+	ReadFile(path string) (io.Reader, error)
+}
 
 type AttachmentRequest struct {
 	FilePath string `json:"file_path"`
@@ -20,18 +25,40 @@ type AttachmentResponse struct {
 	Url      string `json:"url"`
 }
 
-func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
+type attachmentReader struct{}
+
+func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	reader := bytes.NewReader(data)
+
+	return reader, nil
+}
+
+/* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
+func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
-	c := r.Context().Value("client").(Client)
-	w.Header().Set("Content-Type", "application/json")
 
 	var attachmentRequest AttachmentRequest
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -39,21 +66,23 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &attachmentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
+		handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
 		return
 	}
 
-	file, err := os.Open(attachmentRequest.FilePath)
+	file, err := a.fileReader.ReadFile(attachmentRequest.FileName)
 	if err != nil {
-		c.handleError(w, err, fmt.Sprintf("Could not read %s", attachmentRequest.FilePath), http.StatusBadRequest)
+		handleError(w, err, fmt.Sprintf("Could not read %s file", attachmentRequest.FileName), http.StatusInternalServerError)
+	}
+
+	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
+	if err != nil {
+		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
 		return
 	}
 
-	defer file.Close()
-
-	projectFile, res, err := c.git.Projects.UploadFile(c.projectId, file, attachmentRequest.FileName)
-	if err != nil {
-		c.handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FilePath), res.StatusCode)
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/attachment"}, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), res.StatusCode)
 		return
 	}
 
@@ -69,6 +98,6 @@ func AttachmentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
