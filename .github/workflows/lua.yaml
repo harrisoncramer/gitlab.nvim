@@ -26,7 +26,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check .
-  tests:
+  lua_test:
     name: Run tests 🧪
     strategy:
       matrix:
