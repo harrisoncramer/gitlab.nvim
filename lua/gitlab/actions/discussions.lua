@@ -521,15 +521,7 @@ end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
 M.reply = function(tree)
-  local reply_popup = Popup(
-    u.create_popup_state(
-      "Reply",
-      state.settings.popup.reply.border or state.settings.popup.border,
-      state.settings.popup.reply.width or state.settings.popup.width,
-      state.settings.popup.reply.height or state.settings.popup.height,
-      state.settings.popup.reply.opacity or state.settings.popup.opacity
-    )
-  )
+  local reply_popup = Popup(u.create_popup_state("Reply", state.settings.popup.reply))
   local node = tree:get_node()
   local discussion_node = M.get_root_node(tree, node)
   local id = tostring(discussion_node.id)
@@ -595,15 +587,7 @@ end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
-  local edit_popup = Popup(
-    u.create_popup_state(
-      "Edit Comment",
-      state.settings.popup.edit.border or state.settings.popup.border,
-      state.settings.popup.edit.width or state.settings.popup.width,
-      state.settings.popup.edit.height or state.settings.popup.height,
-      state.settings.popup.edit.opacity or state.settings.popup.opacity
-    )
-  )
+  local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)

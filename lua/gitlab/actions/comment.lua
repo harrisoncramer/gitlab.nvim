@@ -14,15 +14,7 @@ local M = {}
 -- configuration has been merged with default configuration, not when this file is being
 -- required.
 local function create_comment_popup()
-  return Popup(
-    u.create_popup_state(
-      "Comment",
-      state.settings.popup.comment.border or state.settings.popup.border,
-      state.settings.popup.comment.width or state.settings.popup.width,
-      state.settings.popup.comment.height or state.settings.popup.height,
-      state.settings.popup.comment.opacity or state.settings.popup.opacity
-    )
-  )
+  return Popup(u.create_popup_state("Comment", state.settings.popup.comment))
 end
 
 -- This function will open a comment popup in order to create a comment on the changed/updated
@@ -96,15 +88,7 @@ M.create_comment_suggestion = function()
 end
 
 M.create_note = function()
-  local note_popup = Popup(
-    u.create_popup_state(
-      "Note",
-      state.settings.popup.note.border or state.settings.popup.border,
-      state.settings.popup.note.width or state.settings.popup.width,
-      state.settings.popup.note.height or state.settings.popup.height,
-      state.settings.popup.note.opacity or state.settings.popup.opacity
-    )
-  )
+  local note_popup = Popup(u.create_popup_state("Note", state.settings.popup.note))
   note_popup:mount()
   state.set_popup_keymaps(note_popup, function(text)
     M.confirm_create_comment(text, nil, true)

@@ -272,8 +272,16 @@ M.jump_to_buffer = function(bufnr, line_number)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
-M.create_popup_state = function(title, border, width, height, opacity)
-  return {
+---Get the popup view_opts
+---@param title string The string to appear on top of the popup
+---@param settings table User defined popup settings
+---@param width string Override default width
+---@param height string Override default height
+---@return table
+M.create_popup_state = function(title, settings, width, height)
+  local default_settings = require("gitlab.state").settings.popup
+  local user_settings = settings or {}
+  local view_opts = {
     buf_options = {
       filetype = "markdown",
     },
@@ -281,18 +289,19 @@ M.create_popup_state = function(title, border, width, height, opacity)
     enter = true,
     focusable = true,
     border = {
-      style = border,
+      style = user_settings.border or default_settings.border,
       text = {
         top = title,
       },
     },
     position = "50%",
     size = {
-      width = width,
-      height = height,
+      width = user_settings.width or width or default_settings.width,
+      height = user_settings.height or height or default_settings.height,
     },
-    opacity = opacity,
+    opacity = user_settings.opacity or default_settings.opacity,
   }
+  return view_opts
 end
 
 M.read_file = function(file_path)
