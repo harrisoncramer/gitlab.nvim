@@ -12,7 +12,6 @@ local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
-local winbar = require("gitlab.actions.discussions.winbar")
 
 local edit_popup = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
@@ -376,7 +375,7 @@ M.refresh_discussion_tree = function()
     { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
   })
   M.switch_can_edit_bufs(false)
-  winbar.update_winbars(M.unlinked_section.bufnr, M.linked_section.bufnr)
+  M.update_winbars()
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
 end
@@ -877,6 +876,7 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   end
 
   tree:render()
+  M.update_winbars()
 end
 
 ---Replace text in discussion after note update.
@@ -951,6 +951,59 @@ M.get_note_location = function(tree)
     return nil, nil, nil, "Could not get discussion node"
   end
   return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line
+end
+
+
+-- Winbar stuff
+---@param nodes Discussion[]|UnlinkedDiscussion[]
+M.get_resolvable = function(nodes)
+  local total_resolvable = 0
+  local total_resolved = 0
+  if nodes == vim.NIL then
+    return ""
+  end
+
+  for _, d in ipairs(nodes) do
+    local first_child = d.notes[1]
+    if first_child ~= nil then
+      if first_child.resolvable then
+        total_resolvable = total_resolvable + 1
+      end
+      if first_child.resolved then
+        total_resolved = total_resolved + 1
+      end
+    end
+  end
+  return string.format("(%d/%d resolved)", total_resolved, total_resolvable)
+end
+
+local function notes_content()
+  local file_name = "%-.16t"
+  return string.format(
+    "%s %s",
+    file_name,
+    M.get_resolvable(M.unlinked_discussions)
+  )
+end
+
+local function discussions_content()
+  local file_name = "%-.16t"
+  return string.format(
+    "%s %s",
+    file_name,
+    M.get_resolvable(M.discussions)
+  )
+end
+
+-- Updates the winbars for the notes and discussions sections
+M.update_winbars = function()
+  vim.api.nvim_buf_set_name(M.unlinked_section.bufnr, "Notes")
+  local w1 = vim.fn.bufwinid(M.unlinked_section.bufnr)
+  vim.wo[w1].winbar = notes_content()
+
+  local w2 = vim.fn.bufwinid(M.linked_section.bufnr)
+  vim.api.nvim_buf_set_name(M.linked_section.bufnr, "Discussions")
+  vim.wo[w2].winbar = discussions_content()
 end
 
 return M
