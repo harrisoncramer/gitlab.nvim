@@ -22,13 +22,18 @@ type AssigneesRequestResponse struct {
 	Assignees []int `json:"assignees"`
 }
 
-func AssigneesHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
+/* assigneesHandler adds or removes assignees from a merge request. */
+func (a *api) assigneesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPut {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
+		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -37,26 +42,25 @@ func AssigneesHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &assigneeUpdateRequest)
 
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	mr, res, err := c.git.MergeRequests.UpdateMergeRequest(c.projectId, c.mergeId, &gitlab.UpdateMergeRequestOptions{
+	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
 		AssigneeIDs: &assigneeUpdateRequest.Ids,
 	})
 
 	if err != nil {
-		c.handleError(w, err, "Could not modify merge request assignees", http.StatusBadRequest)
+		handleError(w, err, "Could not modify merge request assignees", http.StatusInternalServerError)
 		return
 	}
 
-	if res.StatusCode != http.StatusOK {
-		c.handleError(w, err, "Could not modify merge request assignees", http.StatusBadRequest)
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/assignee"}, "Could not modify merge request assignees", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 	response := AssigneeUpdateResponse{
 		SuccessResponse: SuccessResponse{
 			Message: "Assignees updated",
@@ -67,6 +71,6 @@ func AssigneesHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

@@ -29,12 +29,13 @@ function async:fetch(dependencies, i, argTable)
 
   local dependency = dependencies[i]
 
-  -- Do not call endpoint unless refresh is required
+  -- If we have data already and refresh is not required, skip this API call
   if state[dependency.state] ~= nil and not dependency.refresh then
     self:fetch(dependencies, i + 1, argTable)
     return
   end
 
+  -- Call the API, set the data, and then call the next API
   job.run_job(dependency.endpoint, "GET", dependency.body, function(data)
     state[dependency.state] = data[dependency.key]
     self:fetch(dependencies, i + 1, argTable)
@@ -54,11 +55,13 @@ M.sequence = function(dependencies, cb)
       end
     end
 
+    -- If go server is already running, then start fetching the values in sequence
     if state.go_server_running then
       handler:fetch(dependencies, 1, argTable)
       return
     end
 
+    -- Otherwise, start the go server and start fetching the values
     server.start(function()
       state.go_server_running = true
       handler:fetch(dependencies, 1, argTable)

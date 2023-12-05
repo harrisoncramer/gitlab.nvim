@@ -38,7 +38,7 @@ M.attach_file = function()
     if not choice then
       return
     end
-    local full_path = attachment_dir .. (u.is_windows() and "\\" or "/") .. choice
+    local full_path = attachment_dir .. u.path_separator .. choice
     local body = { file_path = full_path, file_name = choice }
     job.run_job("/mr/attachment", "POST", body, function(data)
       local markdown = data.markdown

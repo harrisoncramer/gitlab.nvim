@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,14 +22,13 @@ type PostCommentRequest struct {
 	LineRange      *LineRange `json:"line_range,omitempty"`
 }
 
-// LineRange represents the range of a note.
+/* LineRange represents the range of a note. */
 type LineRange struct {
 	StartRange *LinePosition `json:"start"`
 	EndRange   *LinePosition `json:"end"`
 }
 
-// LinePosition represents a position in a line range.
-// unlike gitlab struct this does not contain LineCode with sha1 of filename
+/* LinePosition represents a position in a line range. Unlike the Gitlab struct, this does not contain LineCode with a sha1 of the filename */
 type LinePosition struct {
 	Type    string `json:"type"`
 	OldLine int    `json:"old_line"`
@@ -55,26 +53,28 @@ type CommentResponse struct {
 	Discussion *gitlab.Discussion `json:"discussion"`
 }
 
-func CommentHandler(w http.ResponseWriter, r *http.Request) {
+/* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
+func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodDelete:
-		DeleteComment(w, r)
 	case http.MethodPost:
-		PostComment(w, r)
+		a.postComment(w, r)
 	case http.MethodPatch:
-		EditComment(w, r)
+		a.editComment(w, r)
+	case http.MethodDelete:
+		a.deleteComment(w, r)
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
+		handleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
 	}
 }
 
-func DeleteComment(w http.ResponseWriter, r *http.Request) {
+/* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
+func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -83,37 +83,41 @@ func DeleteComment(w http.ResponseWriter, r *http.Request) {
 	var deleteCommentRequest DeleteCommentRequest
 	err = json.Unmarshal(body, &deleteCommentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	res, err := c.git.Discussions.DeleteMergeRequestDiscussionNote(c.projectId, c.mergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
 
 	if err != nil {
-		c.handleError(w, err, "Could not delete comment", res.StatusCode)
+		handleError(w, err, "Could not delete comment", http.StatusInternalServerError)
 		return
 	}
 
-	/* TODO: Check status code */
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not delete comment", res.StatusCode)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	response := SuccessResponse{
-		Message: "Comment deleted succesfully",
+		Message: "Comment deleted successfully",
 		Status:  http.StatusOK,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
-func PostComment(w http.ResponseWriter, r *http.Request) {
+/* postComment creates a note, multiline comment, or comment. */
+func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -122,7 +126,7 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 	var postCommentRequest PostCommentRequest
 	err = json.Unmarshal(body, &postCommentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
@@ -132,7 +136,9 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 
 	/* If we are leaving a comment on a line, leave position. Otherwise,
 	we are leaving a note (unlinked comment) */
+	var friendlyName = "Note"
 	if postCommentRequest.FileName != "" {
+		friendlyName = "Comment"
 		opt.Position = &gitlab.PositionOptions{
 			PositionType: &postCommentRequest.Type,
 			StartSHA:     &postCommentRequest.StartCommitSHA,
@@ -145,15 +151,16 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if postCommentRequest.LineRange != nil {
-			var format = "%x_%d_%d"
-			var start_filename_sha1 = fmt.Sprintf(
-				format,
+			friendlyName = "Multiline Comment"
+			shaFormat := "%x_%d_%d"
+			startFilenameSha := fmt.Sprintf(
+				shaFormat,
 				sha1.Sum([]byte(postCommentRequest.FileName)),
 				postCommentRequest.LineRange.StartRange.OldLine,
 				postCommentRequest.LineRange.StartRange.NewLine,
 			)
-			var end_filename_sha1 = fmt.Sprintf(
-				format,
+			endFilenameSha := fmt.Sprintf(
+				shaFormat,
 				sha1.Sum([]byte(postCommentRequest.FileName)),
 				postCommentRequest.LineRange.EndRange.OldLine,
 				postCommentRequest.LineRange.EndRange.NewLine,
@@ -161,26 +168,32 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 			opt.Position.LineRange = &gitlab.LineRangeOptions{
 				Start: &gitlab.LinePositionOptions{
 					Type:     &postCommentRequest.LineRange.StartRange.Type,
-					LineCode: &start_filename_sha1,
+					LineCode: &startFilenameSha,
 				},
 				End: &gitlab.LinePositionOptions{
 					Type:     &postCommentRequest.LineRange.EndRange.Type,
-					LineCode: &end_filename_sha1,
+					LineCode: &endFilenameSha,
 				},
 			}
 		}
 	}
 
-	discussion, _, err := c.git.Discussions.CreateMergeRequestDiscussion(c.projectId, c.mergeId, &opt)
+	discussion, res, err := a.client.CreateMergeRequestDiscussion(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
 
 	if err != nil {
-		c.handleError(w, err, "Could not create comment", http.StatusBadRequest)
+		handleError(w, err, "Could not create discussion", http.StatusInternalServerError)
 		return
 	}
 
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not create discussion", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment updated succesfully",
+			Message: fmt.Sprintf("%s created successfully", friendlyName),
 			Status:  http.StatusOK,
 		},
 		Comment:    discussion.Notes[0],
@@ -189,17 +202,17 @@ func PostComment(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 
-func EditComment(w http.ResponseWriter, r *http.Request) {
+/* editComment changes the text of a comment or changes it's resolved status. */
+func (a *api) editComment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
-
 	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -208,31 +221,29 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 	var editCommentRequest EditCommentRequest
 	err = json.Unmarshal(body, &editCommentRequest)
 	if err != nil {
-		c.handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
-
-	msg := "edit comment"
 	options.Body = gitlab.String(editCommentRequest.Comment)
 
-	note, res, err := c.git.Discussions.UpdateMergeRequestDiscussionNote(c.projectId, c.mergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 
 	if err != nil {
-		c.handleError(w, err, "Could not "+msg, res.StatusCode)
+		handleError(w, err, "Could not update comment", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(res.StatusCode)
-
-	if res.StatusCode != http.StatusOK {
-		c.handleError(w, errors.New("Non-200 status code recieved"), "Could not "+msg, res.StatusCode)
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/comment"}, "Could not update comment", res.StatusCode)
+		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Comment updated succesfully",
+			Message: "Comment updated successfully",
 			Status:  http.StatusOK,
 		},
 		Comment: note,
@@ -240,6 +251,6 @@ func EditComment(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

@@ -2,37 +2,38 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 )
 
-func RevokeHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
+/* revokeHandler revokes approval for the current merge request */
+func (a *api) revokeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
-	res, err := c.git.MergeRequestApprovals.UnapproveMergeRequest(c.projectId, c.mergeId, nil, nil)
+	res, err := a.client.UnapproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
 	if err != nil {
-		c.handleError(w, err, "Could not revoke approval", http.StatusBadRequest)
+		handleError(w, err, "Could not revoke approval", http.StatusInternalServerError)
 		return
 	}
 
-	/* TODO: Check for non-200 status codes */
-	w.WriteHeader(res.StatusCode)
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/revoke"}, "Could not revoke approval", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := SuccessResponse{
-		Message: "Success! Revoked MR approval.",
+		Message: "Success! Revoked MR approval",
 		Status:  http.StatusOK,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -21,36 +19,18 @@ type ReplyResponse struct {
 	Note *gitlab.Note `json:"note"`
 }
 
-func (c *Client) Reply(r ReplyRequest) (*gitlab.Note, int, error) {
-
-	now := time.Now()
-	options := gitlab.AddMergeRequestDiscussionNoteOptions{
-		Body:      gitlab.String(r.Reply),
-		CreatedAt: &now,
-	}
-
-	note, res, err := c.git.Discussions.AddMergeRequestDiscussionNote(c.projectId, c.mergeId, r.DiscussionId, &options)
-
-	if err != nil {
-		return nil, res.Response.StatusCode, fmt.Errorf("Could not leave reply: %w", err)
-	}
-
-	return note, http.StatusOK, nil
-}
-
-func ReplyHandler(w http.ResponseWriter, r *http.Request) {
-	c := r.Context().Value("client").(Client)
+/* replyHandler sends a reply to a note or comment */
+func (a *api) replyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		c.handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
@@ -59,21 +39,32 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &replyRequest)
 
 	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
-	note, status, err := c.Reply(replyRequest)
+	now := time.Now()
+	options := gitlab.AddMergeRequestDiscussionNoteOptions{
+		Body:      gitlab.String(replyRequest.Reply),
+		CreatedAt: &now,
+	}
+
+	note, res, err := a.client.AddMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, replyRequest.DiscussionId, &options)
 
 	if err != nil {
-		c.handleError(w, err, "Could not send reply", status)
+		handleError(w, err, "Could not leave reply", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(status)
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/reply"}, "Could not leave reply", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	response := ReplyResponse{
 		SuccessResponse: SuccessResponse{
-			Message: fmt.Sprintf("Replied: %s", note.Body),
+			Message: "Replied to comment",
 			Status:  http.StatusOK,
 		},
 		Note: note,
@@ -81,6 +72,6 @@ func ReplyHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

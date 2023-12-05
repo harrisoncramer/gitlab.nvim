@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -13,57 +14,61 @@ type DiscussionResolveRequest struct {
 	Resolved     bool   `json:"resolved"`
 }
 
-func DiscussionResolveHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPut:
-		DiscussionResolve(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	}
-}
-func DiscussionResolve(w http.ResponseWriter, r *http.Request) {
+/* discussionsResolveHandler sets a discussion to be "resolved" or not resolved, depending on the payload */
+func (a *api) discussionsResolveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := r.Context().Value("client").(Client)
+	if r.Method != http.MethodPut {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
+		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-	var resolveDiscussionRequest DiscussionResolveRequest
-	err = json.Unmarshal(body, &resolveDiscussionRequest)
-	if err != nil {
-		c.handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
 
-	_, res, err := c.git.Discussions.ResolveMergeRequestDiscussion(
-		c.projectId,
-		c.mergeId,
+	defer r.Body.Close()
+
+	var resolveDiscussionRequest DiscussionResolveRequest
+	err = json.Unmarshal(body, &resolveDiscussionRequest)
+
+	if err != nil {
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		return
+	}
+
+	_, res, err := a.client.ResolveMergeRequestDiscussion(
+		a.projectInfo.ProjectId,
+		a.projectInfo.MergeId,
 		resolveDiscussionRequest.DiscussionID,
 		&gitlab.ResolveMergeRequestDiscussionOptions{Resolved: &resolveDiscussionRequest.Resolved},
 	)
 
+	friendlyName := "unresolve"
+	if resolveDiscussionRequest.Resolved {
+		friendlyName = "resolve"
+	}
+
 	if err != nil {
-		c.handleError(w, err, "Could not update resolve status of discussion", res.StatusCode)
+		handleError(w, err, fmt.Sprintf("Could not %s discussion", friendlyName), http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	var message string
-	if resolveDiscussionRequest.Resolved {
-		message = "Discussion resolved"
-	} else {
-		message = "Discussion unresolved"
-	}
 	response := SuccessResponse{
-		Message: message,
+		Message: fmt.Sprintf("Discussion %sd", friendlyName),
 		Status:  http.StatusOK,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }

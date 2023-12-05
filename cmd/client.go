@@ -14,34 +14,42 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type Client struct {
-	projectId      string
-	mergeId        int
-	gitlabInstance string
-	authToken      string
-	git            *gitlab.Client
-}
-
 type DebugSettings struct {
 	GoRequest  bool `json:"go_request"`
 	GoResponse bool `json:"go_response"`
 }
 
-/* This will parse and validate the project settings and then initialize the Gitlab client */
-func (c *Client) initGitlabClient() error {
+type ProjectInfo struct {
+	ProjectId string
+	MergeId   int
+}
+
+/* The Client struct embeds all the methods from Gitlab for the different services */
+type Client struct {
+	*gitlab.MergeRequestsService
+	*gitlab.MergeRequestApprovalsService
+	*gitlab.DiscussionsService
+	*gitlab.ProjectsService
+	*gitlab.ProjectMembersService
+	*gitlab.JobsService
+	*gitlab.PipelinesService
+}
+
+/* initGitlabClient parses and validates the project settings and initializes the Gitlab client. */
+func initGitlabClient() (error, *Client) {
 
 	if len(os.Args) < 6 {
-		return errors.New("Must provide gitlab url, port, auth token, debug settings, and log path")
+		return errors.New("Must provide gitlab url, port, auth token, debug settings, and log path"), nil
 	}
 
 	gitlabInstance := os.Args[1]
 	if gitlabInstance == "" {
-		return errors.New("GitLab instance URL cannot be empty")
+		return errors.New("GitLab instance URL cannot be empty"), nil
 	}
 
 	authToken := os.Args[3]
 	if authToken == "" {
-		return errors.New("Auth token cannot be empty")
+		return errors.New("Auth token cannot be empty"), nil
 	}
 
 	/* Parse debug settings and initialize logger handlers */
@@ -49,7 +57,7 @@ func (c *Client) initGitlabClient() error {
 	var debugObject DebugSettings
 	err := json.Unmarshal([]byte(debugSettings), &debugObject)
 	if err != nil {
-		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings)
+		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings), nil
 	}
 
 	var apiCustUrl = fmt.Sprintf(gitlabInstance + "/api/v4")
@@ -66,65 +74,70 @@ func (c *Client) initGitlabClient() error {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
 	}
 
-	git, err := gitlab.NewClient(authToken, gitlabOptions...)
+	client, err := gitlab.NewClient(authToken, gitlabOptions...)
 
 	if err != nil {
-		return fmt.Errorf("Failed to create client: %v", err)
+		return fmt.Errorf("Failed to create client: %v", err), nil
 	}
 
-	c.gitlabInstance = gitlabInstance
-	c.authToken = authToken
-	c.git = git
-
-	return nil
+	return nil, &Client{
+		MergeRequestsService:         client.MergeRequests,
+		MergeRequestApprovalsService: client.MergeRequestApprovals,
+		DiscussionsService:           client.Discussions,
+		ProjectsService:              client.Projects,
+		ProjectMembersService:        client.ProjectMembers,
+		JobsService:                  client.Jobs,
+	}
 }
 
-/* This will fetch the project ID and merge request ID using the client */
-func (c *Client) initProjectSettings(g GitProjectInfo) error {
+/* initProjectSettings fetch the project ID and merge request ID using the client. */
+func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
 
 	opt := gitlab.GetProjectOptions{}
-	project, _, err := c.git.Projects.GetProject(g.projectPath(), &opt)
+	project, _, err := c.GetProject(gitInfo.projectPath(), &opt)
 
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", g.RemoteUrl), err)
+		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err), nil
 	}
 	if project == nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", g.RemoteUrl), err)
+		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err), nil
 	}
 
 	if project == nil {
-		return fmt.Errorf("No projects you are a member of contained remote URL %s", g.RemoteUrl)
+		return fmt.Errorf("No projects you are a member of contained remote URL %s", gitInfo.RemoteUrl), nil
 	}
 
-	c.projectId = fmt.Sprint(project.ID)
+	projectId := fmt.Sprint(project.ID)
 
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.String("all"),
 		State:        gitlab.String("opened"),
-		SourceBranch: &g.BranchName,
+		SourceBranch: &gitInfo.BranchName,
 	}
 
-	mergeRequests, _, err := c.git.MergeRequests.ListProjectMergeRequests(c.projectId, &options)
+	mergeRequests, _, err := c.ListProjectMergeRequests(projectId, &options)
 	if err != nil {
-		return fmt.Errorf("Failed to list merge requests: %w", err)
+		return fmt.Errorf("Failed to list merge requests: %w", err), nil
 	}
 
 	if len(mergeRequests) == 0 {
-		return errors.New("No merge requests found")
+		return errors.New("No merge requests found"), nil
 	}
 
 	mergeId := strconv.Itoa(mergeRequests[0].IID)
 	mergeIdInt, err := strconv.Atoi(mergeId)
 	if err != nil {
-		return err
+		return err, nil
 	}
 
-	c.mergeId = mergeIdInt
-
-	return nil
+	return nil, &ProjectInfo{
+		MergeId:   mergeIdInt,
+		ProjectId: projectId,
+	}
 }
 
-func (c *Client) handleError(w http.ResponseWriter, err error, message string, status int) {
+/* handleError is a utililty handler that returns errors to the client along with their statuses and messages */
+func handleError(w http.ResponseWriter, err error, message string, status int) {
 	w.WriteHeader(status)
 	response := ErrorResponse{
 		Message: message,
@@ -134,7 +147,7 @@ func (c *Client) handleError(w http.ResponseWriter, err error, message string, s
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		c.handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "Could not encode error response", http.StatusInternalServerError)
 	}
 }
 

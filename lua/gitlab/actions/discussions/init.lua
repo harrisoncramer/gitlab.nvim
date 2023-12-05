@@ -4,12 +4,14 @@
 local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
+local NuiLine = require("nui.line")
 local Layout = require("nui.layout")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local miscellaneous = require("gitlab.actions.miscellaneous")
+local discussions_tree = require("gitlab.actions.discussions.tree")
 
 local discussion_sign_name = "gitlab_discussion"
 local discussion_helper_sign_start = "gitlab_discussion_helper_start"
@@ -30,79 +32,16 @@ local M = {
   discussion_tree = nil,
 }
 
----@class Author
----@field id integer
----@field username string
----@field email string
----@field name string
----@field state string
----@field avatar_url string
----@field web_url string
-
----@class LinePosition
----@field line_code string
----@field type string
-
----@class GitlabLineRange
----@field start LinePosition
----@field end LinePosition
-
----@class NotePosition
----@field base_sha string
----@field start_sha string
----@field head_sha string
----@field position_type string
----@field new_path string?
----@field new_line integer?
----@field old_path string?
----@field old_line integer?
----@field line_range GitlabLineRange?
-
----@class Note
----@field id integer
----@field type string
----@field body string
----@field attachment string
----@field title string
----@field file_name string
----@field author Author
----@field system boolean
----@field expires_at string?
----@field updated_at string?
----@field created_at string?
----@field noteable_id integer
----@field noteable_type string
----@field commit_id string
----@field position NotePosition
----@field resolvable boolean
----@field resolved boolean
----@field resolved_by Author
----@field resolved_at string?
----@field noteable_iid integer
-
----@class UnlinkedNote: Note
----@field position nil
-
----@class Discussion
----@field id string
----@field individual_note boolean
----@field notes Note[]
-
----@class UnlinkedDiscussion: Discussion
----@field notes UnlinkedNote[]
-
----@class DiscussionData
----@field discussions Discussion[]
----@field unlinked_discussions UnlinkedDiscussion[]
-
 ---Load the discussion data, storage them in M.discussions and M.unlinked_discussions and call
 ---callback with data
----@param callback fun(data: DiscussionData): nil
+---@param callback (fun(data: DiscussionData): nil)?
 M.load_discussions = function(callback)
-  job.run_job("/discussions", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
+  job.run_job("/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     M.discussions = data.discussions
     M.unlinked_discussions = data.unlinked_discussions
-    callback(data)
+    if type(callback) == "function" then
+      callback(data)
+    end
   end)
 end
 
@@ -143,7 +82,8 @@ M.filter_discussions_for_signs_and_diagnostics = function()
         --Skip discussions from old revisions
         and not (
           state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-          and first_note.position.base_sha ~= state.MR_REVISIONS[1].base_sha
+          and u.from_iso_format_date_to_timestamp(first_note.created_at)
+            <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
         )
       then
         table.insert(discussions, discussion)
@@ -249,6 +189,13 @@ M.refresh_signs = function()
   vim.fn.sign_unplace(discussion_sign_name)
   reviewer.place_sign(old_signs, "old")
   reviewer.place_sign(new_signs, "new")
+end
+
+---Build note header from note.
+---@param note Note
+---@return string
+M.build_note_header = function(note)
+  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
 
 ---Refresh the diagnostics for the currently reviewed file
@@ -536,6 +483,7 @@ M.send_reply = function(tree, discussion_id)
     job.run_job("/reply", "POST", body, function(data)
       u.notify("Sent reply!", vim.log.levels.INFO)
       M.add_reply_to_tree(tree, data.note, discussion_id)
+      M.load_discussions()
     end)
   end
 end
@@ -560,7 +508,7 @@ M.send_deletion = function(tree, unlinked)
   local root_node = M.get_root_node(tree, current_node)
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-  local body = { discussion_id = root_node.id, note_id = note_id }
+  local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
 
   job.run_job("/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
@@ -608,11 +556,14 @@ M.edit_comment = function(tree, unlinked)
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
   state.set_popup_keymaps(
     edit_popup,
-    M.send_edits(tostring(root_node.id), note_node.root_note_id or note_node.id, unlinked)
+    M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked)
   )
 end
 
--- This function sends the edited comment to the Go server
+---This function sends the edited comment to the Go server
+---@param discussion_id string
+---@param note_id integer
+---@param unlinked boolean
 M.send_edits = function(discussion_id, note_id, unlinked)
   return function(text)
     local body = {
@@ -623,10 +574,10 @@ M.send_edits = function(discussion_id, note_id, unlinked)
     job.run_job("/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       if unlinked then
-        M.unlinked_discussions = M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
+        M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
       else
-        M.discussions = M.replace_text(M.discussions, discussion_id, note_id, text)
+        M.replace_text(M.discussions, discussion_id, note_id, text)
         M.rebuild_discussion_tree()
       end
     end)
@@ -645,7 +596,7 @@ M.toggle_discussion_resolved = function(tree)
     resolved = not note.resolved,
   }
 
-  job.run_job("/discussion/resolve", "PUT", body, function(data)
+  job.run_job("/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
   end)
@@ -684,12 +635,16 @@ M.toggle_node = function(tree)
   end
   if node:is_expanded() then
     node:collapse()
-    for _, child in ipairs(children) do
-      tree:get_node(child):collapse()
+    if M.is_node_note(node) then
+      for _, child in ipairs(children) do
+        tree:get_node(child):collapse()
+      end
     end
   else
-    for _, child in ipairs(children) do
-      tree:get_node(child):expand()
+    if M.is_node_note(node) then
+      for _, child in ipairs(children) do
+        tree:get_node(child):expand()
+      end
     end
     node:expand()
   end
@@ -700,12 +655,48 @@ end
 --
 -- 🌲 Helper Functions
 --
+---Inspired by default func https://github.com/MunifTanjim/nui.nvim/blob/main/lua/nui/tree/util.lua#L38
+local function nui_tree_prepare_node(node)
+  if not node.text then
+    error("missing node.text")
+  end
+
+  local texts = node.text
+
+  if type(node.text) ~= "table" or node.text.content then
+    texts = { node.text }
+  end
+
+  local lines = {}
+
+  for i, text in ipairs(texts) do
+    local line = NuiLine()
+
+    line:append(string.rep("  ", node._depth - 1))
+
+    if i == 1 and node:has_children() then
+      line:append(node:is_expanded() and " " or " ")
+      if node.icon then
+        line:append(node.icon .. " ", node.icon_hl)
+      end
+    else
+      line:append("  ")
+    end
+
+    line:append(text, node.text_hl)
+
+    table.insert(lines, line)
+  end
+
+  return lines
+end
 
 M.rebuild_discussion_tree = function()
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
-  local discussion_tree_nodes = M.add_discussions_to_table(M.discussions)
-  local discussion_tree = NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr })
+  local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
+  local discussion_tree =
+    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
@@ -716,8 +707,12 @@ end
 M.rebuild_unlinked_discussion_tree = function()
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.unlinked_section.bufnr, 0, -1, false, {})
-  local unlinked_discussion_tree_nodes = M.add_discussions_to_table(M.unlinked_discussions)
-  local unlinked_discussion_tree = NuiTree({ nodes = unlinked_discussion_tree_nodes, bufnr = M.unlinked_section.bufnr })
+  local unlinked_discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.unlinked_discussions, true)
+  local unlinked_discussion_tree = NuiTree({
+    nodes = unlinked_discussion_tree_nodes,
+    bufnr = M.unlinked_section.bufnr,
+    prepare_node = nui_tree_prepare_node,
+  })
   unlinked_discussion_tree:render()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section.bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
@@ -793,29 +788,59 @@ M.add_empty_titles = function(args)
   end
 end
 
+---Check if type of node is note or note body
+---@param node NuiTree.Node?
+---@return boolean
+M.is_node_note = function(node)
+  if node and (node.type == "note_body" or node.type == "note") then
+    return true
+  else
+    return false
+  end
+end
+
+---Check if type of current node is note or note body
+---@param tree NuiTree
+---@return boolean
+M.is_current_node_note = function(tree)
+  return M.is_node_note(tree:get_node())
+end
+
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
-    M.edit_comment(tree, unlinked)
+    if M.is_current_node_note(tree) then
+      M.edit_comment(tree, unlinked)
+    end
   end, { buffer = bufnr, desc = "Edit comment" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
-    M.delete_comment(tree, unlinked)
+    if M.is_current_node_note(tree) then
+      M.delete_comment(tree, unlinked)
+    end
   end, { buffer = bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
-    M.toggle_discussion_resolved(tree)
+    if M.is_current_node_note(tree) then
+      M.toggle_discussion_resolved(tree)
+    end
   end, { buffer = bufnr, desc = "Toggle resolved" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
     M.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.reply, function()
-    M.reply(tree)
+    if M.is_current_node_note(tree) then
+      M.reply(tree)
+    end
   end, { buffer = bufnr, desc = "Reply" })
 
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
-      M.jump_to_file(tree)
+      if M.is_current_node_note(tree) then
+        M.jump_to_file(tree)
+      end
     end, { buffer = bufnr, desc = "Jump to file" })
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
-      M.jump_to_reviewer(tree)
+      if M.is_current_node_note(tree) then
+        M.jump_to_reviewer(tree)
+      end
     end, { buffer = bufnr, desc = "Jump to reviewer" })
   end
 end
@@ -850,153 +875,68 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   tree:render()
 end
 
+---Replace text in discussion after note update.
+---@param data Discussion[]|UnlinkedDiscussion[]
+---@param discussion_id string
+---@param note_id integer
+---@param text string
 M.replace_text = function(data, discussion_id, note_id, text)
   for i, discussion in ipairs(data) do
     if discussion.id == discussion_id then
       for j, note in ipairs(discussion.notes) do
         if note.id == note_id then
           data[i].notes[j].body = text
-          return data
         end
       end
     end
   end
 end
 
+---Get root node
+---@param tree NuiTree
+---@param node NuiTree.Node?
+---@return NuiTree.Node?
 M.get_root_node = function(tree, node)
-  if not node.is_root then
+  if not node then
+    return nil
+  end
+  if node.type == "note_body" or node.type == "note" and not node.is_root then
     local parent_id = node:get_parent_id()
     return M.get_root_node(tree, tree:get_node(parent_id))
-  else
+  elseif node.is_root then
     return node
   end
 end
 
+---Get note node
+---@param tree NuiTree
+---@param node NuiTree.Node?
+---@return NuiTree.Node?
 M.get_note_node = function(tree, node)
-  if not node.is_note then
+  if not node then
+    return nil
+  end
+
+  if node.type == "note_body" then
     local parent_id = node:get_parent_id()
     if parent_id == nil then
       return node
     end
     return M.get_note_node(tree, tree:get_node(parent_id))
-  else
+  elseif node.type == "note" then
     return node
   end
 end
 
-local attach_uuid = function(str)
-  return { text = str, id = u.uuid() }
-end
-
----Build note header from note.
----@param note Note
----@return string
-M.build_note_header = function(note)
-  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
-end
-
-M.build_note_body = function(note, resolve_info)
-  local text_nodes = {}
-  for bodyLine in note.body:gmatch("[^\n]+") do
-    local line = attach_uuid(bodyLine)
-    table.insert(
-      text_nodes,
-      NuiTree.Node({
-        new_line = (type(note.position) == "table" and note.position.new_line),
-        old_line = (type(note.position) == "table" and note.position.old_line),
-        text = line.text,
-        id = line.id,
-        is_body = true,
-      }, {})
-    )
-  end
-
-  local resolve_symbol = ""
-  if resolve_info ~= nil and resolve_info.resolvable then
-    resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-      or state.settings.discussion_tree.unresolved
-  end
-
-  local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
-
-  return noteHeader, text_nodes
-end
-
-M.build_note = function(note, resolve_info)
-  local text, text_nodes = M.build_note_body(note, resolve_info)
-  local note_node = NuiTree.Node({
-    text = text,
-    id = note.id,
-    file_name = (type(note.position) == "table" and note.position.new_path),
-    new_line = (type(note.position) == "table" and note.position.new_line),
-    old_line = (type(note.position) == "table" and note.position.old_line),
-    is_note = true,
-  }, text_nodes)
-
-  return note_node, text, text_nodes
-end
-
 M.add_reply_to_tree = function(tree, note, discussion_id)
-  local note_node = M.build_note(note)
+  local note_node = discussions_tree.build_note(note)
   note_node:expand()
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
 end
 
-M.add_discussions_to_table = function(items)
-  local t = {}
-  for _, discussion in ipairs(items) do
-    local discussion_children = {}
-
-    -- These properties are filled in by the first note
-    local root_text = ""
-    local root_note_id = ""
-    local root_file_name = ""
-    local root_id = 0
-    local root_text_nodes = {}
-    local resolvable = false
-    local resolved = false
-    local root_new_line = nil
-    local root_old_line = nil
-
-    for j, note in ipairs(discussion.notes) do
-      if j == 1 then
-        _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
-
-        root_file_name = (type(note.position) == "table" and note.position.new_path)
-        root_new_line = (type(note.position) == "table" and note.position.new_line)
-        root_old_line = (type(note.position) == "table" and note.position.old_line)
-        root_id = discussion.id
-        root_note_id = note.id
-        resolvable = note.resolvable
-        resolved = note.resolved
-      else -- Otherwise insert it as a child node...
-        local note_node = M.build_note(note)
-        table.insert(discussion_children, note_node)
-      end
-    end
-
-    -- Creates the first node in the discussion, and attaches children
-    local body = u.spread(root_text_nodes, discussion_children)
-    local root_node = NuiTree.Node({
-      text = root_text,
-      is_note = true,
-      is_root = true,
-      id = root_id,
-      root_note_id = root_note_id,
-      file_name = root_file_name,
-      new_line = root_new_line,
-      old_line = root_old_line,
-      resolvable = resolvable,
-      resolved = resolved,
-    }, body)
-
-    table.insert(t, root_node)
-  end
-
-  return t
-end
-
+---Get note location
+---@param tree NuiTree
 M.get_note_location = function(tree)
   local node = tree:get_node()
   if node == nil then
