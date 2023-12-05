@@ -7,3 +7,4 @@ bin
 tests/plugins
 !tests/plugins/.placeholder
 luacov.*
+tags

@@ -18,6 +18,15 @@ M.settings = {
     exit = "<Esc>",
     perform_action = "<leader>s",
     perform_linewise_action = "<leader>l",
+    width = "40%",
+    height = "60%",
+    border = "rounded",
+    opacity = 1.0,
+    edit = nil,
+    reply = nil,
+    comment = nil,
+    note = nil,
+    pipeline = nil,
   },
   discussion_tree = {
     blacklist = {},
@@ -207,7 +216,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   end
   vim.keymap.set("n", M.settings.popup.exit, function()
     exit(popup, opts.cb)
-  end, { buffer = popup.bufnr })
+  end, { buffer = popup.bufnr, desc = "Exit popup" })
   if action ~= nil then
     vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
@@ -218,7 +227,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
         exit(popup)
         action(text, popup.bufnr)
       end
-    end, { buffer = popup.bufnr })
+    end, { buffer = popup.bufnr, desc = "Perform action" })
   end
 
   if linewise_action ~= nil then
@@ -227,7 +236,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       local linnr = vim.api.nvim_win_get_cursor(0)[1]
       local text = u.get_line_content(bufnr, linnr)
       linewise_action(text)
-    end, { buffer = popup.bufnr })
+    end, { buffer = popup.bufnr, desc = "Perform linewise action" })
   end
 end
 
