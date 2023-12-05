@@ -12,6 +12,7 @@ local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
+local winbar = require("gitlab.actions.discussions.winbar")
 
 local edit_popup = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
 local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
@@ -375,15 +376,9 @@ M.refresh_discussion_tree = function()
     { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
   })
   M.switch_can_edit_bufs(false)
-  M.update_winbars()
+  winbar.update_winbars(M.unlinked_section.bufnr, M.linked_section.bufnr)
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
-end
-
--- Updates the winbars for the notes and discussions sections
-M.update_winbars = function()
-  vim.api.nvim_buf_set_name(M.unlinked_section.bufnr, "Notes")
-  vim.api.nvim_buf_set_name(M.linked_section.bufnr, "Discussions")
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
