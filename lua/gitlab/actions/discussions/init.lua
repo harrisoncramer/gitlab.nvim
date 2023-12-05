@@ -71,22 +71,22 @@ M.filter_discussions_for_signs_and_diagnostics = function()
   for _, discussion in ipairs(M.discussions) do
     local first_note = discussion.notes[1]
     if
-      type(first_note.position) == "table"
-      and (first_note.position.new_path == file or first_note.position.old_path == file)
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-        --Skip resolved discussions
-        not (
+      --Skip resolved discussions
+          not (
           state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
           and first_note.resolvable
           and first_note.resolved
-        )
-        --Skip discussions from old revisions
-        and not (
+          )
+          --Skip discussions from old revisions
+          and not (
           state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
           and u.from_iso_format_date_to_timestamp(first_note.created_at)
-            <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-        )
+          <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
+          )
       then
         table.insert(discussions, discussion)
       end
@@ -371,10 +371,19 @@ M.refresh_discussion_tree = function()
 
   M.switch_can_edit_bufs(true)
   M.add_empty_titles({
-    { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+    { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
     { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
   })
   M.switch_can_edit_bufs(false)
+  M.update_winbars()
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
+end
+
+-- Updates the winbars for the notes and discussions sections
+M.update_winbars = function()
+  vim.api.nvim_buf_set_name(M.unlinked_section.bufnr, "Notes")
+  vim.api.nvim_buf_set_name(M.linked_section.bufnr, "Discussions")
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
@@ -526,7 +535,7 @@ M.send_deletion = function(tree, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -696,7 +705,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
