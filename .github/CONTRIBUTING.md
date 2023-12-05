@@ -20,7 +20,7 @@ If you are using Lazy as a plugin manager, the easiest way to work on changes is
   build = function()
     require("gitlab.server").build()
   end,
-  dir = "~/.path/to/your-closed-version", -- Pass in the path to your cloned repository
+  dir = "~/.path/to/your-cloned-version", -- Pass in the path to your cloned repository
   config = function()
     require("gitlab").setup({})
   end,
@@ -31,18 +31,18 @@ If you are making changes to the Go codebase, don't forget to run `make compile`
 
 3. Apply formatters and linters to your changes
 
-For changes to the Go codbase: We use <a href="https://pkg.go.dev/cmd/gofmt">gofmt</a> to check formatting and <a href="https://github.com/golangci/golangci-lint">golangci-lint</a> to check linting. Run these commands in the root of the repository:
+For changes to the Go codebase: We use <a href="https://pkg.go.dev/cmd/gofmt">gofmt</a> to check formatting and <a href="https://github.com/golangci/golangci-lint">golangci-lint</a> to check linting. Run these commands in the root of the repository:
 
 ```bash
-$ stylua .
-$ luacheck --globals vim busted --no-max-line-length -- .
+$ go fmt ./...
+$ golangci-lint run
 ```
 
 For changes to the Lua codebase: We use <a href="https://github.com/JohnnyMorganz/StyLua">stylua</a> for formatting and <a href="https://github.com/mpeterv/luacheck">luacheck</a> for linting. Run these commands in the root of the repository:
 
 ```bash
-$ go fmt ./...
-$ golangci-lint run
+$ stylua .
+$ luacheck --globals vim busted --no-max-line-length -- .
 ```
 
 4. Make the merge request to the `main` branch of `.gitlab.nvim`

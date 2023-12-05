@@ -76,7 +76,8 @@ use {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
     "sindrets/diffview.nvim",
-    "stevearc/dressing.nvim",
+    "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+    "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
   },
   run = function() require("gitlab.server").build(true) end,
   config = function()
@@ -261,7 +262,7 @@ To display all discussions for the current MR, use the `toggle_discussions` acti
 require("gitlab").toggle_discussions()
 ```
 
-You can jump to the comment's location in the reviewer window by using the `state.settings.discussion_tree.jump_to_reviewer` key, or the actual file with the 'state.settings.discussion_tree.jump_to_file' key.
+You can jump to the comment's location in the reviewer window by using the `state.settings.discussion_tree.jump_to_reviewer` key, or to the actual file with the `state.settings.discussion_tree.jump_to_file` key.
 
 Within the discussion tree, you can delete/edit/reply to comments with the `state.settings.discussion_tree.SOME_ACTION` keybindings.
 
@@ -273,26 +274,26 @@ require("gitlab").create_note()
 
 ### Discussion signs and diagnostics
 
-By default when reviewing files you will see signs and diagnostics ( if enabled in configuration ). When cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show`. You can also jump to discussion tree where you can reply, edit or delete discussion.
+By default when reviewing files you will see signs and diagnostics (if enabled in configuration). When cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show`. You can also jump to discussion tree where you can reply, edit or delete discussion.
 
 ```lua
 require("gitlab").move_to_discussion_tree_from_diagnostic()
 ```
 
-The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. Keep in mind that the highlights provided here can be overridden by other highlights (for example from diffview.nvim). This allows users to jump to comments in the current buffer in the reviewer pane directly.
+The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. This allows users to jump to comments in the current buffer in the reviewer pane directly. Keep in mind that the highlights provided here can be overridden by other highlights (for example from `diffview.nvim`). 
 
-These diagnostics are configurable in the same way that diagnostics are typically configurable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options where you can configure values like (this is directly used as opts in vim.diagnostic.set):
+These diagnostics are configurable in the same way that diagnostics are typically configurable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options (this is directly used as opts in vim.diagnostic.set). Here you can configure values like:
 
 - `virtual_text` - Show virtual text for diagnostics.
 - `underline` - Underline text for diagnostics.
 
-Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details. Signs and diagnostics have common settings in `discussion_sign_and_diagnostics`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor. The `skip_resolved_discussion` Boolean will control visibility of resolved discussions, and `skip_old_revision_discussion` whether to show signs and diagnostics for discussions on outdated diff revisions.
+Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details. Signs and diagnostics have common settings in `discussion_sign_and_diagnostic`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor. The `skip_resolved_discussion` Boolean will control visibility of resolved discussions, and `skip_old_revision_discussion` whether to show signs and diagnostics for discussions on outdated diff revisions.
 
 When interacting with multiline comments, the cursor must be on the "main" line of diagnostic, where the `discussion_sign.text` is shown, otherwise `vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not work.
 
 ### Uploading Files
 
-To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the popup is open. This will open a picker that will look in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path) for files.
+To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the popup is open. This will open a picker that will look for files in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path).
 
 When you have picked the file, it will be added to the current buffer at the current line.
 
@@ -340,8 +341,7 @@ require("dressing").setup({
 
 ### Restarting or Shutting Down
 
-The `gitlab.nvim` server will shut down automatically when you exit Neovim. However, if you would like to manage this yourself (for instance, restart the server when you check out a new branch) you may do so via the `restart` command, or `shutdown` commands, which
-both accept callbacks.
+The `gitlab.nvim` server will shut down automatically when you exit Neovim. However, if you would like to manage this yourself (for instance, restart the server when you check out a new branch) you may do so via the `restart` command, or `shutdown` commands, which both accept callbacks.
 
 ```lua
 require("gitlab.server").restart()
@@ -391,7 +391,7 @@ vim.keymap.set("n", "glo", gitlab.open_in_browser)
 
 **To check that the current settings of the plugin are configured correctly, please run: `:lua require("gitlab").print_settings()`**
 
-This plugin uses a Golang server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Golang server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
+This plugin uses a Go server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Go server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
 
 ```lua
 :lua require("gitlab.server").build(true)
