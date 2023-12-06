@@ -30,7 +30,7 @@ local M = {
   discussion_tree = nil,
 }
 
----Load the discussion data, storage them in M.discussions and M.unlinked_discussions and call
+---Makes API call to get the discussion data, store it in M.discussions and M.unlinked_discussions and call
 ---callback with data
 ---@param callback (fun(data: DiscussionData): nil)?
 M.load_discussions = function(callback)
@@ -43,7 +43,16 @@ M.load_discussions = function(callback)
   end)
 end
 
----Refresh discussion data, discussion signs and diagnostics
+---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
+M.initialize_discussions = function()
+  signs.setup_signs()
+  -- Setup callback to refresh discussion data, discussion signs and diagnostics whenever the reviewed file changes.
+  reviewer.set_callback_for_file_changed(M.refresh_discussion_data)
+  -- Setup callback to clear signs and diagnostics whenever reviewer is left.
+  reviewer.set_callback_for_reviewer_leave(signs.clear_signs_and_discussions)
+end
+
+---Refresh discussion data, signs, diagnostics, and winbar with new data from API
 M.refresh_discussion_data = function()
   M.load_discussions(function()
     if state.settings.discussion_sign.enabled then
@@ -52,48 +61,9 @@ M.refresh_discussion_data = function()
     if state.settings.discussion_diagnostic.enabled then
       signs.refresh_diagnostics(M.discussions)
     end
+
+    M.update_winbars()
   end)
-end
-
----Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
-M.initialize_discussions = function()
-  signs.setup_signs()
-  M.setup_refresh_discussion_data_callback()
-  M.setup_leave_reviewer_callback()
-end
-
----Setup callback to refresh discussion data, discussion signs and diagnostics whenever the
----reviewed file changes.
-M.setup_refresh_discussion_data_callback = function()
-  reviewer.set_callback_for_file_changed(M.refresh_discussion_data)
-end
-
----Setup callback to clear signs and diagnostics whenever reviewer is left.
-M.setup_leave_reviewer_callback = function()
-  reviewer.set_callback_for_reviewer_leave(signs.clear_signs_and_discussions)
-end
-
-M.refresh_discussion_tree = function()
-  if M.layout_visible == false then
-    return
-  end
-
-  if type(M.discussions) == "table" then
-    M.rebuild_discussion_tree()
-  end
-  if type(M.unlinked_discussions) == "table" then
-    M.rebuild_unlinked_discussion_tree()
-  end
-
-  M.switch_can_edit_bufs(true)
-  M.add_empty_titles({
-    { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
-    { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-  })
-  M.switch_can_edit_bufs(false)
-  M.update_winbars()
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
@@ -126,7 +96,28 @@ M.toggle = function(callback)
     M.layout_visible = true
     M.layout_buf = layout.bufnr
     state.discussion_buf = layout.bufnr
-    M.refresh_discussion_tree()
+
+    if M.layout_visible == false then
+      return
+    end
+
+    if type(M.discussions) == "table" then
+      M.rebuild_discussion_tree()
+    end
+    if type(M.unlinked_discussions) == "table" then
+      M.rebuild_unlinked_discussion_tree()
+    end
+
+    M.switch_can_edit_bufs(true)
+    M.add_empty_titles({
+      { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
+      { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+    })
+    M.switch_can_edit_bufs(false)
+    M.update_winbars()
+    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
+    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
+
     if type(callback) == "function" then
       callback()
     end
@@ -318,6 +309,7 @@ M.toggle_discussion_resolved = function(tree)
   job.run_job("/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
+    M.refresh_discussion_data()
   end)
 end
 
@@ -592,7 +584,6 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   end
 
   tree:render()
-  M.update_winbars()
 end
 
 ---Replace text in discussion after note update.
