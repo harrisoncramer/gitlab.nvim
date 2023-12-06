@@ -14,9 +14,6 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local signs = require("gitlab.actions.discussions.signs")
 
-local edit_popup = Popup(u.create_popup_state("Edit Comment", "80%", "80%"))
-local reply_popup = Popup(u.create_popup_state("Reply", "80%", "80%"))
-
 local M = {
   layout_visible = false,
   layout = nil,
@@ -110,7 +107,7 @@ M.toggle = function(callback)
 
     M.switch_can_edit_bufs(true)
     M.add_empty_titles({
-      { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
     M.switch_can_edit_bufs(false)
@@ -180,6 +177,7 @@ end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
 M.reply = function(tree)
+  local reply_popup = Popup(u.create_popup_state("Reply", state.settings.popup.reply))
   local node = tree:get_node()
   local discussion_node = M.get_root_node(tree, node)
   local id = tostring(discussion_node.id)
@@ -236,7 +234,7 @@ M.send_deletion = function(tree, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -246,6 +244,7 @@ end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
+  local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)
@@ -407,7 +406,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
@@ -522,37 +521,37 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     if M.is_current_node_note(tree) then
       M.edit_comment(tree, unlinked)
     end
-  end, { buffer = bufnr })
+  end, { buffer = bufnr, desc = "Edit comment" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
     if M.is_current_node_note(tree) then
       M.delete_comment(tree, unlinked)
     end
-  end, { buffer = bufnr })
+  end, { buffer = bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
     if M.is_current_node_note(tree) then
       M.toggle_discussion_resolved(tree)
     end
-  end, { buffer = bufnr })
+  end, { buffer = bufnr, desc = "Toggle resolved" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
     M.toggle_node(tree)
-  end, { buffer = bufnr })
+  end, { buffer = bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.reply, function()
     if M.is_current_node_note(tree) then
       M.reply(tree)
     end
-  end, { buffer = bufnr })
+  end, { buffer = bufnr, desc = "Reply" })
 
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
       if M.is_current_node_note(tree) then
         M.jump_to_file(tree)
       end
-    end, { buffer = bufnr })
+    end, { buffer = bufnr, desc = "Jump to file" })
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
       if M.is_current_node_note(tree) then
         M.jump_to_reviewer(tree)
       end
-    end, { buffer = bufnr })
+    end, { buffer = bufnr, desc = "Jump to reviewer" })
   end
 end
 

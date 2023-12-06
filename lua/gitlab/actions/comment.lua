@@ -10,12 +10,17 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
 local M = {}
 
-local comment_popup = Popup(u.create_popup_state("Comment", "40%", "60%"))
-local note_popup = Popup(u.create_popup_state("Note", "40%", "60%"))
+-- Popup creation is wrapped in a function so that it is performed *after* user
+-- configuration has been merged with default configuration, not when this file is being
+-- required.
+local function create_comment_popup()
+  return Popup(u.create_popup_state("Comment", state.settings.popup.comment))
+end
 
 -- This function will open a comment popup in order to create a comment on the changed/updated
 -- line in the current MR
 M.create_comment = function()
+  local comment_popup = create_comment_popup()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text)
@@ -27,6 +32,7 @@ M.create_multiline_comment = function()
   if not u.check_visual_mode() then
     return
   end
+  local comment_popup = create_comment_popup()
   local start_line, end_line = u.get_visual_selection_boundaries()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
@@ -40,6 +46,7 @@ M.create_comment_suggestion = function()
   if not u.check_visual_mode() then
     return
   end
+  local comment_popup = create_comment_popup()
   local start_line, end_line = u.get_visual_selection_boundaries()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local range = end_line - start_line
@@ -81,6 +88,7 @@ M.create_comment_suggestion = function()
 end
 
 M.create_note = function()
+  local note_popup = Popup(u.create_popup_state("Note", state.settings.popup.note))
   note_popup:mount()
   state.set_popup_keymaps(note_popup, function(text)
     M.confirm_create_comment(text, nil, true)

@@ -1,4 +1,4 @@
--- This module is responsible for the MR pipline
+-- This module is responsible for the MR pipeline
 -- This lets the user see the current status of the pipeline
 -- and retrigger the pipeline from within the editor
 local Popup = require("nui.popup")
@@ -42,7 +42,8 @@ M.open = function()
     local width = string.len(pipeline.web_url) + 10
     local height = 6 + #pipeline_jobs + 3
 
-    local pipeline_popup = Popup(u.create_popup_state("Loading Pipeline...", width, height))
+    local pipeline_popup =
+      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height))
     M.pipeline_popup = pipeline_popup
     pipeline_popup:mount()
 
