@@ -1,4 +1,6 @@
 local M = {}
+local state = require("gitlab.state")
+local u = require("gitlab.utils")
 
 ---@param nodes Discussion[]|UnlinkedDiscussion[]
 local get_data = function(nodes)
@@ -19,12 +21,14 @@ local get_data = function(nodes)
       end
     end
   end
-  return string.format("(%d/%d resolved)", total_resolved, total_resolvable)
+
+  return total_resolvable, total_resolved
 end
 
-local function content(nodes)
-  local file_name = "%-.16t"
-  return string.format("%s %s", file_name, get_data(nodes))
+local function content(nodes, bufnr)
+  local file_name = u.basename(vim.api.nvim_buf_get_name(bufnr))
+  local resolvable, resolved = get_data(nodes)
+  return state.settings.discussion_tree.winbar(file_name, resolvable, resolved)
 end
 
 ---This function sends the edited comment to the Go server
@@ -34,12 +38,12 @@ end
 ---@param unlinked_discussions UnlinkedDiscussion[]
 M.update_winbars = function(unlinked_bufnr, linked_bufnr, linked_discussions, unlinked_discussions)
   vim.api.nvim_buf_set_name(unlinked_bufnr, "Gitlab Notes")
-  local w1 = vim.fn.bufwinid(unlinked_bufnr)
-  vim.wo[w1].winbar = content(unlinked_discussions)
-
-  local w2 = vim.fn.bufwinid(linked_bufnr)
   vim.api.nvim_buf_set_name(linked_bufnr, "Gitlab Discussions")
-  vim.wo[w2].winbar = content(linked_discussions)
+
+  local w1 = vim.fn.bufwinid(unlinked_bufnr)
+  vim.wo[w1].winbar = content(unlinked_discussions, unlinked_bufnr)
+  local w2 = vim.fn.bufwinid(linked_bufnr)
+  vim.wo[w2].winbar = content(linked_discussions, linked_bufnr)
 end
 
 return M
