@@ -13,6 +13,7 @@ local reviewer = require("gitlab.reviewer")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local signs = require("gitlab.actions.discussions.signs")
+local winbar = require("gitlab.actions.discussions.winbar")
 
 local M = {
   layout_visible = false,
@@ -59,7 +60,7 @@ M.refresh_discussion_data = function()
       signs.refresh_diagnostics(M.discussions)
     end
 
-    M.update_winbars()
+    winbar.update_winbars(M.unlinked_section.bufnr, M.linked_section.bufnr, M.discussions, M.unlinked_discussions)
   end)
 end
 
@@ -107,11 +108,11 @@ M.toggle = function(callback)
 
     M.switch_can_edit_bufs(true)
     M.add_empty_titles({
-      { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
     M.switch_can_edit_bufs(false)
-    M.update_winbars()
+    winbar.update_winbars(M.unlinked_section.bufnr, M.linked_section.bufnr, M.discussions, M.unlinked_discussions)
     vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
     vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
 
@@ -234,7 +235,7 @@ M.send_deletion = function(tree, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_section.bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -406,7 +407,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
   M.discussion_tree = discussion_tree
@@ -657,50 +658,6 @@ M.get_note_location = function(tree)
     return nil, nil, nil, "Could not get discussion node"
   end
   return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line
-end
-
--- Winbar stuff
----@param nodes Discussion[]|UnlinkedDiscussion[]
-M.get_resolvable = function(nodes)
-  local total_resolvable = 0
-  local total_resolved = 0
-  if nodes == vim.NIL then
-    return ""
-  end
-
-  for _, d in ipairs(nodes) do
-    local first_child = d.notes[1]
-    if first_child ~= nil then
-      if first_child.resolvable then
-        total_resolvable = total_resolvable + 1
-      end
-      if first_child.resolved then
-        total_resolved = total_resolved + 1
-      end
-    end
-  end
-  return string.format("(%d/%d resolved)", total_resolved, total_resolvable)
-end
-
-local function notes_content()
-  local file_name = "%-.16t"
-  return string.format("%s %s", file_name, M.get_resolvable(M.unlinked_discussions))
-end
-
-local function discussions_content()
-  local file_name = "%-.16t"
-  return string.format("%s %s", file_name, M.get_resolvable(M.discussions))
-end
-
--- Updates the winbars for the notes and discussions sections
-M.update_winbars = function()
-  vim.api.nvim_buf_set_name(M.unlinked_section.bufnr, "Gitlab Notes")
-  local w1 = vim.fn.bufwinid(M.unlinked_section.bufnr)
-  vim.wo[w1].winbar = notes_content()
-
-  local w2 = vim.fn.bufwinid(M.linked_section.bufnr)
-  vim.api.nvim_buf_set_name(M.linked_section.bufnr, "Gitlab Discussions")
-  vim.wo[w2].winbar = discussions_content()
 end
 
 return M
