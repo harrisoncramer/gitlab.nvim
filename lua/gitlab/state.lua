@@ -31,6 +31,7 @@ M.settings = {
     pipeline = nil,
   },
   discussion_tree = {
+    auto_open = true,
     blacklist = {},
     jump_to_file = "o",
     jump_to_reviewer = "m",

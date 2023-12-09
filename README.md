@@ -133,6 +133,7 @@ require("gitlab").setup({
     reply = nil,
   },
   discussion_tree = { -- The discussion tree that holds all comments
+    auto_open = true, -- Automatically open when the reviewer is opened
     switch_view = "T", -- Toggles between the notes and discussions views
     blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
     jump_to_file = "o", -- Jump to comment location in file

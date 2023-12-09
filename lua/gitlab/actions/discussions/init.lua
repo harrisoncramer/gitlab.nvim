@@ -77,11 +77,7 @@ end
 ---@param callback function?
 M.toggle = function(callback)
   if M.split_visible then
-    M.split:unmount()
-    M.split_visible = false
-    M.discussion_tree = nil
-    M.linked_content = nil
-    M.unlinked_content = nil
+    M.close()
     return
   end
 
@@ -134,6 +130,15 @@ local switch_view_type = function()
   winbar.update_winbar(change_to_unlinked and M.unlinked_discussions or M.discussions,
     change_to_unlinked and "Notes" or "Discussions")
   M.focused_bufnr = new_bufnr
+end
+
+-- Clears the discussion state and unmounts the split
+M.close = function()
+  M.split:unmount()
+  M.split_visible = false
+  M.discussion_tree = nil
+  M.linked_content = nil
+  M.unlinked_content = nil
 end
 
 ---Move to the discussion tree at the discussion from diagnostic on current line.
