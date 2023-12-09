@@ -5,7 +5,6 @@ local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
 local NuiLine = require("nui.line")
-local Layout = require("nui.layout")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
@@ -16,15 +15,22 @@ local signs = require("gitlab.actions.discussions.signs")
 local winbar = require("gitlab.actions.discussions.winbar")
 
 local M = {
-  layout_visible = false,
-  layout = nil,
-  layout_buf = nil,
+  split_visible = false,
+  split = nil,
+  ---@type number
+  split_bufnr = nil,
+  ---@type number
+  split_winnr = nil,
   ---@type Discussion[]
   discussions = {},
   ---@type UnlinkedDiscussion[]
   unlinked_discussions = {},
-  linked_section = nil,
-  unlinked_section = nil,
+  ---@type number
+  linked_bufnr = nil,
+  ---@type number
+  unlinked_bufnr = nil,
+  ---@type number
+  focused_bufnr = nil,
   discussion_tree = nil,
 }
 
@@ -59,8 +65,6 @@ M.refresh_discussion_data = function()
     if state.settings.discussion_diagnostic.enabled then
       signs.refresh_diagnostics(M.discussions)
     end
-
-    winbar.update_winbars(M.unlinked_section.bufnr, M.linked_section.bufnr, M.discussions, M.unlinked_discussions)
   end)
 end
 
@@ -68,58 +72,64 @@ end
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
 M.toggle = function(callback)
-  if M.layout_visible then
-    M.layout:unmount()
-    M.layout_visible = false
+  if M.split_visible then
+    M.split:unmount()
+    M.split_visible = false
     M.discussion_tree = nil
-    M.linked_section = nil
-    M.unlinked_section = nil
+    M.linked_content = nil
+    M.unlinked_content = nil
     return
   end
 
-  local linked_section, unlinked_section, layout = M.create_layout()
-  M.linked_section = linked_section
-  M.unlinked_section = unlinked_section
+  local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
+  M.linked_bufnr = linked_bufnr
+  M.unlinked_bufnr = unlinked_bufnr
+
+  M.split = split
+  M.split_visible = true
+  M.split_bufnr = split.bufnr
+  M.split_winnr = split.winid
+  split:mount()
+  M.switch_can_edit_bufs(true)
+
+  vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "Loading discussions..." })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split_bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
+  winbar.update_winbar({}, "Discussions")
 
   M.load_discussions(function()
     if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
       vim.notify("No discussions or notes for this MR", vim.log.levels.WARN)
+      vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
       return
     end
 
-    layout:mount()
-    layout:show()
-
-    M.layout = layout
-    M.layout_visible = true
-    M.layout_buf = layout.bufnr
-    state.discussion_buf = layout.bufnr
-
-    if M.layout_visible == false then
-      return
-    end
-
-    if type(M.discussions) == "table" then
-      M.rebuild_discussion_tree()
-    end
-    if type(M.unlinked_discussions) == "table" then
-      M.rebuild_unlinked_discussion_tree()
-    end
-
-    M.switch_can_edit_bufs(true)
+    M.rebuild_discussion_tree()
+    M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
-      { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
+      { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
-    M.switch_can_edit_bufs(false)
-    winbar.update_winbars(M.unlinked_section.bufnr, M.linked_section.bufnr, M.discussions, M.unlinked_discussions)
-    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
-    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
 
+    vim.api.nvim_set_current_buf(M.linked_bufnr)
+    M.focused_bufnr = M.linked_bufnr
+
+    M.switch_can_edit_bufs(false)
+    winbar.update_winbar(M.discussions, "Discussions")
     if type(callback) == "function" then
       callback()
     end
   end)
+end
+
+local switch_view_type = function()
+  local change_to_unlinked = M.linked_bufnr == M.focused_bufnr
+  local new_bufnr = change_to_unlinked and M.unlinked_bufnr or M.linked_bufnr
+  vim.api.nvim_set_current_buf(new_bufnr)
+  winbar.update_winbar(change_to_unlinked and M.unlinked_discussions or M.discussions,
+    change_to_unlinked and "Notes" or "Discussions")
+  M.focused_bufnr = new_bufnr
 end
 
 ---Move to the discussion tree at the discussion from diagnostic on current line.
@@ -145,11 +155,11 @@ M.move_to_discussion_tree = function()
         discussion_node:expand()
       end
       M.discussion_tree:render()
-      vim.api.nvim_win_set_cursor(M.linked_section.winid, { line_number, 0 })
-      vim.api.nvim_set_current_win(M.linked_section.winid)
+      vim.api.nvim_win_set_cursor(M.linked_content.winid, { line_number, 0 })
+      vim.api.nvim_set_current_win(M.linked_content.winid)
     end
 
-    if not M.layout_visible then
+    if not M.split_visible then
       M.toggle(jump_after_tree_opened)
     else
       jump_after_tree_opened()
@@ -235,8 +245,8 @@ M.send_deletion = function(tree, unlinked)
       end
       M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_section.bufnr, M.discussions, "No Discussions for this MR" },
-        { M.unlinked_section.bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
+        { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
     end
@@ -404,36 +414,37 @@ end
 
 M.rebuild_discussion_tree = function()
   M.switch_can_edit_bufs(true)
-  vim.api.nvim_buf_set_lines(M.linked_section.bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_section.bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
-  M.set_tree_keymaps(discussion_tree, M.linked_section.bufnr, false)
+  M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
   M.switch_can_edit_bufs(false)
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_section.bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
 end
 
 M.rebuild_unlinked_discussion_tree = function()
   M.switch_can_edit_bufs(true)
-  vim.api.nvim_buf_set_lines(M.unlinked_section.bufnr, 0, -1, false, {})
+  vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.unlinked_discussions, true)
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
-    bufnr = M.unlinked_section.bufnr,
+    bufnr = M.unlinked_bufnr,
     prepare_node = nui_tree_prepare_node,
   })
   unlinked_discussion_tree:render()
-  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_section.bufnr, true)
+  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   M.switch_can_edit_bufs(false)
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_section.bufnr })
 end
 
 M.switch_can_edit_bufs = function(bool)
-  u.switch_can_edit_buf(M.unlinked_section.bufnr, bool)
-  u.switch_can_edit_buf(M.linked_section.bufnr, bool)
+  u.switch_can_edit_buf(M.unlinked_bufnr, bool)
+  u.switch_can_edit_buf(M.linked_bufnr, bool)
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
 end
 
 M.add_discussion = function(arg)
@@ -443,7 +454,7 @@ M.add_discussion = function(arg)
       M.unlinked_discussions = {}
     end
     table.insert(M.unlinked_discussions, 1, discussion)
-    if M.unlinked_section ~= nil then
+    if M.unlinked_content ~= nil then
       M.rebuild_unlinked_discussion_tree()
     end
     return
@@ -452,32 +463,26 @@ M.add_discussion = function(arg)
     M.discussions = {}
   end
   table.insert(M.discussions, 1, discussion)
-  if M.linked_section ~= nil then
+  if M.linked_content ~= nil then
     M.rebuild_discussion_tree()
   end
 end
 
-M.create_layout = function()
-  local linked_section = Split({ enter = true })
-  local unlinked_section = Split({})
-
+M.create_split_and_bufs = function()
   local position = state.settings.discussion_tree.position
   local size = state.settings.discussion_tree.size
   local relative = state.settings.discussion_tree.relative
 
-  local layout = Layout(
-    {
-      position = position,
-      size = size,
-      relative = relative,
-    },
-    Layout.Box({
-      Layout.Box(linked_section, { size = "50%" }),
-      Layout.Box(unlinked_section, { size = "50%" }),
-    }, { dir = (position == "left" and "col" or "row") })
-  )
+  local split = Split({
+    relative = relative,
+    position = position,
+    size = size,
+  })
 
-  return linked_section, unlinked_section, layout
+  local linked_bufnr = vim.api.nvim_create_buf(true, false)
+  local unlinked_bufnr = vim.api.nvim_create_buf(true, false)
+
+  return split, linked_bufnr, unlinked_bufnr
 end
 
 M.add_empty_titles = function(args)
@@ -541,6 +546,10 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.reply(tree)
     end
   end, { buffer = bufnr, desc = "Reply" })
+  vim.keymap.set("n", state.settings.discussion_tree.switch_type, function()
+    print("Here")
+    switch_view_type()
+  end, { buffer = bufnr, desc = "Switch view type" })
 
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()

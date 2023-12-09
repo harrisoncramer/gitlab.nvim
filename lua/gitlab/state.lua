@@ -43,6 +43,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "",
     tree_type = "simple",
+    switch_type = "T",
     winbar = function(name, resolvable, resolved)
       return resolvable ~= 0 and string.format("%s (%d/%d resolved)", name, resolved, resolvable) or name
     end,
@@ -90,7 +91,7 @@ M.settings = {
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
+    code = nil,        -- see :h diagnostic-structure
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
