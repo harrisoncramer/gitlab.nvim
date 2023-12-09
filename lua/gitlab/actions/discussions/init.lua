@@ -65,6 +65,9 @@ M.refresh_discussion_data = function()
     if state.settings.discussion_diagnostic.enabled then
       signs.refresh_diagnostics(M.discussions)
     end
+    local linked_is_focused = M.linked_bufnr == M.focused_bufnr
+    winbar.update_winbar(linked_is_focused and M.discussions or M.unlinked_discussions,
+      linked_is_focused and "Discussions" or "Notes")
   end)
 end
 
