@@ -3,7 +3,9 @@ local state = require("gitlab.state")
 
 ---@param nodes Discussion[]|UnlinkedDiscussion[]|nil
 local get_data = function(nodes)
-  if nodes == nil then return 0, 0 end
+  if nodes == nil then
+    return 0, 0
+  end
   local total_resolvable = 0
   local total_resolved = 0
   if nodes == vim.NIL then

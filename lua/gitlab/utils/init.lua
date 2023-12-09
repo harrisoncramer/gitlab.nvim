@@ -177,7 +177,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -373,7 +373,6 @@ M.create_popup_state = function(title, settings, width, height)
     },
     opacity = user_settings.opacity or default_settings.opacity,
   }
-
 
   return view_opts
 end
