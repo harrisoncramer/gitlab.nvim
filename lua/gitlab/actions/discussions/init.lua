@@ -167,8 +167,8 @@ M.move_to_discussion_tree = function()
         discussion_node:expand()
       end
       M.discussion_tree:render()
-      vim.api.nvim_win_set_cursor(M.linked_content.winid, { line_number, 0 })
-      vim.api.nvim_set_current_win(M.linked_content.winid)
+      vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+      vim.api.nvim_set_current_win(M.split.winid)
     end
 
     if not M.split_visible then
