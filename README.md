@@ -117,6 +117,7 @@ require("gitlab").setup({
   config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
   debug = { go_request = false, go_response = false }, -- Which values to log
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
+  help = "?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -147,6 +148,7 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
+    winbar = nil -- Function to return winbar title func (bufname, resolvable_count, resolved). Should return a string.
   },
   info = { -- Show additional fields in the summary pane
     enabled = true,
