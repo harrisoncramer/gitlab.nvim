@@ -36,8 +36,10 @@ end
 
 ---This function sends the edited comment to the Go server
 ---@param nodes Discussion[]|UnlinkedDiscussion[]
+---@param base_title string
 M.update_winbar = function(nodes, base_title)
-  local winId = vim.api.nvim_get_current_win()
+  local discussions = require("gitlab.actions.discussions")
+  local winId = discussions.split.winid
   vim.wo[winId].winbar = content(nodes, base_title)
 end
 
