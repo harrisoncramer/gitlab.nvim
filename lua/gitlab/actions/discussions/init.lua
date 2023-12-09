@@ -40,8 +40,8 @@ local M = {
 ---@param callback (fun(data: DiscussionData): nil)?
 M.load_discussions = function(callback)
   job.run_job("/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
-    M.discussions = data.discussions
-    M.unlinked_discussions = data.unlinked_discussions
+    M.discussions = data.discussions ~= vim.NIL and data.discussions or {}
+    M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
     if type(callback) == "function" then
       callback(data)
     end
@@ -110,7 +110,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -138,7 +138,9 @@ end
 
 -- Clears the discussion state and unmounts the split
 M.close = function()
-  M.split:unmount()
+  if M.split then
+    M.split:unmount()
+  end
   M.split_visible = false
   M.discussion_tree = nil
   M.linked_content = nil
@@ -256,9 +258,8 @@ M.send_deletion = function(tree, unlinked)
         M.discussions = u.remove_first_value(M.discussions)
         M.rebuild_discussion_tree()
       end
-      M.switch_can_edit_bufs(true)
       M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -430,7 +431,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -499,6 +500,7 @@ M.create_split_and_bufs = function()
 end
 
 M.add_empty_titles = function(args)
+  M.switch_can_edit_bufs(true)
   local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
   vim.cmd("highlight default TitleHighlight guifg=#787878")
   for _, section in ipairs(args) do
