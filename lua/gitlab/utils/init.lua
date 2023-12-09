@@ -177,7 +177,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -347,8 +347,8 @@ end
 ---Get the popup view_opts
 ---@param title string The string to appear on top of the popup
 ---@param settings table User defined popup settings
----@param width string? Override default width
----@param height string? Override default height
+---@param width number? Override default width
+---@param height number? Override default height
 ---@return table
 M.create_popup_state = function(title, settings, width, height)
   local default_settings = require("gitlab.state").settings.popup
@@ -373,6 +373,8 @@ M.create_popup_state = function(title, settings, width, height)
     },
     opacity = user_settings.opacity or default_settings.opacity,
   }
+
+
   return view_opts
 end
 

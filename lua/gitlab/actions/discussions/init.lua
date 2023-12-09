@@ -13,6 +13,7 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local signs = require("gitlab.actions.discussions.signs")
 local winbar = require("gitlab.actions.discussions.winbar")
+local help = require("gitlab.actions.help")
 
 local M = {
   split_visible = false,
@@ -549,11 +550,12 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.reply(tree)
     end
   end, { buffer = bufnr, desc = "Reply" })
-  vim.keymap.set("n", state.settings.discussion_tree.switch_type, function()
-    print("Here")
+  vim.keymap.set("n", state.settings.discussion_tree.switch_view, function()
     switch_view_type()
   end, { buffer = bufnr, desc = "Switch view type" })
-
+  vim.keymap.set("n", state.settings.help, function()
+    help.open()
+  end, { buffer = bufnr, desc = "Open help popup" })
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
       if M.is_current_node_note(tree) then

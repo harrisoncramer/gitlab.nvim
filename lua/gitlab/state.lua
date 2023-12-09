@@ -14,6 +14,7 @@ M.settings = {
   config_path = nil,
   reviewer = "diffview",
   attachment_dir = "",
+  help = "?",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
@@ -26,6 +27,7 @@ M.settings = {
     reply = nil,
     comment = nil,
     note = nil,
+    help = nil,
     pipeline = nil,
   },
   discussion_tree = {
@@ -43,7 +45,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "",
     tree_type = "simple",
-    switch_type = "T",
+    switch_view = "T",
     winbar = function(name, resolvable, resolved)
       return resolvable ~= 0 and string.format("%s (%d/%d resolved)", name, resolved, resolvable) or name
     end,
@@ -221,6 +223,11 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   vim.keymap.set("n", M.settings.popup.exit, function()
     exit(popup, opts.cb)
   end, { buffer = popup.bufnr, desc = "Exit popup" })
+
+  vim.keymap.set("n", M.settings.help, function()
+    local help = require("gitlab.actions.help")
+    help.open()
+  end, { buffer = popup.bufnr, desc = "Open help" })
   if action ~= nil then
     vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
