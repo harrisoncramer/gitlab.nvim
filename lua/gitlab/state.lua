@@ -50,11 +50,12 @@ M.settings = {
     default_view = "discussions",
     ---@param t WinbarTable
     winbar = function(t)
-      local discussions_content = t.resolvable_discussions ~= 0 and
-          string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions) or
-          "Discussions"
-      local notes_content = t.resolvable_notes ~= 0 and
-          string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes) or "Notes"
+      local discussions_content = t.resolvable_discussions ~= 0
+          and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
+        or "Discussions"
+      local notes_content = t.resolvable_notes ~= 0
+          and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
+        or "Notes"
 
       print(t.name)
       if t.name == "Discussions" then
@@ -110,7 +111,7 @@ M.settings = {
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil,        -- see :h diagnostic-structure
+    code = nil, -- see :h diagnostic-structure
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
