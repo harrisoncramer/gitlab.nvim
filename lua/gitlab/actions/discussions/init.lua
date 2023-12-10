@@ -91,11 +91,13 @@ M.toggle = function(callback)
   split:mount()
   M.switch_can_edit_bufs(true)
 
-  vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "Loading discussions..." })
+  vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "Loading data..." })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
-  winbar.update_winbar({}, "Discussions")
+
+  local default_discussions = state.settings.discussion_tree.default_view == "discussions"
+  winbar.update_winbar({}, default_discussions and "Discussions" or "Notes")
 
   M.load_discussions(function()
     if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
@@ -111,13 +113,14 @@ M.toggle = function(callback)
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
-    local default_buffer = state.settings.discussion_tree.default_view == "discussions" and M.linked_bufnr or
-        M.unlinked_bufnr
+    local default_discussions = state.settings.discussion_tree.default_view == "discussions"
+    local default_buffer = default_discussions and M.linked_bufnr or M.unlinked_bufnr
     vim.api.nvim_set_current_buf(default_buffer)
     M.focused_bufnr = default_buffer
 
     M.switch_can_edit_bufs(false)
-    winbar.update_winbar(M.discussions, "Discussions")
+    winbar.update_winbar(default_discussions and M.discussions or M.unlinked_discussions,
+      default_discussions and "Discussions" or "Notes")
     if type(callback) == "function" then
       callback()
     end
