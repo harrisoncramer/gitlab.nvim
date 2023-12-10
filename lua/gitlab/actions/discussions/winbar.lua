@@ -27,20 +27,32 @@ local get_data = function(nodes)
   return total_resolvable, total_resolved
 end
 
----@param nodes Discussion[]|UnlinkedDiscussion[]|nil
+---@param discussions Discussion[]|nil
+---@param unlinked_discussions UnlinkedDiscussion[]|nil
 ---@param file_name string
-local function content(nodes, file_name)
-  local resolvable, resolved = get_data(nodes)
-  return state.settings.discussion_tree.winbar(file_name, resolvable, resolved)
+local function content(discussions, unlinked_discussions, file_name)
+  local resolvable_discussions, resolved_discussions = get_data(discussions)
+  local resolvable_notes, resolved_notes = get_data(unlinked_discussions)
+
+  local t = {
+    name = file_name,
+    resolvable_discussions = resolvable_discussions,
+    resolved_discussions = resolved_discussions,
+    resolvable_notes = resolvable_notes,
+    resolved_notes = resolved_notes,
+  }
+
+  return state.settings.discussion_tree.winbar(t)
 end
 
 ---This function sends the edited comment to the Go server
----@param nodes Discussion[]|UnlinkedDiscussion[]
+---@param discussions Discussion[]
+---@param unlinked_discussions UnlinkedDiscussion[]
 ---@param base_title string
-M.update_winbar = function(nodes, base_title)
-  local discussions = require("gitlab.actions.discussions")
-  local winId = discussions.split.winid
-  vim.wo[winId].winbar = content(nodes, base_title)
+M.update_winbar = function(discussions, unlinked_discussions, base_title)
+  local d = require("gitlab.actions.discussions")
+  local winId = d.split.winid
+  vim.wo[winId].winbar = content(discussions, unlinked_discussions, base_title)
 end
 
 return M

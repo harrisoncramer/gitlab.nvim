@@ -66,7 +66,8 @@ M.refresh_discussion_data = function()
     end
     local linked_is_focused = M.linked_bufnr == M.focused_bufnr
     winbar.update_winbar(
-      linked_is_focused and M.discussions or M.unlinked_discussions,
+      M.discussions,
+      M.unlinked_discussions,
       linked_is_focused and "Discussions" or "Notes"
     )
   end)
@@ -97,7 +98,7 @@ M.toggle = function(callback)
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
 
   local default_discussions = state.settings.discussion_tree.default_view == "discussions"
-  winbar.update_winbar({}, default_discussions and "Discussions" or "Notes")
+  winbar.update_winbar({}, {}, default_discussions and "Discussions" or "Notes")
 
   M.load_discussions(function()
     if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
@@ -113,13 +114,14 @@ M.toggle = function(callback)
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
-    local default_discussions = state.settings.discussion_tree.default_view == "discussions"
     local default_buffer = default_discussions and M.linked_bufnr or M.unlinked_bufnr
     vim.api.nvim_set_current_buf(default_buffer)
     M.focused_bufnr = default_buffer
 
     M.switch_can_edit_bufs(false)
-    winbar.update_winbar(default_discussions and M.discussions or M.unlinked_discussions,
+    winbar.update_winbar(
+      M.discussions,
+      M.unlinked_discussions,
       default_discussions and "Discussions" or "Notes")
     if type(callback) == "function" then
       callback()
@@ -132,7 +134,8 @@ local switch_view_type = function()
   local new_bufnr = change_to_unlinked and M.unlinked_bufnr or M.linked_bufnr
   vim.api.nvim_set_current_buf(new_bufnr)
   winbar.update_winbar(
-    change_to_unlinked and M.unlinked_discussions or M.discussions,
+    M.discussions,
+    M.unlinked_discussions,
     change_to_unlinked and "Notes" or "Discussions"
   )
   M.focused_bufnr = new_bufnr

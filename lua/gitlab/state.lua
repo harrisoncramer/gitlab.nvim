@@ -48,8 +48,23 @@ M.settings = {
     tree_type = "simple",
     switch_view = "T",
     default_view = "discussions",
-    winbar = function(name, resolvable, resolved)
-      return resolvable ~= 0 and string.format("%s (%d/%d resolved)", name, resolved, resolvable) or name
+    ---@param t WinbarTable
+    winbar = function(t)
+      local discussions_content = t.resolvable_discussions ~= 0 and
+          string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions) or
+          "Discussions"
+      local notes_content = t.resolvable_notes ~= 0 and
+          string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes) or "Notes"
+
+      print(t.name)
+      if t.name == "Discussions" then
+        notes_content = "%#Comment#" .. notes_content
+        discussions_content = "%#Text#" .. discussions_content
+      else
+        discussions_content = "%#Comment#" .. discussions_content
+        notes_content = "%#Text#" .. notes_content
+      end
+      return " " .. discussions_content .. " %#Comment#| " .. notes_content
     end,
   },
   info = {

@@ -64,3 +64,10 @@
 ---@class DiscussionData
 ---@field discussions Discussion[]
 ---@field unlinked_discussions UnlinkedDiscussion[]
+
+---@class WinbarTable
+---@field name string
+---@field resolvable_discussions number
+---@field resolved_discussions number
+---@field resolvable_notes number
+---@field resolved_notes number
