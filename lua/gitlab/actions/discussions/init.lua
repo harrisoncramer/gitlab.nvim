@@ -107,12 +107,14 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
-    vim.api.nvim_set_current_buf(M.linked_bufnr)
-    M.focused_bufnr = M.linked_bufnr
+    local default_buffer = state.settings.discussion_tree.default_view == "discussions" and M.linked_bufnr or
+        M.unlinked_bufnr
+    vim.api.nvim_set_current_buf(default_buffer)
+    M.focused_bufnr = default_buffer
 
     M.switch_can_edit_bufs(false)
     winbar.update_winbar(M.discussions, "Discussions")
@@ -140,8 +142,6 @@ M.close = function()
   end
   M.split_visible = false
   M.discussion_tree = nil
-  M.linked_content = nil
-  M.unlinked_content = nil
 end
 
 ---Move to the discussion tree at the discussion from diagnostic on current line.
@@ -256,11 +256,13 @@ M.send_deletion = function(tree, unlinked)
         M.rebuild_discussion_tree()
       end
       M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
     end
+
+    M.refresh_discussion_data()
   end)
 end
 
@@ -304,6 +306,7 @@ M.send_edits = function(discussion_id, note_id, unlinked)
     }
     job.run_job("/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
+      M.rebuild_discussion_tree()
       if unlinked then
         M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
@@ -428,7 +431,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -465,18 +468,14 @@ M.add_discussion = function(arg)
       M.unlinked_discussions = {}
     end
     table.insert(M.unlinked_discussions, 1, discussion)
-    if M.unlinked_content ~= nil then
-      M.rebuild_unlinked_discussion_tree()
-    end
+    M.rebuild_unlinked_discussion_tree()
     return
   end
   if type(M.discussions) ~= "table" then
     M.discussions = {}
   end
   table.insert(M.discussions, 1, discussion)
-  if M.linked_content ~= nil then
-    M.rebuild_discussion_tree()
-  end
+  M.rebuild_discussion_tree()
 end
 
 M.create_split_and_bufs = function()
