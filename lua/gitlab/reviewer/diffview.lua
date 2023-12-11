@@ -16,6 +16,11 @@ M.open = function()
     return
   end
 
+  if diff_refs.base_sha == "" or diff_refs.head_sha == "" then
+    u.notify("Merge request contains no changes", vim.log.levels.ERROR)
+    return
+  end
+
   vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
@@ -138,7 +143,7 @@ M.get_location = function(range)
     return result
   end
 
-  result.range_info = { start = {}, ["end"] = {} }
+  result.range_info = { start = {},["end"] = {} }
   if current_line == range.start_line then
     result.range_info.start.old_line = current_line_info.old_line
     result.range_info.start.new_line = current_line_info.new_line
