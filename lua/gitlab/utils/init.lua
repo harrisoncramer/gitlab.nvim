@@ -350,7 +350,7 @@ end
 ---@param width number? Override default width
 ---@param height number? Override default height
 ---@return table
-M.create_popup_state = function(title, settings, width, height)
+M.create_popup_state = function(title, settings, width, height, zindex)
   local default_settings = require("gitlab.state").settings.popup
   local user_settings = settings or {}
   local view_opts = {
@@ -360,6 +360,7 @@ M.create_popup_state = function(title, settings, width, height)
     relative = "editor",
     enter = true,
     focusable = true,
+    zindex = zindex or 50,
     border = {
       style = user_settings.border or default_settings.border,
       text = {
