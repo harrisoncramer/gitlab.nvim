@@ -242,10 +242,12 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
     exit(popup, opts.cb)
   end, { buffer = popup.bufnr, desc = "Exit popup" })
 
-  vim.keymap.set("n", M.settings.help, function()
-    local help = require("gitlab.actions.help")
-    help.open()
-  end, { buffer = popup.bufnr, desc = "Open help" })
+  if action ~= "Help" then -- Don't show help on the help popup
+    vim.keymap.set("n", M.settings.help, function()
+      local help = require("gitlab.actions.help")
+      help.open()
+    end, { buffer = popup.bufnr, desc = "Open help" })
+  end
   if action ~= nil then
     vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
