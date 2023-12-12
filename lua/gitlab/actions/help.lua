@@ -16,7 +16,7 @@ M.open = function()
   end
   local longest_line = u.get_longest_string(help_content_lines)
   local help_popup =
-    Popup(u.creape_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines + 3, 60))
+    Popup(u.create_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines + 3, 60))
   help_popup:mount()
 
   state.set_popup_keymaps(help_popup, "Help", nil)
