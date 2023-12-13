@@ -226,6 +226,14 @@ M.get_longest_string = function(list)
   return longest
 end
 
+M.map = function(tbl, f)
+  local t = {}
+  for k, v in pairs(tbl) do
+    t[k] = f(v)
+  end
+  return t
+end
+
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end

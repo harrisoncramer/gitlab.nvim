@@ -61,16 +61,28 @@ M.open = function()
 
     table.insert(lines, "")
     table.insert(lines, "Jobs:")
+
+    local longest_title = u.get_longest_string(u.map(pipeline_jobs, function(v)
+      return v.name
+    end))
+
+    local function row_offset(name)
+      local offset = longest_title - string.len(name)
+      local res = string.rep(" ", offset + 5)
+      return res
+    end
+
     for _, pipeline_job in ipairs(pipeline_jobs) do
-      table.insert(
-        lines,
-        string.format(
-          "%s (%s) %s",
-          state.settings.pipeline[pipeline_job.status],
-          pipeline_job.status,
-          pipeline_job.name
-        )
+      local offset = row_offset(pipeline_job.name)
+      local row = string.format(
+        "%s%s %s (%s)",
+        pipeline_job.name,
+        offset,
+        state.settings.pipeline[pipeline_job.status] or "*",
+        pipeline_job.status or ""
       )
+
+      table.insert(lines, row)
     end
 
     vim.schedule(function()
@@ -107,15 +119,17 @@ M.see_logs = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local linnr = vim.api.nvim_win_get_cursor(0)[1]
   local text = u.get_line_content(bufnr, linnr)
-  local last_word = u.get_last_word(text)
-  if last_word == nil then
+
+  local job_name = string.match(text, "(.-)%s%s%s%s%s")
+
+  if job_name == nil then
     u.notify("Cannot find job name", vim.log.levels.ERROR)
     return
   end
 
   local j = nil
   for _, pipeline_job in ipairs(M.pipeline_jobs) do
-    if pipeline_job.name == last_word then
+    if pipeline_job.name == job_name then
       j = pipeline_job
     end
   end
@@ -144,18 +158,18 @@ M.see_logs = function()
     end
 
     M.pipeline_popup:unmount()
-    vim.cmd.enew()
 
+    vim.cmd.tabnew()
     bufnr = vim.api.nvim_get_current_buf()
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-    -- TODO: Fix for Windows
-    local job_file_path = string.format("/tmp/gitlab.nvim.job-%d", j.id)
-    vim.cmd("w! " .. job_file_path)
-    vim.cmd.bd()
+    local temp_file = os.tmpname()
+    local job_file_path = string.format(temp_file, j.id)
 
-    vim.cmd.enew()
+    vim.cmd("w! " .. job_file_path)
     vim.cmd("term cat " .. job_file_path)
+
+    vim.api.nvim_buf_set_name(0, job_name)
   end)
 end
 
