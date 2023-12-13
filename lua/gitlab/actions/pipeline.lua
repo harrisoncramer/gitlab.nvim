@@ -43,7 +43,7 @@ M.open = function()
     local height = 6 + #pipeline_jobs + 3
 
     local pipeline_popup =
-      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height))
+        Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height))
     M.pipeline_popup = pipeline_popup
     pipeline_popup:mount()
 
@@ -61,16 +61,26 @@ M.open = function()
 
     table.insert(lines, "")
     table.insert(lines, "Jobs:")
+
+    local longest_title = u.get_longest_string(u.map(pipeline_jobs, function(v) return v.name end))
+
+    local function row_offset(name)
+      local offset = longest_title - string.len(name)
+      local res = string.rep(" ", offset + 5)
+      return res
+    end
+
     for _, pipeline_job in ipairs(pipeline_jobs) do
-      table.insert(
-        lines,
-        string.format(
-          "%s (%s) %s",
-          state.settings.pipeline[pipeline_job.status],
-          pipeline_job.status,
-          pipeline_job.name
-        )
-      )
+      local offset = row_offset(pipeline_job.name)
+      local row =
+          pipeline_job.name ..
+          offset ..
+          (state.settings.pipeline[pipeline_job.status] or "*") ..
+          " " ..
+          "(" ..
+          (pipeline_job.status or "")
+          .. ")"
+      table.insert(lines, row)
     end
 
     vim.schedule(function()
@@ -107,15 +117,17 @@ M.see_logs = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local linnr = vim.api.nvim_win_get_cursor(0)[1]
   local text = u.get_line_content(bufnr, linnr)
-  local last_word = u.get_last_word(text)
-  if last_word == nil then
+
+  local job_name = string.match(text, "(.-)%s%s%s%s%s")
+
+  if job_name == nil then
     u.notify("Cannot find job name", vim.log.levels.ERROR)
     return
   end
 
   local j = nil
   for _, pipeline_job in ipairs(M.pipeline_jobs) do
-    if pipeline_job.name == last_word then
+    if pipeline_job.name == job_name then
       j = pipeline_job
     end
   end
