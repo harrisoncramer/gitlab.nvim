@@ -150,8 +150,8 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
-    winbar = nil -- Function to return winbar title (bufname, resolvable_count, resolved). Should return a string. 
-                 -- If using lualine please add "gitlab" to disabled file types, otherwise you will not see the winbar.
+    winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
+                 -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
   },
   info = { -- Show additional fields in the summary pane
     enabled = true,
