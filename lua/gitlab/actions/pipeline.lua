@@ -163,10 +163,13 @@ M.see_logs = function()
     bufnr = vim.api.nvim_get_current_buf()
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-    -- TODO: Fix for Windows
-    local job_file_path = string.format("/tmp/gitlab.nvim.job-%d", j.id)
+    local temp_file = os.tmpname()
+    local job_file_path = string.format(temp_file, j.id)
+
     vim.cmd("w! " .. job_file_path)
     vim.cmd("term cat " .. job_file_path)
+
+    vim.api.nvim_buf_set_name(0, job_name)
   end)
 end
 
