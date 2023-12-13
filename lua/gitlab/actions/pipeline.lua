@@ -74,13 +74,14 @@ M.open = function()
 
     for _, pipeline_job in ipairs(pipeline_jobs) do
       local offset = row_offset(pipeline_job.name)
-      local row = pipeline_job.name
-        .. offset
-        .. (state.settings.pipeline[pipeline_job.status] or "*")
-        .. " "
-        .. "("
-        .. (pipeline_job.status or "")
-        .. ")"
+      local row = string.format(
+        "%s%s %s (%s)",
+        pipeline_job.name,
+        offset,
+        state.settings.pipeline[pipeline_job.status] or "*",
+        pipeline_job.status or ""
+      )
+
       table.insert(lines, row)
     end
 
@@ -157,17 +158,14 @@ M.see_logs = function()
     end
 
     M.pipeline_popup:unmount()
-    vim.cmd.enew()
 
+    vim.cmd.tabnew()
     bufnr = vim.api.nvim_get_current_buf()
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
     -- TODO: Fix for Windows
     local job_file_path = string.format("/tmp/gitlab.nvim.job-%d", j.id)
     vim.cmd("w! " .. job_file_path)
-    vim.cmd.bd()
-
-    vim.cmd.enew()
     vim.cmd("term cat " .. job_file_path)
   end)
 end
