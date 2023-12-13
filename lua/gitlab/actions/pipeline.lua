@@ -43,7 +43,7 @@ M.open = function()
     local height = 6 + #pipeline_jobs + 3
 
     local pipeline_popup =
-        Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height))
+      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height))
     M.pipeline_popup = pipeline_popup
     pipeline_popup:mount()
 
@@ -62,7 +62,9 @@ M.open = function()
     table.insert(lines, "")
     table.insert(lines, "Jobs:")
 
-    local longest_title = u.get_longest_string(u.map(pipeline_jobs, function(v) return v.name end))
+    local longest_title = u.get_longest_string(u.map(pipeline_jobs, function(v)
+      return v.name
+    end))
 
     local function row_offset(name)
       local offset = longest_title - string.len(name)
@@ -72,14 +74,13 @@ M.open = function()
 
     for _, pipeline_job in ipairs(pipeline_jobs) do
       local offset = row_offset(pipeline_job.name)
-      local row =
-          pipeline_job.name ..
-          offset ..
-          (state.settings.pipeline[pipeline_job.status] or "*") ..
-          " " ..
-          "(" ..
-          (pipeline_job.status or "")
-          .. ")"
+      local row = pipeline_job.name
+        .. offset
+        .. (state.settings.pipeline[pipeline_job.status] or "*")
+        .. " "
+        .. "("
+        .. (pipeline_job.status or "")
+        .. ")"
       table.insert(lines, row)
     end
 
