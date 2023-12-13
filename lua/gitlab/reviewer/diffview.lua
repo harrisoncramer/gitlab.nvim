@@ -39,6 +39,12 @@ M.open = function()
       end
     end,
   })
+
+  if state.settings.discussion_tree.auto_open then
+    local discussions = require("gitlab.actions.discussions")
+    discussions.close()
+    discussions.toggle()
+  end
 end
 
 M.jump = function(file_name, new_line, old_line)

@@ -117,6 +117,7 @@ require("gitlab").setup({
   config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
   debug = { go_request = false, go_response = false }, -- Which values to log
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
+  help = "?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -132,6 +133,9 @@ require("gitlab").setup({
     reply = nil,
   },
   discussion_tree = { -- The discussion tree that holds all comments
+    auto_open = true, -- Automatically open when the reviewer is opened
+    switch_view = "T", -- Toggles between the notes and discussions views
+    default_view = "discussions" -- Show "discussions" or "notes" by default
     blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
     jump_to_file = "o", -- Jump to comment location in file
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
@@ -146,6 +150,8 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '✖', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
+    winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
+                 -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
   },
   info = { -- Show additional fields in the summary pane
     enabled = true,

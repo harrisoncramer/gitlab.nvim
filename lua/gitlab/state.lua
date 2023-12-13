@@ -14,6 +14,7 @@ M.settings = {
   config_path = nil,
   reviewer = "diffview",
   attachment_dir = "",
+  help = "?",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
@@ -26,9 +27,11 @@ M.settings = {
     reply = nil,
     comment = nil,
     note = nil,
+    help = nil,
     pipeline = nil,
   },
   discussion_tree = {
+    auto_open = true,
     blacklist = {},
     jump_to_file = "o",
     jump_to_reviewer = "m",
@@ -41,8 +44,27 @@ M.settings = {
     position = "left",
     size = "20%",
     resolved = "✓",
-    unresolved = "",
+    unresolved = "-",
     tree_type = "simple",
+    switch_view = "T",
+    default_view = "discussions",
+    ---@param t WinbarTable
+    winbar = function(t)
+      local discussions_content = t.resolvable_discussions ~= 0
+          and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
+        or "Discussions"
+      local notes_content = t.resolvable_notes ~= 0
+          and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
+        or "Notes"
+      if t.name == "Discussions" then
+        notes_content = "%#Comment#" .. notes_content
+        discussions_content = "%#Text#" .. discussions_content
+      else
+        discussions_content = "%#Comment#" .. discussions_content
+        notes_content = "%#Text#" .. notes_content
+      end
+      return " " .. discussions_content .. " %#Comment#| " .. notes_content
+    end,
   },
   info = {
     enabled = true,
@@ -91,13 +113,13 @@ M.settings = {
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
-    created = "",
+    created = "",
     pending = "",
     preparing = "",
     scheduled = "",
-    running = "ﰌ",
-    canceled = "ﰸ",
-    skipped = "ﰸ",
+    running = "",
+    canceled = "",
+    skipped = "",
     success = "✓",
     failed = "",
   },
@@ -111,6 +133,8 @@ M.settings = {
       directory = "Directory",
       directory_icon = "DiffviewFolderSign",
       file_name = "Normal",
+      resolved = "DiagnosticSignOk",
+      unresolved = "DiagnosticSignWarn",
     },
   },
 }
@@ -217,6 +241,13 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   vim.keymap.set("n", M.settings.popup.exit, function()
     exit(popup, opts.cb)
   end, { buffer = popup.bufnr, desc = "Exit popup" })
+
+  if action ~= "Help" then -- Don't show help on the help popup
+    vim.keymap.set("n", M.settings.help, function()
+      local help = require("gitlab.actions.help")
+      help.open()
+    end, { buffer = popup.bufnr, desc = "Open help" })
+  end
   if action ~= nil then
     vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)

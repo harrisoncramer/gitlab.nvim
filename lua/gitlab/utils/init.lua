@@ -262,17 +262,6 @@ M.split_path = function(path)
   return path_parts
 end
 
-M.P = function(...)
-  local objects = {}
-  for i = 1, select("#", ...) do
-    local v = select(i, ...)
-    table.insert(objects, vim.inspect(v))
-  end
-
-  print(table.concat(objects, "\n"))
-  return ...
-end
-
 M.get_buffer_text = function(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
@@ -347,10 +336,10 @@ end
 ---Get the popup view_opts
 ---@param title string The string to appear on top of the popup
 ---@param settings table User defined popup settings
----@param width string Override default width
----@param height string Override default height
+---@param width number? Override default width
+---@param height number? Override default height
 ---@return table
-M.create_popup_state = function(title, settings, width, height)
+M.create_popup_state = function(title, settings, width, height, zindex)
   local default_settings = require("gitlab.state").settings.popup
   local user_settings = settings or {}
   local view_opts = {
@@ -360,6 +349,7 @@ M.create_popup_state = function(title, settings, width, height)
     relative = "editor",
     enter = true,
     focusable = true,
+    zindex = zindex or 50,
     border = {
       style = user_settings.border or default_settings.border,
       text = {
@@ -373,6 +363,7 @@ M.create_popup_state = function(title, settings, width, height)
     },
     opacity = user_settings.opacity or default_settings.opacity,
   }
+
   return view_opts
 end
 
@@ -625,6 +616,11 @@ M.get_icon = function(filename)
   else
     return nil, nil
   end
+end
+
+M.basename = function(str)
+  local name = string.gsub(str, "(.*/)(.*)", "%2")
+  return name
 end
 
 return M

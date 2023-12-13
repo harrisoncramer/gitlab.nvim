@@ -256,7 +256,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
       local nodes = tree.add_discussions_to_table(discussions)
       assert.are.same(tree_nodes_to_table(nodes, { note = true, note_body = true }), {
         {
-          text = "@gitlab.username 5 days ago ",
+          text = "@gitlab.username 5 days ago -",
           type = "note",
           children = {
             {
@@ -267,7 +267,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
           },
         },
         {
-          text = "@gitlab.username 5 days ago ",
+          text = "@gitlab.username 5 days ago -",
           type = "note",
           children = {
             {
@@ -293,7 +293,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               type = "file_name",
               children = {
                 {
-                  text = "@gitlab.username 5 days ago ",
+                  text = "@gitlab.username 5 days ago -",
                   type = "note",
                   children = {
                     {
@@ -312,7 +312,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
           type = "file_name",
           children = {
             {
-              text = "@gitlab.username 5 days ago ",
+              text = "@gitlab.username 5 days ago -",
               type = "note",
               children = {
                 {
@@ -339,7 +339,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               type = "file_name",
               children = {
                 {
-                  text = "@gitlab.username 5 days ago ",
+                  text = "@gitlab.username 5 days ago -",
                   type = "note",
                   children = {
                     {
@@ -377,7 +377,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
                       type = "file_name",
                       children = {
                         {
-                          text = "@gitlab.username 5 days ago ",
+                          text = "@gitlab.username 5 days ago -",
                           type = "note",
                           children = {
                             {
@@ -396,7 +396,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
                   type = "file_name",
                   children = {
                     {
-                      text = "@gitlab.username 5 days ago ",
+                      text = "@gitlab.username 5 days ago -",
                       type = "note",
                       children = {
                         {
@@ -415,7 +415,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               type = "file_name",
               children = {
                 {
-                  text = "@gitlab.username 5 days ago ",
+                  text = "@gitlab.username 5 days ago -",
                   type = "note",
                   children = {
                     {
@@ -464,7 +464,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               type = "file_name",
               children = {
                 {
-                  text = "@gitlab.username 5 days ago ",
+                  text = "@gitlab.username 5 days ago -",
                   type = "note",
                   children = {
                     {
@@ -491,7 +491,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
                   type = "file_name",
                   children = {
                     {
-                      text = "@gitlab.username 5 days ago ",
+                      text = "@gitlab.username 5 days ago -",
                       type = "note",
                       children = {
                         {
@@ -514,7 +514,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
                   type = "file_name",
                   children = {
                     {
-                      text = "@gitlab.username 5 days ago ",
+                      text = "@gitlab.username 5 days ago -",
                       type = "note",
                       children = {
                         {
@@ -550,7 +550,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               type = "file_name",
               children = {
                 {
-                  text = "@gitlab.username 5 days ago ",
+                  text = "@gitlab.username 5 days ago -",
                   type = "note",
                   children = {
                     {
@@ -561,7 +561,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
                   },
                 },
                 {
-                  text = "@gitlab.username 5 days ago ",
+                  text = "@gitlab.username 5 days ago -",
                   type = "note",
                   children = {
                     {
@@ -591,7 +591,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
           type = "file_name",
           children = {
             {
-              text = "@gitlab.username 5 days ago ",
+              text = "@gitlab.username 5 days ago -",
               type = "note",
               children = {
                 {
@@ -602,7 +602,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
               },
             },
             {
-              text = "@gitlab.username 5 days ago ",
+              text = "@gitlab.username 5 days ago -",
               type = "note",
               children = {
                 {
@@ -626,7 +626,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
       local nodes = tree.add_discussions_to_table(unlinked_discussions, true)
       assert.are.same(tree_nodes_to_table(nodes, { note = true, note_body = true }), {
         {
-          text = "@gitlab.username 5 days ago ",
+          text = "@gitlab.username 5 days ago -",
           type = "note",
           children = {
             {
@@ -637,7 +637,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
           },
         },
         {
-          text = "@gitlab.username 5 days ago ",
+          text = "@gitlab.username 5 days ago -",
           type = "note",
           children = {
             {
@@ -669,7 +669,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
       local nodes = tree.add_discussions_to_table(unlinked_discussions, true)
       assert.are.same(tree_nodes_to_table(nodes, { note = true, note_body = true }), {
         {
-          text = "@gitlab.username 5 days ago ",
+          text = "@gitlab.username 5 days ago -",
           type = "note",
           children = {
             {
@@ -680,7 +680,7 @@ describe("gitlab/actions/discussions/tree.lua", function()
           },
         },
         {
-          text = "@gitlab.username 5 days ago ",
+          text = "@gitlab.username 5 days ago -",
           type = "note",
           children = {
             {
