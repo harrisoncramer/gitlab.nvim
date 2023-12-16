@@ -79,3 +79,11 @@
 ---@field id number
 ---@field lnum number
 ---@field buffer number?
+---
+---@class DiagnosticTable
+---@field message string
+---@field col number
+---@field severity number
+---@field user_data table
+---@field source string
+---@field code string?
