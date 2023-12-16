@@ -40,7 +40,6 @@ func extractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (str
 		return GitProjectInfo{}, fmt.Errorf("Could not get project Url: %v", err)
 	}
 
-	// play with regex at: https://regex101.com/r/P2jSGh/1
 	/*
 	   This should match following formats:
 	       namespace: namespace, projectName: dummy-test-repo:
