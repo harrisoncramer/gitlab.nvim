@@ -194,7 +194,7 @@ end
 
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
 ---line for identifing lines before changes and both if line was not changed.
----@param signs table table of signs. See :h sign_placelist
+---@param signs SignTable[] table of signs. See :h sign_placelist
 ---@param type string "new" if diagnostic should be in file after changes else "old"
 M.place_sign = function(signs, type)
   local view = diffview_lib.get_current_view()

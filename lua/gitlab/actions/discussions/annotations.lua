@@ -71,3 +71,11 @@
 ---@field resolved_discussions number
 ---@field resolvable_notes number
 ---@field resolved_notes number
+---
+---@class SignTable
+---@field name string
+---@field group string
+---@field priority number
+---@field id number
+---@field lnum number
+---@field buffer number?

@@ -13,12 +13,14 @@ M.diagnostics_namespace = diagnostics_namespace
 ---Parse line code and return old and new line numbers
 ---@param line_code string gitlab line code -> 588440f66559714280628a4f9799f0c4eb880a4a_10_10
 ---@return number?
----@return number?
-local function _parse_line_code(line_code)
+local function parse_line_code(line_code)
   local line_code_regex = "%w+_(%d+)_(%d+)"
   local old_line, new_line = line_code:match(line_code_regex)
   return tonumber(old_line), tonumber(new_line)
 end
+
+-- Export for testing purposes
+M.parse_line_code = parse_line_code
 
 ---Filter all discussions which are relevant for currently visible signs and diagnostscs.
 ---@return Discussion[]?
@@ -34,22 +36,22 @@ local filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   for _, discussion in ipairs(all_discussions) do
     local first_note = discussion.notes[1]
     if
-      type(first_note.position) == "table"
-      and (first_note.position.new_path == file or first_note.position.old_path == file)
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-        --Skip resolved discussions
-        not (
-          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-          and first_note.resolvable
-          and first_note.resolved
-        )
-        --Skip discussions from old revisions
-        and not (
-          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-          and u.from_iso_format_date_to_timestamp(first_note.created_at)
+      --Skip resolved discussions
+          not (
+            state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+            and first_note.resolvable
+            and first_note.resolved
+          )
+          --Skip discussions from old revisions
+          and not (
+            state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+            and u.from_iso_format_date_to_timestamp(first_note.created_at)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-        )
+          )
       then
         table.insert(discussions, discussion)
       end
@@ -87,32 +89,32 @@ M.setup_signs = function()
   end
 end
 
----Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
----string for sign name and sign group ( currently there is only one sign needed)
-M.refresh_signs = function(discussions)
-  local diagnostics = filter_discussions_for_signs_and_diagnostics(discussions)
-  if diagnostics == nil then
-    vim.diagnostic.reset(diagnostics_namespace)
-    return
-  end
-
+---Iterates over each discussion and returns a list of tables with sign
+---data, for instance group, priority, line number etc.
+---@param discussions Discussion[]
+---@return SignTable[], SignTable[]
+M.parse_diagnostics_from_discussions = function(discussions)
   local new_signs = {}
   local old_signs = {}
-  for _, discussion in ipairs(diagnostics) do
+  for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
     local base_sign = {
       name = discussion_sign_name,
       group = discussion_sign_name,
       priority = state.settings.discussion_sign.priority,
+      buffer = nil,
     }
     local base_helper_sign = {
       name = discussion_sign_name,
       group = discussion_sign_name,
       priority = state.settings.discussion_sign.priority - 1,
+      buffer = nil,
     }
+    -- We have a line range which means we either have a multi-line comment or a comment
+    -- on a line that has not been changed (but is part of a changed file)
     if first_note.position.line_range ~= nil then
-      local start_old_line, start_new_line = _parse_line_code(first_note.position.line_range.start.line_code)
-      local end_old_line, end_new_line = _parse_line_code(first_note.position.line_range["end"].line_code)
+      local start_old_line, start_new_line = parse_line_code(first_note.position.line_range.start.line_code)
+      local end_old_line, end_new_line = parse_line_code(first_note.position.line_range["end"].line_code)
       local discussion_line, start_line, end_line
       if first_note.position.line_range.start.type == "new" then
         table.insert(
@@ -180,12 +182,29 @@ M.refresh_signs = function(discussions)
       end
     end
   end
+
+  return new_signs, old_signs
+end
+
+---Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
+---string for sign name and sign group ( currently there is only one sign needed)
+---@param discussions Discussion[]
+M.refresh_signs = function(discussions)
+  local diagnostics = filter_discussions_for_signs_and_diagnostics(discussions)
+  if diagnostics == nil then
+    vim.diagnostic.reset(diagnostics_namespace)
+    return
+  end
+
+  local old_signs, new_signs = M.parse_diagnostics_from_discussions(discussions)
+
   vim.fn.sign_unplace(discussion_sign_name)
   reviewer.place_sign(old_signs, "old")
   reviewer.place_sign(new_signs, "new")
 end
 
 ---Refresh the diagnostics for the currently reviewed file
+---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
   -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
   -- 1-based indexing
@@ -217,8 +236,8 @@ M.refresh_diagnostics = function(discussions)
       -- line number equal to note.position.new_line or note.position.old_line because that is
       -- only line where you can trigger the diagnostic show. This also need to be in sinc
       -- with the sign placement.
-      local start_old_line, start_new_line = _parse_line_code(first_note.position.line_range.start.line_code)
-      local end_old_line, end_new_line = _parse_line_code(first_note.position.line_range["end"].line_code)
+      local start_old_line, start_new_line = parse_line_code(first_note.position.line_range.start.line_code)
+      local end_old_line, end_new_line = parse_line_code(first_note.position.line_range["end"].line_code)
       if first_note.position.line_range.start.type == "new" then
         local new_diagnostic
         if first_note.position.new_line == start_new_line then
