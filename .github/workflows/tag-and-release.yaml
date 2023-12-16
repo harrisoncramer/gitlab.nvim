@@ -40,3 +40,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ needs.tag.outputs.tag }}
           body: ${{ github.event.head_commit.message }}
+          skipIfReleaseExists: true # Do not release if NONE tag is used above
