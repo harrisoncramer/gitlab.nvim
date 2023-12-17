@@ -20,5 +20,5 @@ func main() {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
-	startServer(client, projectInfo)
+	startServer(client, projectInfo, gitInfo)
 }
