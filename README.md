@@ -23,6 +23,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
 - [Usage](#usage)
   - [The summary command](#summary)
   - [Reviewing Diffs](#reviewing-diffs)
+  - [Merging](#merging-an-mr)
   - [Discussions and Notes](#discussions-and-notes)
   - [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
   - [Uploading Files](#uploading-files)
@@ -261,6 +262,16 @@ require("gitlab").create_comment_suggestion()
 ```
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
+
+### Merging an MR
+
+The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
+
+```lua
+require("gitlab").merge({ squash = false, delete_branch = false })
+```
+
+You can configure default behaviors via the setup function, values passed into this function will override the defaults.
 
 ### Discussions and Notes
 
