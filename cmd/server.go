@@ -105,7 +105,7 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 	m.HandleFunc("/shutdown", a.shutdownHandler)
 	m.HandleFunc("/approve", a.approveHandler)
 	m.HandleFunc("/comment", a.commentHandler)
-	m.HandleFunc("/merge", a.mergeHandler)
+	m.HandleFunc("/merge", a.acceptAndMergeHandler)
 	m.HandleFunc("/discussions/list", a.listDiscussionsHandler)
 	m.HandleFunc("/discussions/resolve", a.discussionsResolveHandler)
 	m.HandleFunc("/info", a.infoHandler)

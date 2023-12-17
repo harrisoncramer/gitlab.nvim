@@ -14,12 +14,12 @@ type AcceptMergeRequestRequest struct {
 	RemoveSourceBranch bool   `json:"remove_source_branch"`
 }
 
-/* mergeHandler merges a given merge request into the target branch */
-func (a *api) mergeHandler(w http.ResponseWriter, r *http.Request) {
+/* acceptAndMergeHandler merges a given merge request into the target branch */
+func (a *api) acceptAndMergeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-	if r.Method != "POST" {
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
+	if r.Method != http.MethodPost {
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -29,19 +29,40 @@ func (a *api) mergeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var acceptMergeRequest AcceptMergeRequestRequest
-	err = json.Unmarshal(body, &acceptMergeRequest)
+	var acceptAndMergeRequest AcceptMergeRequestRequest
+	err = json.Unmarshal(body, &acceptAndMergeRequest)
 	if err != nil {
 		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
 		return
 	}
 
 	opts := gitlab.AcceptMergeRequestOptions{
-		Squash:                   &acceptMergeRequest.Squash,
-		ShouldRemoveSourceBranch: &acceptMergeRequest.RemoveSourceBranch,
-		MergeCommitMessage:       &acceptMergeRequest.MergeMessage,
+		Squash:                   &acceptAndMergeRequest.Squash,
+		ShouldRemoveSourceBranch: &acceptAndMergeRequest.RemoveSourceBranch,
+		MergeCommitMessage:       &acceptAndMergeRequest.MergeMessage,
 	}
 
-	a.client.AcceptMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opts)
+	_, res, err := a.client.AcceptMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opts)
 
+	if err != nil {
+		handleError(w, err, "Could not merge MR", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/merge"}, "Could not merge MR", res.StatusCode)
+		return
+	}
+
+	response := SuccessResponse{
+		Status:  http.StatusOK,
+		Message: "MR merged successfully",
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }
