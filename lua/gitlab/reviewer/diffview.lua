@@ -203,7 +203,6 @@ M.place_sign = function(signs, type)
   end
   if type == "new" then
     for _, sign in ipairs(signs) do
-      vim.print(signs)
       sign.buffer = view.cur_layout.b.file.bufnr
     end
   elseif type == "old" then
