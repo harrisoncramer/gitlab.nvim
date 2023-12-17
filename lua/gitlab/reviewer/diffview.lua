@@ -68,6 +68,11 @@ M.jump = function(file_name, new_line, old_line)
         return
       end
       async.await(view:set_file(file))
+      -- TODO: Comments on unchanged lines will have both a
+      -- new line and a old line. We need to distinguish them somehow from
+      -- range comments (which also have this) so that we can know
+      -- which buffer to jump to. Right now, we jump to the wrong
+      -- buffer for ranged comments on unchanged lines.
       if new_line ~= nil then
         layout.b:focus()
         vim.api.nvim_win_set_cursor(0, { tonumber(new_line), 0 })
