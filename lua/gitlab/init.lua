@@ -28,7 +28,7 @@ return {
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
   -- Global Actions 🌎
-  summary = async.sequence({ info }, summary.summary),
+  summary = async.sequence({ u.merge(info, { refresh = true }) }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
