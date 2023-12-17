@@ -268,6 +268,7 @@ For suggesting changes you can use `create_comment_suggestion` in visual mode wh
 The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
 
 ```lua
+require("gitlab").merge()
 require("gitlab").merge({ squash = false, delete_branch = false })
 ```
 
