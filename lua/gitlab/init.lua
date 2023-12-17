@@ -4,6 +4,7 @@ local server = require("gitlab.server")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
+local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
@@ -20,9 +21,9 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
@@ -43,6 +44,7 @@ return {
     reviewer.open()
   end),
   pipeline = async.sequence({ info }, pipeline.open),
+  merge = async.sequence({ info }, merge.merge),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment = async.sequence({ info }, discussions.edit_comment),

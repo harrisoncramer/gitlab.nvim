@@ -210,6 +210,10 @@ require("gitlab").setup({
     success = "✓",
     failed = "",
   },
+  merge = {
+    squash = false,
+    delete_branch = false,
+  },
   colors = {
     discussion_tree = {
       username = "Keyword",
@@ -391,6 +395,7 @@ vim.keymap.set("n", "glra", gitlab.add_reviewer)
 vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
 vim.keymap.set("n", "glp", gitlab.pipeline)
 vim.keymap.set("n", "glo", gitlab.open_in_browser)
+vim.keymap.set("n", "glM", gitlab.merge)
 ```
 
 ## Troubleshooting
