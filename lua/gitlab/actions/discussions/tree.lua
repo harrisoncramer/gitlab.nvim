@@ -158,6 +158,7 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_text_nodes = {}
     local resolvable = false
     local resolved = false
+    local undefined_type = false
     local root_new_line = nil
     local root_old_line = nil
 
@@ -172,6 +173,16 @@ M.add_discussions_to_table = function(items, unlinked)
         root_note_id = tostring(note.id)
         resolvable = note.resolvable
         resolved = note.resolved
+
+        -- This appears to be a Gitlab 🐛 where the "type" is returned as an empty string in some cases
+        -- We link these comments to the old file by default
+        if
+          type(note.position) == "table"
+          and note.position.line_range ~= nil
+          and note.position.line_range.start.type == ""
+        then
+          undefined_type = true
+        end
       else -- Otherwise insert it as a child node...
         local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
@@ -191,6 +202,7 @@ M.add_discussions_to_table = function(items, unlinked)
       old_line = root_old_line,
       resolvable = resolvable,
       resolved = resolved,
+      undefined_type = undefined_type,
     }, body)
 
     table.insert(t, root_node)

@@ -173,7 +173,7 @@ M.parse_diagnostics_from_discussions = function(discussions)
         end
         new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
         table.insert(new_diagnostics, new_diagnostic)
-      elseif start_type == "old" or start_type == "expanded" then
+      elseif start_type == "old" or start_type == "expanded" or start_type == "" then
         local old_diagnostic
         if first_note.position.old_line == start_old_line then
           old_diagnostic = {
@@ -189,7 +189,7 @@ M.parse_diagnostics_from_discussions = function(discussions)
         old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
         table.insert(old_diagnostics, old_diagnostic)
       else -- Comments on expanded, non-changed lines
-        return {}, {}, string.format("Unsupported line range type found for discussion %d", discussion.id)
+        return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
       end
     else -- Diagnostics for single line discussions.
       if first_note.position.new_line ~= nil then
@@ -255,7 +255,7 @@ M.parse_signs_from_discussions = function(discussions)
         discussion_line = first_note.position.new_line
         start_line = start_new_line
         end_line = end_new_line
-      elseif start_type == "old" or start_type == "expanded" then
+      elseif start_type == "old" or start_type == "expanded" or start_type == "" then
         table.insert(
           old_signs,
           vim.tbl_deep_extend("force", {
@@ -267,7 +267,8 @@ M.parse_signs_from_discussions = function(discussions)
         start_line = start_old_line
         end_line = end_old_line
       else
-        return {}, {}, string.format("Unsupported line range type found for discussion %d", discussion.id)
+        vim.print(start_type == "")
+        return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
       end
 
       -- Helper signs does not have specific ids currently.
@@ -297,7 +298,7 @@ M.parse_signs_from_discussions = function(discussions)
         end
         if start_type == "new" then
           vim.list_extend(new_signs, helper_signs)
-        elseif start_type == "old" or start_type == "expanded" then
+        elseif start_type == "old" or start_type == "expanded" or start_type == "" then
           vim.list_extend(old_signs, helper_signs)
         end
       end
