@@ -22,6 +22,9 @@ M.init = function()
   M.open = reviewer.open
   -- Opens the reviewer window
 
+  M.close = reviewer.close
+  -- Closes the reviewer and cleans up
+
   M.jump = reviewer.jump
   -- Jumps to the location provided in the reviewer window
   -- Parameters:

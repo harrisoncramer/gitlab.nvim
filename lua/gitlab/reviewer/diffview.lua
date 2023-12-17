@@ -47,6 +47,12 @@ M.open = function()
   end
 end
 
+M.close = function()
+  vim.cmd("DiffviewClose")
+  local discussions = require("gitlab.actions.discussions")
+  discussions.close()
+end
+
 M.jump = function(file_name, new_line, old_line)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)

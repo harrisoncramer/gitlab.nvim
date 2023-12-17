@@ -23,6 +23,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
 - [Usage](#usage)
   - [The summary command](#summary)
   - [Reviewing Diffs](#reviewing-diffs)
+  - [Merging](#merging-an-mr)
   - [Discussions and Notes](#discussions-and-notes)
   - [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
   - [Uploading Files](#uploading-files)
@@ -131,6 +132,7 @@ require("gitlab").setup({
     note = nil,
     pipeline = nil,
     reply = nil,
+    squash_message = nil,
   },
   discussion_tree = { -- The discussion tree that holds all comments
     auto_open = true, -- Automatically open when the reviewer is opened
@@ -210,6 +212,10 @@ require("gitlab").setup({
     success = "✓",
     failed = "",
   },
+  merge = { -- The default behaviors when merging an MR, see "Merging an MR"
+    squash = false,
+    delete_branch = false,
+  },
   colors = {
     discussion_tree = {
       username = "Keyword",
@@ -257,6 +263,19 @@ require("gitlab").create_comment_suggestion()
 ```
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
+
+### Merging an MR
+
+The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
+
+```lua
+require("gitlab").merge()
+require("gitlab").merge({ squash = false, delete_branch = false })
+```
+
+You can configure default behaviors via the setup function, values passed into this function will override the defaults.
+
+If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
 
 ### Discussions and Notes
 
@@ -391,6 +410,7 @@ vim.keymap.set("n", "glra", gitlab.add_reviewer)
 vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
 vim.keymap.set("n", "glp", gitlab.pipeline)
 vim.keymap.set("n", "glo", gitlab.open_in_browser)
+vim.keymap.set("n", "glM", gitlab.merge)
 ```
 
 ## Troubleshooting

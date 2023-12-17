@@ -122,7 +122,7 @@ M.build_info_lines = function()
     author = { title = "Author", content = "@" .. info.author.username .. " (" .. info.author.name .. ")" },
     created_at = { title = "Created", content = u.format_to_local(info.created_at, vim.fn.strftime("%z")) },
     updated_at = { title = "Updated", content = u.format_to_local(info.updated_at, vim.fn.strftime("%z")) },
-    merge_status = { title = "Status", content = info.detailed_merge_status },
+    detailed_merge_status = { title = "Status", content = info.detailed_merge_status },
     draft = { title = "Draft", content = (info.draft and "Yes" or "No") },
     conflicts = { title = "Merge Conflicts", content = (info.has_conflicts and "Yes" or "No") },
     assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
@@ -138,6 +138,9 @@ M.build_info_lines = function()
 
   local longest_used = ""
   for _, v in ipairs(state.settings.info.fields) do
+    if v == "merge_status" then
+      v = "detailed_merge_status"
+    end -- merge_status was deprecated, see https://gitlab.com/gitlab-org/gitlab/-/issues/3169#note_1162532204
     local title = options[v].title
     if string.len(title) > string.len(longest_used) then
       longest_used = title
@@ -151,6 +154,9 @@ M.build_info_lines = function()
 
   local lines = {}
   for _, v in ipairs(state.settings.info.fields) do
+    if v == "merge_status" then
+      v = "detailed_merge_status"
+    end
     local row = options[v]
     local line = "* " .. row.title .. row_offset(row.title)
     if type(row.content) == "function" then

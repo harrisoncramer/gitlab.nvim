@@ -20,6 +20,7 @@ The FakeHandlerClient is used to create a fake gitlab client for testing our han
 type fakeClient struct {
 	getMergeRequestFn                func(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	updateMergeRequestFn             func(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	acceptAndMergeFn                 func(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	unapprorveMergeRequestFn         func(pid interface{}, mr int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	uploadFile                       func(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
 	getMergeRequestDiffVersions      func(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestDiffVersionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequestDiffVersion, *gitlab.Response, error)
@@ -44,6 +45,10 @@ type Author struct {
 	State     string `json:"state"`
 	AvatarURL string `json:"avatar_url"`
 	WebURL    string `json:"web_url"`
+}
+
+func (f fakeClient) AcceptMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
+	return f.acceptAndMergeFn(pid, mergeRequest, opt, options...)
 }
 
 func (f fakeClient) GetMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
