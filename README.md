@@ -211,7 +211,7 @@ require("gitlab").setup({
     success = "✓",
     failed = "",
   },
-  merge = {
+  merge = { -- The default behaviors when merging an MR, see "Merging an MR"
     squash = false,
     delete_branch = false,
   },
