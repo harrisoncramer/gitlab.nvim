@@ -26,7 +26,7 @@ M.refresh_signs = function(discussions)
     return
   end
 
-  local old_signs, new_signs, error = M.parse_signs_from_discussions(discussions)
+  local new_signs, old_signs, error = M.parse_signs_from_discussions(discussions)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
     return
@@ -79,22 +79,22 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   for _, discussion in ipairs(all_discussions) do
     local first_note = discussion.notes[1]
     if
-      type(first_note.position) == "table"
-      and (first_note.position.new_path == file or first_note.position.old_path == file)
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-        --Skip resolved discussions
-        not (
-          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-          and first_note.resolvable
-          and first_note.resolved
-        )
-        --Skip discussions from old revisions
-        and not (
-          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-          and u.from_iso_format_date_to_timestamp(first_note.created_at)
+      --Skip resolved discussions
+          not (
+            state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+            and first_note.resolvable
+            and first_note.resolved
+          )
+          --Skip discussions from old revisions
+          and not (
+            state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+            and u.from_iso_format_date_to_timestamp(first_note.created_at)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-        )
+          )
       then
         table.insert(discussions, discussion)
       end
@@ -128,7 +128,7 @@ end
 ---Iterates over each discussion and returns a list of tables with sign
 ---data, for instance group, priority, line number etc.
 ---@param discussions Discussion[]
----@return DiagnosticTable[], DiagnosticTable[]
+---@return DiagnosticTable[], DiagnosticTable[], string?
 M.parse_diagnostics_from_discussions = function(discussions)
   local new_diagnostics = {}
   local old_diagnostics = {}
@@ -152,11 +152,12 @@ M.parse_diagnostics_from_discussions = function(discussions)
     -- line number equal to note.position.new_line or note.position.old_line because that is the
     -- only line where you can trigger the diagnostic to show. This also needs to be in sync
     -- with the sign placement.
-    if first_note.position.line_range ~= nil then
-      local start_old_line, start_new_line = M.parse_line_code(first_note.position.line_range.start.line_code)
-      local end_old_line, end_new_line = M.parse_line_code(first_note.position.line_range["end"].line_code)
+    local line_range = first_note.position.line_range
+    if line_range ~= nil then
+      local start_old_line, start_new_line = M.parse_line_code(line_range.start.line_code)
+      local end_old_line, end_new_line = M.parse_line_code(line_range["end"].line_code)
 
-      local start_type = first_note.position.line_range.start.type
+      local start_type = line_range.start.type
       if start_type == "new" then
         local new_diagnostic
         if first_note.position.new_line == start_new_line then
@@ -233,14 +234,16 @@ M.parse_signs_from_discussions = function(discussions)
   local old_signs = {}
   for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
+    local line_range = first_note.position.line_range
+
     -- We have a line range which means we either have a multi-line comment or a comment
     -- on a line in an "expanded" part of a file
-    if first_note.position.line_range ~= nil then
-      local start_old_line, start_new_line = M.parse_line_code(first_note.position.line_range.start.line_code)
-      local end_old_line, end_new_line = M.parse_line_code(first_note.position.line_range["end"].line_code)
+    if line_range ~= nil then
+      local start_old_line, start_new_line = M.parse_line_code(line_range.start.line_code)
+      local end_old_line, end_new_line = M.parse_line_code(line_range["end"].line_code)
       local discussion_line, start_line, end_line
 
-      local start_type = first_note.position.line_range.start.type
+      local start_type = line_range.start.type
       if start_type == "new" then
         table.insert(
           new_signs,
@@ -292,9 +295,9 @@ M.parse_signs_from_discussions = function(discussions)
             )
           end
         end
-        if first_note.position.line_range.start.type == "new" then
+        if start_type == "new" then
           vim.list_extend(new_signs, helper_signs)
-        elseif first_note.position.line_range.start.type == "old" then
+        elseif start_type == "old" or start_type == "expanded" then
           vim.list_extend(old_signs, helper_signs)
         end
       end
