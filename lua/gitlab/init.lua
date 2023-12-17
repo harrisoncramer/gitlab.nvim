@@ -4,6 +4,7 @@ local server = require("gitlab.server")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
+local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
@@ -27,7 +28,7 @@ return {
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
   -- Global Actions 🌎
-  summary = async.sequence({ info }, summary.summary),
+  summary = async.sequence({ u.merge(info, { refresh = true }) }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
@@ -42,7 +43,11 @@ return {
   review = async.sequence({ u.merge(info, { refresh = true }), revisions }, function()
     reviewer.open()
   end),
+  close_review = function()
+    reviewer.close()
+  end,
   pipeline = async.sequence({ info }, pipeline.open),
+  merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment = async.sequence({ info }, discussions.edit_comment),

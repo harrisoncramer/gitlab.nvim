@@ -29,6 +29,7 @@ M.settings = {
     note = nil,
     help = nil,
     pipeline = nil,
+    squash_message = nil,
   },
   discussion_tree = {
     auto_open = true,
@@ -65,6 +66,10 @@ M.settings = {
       end
       return " " .. discussions_content .. " %#Comment#| " .. notes_content
     end,
+  },
+  merge = {
+    squash = false,
+    delete_branch = false,
   },
   info = {
     enabled = true,
