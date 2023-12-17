@@ -275,6 +275,8 @@ require("gitlab").merge({ squash = false, delete_branch = false })
 
 You can configure default behaviors via the setup function, values passed into this function will override the defaults.
 
+If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
+
 ### Discussions and Notes
 
 Gitlab groups threads of comments together into "discussions."
