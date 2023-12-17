@@ -626,14 +626,6 @@ M.get_icon = function(filename)
   end
 end
 
----Removes lines prefixed with the '#' comment indicator in markdown
----@param text string
----@return string
-M.strip_comment_lines = function(text)
-  local new_text = ""
-  return new_text
-end
-
 M.basename = function(str)
   local name = string.gsub(str, "(.*/)(.*)", "%2")
   return name

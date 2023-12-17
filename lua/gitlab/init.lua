@@ -47,7 +47,7 @@ return {
     reviewer.close()
   end,
   pipeline = async.sequence({ info }, pipeline.open),
-  merge = async.sequence({ info }, merge.merge),
+  merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info }, discussions.toggle),
   edit_comment = async.sequence({ info }, discussions.edit_comment),
