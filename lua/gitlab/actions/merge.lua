@@ -28,7 +28,6 @@ M.merge = function(opts)
     return
   end
 
-
   if not merge_body.squash then
     local squash_message_popup = create_squash_message_popup()
     squash_message_popup:mount()
@@ -36,8 +35,13 @@ M.merge = function(opts)
       M.confirm_merge(merge_body, text)
     end)
     vim.schedule(function()
-      vim.api.nvim_buf_set_lines(squash_message_popup.bufnr, 0, -1, false,
-        { "# Add your squash commit message. Comment lines will be ignored." })
+      vim.api.nvim_buf_set_lines(
+        squash_message_popup.bufnr,
+        0,
+        -1,
+        false,
+        { "# Add your squash commit message. Comment lines will be ignored." }
+      )
     end)
   else
     M.confirm_merge(merge_body)
