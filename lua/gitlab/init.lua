@@ -43,6 +43,9 @@ return {
   review = async.sequence({ u.merge(info, { refresh = true }), revisions }, function()
     reviewer.open()
   end),
+  close_review = function()
+    reviewer.close()
+  end,
   pipeline = async.sequence({ info }, pipeline.open),
   merge = async.sequence({ info }, merge.merge),
   -- Discussion Tree Actions 🌴

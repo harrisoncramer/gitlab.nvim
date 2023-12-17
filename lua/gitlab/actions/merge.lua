@@ -1,6 +1,7 @@
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
+local reviewer = require("gitlab.reviewer")
 
 local M = {}
 
@@ -11,7 +12,10 @@ M.merge = function()
     return
   end
 
-  job.run_job("/merge", "POST", merge_body)
+  job.run_job("/merge", "POST", merge_body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    reviewer.close()
+  end)
 end
 
 return M
