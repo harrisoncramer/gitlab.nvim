@@ -40,7 +40,7 @@ M.attach_file = function()
     end
     local full_path = attachment_dir .. u.path_separator .. choice
     local body = { file_path = full_path, file_name = choice }
-    job.run_job("/mr/attachment", "POST", body, function(data)
+    job.run_job("/attachment", "POST", body, function(data)
       local markdown = data.markdown
       local current_line = u.get_current_line_number()
       local bufnr = vim.api.nvim_get_current_buf()

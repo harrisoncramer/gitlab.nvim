@@ -427,5 +427,5 @@ This plugin uses a Go server to reach out to Gitlab. It's possible that somethin
 The easiest way to debug what's going wrong is to turn on the `debug` options in your setup function. This will allow you to see requests leaving the Go server, and the responses coming back from Gitlab. Once the server is running, you can also interact with the Go server like any other process:
 
 ```
-curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
+curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/mr/info
 ```

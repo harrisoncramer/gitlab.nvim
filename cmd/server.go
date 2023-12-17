@@ -107,25 +107,26 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		}
 	}
 
-	m.Handle("/ping", http.HandlerFunc(pingHandler))
-	m.HandleFunc("/approve", a.withMr(a.approveHandler))
-	m.HandleFunc("/comment", a.withMr(a.commentHandler))
-	m.HandleFunc("/merge", a.withMr(a.acceptAndMergeHandler))
-	m.HandleFunc("/discussions/list", a.withMr(a.listDiscussionsHandler))
-	m.HandleFunc("/discussions/resolve", a.withMr(a.discussionsResolveHandler))
-	m.HandleFunc("/info", a.withMr(a.infoHandler))
-	m.HandleFunc("/job", a.withMr(a.jobHandler))
+	m.HandleFunc("/mr/approve", a.withMr(a.approveHandler))
+	m.HandleFunc("/mr/comment", a.withMr(a.commentHandler))
+	m.HandleFunc("/mr/merge", a.withMr(a.acceptAndMergeHandler))
+	m.HandleFunc("/mr/discussions/list", a.withMr(a.listDiscussionsHandler))
+	m.HandleFunc("/mr/discussions/resolve", a.withMr(a.discussionsResolveHandler))
+	m.HandleFunc("/mr/info", a.withMr(a.infoHandler))
 	m.HandleFunc("/mr/assignee", a.withMr(a.assigneesHandler))
 	m.HandleFunc("/mr/summary", a.withMr(a.summaryHandler))
 	m.HandleFunc("/mr/reviewer", a.withMr(a.reviewersHandler))
 	m.HandleFunc("/mr/revisions", a.withMr(a.revisionsHandler))
-	m.HandleFunc("/reply", a.withMr(a.replyHandler))
-	m.HandleFunc("/revoke", a.withMr(a.revokeHandler))
+	m.HandleFunc("/mr/reply", a.withMr(a.replyHandler))
+	m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
 
-	m.HandleFunc("/mr/attachment", a.attachmentHandler)
+	m.HandleFunc("/attachment", a.attachmentHandler)
+	m.HandleFunc("/job", a.jobHandler)
 	m.HandleFunc("/pipeline/", a.pipelineHandler)
 	m.HandleFunc("/project/members", a.projectMembersHandler)
 	m.HandleFunc("/shutdown", a.shutdownHandler)
+
+	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return m, a
 }

@@ -57,7 +57,7 @@ func (a *api) discussionsResolveHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
 		return
 	}
 

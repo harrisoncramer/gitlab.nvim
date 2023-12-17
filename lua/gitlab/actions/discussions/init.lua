@@ -37,7 +37,7 @@ local M = {
 ---callback with data
 ---@param callback (fun(data: DiscussionData): nil)?
 M.load_discussions = function(callback)
-  job.run_job("/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
+  job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     M.discussions = data.discussions ~= vim.NIL and data.discussions or {}
     M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
     if type(callback) == "function" then
@@ -108,7 +108,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -209,7 +209,7 @@ end
 M.send_reply = function(tree, discussion_id)
   return function(text)
     local body = { discussion_id = discussion_id, reply = text }
-    job.run_job("/reply", "POST", body, function(data)
+    job.run_job("/mr/reply", "POST", body, function(data)
       u.notify("Sent reply!", vim.log.levels.INFO)
       M.add_reply_to_tree(tree, data.note, discussion_id)
       M.load_discussions()
@@ -239,7 +239,7 @@ M.send_deletion = function(tree, unlinked)
 
   local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
 
-  job.run_job("/comment", "DELETE", body, function(data)
+  job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     if not note_node.is_root then
       tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
@@ -253,7 +253,7 @@ M.send_deletion = function(tree, unlinked)
         M.rebuild_discussion_tree()
       end
       M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -301,7 +301,7 @@ M.send_edits = function(discussion_id, note_id, unlinked)
       note_id = note_id,
       comment = text,
     }
-    job.run_job("/comment", "PATCH", body, function(data)
+    job.run_job("/mr/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       M.rebuild_discussion_tree()
       if unlinked then
@@ -327,7 +327,7 @@ M.toggle_discussion_resolved = function(tree)
     resolved = not note.resolved,
   }
 
-  job.run_job("/discussions/resolve", "PUT", body, function(data)
+  job.run_job("/mr/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
     M.refresh_discussion_data()
@@ -428,7 +428,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree

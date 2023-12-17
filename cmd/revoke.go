@@ -22,7 +22,7 @@ func (a *api) revokeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/revoke"}, "Could not revoke approval", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/revoke"}, "Could not revoke approval", res.StatusCode)
 		return
 	}
 
