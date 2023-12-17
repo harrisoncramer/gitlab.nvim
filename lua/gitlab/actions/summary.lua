@@ -138,7 +138,9 @@ M.build_info_lines = function()
 
   local longest_used = ""
   for _, v in ipairs(state.settings.info.fields) do
-    if v == "merge_status" then v = "detailed_merge_status" end -- merge_status was deprecated, see https://gitlab.com/gitlab-org/gitlab/-/issues/3169#note_1162532204
+    if v == "merge_status" then
+      v = "detailed_merge_status"
+    end -- merge_status was deprecated, see https://gitlab.com/gitlab-org/gitlab/-/issues/3169#note_1162532204
     local title = options[v].title
     if string.len(title) > string.len(longest_used) then
       longest_used = title
@@ -152,7 +154,9 @@ M.build_info_lines = function()
 
   local lines = {}
   for _, v in ipairs(state.settings.info.fields) do
-    if v == "merge_status" then v = "detailed_merge_status" end
+    if v == "merge_status" then
+      v = "detailed_merge_status"
+    end
     local row = options[v]
     local line = "* " .. row.title .. row_offset(row.title)
     if type(row.content) == "function" then
