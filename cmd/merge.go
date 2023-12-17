@@ -9,8 +9,9 @@ import (
 )
 
 type AcceptMergeRequestRequest struct {
-	Squash       bool `json:"squash"`
-	DeleteBranch bool `json:"delete_branch"`
+	Squash        bool   `json:"squash"`
+	SquashMessage string `json:"squash_message"`
+	DeleteBranch  bool   `json:"delete_branch"`
 }
 
 /* acceptAndMergeHandler merges a given merge request into the target branch */
@@ -38,6 +39,10 @@ func (a *api) acceptAndMergeHandler(w http.ResponseWriter, r *http.Request) {
 	opts := gitlab.AcceptMergeRequestOptions{
 		Squash:                   &acceptAndMergeRequest.Squash,
 		ShouldRemoveSourceBranch: &acceptAndMergeRequest.DeleteBranch,
+	}
+
+	if acceptAndMergeRequest.SquashMessage != "" {
+		opts.SquashCommitMessage = &acceptAndMergeRequest.SquashMessage
 	}
 
 	_, res, err := a.client.AcceptMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opts)

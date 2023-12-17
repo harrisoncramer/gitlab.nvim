@@ -132,6 +132,7 @@ require("gitlab").setup({
     note = nil,
     pipeline = nil,
     reply = nil,
+    squash_message = nil,
   },
   discussion_tree = { -- The discussion tree that holds all comments
     auto_open = true, -- Automatically open when the reviewer is opened

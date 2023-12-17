@@ -177,7 +177,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -624,6 +624,14 @@ M.get_icon = function(filename)
   else
     return nil, nil
   end
+end
+
+---Removes lines prefixed with the '#' comment indicator in markdown
+---@param text string
+---@return string
+M.strip_comment_lines = function(text)
+  local new_text = ''
+  return new_text
 end
 
 M.basename = function(str)
