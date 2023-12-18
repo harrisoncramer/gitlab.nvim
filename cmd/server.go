@@ -121,6 +121,7 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 	m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
 
 	m.HandleFunc("/attachment", a.attachmentHandler)
+	m.HandleFunc("/create_mr", a.createMr)
 	m.HandleFunc("/job", a.jobHandler)
 	m.HandleFunc("/pipeline/", a.pipelineHandler)
 	m.HandleFunc("/project/members", a.projectMembersHandler)
