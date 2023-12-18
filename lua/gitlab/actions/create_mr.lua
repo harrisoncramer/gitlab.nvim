@@ -1,7 +1,5 @@
 -- This module is responsible for creating am MR
 -- for the current branch
-local u = require("gitlab.utils")
-local state = require("gitlab.state")
 local Layout = require("nui.layout")
 local Popup = require("nui.popup")
 local job = require("gitlab.job")
