@@ -53,7 +53,7 @@ M.close = function()
   discussions.close()
 end
 
-M.jump = function(file_name, new_line, old_line)
+M.jump = function(file_name, new_line, old_line, opts)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
@@ -74,7 +74,12 @@ M.jump = function(file_name, new_line, old_line)
         return
       end
       async.await(view:set_file(file))
-      if new_line ~= nil then
+      -- TODO: Ranged comments on unchanged lines will have both a
+      -- new line and a old line. We need to distinguish them somehow from
+      -- range comments (which also have this) so that we can know
+      -- which buffer to jump to. Right now, we jump to the wrong
+      -- buffer for ranged comments on unchanged lines.
+      if new_line ~= nil and not opts.is_undefined_type then
         layout.b:focus()
         vim.api.nvim_win_set_cursor(0, { tonumber(new_line), 0 })
       elseif old_line ~= nil then
@@ -200,7 +205,7 @@ end
 
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
 ---line for identifing lines before changes and both if line was not changed.
----@param signs table table of signs. See :h sign_placelist
+---@param signs SignTable[] table of signs. See :h sign_placelist
 ---@param type string "new" if diagnostic should be in file after changes else "old"
 M.place_sign = function(signs, type)
   local view = diffview_lib.get_current_view()

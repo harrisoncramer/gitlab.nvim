@@ -234,6 +234,13 @@ M.map = function(tbl, f)
   return t
 end
 
+M.reduce = function(tbl, agg, f)
+  for _, v in pairs(tbl) do
+    agg = f(agg, v)
+  end
+  return agg
+end
+
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end

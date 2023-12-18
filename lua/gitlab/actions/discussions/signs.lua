@@ -10,19 +10,64 @@ local diagnostics_namespace = vim.api.nvim_create_namespace(discussion_sign_name
 local M = {}
 M.diagnostics_namespace = diagnostics_namespace
 
----Parse line code and return old and new line numbers
----@param line_code string gitlab line code -> 588440f66559714280628a4f9799f0c4eb880a4a_10_10
----@return number?
----@return number?
-local function _parse_line_code(line_code)
-  local line_code_regex = "%w+_(%d+)_(%d+)"
-  local old_line, new_line = line_code:match(line_code_regex)
-  return tonumber(old_line), tonumber(new_line)
+---Clear all signs and diagnostics
+M.clear_signs_and_discussions = function()
+  vim.fn.sign_unplace(discussion_sign_name)
+  vim.diagnostic.reset(diagnostics_namespace)
+end
+
+---Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
+---string for sign name and sign group ( currently there is only one sign needed)
+---@param discussions Discussion[]
+M.refresh_signs = function(discussions)
+  local diagnostics = M.filter_discussions_for_signs_and_diagnostics(discussions)
+  if diagnostics == nil then
+    vim.diagnostic.reset(diagnostics_namespace)
+    return
+  end
+
+  local new_signs, old_signs, error = M.parse_signs_from_discussions(discussions)
+  if error ~= nil then
+    vim.notify(error, vim.log.levels.ERROR)
+    return
+  end
+
+  vim.fn.sign_unplace(discussion_sign_name)
+  reviewer.place_sign(old_signs, "old")
+  reviewer.place_sign(new_signs, "new")
+end
+
+---Refresh the diagnostics for the currently reviewed file
+---@param discussions Discussion[]
+M.refresh_diagnostics = function(discussions)
+  -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
+  -- 1-based indexing
+  local diagnostics = M.filter_discussions_for_signs_and_diagnostics(discussions)
+  if diagnostics == nil then
+    vim.diagnostic.reset(diagnostics_namespace)
+    return
+  end
+
+  local new_diagnostics, old_diagnostics = M.parse_diagnostics_from_discussions(discussions)
+
+  vim.diagnostic.reset(diagnostics_namespace)
+  reviewer.set_diagnostics(
+    diagnostics_namespace,
+    new_diagnostics,
+    "new",
+    state.settings.discussion_diagnostic.display_opts
+  )
+  reviewer.set_diagnostics(
+    diagnostics_namespace,
+    old_diagnostics,
+    "old",
+    state.settings.discussion_diagnostic.display_opts
+  )
 end
 
 ---Filter all discussions which are relevant for currently visible signs and diagnostscs.
 ---@return Discussion[]?
-local filter_discussions_for_signs_and_diagnostics = function(all_discussions)
+M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   if type(all_discussions) ~= "table" then
     return
   end
@@ -58,13 +103,6 @@ local filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   return discussions
 end
 
----Build note header from note.
----@param note Note
----@return string
-local build_note_header = function(note)
-  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
-end
-
 ---Define signs for discussions if not already defined
 M.setup_signs = function()
   local discussion_sign = state.settings.discussion_sign
@@ -87,34 +125,126 @@ M.setup_signs = function()
   end
 end
 
----Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
----string for sign name and sign group ( currently there is only one sign needed)
-M.refresh_signs = function(discussions)
-  local diagnostics = filter_discussions_for_signs_and_diagnostics(discussions)
-  if diagnostics == nil then
-    vim.diagnostic.reset(diagnostics_namespace)
-    return
+---Iterates over each discussion and returns a list of tables with sign
+---data, for instance group, priority, line number etc.
+---@param discussions Discussion[]
+---@return DiagnosticTable[], DiagnosticTable[], string?
+M.parse_diagnostics_from_discussions = function(discussions)
+  local new_diagnostics = {}
+  local old_diagnostics = {}
+  for _, discussion in ipairs(discussions) do
+    local first_note = discussion.notes[1]
+    local message = ""
+    for _, note in ipairs(discussion.notes) do
+      message = message .. M.build_note_header(note) .. "\n" .. note.body .. "\n"
+    end
+
+    local diagnostic = {
+      message = message,
+      col = 0,
+      severity = state.settings.discussion_diagnostic.severity,
+      user_data = { discussion_id = discussion.id, header = M.build_note_header(discussion.notes[1]) },
+      source = "gitlab",
+      code = state.settings.discussion_diagnostic.code,
+    }
+
+    -- Diagnostics for line range discussions are tricky - you need to set lnum to be the
+    -- line number equal to note.position.new_line or note.position.old_line because that is the
+    -- only line where you can trigger the diagnostic to show. This also needs to be in sync
+    -- with the sign placement.
+    local line_range = first_note.position.line_range
+    if line_range ~= nil then
+      local start_old_line, start_new_line = M.parse_line_code(line_range.start.line_code)
+      local end_old_line, end_new_line = M.parse_line_code(line_range["end"].line_code)
+
+      local start_type = line_range.start.type
+      if start_type == "new" then
+        local new_diagnostic
+        if first_note.position.new_line == start_new_line then
+          new_diagnostic = {
+            lnum = start_new_line - 1,
+            end_lnum = end_new_line - 1,
+          }
+        else
+          new_diagnostic = {
+            lnum = end_new_line - 1,
+            end_lnum = start_new_line - 1,
+          }
+        end
+        new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
+        table.insert(new_diagnostics, new_diagnostic)
+      elseif start_type == "old" or start_type == "expanded" or start_type == "" then
+        local old_diagnostic
+        if first_note.position.old_line == start_old_line then
+          old_diagnostic = {
+            lnum = start_old_line - 1,
+            end_lnum = end_old_line - 1,
+          }
+        else
+          old_diagnostic = {
+            lnum = end_old_line - 1,
+            end_lnum = start_old_line - 1,
+          }
+        end
+        old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
+        table.insert(old_diagnostics, old_diagnostic)
+      else -- Comments on expanded, non-changed lines
+        return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
+      end
+    else -- Diagnostics for single line discussions.
+      if first_note.position.new_line ~= nil then
+        local new_diagnostic = {
+          lnum = first_note.position.new_line - 1,
+        }
+        new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
+        table.insert(new_diagnostics, new_diagnostic)
+      end
+      if first_note.position.old_line ~= nil then
+        local old_diagnostic = {
+          lnum = first_note.position.old_line - 1,
+        }
+        old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
+        table.insert(old_diagnostics, old_diagnostic)
+      end
+    end
   end
 
+  return new_diagnostics, old_diagnostics
+end
+
+local base_sign = {
+  name = discussion_sign_name,
+  group = discussion_sign_name,
+  priority = state.settings.discussion_sign.priority,
+  buffer = nil,
+}
+local base_helper_sign = {
+  name = discussion_sign_name,
+  group = discussion_sign_name,
+  priority = state.settings.discussion_sign.priority - 1,
+  buffer = nil,
+}
+
+---Iterates over each discussion and returns a list of tables with sign
+---data, for instance group, priority, line number etc.
+---@param discussions Discussion[]
+---@return SignTable[], SignTable[], string?
+M.parse_signs_from_discussions = function(discussions)
   local new_signs = {}
   local old_signs = {}
-  for _, discussion in ipairs(diagnostics) do
+  for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
-    local base_sign = {
-      name = discussion_sign_name,
-      group = discussion_sign_name,
-      priority = state.settings.discussion_sign.priority,
-    }
-    local base_helper_sign = {
-      name = discussion_sign_name,
-      group = discussion_sign_name,
-      priority = state.settings.discussion_sign.priority - 1,
-    }
-    if first_note.position.line_range ~= nil then
-      local start_old_line, start_new_line = _parse_line_code(first_note.position.line_range.start.line_code)
-      local end_old_line, end_new_line = _parse_line_code(first_note.position.line_range["end"].line_code)
+    local line_range = first_note.position.line_range
+
+    -- We have a line range which means we either have a multi-line comment or a comment
+    -- on a line in an "expanded" part of a file
+    if line_range ~= nil then
+      local start_old_line, start_new_line = M.parse_line_code(line_range.start.line_code)
+      local end_old_line, end_new_line = M.parse_line_code(line_range["end"].line_code)
       local discussion_line, start_line, end_line
-      if first_note.position.line_range.start.type == "new" then
+
+      local start_type = line_range.start.type
+      if start_type == "new" then
         table.insert(
           new_signs,
           vim.tbl_deep_extend("force", {
@@ -125,7 +255,7 @@ M.refresh_signs = function(discussions)
         discussion_line = first_note.position.new_line
         start_line = start_new_line
         end_line = end_new_line
-      elseif first_note.position.line_range.start.type == "old" then
+      elseif start_type == "old" or start_type == "expanded" or start_type == "" then
         table.insert(
           old_signs,
           vim.tbl_deep_extend("force", {
@@ -136,7 +266,11 @@ M.refresh_signs = function(discussions)
         discussion_line = first_note.position.old_line
         start_line = start_old_line
         end_line = end_old_line
+      else
+        vim.print(start_type == "")
+        return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
       end
+
       -- Helper signs does not have specific ids currently.
       if state.settings.discussion_sign.helper_signs.enabled then
         local helper_signs = {}
@@ -162,13 +296,13 @@ M.refresh_signs = function(discussions)
             )
           end
         end
-        if first_note.position.line_range.start.type == "new" then
+        if start_type == "new" then
           vim.list_extend(new_signs, helper_signs)
-        elseif first_note.position.line_range.start.type == "old" then
+        elseif start_type == "old" or start_type == "expanded" or start_type == "" then
           vim.list_extend(old_signs, helper_signs)
         end
       end
-    else
+    else -- The note is a normal comment, not a range comment
       local sign = vim.tbl_deep_extend("force", {
         id = first_note.id,
       }, base_sign)
@@ -180,114 +314,24 @@ M.refresh_signs = function(discussions)
       end
     end
   end
-  vim.fn.sign_unplace(discussion_sign_name)
-  reviewer.place_sign(old_signs, "old")
-  reviewer.place_sign(new_signs, "new")
+
+  return new_signs, old_signs, nil
 end
 
----Refresh the diagnostics for the currently reviewed file
-M.refresh_diagnostics = function(discussions)
-  -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
-  -- 1-based indexing
-  local diagnostics = filter_discussions_for_signs_and_diagnostics(discussions)
-  if diagnostics == nil then
-    vim.diagnostic.reset(diagnostics_namespace)
-    return
-  end
-
-  local new_diagnostics = {}
-  local old_diagnostics = {}
-  for _, discussion in ipairs(diagnostics) do
-    local first_note = discussion.notes[1]
-    local message = ""
-    for _, note in ipairs(discussion.notes) do
-      message = message .. build_note_header(note) .. "\n" .. note.body .. "\n"
-    end
-
-    local diagnostic = {
-      message = message,
-      col = 0,
-      severity = state.settings.discussion_diagnostic.severity,
-      user_data = { discussion_id = discussion.id, header = build_note_header(discussion.notes[1]) },
-      source = "gitlab",
-      code = state.settings.discussion_diagnostic.code,
-    }
-    if first_note.position.line_range ~= nil then
-      -- Diagnostics for line range discussions are tricky - you need to set lnum to
-      -- line number equal to note.position.new_line or note.position.old_line because that is
-      -- only line where you can trigger the diagnostic show. This also need to be in sinc
-      -- with the sign placement.
-      local start_old_line, start_new_line = _parse_line_code(first_note.position.line_range.start.line_code)
-      local end_old_line, end_new_line = _parse_line_code(first_note.position.line_range["end"].line_code)
-      if first_note.position.line_range.start.type == "new" then
-        local new_diagnostic
-        if first_note.position.new_line == start_new_line then
-          new_diagnostic = {
-            lnum = start_new_line - 1,
-            end_lnum = end_new_line - 1,
-          }
-        else
-          new_diagnostic = {
-            lnum = end_new_line - 1,
-            end_lnum = start_new_line - 1,
-          }
-        end
-        new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
-        table.insert(new_diagnostics, new_diagnostic)
-      elseif first_note.position.line_range.start.type == "old" then
-        local old_diagnostic
-        if first_note.position.old_line == start_old_line then
-          old_diagnostic = {
-            lnum = start_old_line - 1,
-            end_lnum = end_old_line - 1,
-          }
-        else
-          old_diagnostic = {
-            lnum = end_old_line - 1,
-            end_lnum = start_old_line - 1,
-          }
-        end
-        old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
-        table.insert(old_diagnostics, old_diagnostic)
-      end
-    else
-      -- Diagnostics for single line discussions.
-      if first_note.position.new_line ~= nil then
-        local new_diagnostic = {
-          lnum = first_note.position.new_line - 1,
-        }
-        new_diagnostic = vim.tbl_deep_extend("force", new_diagnostic, diagnostic)
-        table.insert(new_diagnostics, new_diagnostic)
-      end
-      if first_note.position.old_line ~= nil then
-        local old_diagnostic = {
-          lnum = first_note.position.old_line - 1,
-        }
-        old_diagnostic = vim.tbl_deep_extend("force", old_diagnostic, diagnostic)
-        table.insert(old_diagnostics, old_diagnostic)
-      end
-    end
-  end
-
-  vim.diagnostic.reset(diagnostics_namespace)
-  reviewer.set_diagnostics(
-    diagnostics_namespace,
-    new_diagnostics,
-    "new",
-    state.settings.discussion_diagnostic.display_opts
-  )
-  reviewer.set_diagnostics(
-    diagnostics_namespace,
-    old_diagnostics,
-    "old",
-    state.settings.discussion_diagnostic.display_opts
-  )
+---Parse line code and return old and new line numbers
+---@param line_code string gitlab line code -> 588440f66559714280628a4f9799f0c4eb880a4a_10_10
+---@return number?
+M.parse_line_code = function(line_code)
+  local line_code_regex = "%w+_(%d+)_(%d+)"
+  local old_line, new_line = line_code:match(line_code_regex)
+  return tonumber(old_line), tonumber(new_line)
 end
 
----Clear all signs and diagnostics
-M.clear_signs_and_discussions = function()
-  vim.fn.sign_unplace(discussion_sign_name)
-  vim.diagnostic.reset(diagnostics_namespace)
+---Build note header from note.
+---@param note Note
+---@return string
+M.build_note_header = function(note)
+  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
 
 return M
