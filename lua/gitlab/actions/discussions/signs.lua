@@ -11,7 +11,7 @@ local M = {}
 M.diagnostics_namespace = diagnostics_namespace
 
 ---Clear all signs and diagnostics
-M.clear_signs_and_discussions = function()
+M.clear_signs_and_diagnostics = function()
   vim.fn.sign_unplace(discussion_sign_name)
   vim.diagnostic.reset(diagnostics_namespace)
 end

@@ -52,7 +52,8 @@ end
 M.update_winbar = function(discussions, unlinked_discussions, base_title)
   local d = require("gitlab.actions.discussions")
   local winId = d.split.winid
-  vim.wo[winId].winbar = content(discussions, unlinked_discussions, base_title)
+  local c = content(discussions, unlinked_discussions, base_title)
+  vim.wo[winId].winbar = c
 end
 
 return M
