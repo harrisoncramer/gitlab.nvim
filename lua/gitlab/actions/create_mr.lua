@@ -66,7 +66,9 @@ local description_popup_settings = {
 -- 1. Get target branch
 ---@param args? Args
 M.start = function(args)
-  if not args then args = {} end
+  if not args then
+    args = {}
+  end
   if args.target ~= nil then
     M.pick_template({ target = args.target }, args)
     return
@@ -79,7 +81,7 @@ M.start = function(args)
 
   local all_branch_names = u.get_all_git_branches()
   vim.ui.select(all_branch_names, {
-    prompt = "Choose target branch for merge"
+    prompt = "Choose target branch for merge",
   }, function(choice)
     if choice then
       M.pick_template({ target = choice }, args)
@@ -88,21 +90,23 @@ M.start = function(args)
 end
 
 local function make_template_path(t)
-  local abs_pwd = vim.fn.expand('%:p:h')
+  local abs_pwd = vim.fn.expand("%:p:h")
   return abs_pwd
-      .. state.settings.file_separator
-      .. ".gitlab"
-      .. state.settings.file_separator
-      .. "merge_request_templates"
-      .. state.settings.file_separator
-      .. t
+    .. state.settings.file_separator
+    .. ".gitlab"
+    .. state.settings.file_separator
+    .. "merge_request_templates"
+    .. state.settings.file_separator
+    .. t
 end
 
 -- 2. Pick template (if applicable)
 ---@param mr Mr
 ---@param args Args
 M.pick_template = function(mr, args)
-  if not args then args = {} end
+  if not args then
+    args = {}
+  end
 
   local template_file = args.template_file or state.settings.create_mr.template_file
   if template_file ~= nil then
@@ -118,7 +122,7 @@ M.pick_template = function(mr, args)
   end
 
   vim.ui.select(u.merge({ "Blank Template" }, all_templates), {
-    prompt = "Choose Template"
+    prompt = "Choose Template",
   }, function(choice)
     if choice then
       local description = u.read_file(make_template_path(choice))
