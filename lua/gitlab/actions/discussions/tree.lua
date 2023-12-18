@@ -131,6 +131,7 @@ M.build_note = function(note, resolve_info)
     file_name = (type(note.position) == "table" and note.position.new_path),
     new_line = (type(note.position) == "table" and note.position.new_line),
     old_line = (type(note.position) == "table" and note.position.old_line),
+    url = state.INFO.web_url .. "#note_" .. note.id,
     type = "note",
   }, text_nodes)
 
@@ -161,11 +162,11 @@ M.add_discussions_to_table = function(items, unlinked)
     local undefined_type = false
     local root_new_line = nil
     local root_old_line = nil
+    local root_url
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
         _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
-
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
         root_old_line = (type(note.position) == "table" and note.position.old_line or nil)
@@ -173,6 +174,7 @@ M.add_discussions_to_table = function(items, unlinked)
         root_note_id = tostring(note.id)
         resolvable = note.resolvable
         resolved = note.resolved
+        root_url = state.INFO.web_url .. "#note_" .. note.id
 
         -- This appears to be a Gitlab 🐛 where the "type" is returned as an empty string in some cases
         -- We link these comments to the old file by default
@@ -203,6 +205,7 @@ M.add_discussions_to_table = function(items, unlinked)
       resolvable = resolvable,
       resolved = resolved,
       undefined_type = undefined_type,
+      url = root_url,
     }, body)
 
     table.insert(t, root_node)

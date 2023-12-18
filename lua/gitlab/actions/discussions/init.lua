@@ -572,6 +572,12 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       end
     end, { buffer = bufnr, desc = "Jump to reviewer" })
   end
+  vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
+    M.open_in_browser(tree)
+  end, { buffer = bufnr, desc = "Open the note in your browser" })
+  vim.keymap.set("n", "<leader>p", function()
+    M.print_node(tree)
+  end, { buffer = bufnr, desc = "dev_ Print current node (for debugging)" })
 end
 
 M.redraw_resolved_status = function(tree, note, mark_resolved)
@@ -681,6 +687,28 @@ M.get_note_location = function(tree)
     discussion_node.old_line,
     discussion_node.undefined_type or false,
     nil
+end
+
+---@param tree NuiTree
+M.open_in_browser = function(tree)
+  local current_node = tree:get_node()
+  local note_node = M.get_note_node(tree, current_node)
+  if note_node == nil then
+    return
+  end
+  local url = note_node.url
+  if url == nil then
+    u.notify("Could not get URL of note", vim.log.levels.ERROR)
+    return
+  end
+
+  u.open_in_browser(url)
+end
+
+-- For developers!
+M.print_node = function(tree)
+  local current_node = tree:get_node()
+  vim.print(current_node)
 end
 
 return M

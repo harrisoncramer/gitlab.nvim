@@ -148,6 +148,7 @@ require("gitlab").setup({
     toggle_node = "t", -- Opens or closes the discussion
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
+    open_in_browser = "b" -- Jump to the URL of the current note/discussion
     size = "20%", -- Size of split
     relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions

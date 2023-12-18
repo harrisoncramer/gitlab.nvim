@@ -660,4 +660,15 @@ M.basename = function(str)
   return name
 end
 
+---@param url string?
+M.open_in_browser = function(url)
+  if vim.fn.has("mac") == 1 then
+    vim.fn.jobstart({ "open", url })
+  elseif vim.fn.has("unix") == 1 then
+    vim.fn.jobstart({ "xdg-open", url })
+  else
+    M.notify("Opening a Gitlab URL is not supported on this OS!", vim.log.levels.ERROR)
+  end
+end
+
 return M

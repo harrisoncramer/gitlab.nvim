@@ -9,7 +9,7 @@ M.open = function()
   local keymaps = vim.api.nvim_buf_get_keymap(bufnr, "n")
   local help_content_lines = {}
   for _, keymap in ipairs(keymaps) do
-    if keymap.desc ~= nil then
+    if keymap.desc ~= nil and not u.string_starts(keymap.desc, "dev_") then
       local new_line = string.format("%s: %s", keymap.lhs, keymap.desc)
       table.insert(help_content_lines, new_line)
     end

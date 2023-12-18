@@ -38,6 +38,7 @@ M.settings = {
     jump_to_reviewer = "m",
     edit_comment = "e",
     delete_comment = "dd",
+    open_in_browser = "b",
     reply = "r",
     toggle_node = "t",
     toggle_resolved = "p",
@@ -241,7 +242,9 @@ local function exit(popup, opts)
     popup:unmount()
   else
     popup:unmount()
-    opts.cb()
+    if opts.cb ~= nil then
+      opts.cb()
+    end
   end
 end
 

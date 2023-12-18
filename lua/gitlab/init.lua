@@ -59,5 +59,11 @@ return {
   -- Other functions 🤷
   state = state,
   print_settings = state.print_settings,
-  open_in_browser = async.sequence({ info }, miscellaneous.open_in_browser),
+  open_in_browser = async.sequence({ info }, function()
+    if state.INFO.web_url == nil then
+      u.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
+      return
+    end
+    u.open_in_browser(state.INFO.web_url)
+  end),
 }
