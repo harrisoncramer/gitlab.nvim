@@ -28,6 +28,7 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
   - [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
   - [Uploading Files](#uploading-files)
   - [MR Approvals](#mr-approvals)
+  - [Creating an MR](#creating-an-mr)
   - [Pipelines](#pipelines)
   - [Reviewers and Assignees](#reviewers-and-assignees)
   - [Restarting or Shutting down](#restarting-or-shutting-down)
@@ -216,6 +217,10 @@ require("gitlab").setup({
     squash = false,
     delete_branch = false,
   },
+  create_mr = {
+    target = nil, -- Default branch to target when creating an MR
+    template_file = nil, -- Default MR template in .gitlab/merge_request_templates
+  },
   colors = {
     discussion_tree = {
       username = "Keyword",
@@ -273,7 +278,7 @@ require("gitlab").merge()
 require("gitlab").merge({ squash = false, delete_branch = false })
 ```
 
-You can configure default behaviors via the setup function, values passed into this function will override the defaults.
+You can configure default behaviors via the setup function, values passed into the `merge` action will override the defaults.
 
 If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
 
@@ -332,6 +337,18 @@ You can approve or revoke approval for an MR with the `approve` and `revoke` act
 require("gitlab").approve()
 require("gitlab").revoke()
 ```
+
+### Creating an MR
+
+To create an MR for the current branch, make sure you have the branch checked out. Then, use the `create_mr` action.
+
+```lua
+require("gitlab").create_mr()
+require("gitlab").create_mr({ target = "main" })
+require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
+```
+
+You can configure default behaviors via the setup function, values passed into the `create_mr` action will override your defaults.
 
 ### Pipelines
 
@@ -401,6 +418,7 @@ vim.keymap.set("n", "glR", gitlab.revoke)
 vim.keymap.set("n", "glc", gitlab.create_comment)
 vim.keymap.set("v", "glc", gitlab.create_multiline_comment)
 vim.keymap.set("v", "glC", gitlab.create_comment_suggestion)
+vim.keymap.set("n", "glO", gitlab.create_mr)
 vim.keymap.set("n", "glm", gitlab.move_to_discussion_tree_from_diagnostic)
 vim.keymap.set("n", "gln", gitlab.create_note)
 vim.keymap.set("n", "gld", gitlab.toggle_discussions)

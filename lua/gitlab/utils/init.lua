@@ -177,7 +177,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -375,14 +375,18 @@ M.create_popup_state = function(title, settings, width, height, zindex)
   return view_opts
 end
 
-M.read_file = function(file_path)
+M.read_file = function(file_path, opts)
   local file = io.open(file_path, "r")
   if file == nil then
     return nil
   end
   local file_contents = file:read("*all")
   file:close()
-  file_contents = string.gsub(file_contents, "\n", "")
+
+  if opts and opts.remove_newlines then
+    file_contents = string.gsub(file_contents, "\n", "")
+  end
+
   return file_contents
 end
 
@@ -624,6 +628,24 @@ M.get_icon = function(filename)
   else
     return nil, nil
   end
+end
+
+M.get_all_git_branches = function()
+  local branches = {}
+  local handle = io.popen("git branch 2>&1")
+
+  if handle then
+    for branch in handle:lines() do
+      -- Trim leading whitespace and the "* " marker for the current branch
+      branch = branch:gsub("^%s*%*?%s*", "")
+      table.insert(branches, branch)
+    end
+    handle:close()
+  else
+    print("Error running 'git branch' command.")
+  end
+
+  return branches
 end
 
 M.basename = function(str)

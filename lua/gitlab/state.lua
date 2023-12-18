@@ -53,10 +53,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
+          or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
+          or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -70,6 +70,10 @@ M.settings = {
   merge = {
     squash = false,
     delete_branch = false,
+  },
+  create_mr = {
+    target = nil,
+    template_file = nil,
   },
   info = {
     enabled = true,
@@ -114,7 +118,7 @@ M.settings = {
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
+    code = nil,        -- see :h diagnostic-structure
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
@@ -204,7 +208,7 @@ M.setPluginConfiguration = function()
   end
 
   local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
-  local config_file_content = u.read_file(config_file_path)
+  local config_file_content = u.read_file(config_file_path, { remove_newlines = true })
 
   local file_properties = {}
   if config_file_content ~= nil then
