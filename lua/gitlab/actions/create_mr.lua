@@ -122,12 +122,12 @@ end
 local function make_template_path(t)
   local base_dir = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
   return base_dir
-    .. state.settings.file_separator
-    .. ".gitlab"
-    .. state.settings.file_separator
-    .. "merge_request_templates"
-    .. state.settings.file_separator
-    .. t
+      .. state.settings.file_separator
+      .. ".gitlab"
+      .. state.settings.file_separator
+      .. "merge_request_templates"
+      .. state.settings.file_separator
+      .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
@@ -159,7 +159,6 @@ M.pick_template = function(mr, args)
     prompt = "Choose Template",
   }, function(choice)
     if choice then
-      print(make_template_path(choice))
       local description = u.read_file(make_template_path(choice))
       M.add_title({ target = mr.target, description = description })
     elseif choice == "Blank Template" then
