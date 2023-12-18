@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -11,7 +12,6 @@ import (
 type CreateMrRequest struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
-	SourceBranch string `json:"source_branch"`
 	TargetBranch string `json:"target_branch"`
 }
 
@@ -58,7 +58,7 @@ func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
 
 	response := SuccessResponse{
 		Status:  http.StatusOK,
-		Message: "MR created successfully",
+		Message: fmt.Sprintf("MR '%s' created", createMrRequest.Title),
 	}
 
 	w.WriteHeader(http.StatusOK)

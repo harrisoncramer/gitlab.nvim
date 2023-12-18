@@ -18,6 +18,7 @@ The FakeHandlerClient is used to create a fake gitlab client for testing our han
 */
 
 type fakeClient struct {
+	createMrFn                       func(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	getMergeRequestFn                func(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	updateMergeRequestFn             func(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	acceptAndMergeFn                 func(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
@@ -45,6 +46,10 @@ type Author struct {
 	State     string `json:"state"`
 	AvatarURL string `json:"avatar_url"`
 	WebURL    string `json:"web_url"`
+}
+
+func (f fakeClient) CreateMergeRequest(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
+	return f.createMrFn(pid, opt, options...)
 }
 
 func (f fakeClient) AcceptMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
