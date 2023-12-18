@@ -11,7 +11,7 @@ local M = {}
 M.diagnostics_namespace = diagnostics_namespace
 
 ---Clear all signs and diagnostics
-M.clear_signs_and_diagnostics = function()
+M.clear_signs_and_discussions = function()
   vim.fn.sign_unplace(discussion_sign_name)
   vim.diagnostic.reset(diagnostics_namespace)
 end
@@ -32,6 +32,7 @@ M.refresh_signs = function(discussions)
     return
   end
 
+  vim.fn.sign_unplace(discussion_sign_name)
   reviewer.place_sign(old_signs, "old")
   reviewer.place_sign(new_signs, "new")
 end
@@ -41,13 +42,15 @@ end
 M.refresh_diagnostics = function(discussions)
   -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
   -- 1-based indexing
-  vim.diagnostic.reset(diagnostics_namespace)
   local filtered_discussions = M.filter_discussions_for_signs_and_diagnostics(discussions)
   if filtered_discussions == nil then
+    vim.diagnostic.reset(diagnostics_namespace)
     return
   end
 
   local new_diagnostics, old_diagnostics = M.parse_diagnostics_from_discussions(filtered_discussions)
+
+  vim.diagnostic.reset(diagnostics_namespace)
   reviewer.set_diagnostics(
     diagnostics_namespace,
     new_diagnostics,
@@ -76,22 +79,22 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   for _, discussion in ipairs(all_discussions) do
     local first_note = discussion.notes[1]
     if
-        type(first_note.position) == "table"
-        and (first_note.position.new_path == file or first_note.position.old_path == file)
+      type(first_note.position) == "table"
+      and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-      --Skip resolved discussions
-          not (
-            state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-            and first_note.resolvable
-            and first_note.resolved
-          )
-          --Skip discussions from old revisions
-          and not (
-            state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-            and u.from_iso_format_date_to_timestamp(first_note.created_at)
+        --Skip resolved discussions
+        not (
+          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+          and first_note.resolvable
+          and first_note.resolved
+        )
+        --Skip discussions from old revisions
+        and not (
+          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+          and u.from_iso_format_date_to_timestamp(first_note.created_at)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-          )
+        )
       then
         table.insert(discussions, discussion)
       end
@@ -264,6 +267,7 @@ M.parse_signs_from_discussions = function(discussions)
         start_line = start_old_line
         end_line = end_old_line
       else
+        vim.print(start_type == "")
         return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
       end
 
