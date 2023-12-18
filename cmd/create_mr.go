@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,6 +38,16 @@ func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if createMrRequest.Title == "" {
+		handleError(w, errors.New("Title cannot be empty"), "Could not create MR", http.StatusBadRequest)
+		return
+	}
+
+	if createMrRequest.TargetBranch == "" {
+		handleError(w, errors.New("Target branch cannot be empty"), "Could not create MR", http.StatusBadRequest)
+		return
+	}
+
 	opts := gitlab.CreateMergeRequestOptions{
 		Title:        &createMrRequest.Title,
 		Description:  &createMrRequest.Description,
@@ -47,7 +58,7 @@ func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
 	_, res, err := a.client.CreateMergeRequest(a.projectInfo.ProjectId, &opts)
 
 	if err != nil {
-		handleError(w, err, "Could not merge MR", http.StatusInternalServerError)
+		handleError(w, err, "Could not create MR", http.StatusInternalServerError)
 		return
 	}
 
