@@ -20,13 +20,13 @@ end
 ---string for sign name and sign group ( currently there is only one sign needed)
 ---@param discussions Discussion[]
 M.refresh_signs = function(discussions)
-  local diagnostics = M.filter_discussions_for_signs_and_diagnostics(discussions)
-  if diagnostics == nil then
+  local filtered_discussions = M.filter_discussions_for_signs_and_diagnostics(discussions)
+  if filtered_discussions == nil then
     vim.diagnostic.reset(diagnostics_namespace)
     return
   end
 
-  local new_signs, old_signs, error = M.parse_signs_from_discussions(discussions)
+  local new_signs, old_signs, error = M.parse_signs_from_discussions(filtered_discussions)
   if error ~= nil then
     vim.notify(error, vim.log.levels.ERROR)
     return
@@ -42,13 +42,13 @@ end
 M.refresh_diagnostics = function(discussions)
   -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
   -- 1-based indexing
-  local diagnostics = M.filter_discussions_for_signs_and_diagnostics(discussions)
-  if diagnostics == nil then
+  local filtered_discussions = M.filter_discussions_for_signs_and_diagnostics(discussions)
+  if filtered_discussions == nil then
     vim.diagnostic.reset(diagnostics_namespace)
     return
   end
 
-  local new_diagnostics, old_diagnostics = M.parse_diagnostics_from_discussions(discussions)
+  local new_diagnostics, old_diagnostics = M.parse_diagnostics_from_discussions(filtered_discussions)
 
   vim.diagnostic.reset(diagnostics_namespace)
   reviewer.set_diagnostics(
