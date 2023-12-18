@@ -11,7 +11,6 @@ local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
-local miscellaneous = require("gitlab.actions.miscellaneous")
 
 local info = state.dependencies.info
 local project_members = state.dependencies.project_members
