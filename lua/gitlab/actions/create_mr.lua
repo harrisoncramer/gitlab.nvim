@@ -27,7 +27,7 @@ local M = {
     target = "",
     title = "",
     description = "",
-  }
+  },
 }
 
 M.reset_state = function()
@@ -36,7 +36,6 @@ M.reset_state = function()
   M.mr.target = ""
   M.mr.description = ""
 end
-
 
 local title_popup_settings = {
   buf_options = {
@@ -124,12 +123,12 @@ end
 local function make_template_path(t)
   local abs_pwd = vim.fn.expand("%:p:h")
   return abs_pwd
-      .. state.settings.file_separator
-      .. ".gitlab"
-      .. state.settings.file_separator
-      .. "merge_request_templates"
-      .. state.settings.file_separator
-      .. t
+    .. state.settings.file_separator
+    .. ".gitlab"
+    .. state.settings.file_separator
+    .. "merge_request_templates"
+    .. state.settings.file_separator
+    .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
@@ -221,18 +220,17 @@ M.open_confirmation_popup = function(mr)
       vim.api.nvim_set_option_value("readonly", false, { buf = target_popup.bufnr })
     end
 
-    state.set_popup_keymaps(
-      description_popup,
-      M.create_mr,
-      miscellaneous.attach_file,
-      {
-        cb = function() exit() end,
-        action_before_close = true,
-        action_before_exit = true
-      }
-    )
+    state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, {
+      cb = function()
+        exit()
+      end,
+      action_before_close = true,
+      action_before_exit = true,
+    })
     state.set_popup_keymaps(title_popup, M.create_mr, nil, {
-      cb = function() exit() end,
+      cb = function()
+        exit()
+      end,
       action_before_close = false,
       action_before_exit = true,
     })
