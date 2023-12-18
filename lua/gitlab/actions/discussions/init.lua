@@ -336,17 +336,17 @@ end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree)
-  local file_name, new_line, old_line, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, is_undefined_type, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(file_name, new_line, old_line)
+  reviewer.jump(file_name, new_line, old_line, { is_undefined_type = is_undefined_type })
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
 M.jump_to_file = function(tree)
-  local file_name, new_line, old_line, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, _, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
@@ -666,16 +666,21 @@ end
 
 ---Get note location
 ---@param tree NuiTree
+---@return string, string, string, boolean, string?
 M.get_note_location = function(tree)
   local node = tree:get_node()
   if node == nil then
-    return nil, nil, nil, "Could not get node"
+    return "", "", "", false, "Could not get node"
   end
   local discussion_node = M.get_root_node(tree, node)
   if discussion_node == nil then
-    return nil, nil, nil, "Could not get discussion node"
+    return "", "", "", false, "Could not get discussion node"
   end
-  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line
+  return discussion_node.file_name,
+    discussion_node.new_line,
+    discussion_node.old_line,
+    discussion_node.undefined_type or false,
+    nil
 end
 
 return M
