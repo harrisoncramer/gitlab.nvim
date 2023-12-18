@@ -53,10 +53,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
+          or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
+          or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -118,7 +118,7 @@ M.settings = {
     -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
     enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
+    code = nil,        -- see :h diagnostic-structure
     display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
   },
   pipeline = {
@@ -235,10 +235,13 @@ M.setPluginConfiguration = function()
   return true
 end
 
-local function exit(popup, cb)
-  popup:unmount()
-  if cb ~= nil then
-    cb()
+local function exit(popup, opts)
+  if opts.action_before_exit and opts.cb ~= nil then
+    opts.cb()
+    popup:unmount()
+  else
+    popup:unmount()
+    opts.cb()
   end
 end
 
@@ -248,7 +251,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
     opts = {}
   end
   vim.keymap.set("n", M.settings.popup.exit, function()
-    exit(popup, opts.cb)
+    exit(popup, opts)
   end, { buffer = popup.bufnr, desc = "Exit popup" })
 
   if action ~= "Help" then -- Don't show help on the help popup
@@ -262,9 +265,9 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
-        exit(popup)
+        exit(popup, opts)
       else
-        exit(popup)
+        exit(popup, opts)
         action(text, popup.bufnr)
       end
     end, { buffer = popup.bufnr, desc = "Perform action" })

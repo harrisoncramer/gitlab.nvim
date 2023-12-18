@@ -17,12 +17,26 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 ---@field template_file? string
 
 local M = {
+  started = false,
   layout_visible = false,
   layout = nil,
   layout_buf = nil,
   title_bufnr = nil,
   description_bufnr = nil,
+  mr = {
+    target = "",
+    title = "",
+    description = "",
+  }
 }
+
+M.reset_state = function()
+  M.started = false
+  M.mr.title = ""
+  M.mr.target = ""
+  M.mr.description = ""
+end
+
 
 local title_popup_settings = {
   buf_options = {
@@ -61,9 +75,29 @@ local description_popup_settings = {
   },
 }
 
----1. Get target branch
+---1. If the user has already begun writing an MR, prompt them to
+--- continue working on it.
 ---@param args? Args
 M.start = function(args)
+  if M.started then
+    vim.ui.select({ "Yes", "No" }, { prompt = "Continue your previous MR?" }, function(choice)
+      if choice == "Yes" then
+        M.open_confirmation_popup(M.mr)
+        return
+      else
+        M.reset_state()
+        M.pick_target(args)
+      end
+    end)
+  else
+    M.pick_target(args)
+  end
+end
+
+---2. Pick the target branch
+---@param args? Args
+M.pick_target = function(args)
+  M.started = true
   if not args then
     args = {}
   end
@@ -90,15 +124,15 @@ end
 local function make_template_path(t)
   local abs_pwd = vim.fn.expand("%:p:h")
   return abs_pwd
-    .. state.settings.file_separator
-    .. ".gitlab"
-    .. state.settings.file_separator
-    .. "merge_request_templates"
-    .. state.settings.file_separator
-    .. t
+      .. state.settings.file_separator
+      .. ".gitlab"
+      .. state.settings.file_separator
+      .. "merge_request_templates"
+      .. state.settings.file_separator
+      .. t
 end
 
----2. Pick template (if applicable)
+---3. Pick template (if applicable). This is used as the description
 ---@param mr Mr
 ---@param args Args
 M.pick_template = function(mr, args)
@@ -131,7 +165,7 @@ M.pick_template = function(mr, args)
   end)
 end
 
----3. Prompts the user for the title of the MR
+---4. Prompts the user for the title of the MR
 ---@param mr Mr
 M.add_title = function(mr)
   vim.ui.input({ prompt = "MR Title" }, function(title)
@@ -145,6 +179,7 @@ M.add_title = function(mr)
   end)
 end
 
+---5. Show the final popup.
 ---The function will render a popup containing the MR title and MR description, and
 ---target branch. The title and description are editable.
 ---@param mr Mr
@@ -162,6 +197,14 @@ M.open_confirmation_popup = function(mr)
   M.layout_visible = true
 
   local function exit()
+    local title = vim.fn.trim(u.get_buffer_text(M.title_bufnr))
+    local description = u.get_buffer_text(M.description_bufnr)
+    local target = vim.fn.trim(u.get_buffer_text(target_popup.bufnr))
+    M.mr = {
+      title = title,
+      description = description,
+      target = target,
+    }
     layout:unmount()
     M.layout_visible = false
   end
@@ -182,9 +225,17 @@ M.open_confirmation_popup = function(mr)
       description_popup,
       M.create_mr,
       miscellaneous.attach_file,
-      { cb = exit, action_before_close = true }
+      {
+        cb = function() exit() end,
+        action_before_close = true,
+        action_before_exit = true
+      }
     )
-    state.set_popup_keymaps(title_popup, M.create_mr, nil, { cb = exit, action_before_close = true })
+    state.set_popup_keymaps(title_popup, M.create_mr, nil, {
+      cb = function() exit() end,
+      action_before_close = false,
+      action_before_exit = true,
+    })
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
 end
@@ -214,6 +265,7 @@ M.create_mr = function()
 
   job.run_job("/create_mr", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
+    M.reset_state()
     M.layout:unmount()
     M.layout_visible = false
   end)
