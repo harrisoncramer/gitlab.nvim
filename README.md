@@ -203,13 +203,13 @@ require("gitlab").setup({
     display_opts = {}, -- see opts in vim.diagnostic.set
   },
   pipeline = {
-    created = "",
+    created = "",
     pending = "",
     preparing = "",
     scheduled = "",
-    running = "ﰌ",
-    canceled = "ﰸ",
-    skipped = "ﰸ",
+    running = "",
+    canceled = "↪",
+    skipped = "↪",
     success = "✓",
     failed = "",
   },
