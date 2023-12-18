@@ -96,7 +96,6 @@ end
 ---2. Pick the target branch
 ---@param args? Args
 M.pick_target = function(args)
-  M.started = true
   if not args then
     args = {}
   end
@@ -121,8 +120,8 @@ M.pick_target = function(args)
 end
 
 local function make_template_path(t)
-  local abs_pwd = vim.fn.expand("%:p:h")
-  return abs_pwd
+  local base_dir = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
+  return base_dir
     .. state.settings.file_separator
     .. ".gitlab"
     .. state.settings.file_separator
@@ -152,10 +151,15 @@ M.pick_template = function(mr, args)
     return
   end
 
-  vim.ui.select(u.merge({ "Blank Template" }, all_templates), {
+  local opts = { "Blank Template" }
+  for _, v in ipairs(all_templates) do
+    table.insert(opts, v)
+  end
+  vim.ui.select(opts, {
     prompt = "Choose Template",
   }, function(choice)
     if choice then
+      print(make_template_path(choice))
       local description = u.read_file(make_template_path(choice))
       M.add_title({ target = mr.target, description = description })
     elseif choice == "Blank Template" then
@@ -183,6 +187,7 @@ end
 ---target branch. The title and description are editable.
 ---@param mr Mr
 M.open_confirmation_popup = function(mr)
+  M.started = true
   if M.layout_visible then
     M.layout:unmount()
     M.layout_visible = false
