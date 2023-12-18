@@ -41,7 +41,7 @@ return {
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
   move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
-  create_mr = create_mr.start,
+  create_mr = async.sequence({}, create_mr.start),
   review = async.sequence({ u.merge(info, { refresh = true }), revisions }, function()
     reviewer.open()
   end),

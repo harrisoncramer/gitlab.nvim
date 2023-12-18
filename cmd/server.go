@@ -27,6 +27,10 @@ func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInf
 		func(a *api) error {
 			a.fileReader = attachmentReader{}
 			return nil
+		},
+		func(a *api) error {
+			a.gitInfo = &gitInfo
+			return nil
 		})
 
 	l := createListener()

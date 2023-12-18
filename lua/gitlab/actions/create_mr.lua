@@ -61,7 +61,7 @@ local description_popup_settings = {
   },
 }
 
--- 1. Get target branch
+---1. Get target branch
 ---@param args? Args
 M.start = function(args)
   if not args then
@@ -98,7 +98,7 @@ local function make_template_path(t)
     .. t
 end
 
--- 2. Pick template (if applicable)
+---2. Pick template (if applicable)
 ---@param mr Mr
 ---@param args Args
 M.pick_template = function(mr, args)
@@ -145,8 +145,8 @@ M.add_title = function(mr)
   end)
 end
 
--- The function will render a popup containing the MR title and MR description, and
--- target branch. The title and description are editable.
+---The function will render a popup containing the MR title and MR description, and
+---target branch. The title and description are editable.
 ---@param mr Mr
 M.open_confirmation_popup = function(mr)
   if M.layout_visible then
@@ -189,7 +189,7 @@ M.open_confirmation_popup = function(mr)
   end)
 end
 
--- Builds a lua list of strings that contain the MR description
+---Builds a lua list of strings that contain the MR description
 M.build_description_lines = function(template_content)
   local description_lines = {}
   for line in template_content:gmatch("[^\n]+") do
