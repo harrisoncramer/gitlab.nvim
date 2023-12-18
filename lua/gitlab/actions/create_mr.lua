@@ -44,6 +44,9 @@ local title_popup_settings = {
   focusable = true,
   border = {
     style = "rounded",
+    text = {
+      top = "Title",
+    },
   },
 }
 
@@ -51,7 +54,7 @@ local target_popup_settings = {
   buf_options = {
     filetype = "markdown",
   },
-  focusable = false,
+  focusable = true,
   border = {
     style = "rounded",
     text = {
@@ -122,12 +125,12 @@ end
 local function make_template_path(t)
   local base_dir = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
   return base_dir
-    .. state.settings.file_separator
-    .. ".gitlab"
-    .. state.settings.file_separator
-    .. "merge_request_templates"
-    .. state.settings.file_separator
-    .. t
+      .. state.settings.file_separator
+      .. ".gitlab"
+      .. state.settings.file_separator
+      .. "merge_request_templates"
+      .. state.settings.file_separator
+      .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
@@ -217,27 +220,18 @@ M.open_confirmation_popup = function(mr)
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(description_popup.bufnr, 0, -1, false, description_lines)
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { mr.title })
+    vim.api.nvim_buf_set_lines(target_popup.bufnr, 0, -1, false, { mr.target })
 
-    if target_popup then
-      vim.api.nvim_buf_set_lines(target_popup.bufnr, 0, -1, false, { mr.target })
-      vim.api.nvim_set_option_value("modifiable", false, { buf = target_popup.bufnr })
-      vim.api.nvim_set_option_value("readonly", false, { buf = target_popup.bufnr })
-    end
-
-    state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, {
-      cb = function()
-        exit()
-      end,
+    local popup_opts = {
+      cb = exit,
       action_before_close = true,
       action_before_exit = true,
-    })
-    state.set_popup_keymaps(title_popup, M.create_mr, nil, {
-      cb = function()
-        exit()
-      end,
-      action_before_close = false,
-      action_before_exit = true,
-    })
+    }
+
+    state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
+    state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(target_popup, M.create_mr, nil, popup_opts)
+
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
 end
@@ -283,9 +277,11 @@ M.create_layout = function()
 
   local internal_layout
   internal_layout = Layout.Box({
-    Layout.Box(title_popup, { size = 3 }),
+    Layout.Box({
+      Layout.Box(title_popup, { grow = 1 }),
+      Layout.Box(target_branch_popup, { grow = 1 }),
+    }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
-    Layout.Box(target_branch_popup, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
