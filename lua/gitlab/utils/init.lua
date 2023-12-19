@@ -637,14 +637,22 @@ M.get_icon = function(filename)
   end
 end
 
-M.get_all_git_branches = function()
+---@param remote? boolean
+M.get_all_git_branches = function(remote)
   local branches = {}
-  local handle = io.popen("git branch 2>&1")
+
+  local handle = remote == true and io.popen("git branch -r 2>&1") or io.popen("git branch 2>&1")
 
   if handle then
-    for branch in handle:lines() do
-      -- Trim leading whitespace and the "* " marker for the current branch
-      branch = branch:gsub("^%s*%*?%s*", "")
+    for line in handle:lines() do
+      local branch
+      if remote then
+        for res in line:gmatch("origin/([^\n]+)") do
+          branch = res -- Trim /origin
+        end
+      else
+        branch = line:gsub("^%s*%*?%s*", "") -- Trim leading whitespace and the "* " marker for the current branch
+      end
       table.insert(branches, branch)
     end
     handle:close()

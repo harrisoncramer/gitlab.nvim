@@ -1,6 +1,7 @@
 -- This module is responsible for creating am MR
 -- for the current branch
 local Layout = require("nui.layout")
+local Input = require("nui.input")
 local Popup = require("nui.popup")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
@@ -77,6 +78,18 @@ local description_popup_settings = {
   },
 }
 
+local title_input_options = {
+  position = "50%",
+  relative = "editor",
+  size = 40,
+  border = {
+    style = "rounded",
+    text = {
+      top = "Title",
+    },
+  },
+}
+
 ---1. If the user has already begun writing an MR, prompt them to
 --- continue working on it.
 ---@param args? Args
@@ -112,7 +125,7 @@ M.pick_target = function(args)
     return
   end
 
-  local all_branch_names = u.get_all_git_branches()
+  local all_branch_names = u.get_all_git_branches(true)
   vim.ui.select(all_branch_names, {
     prompt = "Choose target branch for merge",
   }, function(choice)
@@ -173,15 +186,22 @@ end
 ---4. Prompts the user for the title of the MR
 ---@param mr Mr
 M.add_title = function(mr)
-  vim.ui.input({ prompt = "MR Title" }, function(title)
-    if title == nil then
-      return
-    end
+  local input = Input(title_input_options, {
+    prompt = "",
+    default_value = "",
+    on_close = function() end,
+    on_submit = function(_value)
+      M.open_confirmation_popup(mr)
+    end,
+    on_change = function(value)
+      mr.title = value
+    end,
+  })
+  input:map("n", "<Esc>", function()
+    input:unmount()
+  end, { noremap = true })
 
-    mr.title = title
-
-    M.open_confirmation_popup(mr)
-  end)
+  input:mount()
 end
 
 ---5. Show the final popup.
