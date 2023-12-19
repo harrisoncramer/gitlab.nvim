@@ -49,6 +49,7 @@
 ---@field resolved_by Author
 ---@field resolved_at string?
 ---@field noteable_iid integer
+---@field url string?
 
 ---@class UnlinkedNote: Note
 ---@field position nil

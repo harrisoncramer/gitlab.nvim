@@ -56,8 +56,12 @@ describe("gitlab/actions/discussions/tree.lua", function()
 
     after_each(function()
       utils.time_since = original_time_since
+      state.INFO = nil
     end)
     before_each(function()
+      state.INFO = {
+        web_url = "https://gitlab.com/some-org/-/merge_requests/4963",
+      }
       spy_time_since = spy.new(function()
         return "5 days ago"
       end)

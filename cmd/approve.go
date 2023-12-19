@@ -22,7 +22,7 @@ func (a *api) approveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/approve"}, "Could not approve merge request", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/approve"}, "Could not approve merge request", res.StatusCode)
 		return
 	}
 

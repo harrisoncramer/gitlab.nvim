@@ -382,14 +382,18 @@ M.create_popup_state = function(title, settings, width, height, zindex)
   return view_opts
 end
 
-M.read_file = function(file_path)
+M.read_file = function(file_path, opts)
   local file = io.open(file_path, "r")
   if file == nil then
     return nil
   end
   local file_contents = file:read("*all")
   file:close()
-  file_contents = string.gsub(file_contents, "\n", "")
+
+  if opts and opts.remove_newlines then
+    file_contents = string.gsub(file_contents, "\n", "")
+  end
+
   return file_contents
 end
 
@@ -633,9 +637,46 @@ M.get_icon = function(filename)
   end
 end
 
+---@param remote? boolean
+M.get_all_git_branches = function(remote)
+  local branches = {}
+
+  local handle = remote == true and io.popen("git branch -r 2>&1") or io.popen("git branch 2>&1")
+
+  if handle then
+    for line in handle:lines() do
+      local branch
+      if remote then
+        for res in line:gmatch("origin/([^\n]+)") do
+          branch = res -- Trim /origin
+        end
+      else
+        branch = line:gsub("^%s*%*?%s*", "") -- Trim leading whitespace and the "* " marker for the current branch
+      end
+      table.insert(branches, branch)
+    end
+    handle:close()
+  else
+    print("Error running 'git branch' command.")
+  end
+
+  return branches
+end
+
 M.basename = function(str)
   local name = string.gsub(str, "(.*/)(.*)", "%2")
   return name
+end
+
+---@param url string?
+M.open_in_browser = function(url)
+  if vim.fn.has("mac") == 1 then
+    vim.fn.jobstart({ "open", url })
+  elseif vim.fn.has("unix") == 1 then
+    vim.fn.jobstart({ "xdg-open", url })
+  else
+    M.notify("Opening a Gitlab URL is not supported on this OS!", vim.log.levels.ERROR)
+  end
 end
 
 return M

@@ -9,8 +9,8 @@ local summary = require("gitlab.actions.summary")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
+local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
-local miscellaneous = require("gitlab.actions.miscellaneous")
 
 local info = state.dependencies.info
 local project_members = state.dependencies.project_members
@@ -40,6 +40,7 @@ return {
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
   move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
+  create_mr = async.sequence({}, create_mr.start),
   review = async.sequence({ u.merge(info, { refresh = true }), revisions }, function()
     reviewer.open()
   end),
@@ -57,5 +58,11 @@ return {
   -- Other functions 🤷
   state = state,
   print_settings = state.print_settings,
-  open_in_browser = async.sequence({ info }, miscellaneous.open_in_browser),
+  open_in_browser = async.sequence({ info }, function()
+    if state.INFO.web_url == nil then
+      u.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
+      return
+    end
+    u.open_in_browser(state.INFO.web_url)
+  end),
 }

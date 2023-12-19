@@ -53,7 +53,7 @@ func (a *api) acceptAndMergeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/merge"}, "Could not merge MR", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/merge"}, "Could not merge MR", res.StatusCode)
 		return
 	}
 

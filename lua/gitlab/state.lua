@@ -38,6 +38,7 @@ M.settings = {
     jump_to_reviewer = "m",
     edit_comment = "e",
     delete_comment = "dd",
+    open_in_browser = "b",
     reply = "r",
     toggle_node = "t",
     toggle_resolved = "p",
@@ -70,6 +71,10 @@ M.settings = {
   merge = {
     squash = false,
     delete_branch = false,
+  },
+  create_mr = {
+    target = nil,
+    template_file = nil,
   },
   info = {
     enabled = true,
@@ -123,8 +128,8 @@ M.settings = {
     preparing = "",
     scheduled = "",
     running = "",
-    canceled = "",
-    skipped = "",
+    canceled = "↪",
+    skipped = "↪",
     success = "✓",
     failed = "",
   },
@@ -204,7 +209,7 @@ M.setPluginConfiguration = function()
   end
 
   local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
-  local config_file_content = u.read_file(config_file_path)
+  local config_file_content = u.read_file(config_file_path, { remove_newlines = true })
 
   local file_properties = {}
   if config_file_content ~= nil then
@@ -231,10 +236,15 @@ M.setPluginConfiguration = function()
   return true
 end
 
-local function exit(popup, cb)
-  popup:unmount()
-  if cb ~= nil then
-    cb()
+local function exit(popup, opts)
+  if opts.action_before_exit and opts.cb ~= nil then
+    opts.cb()
+    popup:unmount()
+  else
+    popup:unmount()
+    if opts.cb ~= nil then
+      opts.cb()
+    end
   end
 end
 
@@ -244,7 +254,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
     opts = {}
   end
   vim.keymap.set("n", M.settings.popup.exit, function()
-    exit(popup, opts.cb)
+    exit(popup, opts)
   end, { buffer = popup.bufnr, desc = "Exit popup" })
 
   if action ~= "Help" then -- Don't show help on the help popup
@@ -258,9 +268,9 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
-        exit(popup)
+        exit(popup, opts)
       else
-        exit(popup)
+        exit(popup, opts)
         action(text, popup.bufnr)
       end
     end, { buffer = popup.bufnr, desc = "Perform action" })
@@ -282,7 +292,7 @@ end
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
-  info = { endpoint = "/info", key = "info", state = "INFO", refresh = false },
+  info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
   project_members = {
     endpoint = "/project/members",

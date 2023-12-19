@@ -57,7 +57,7 @@ func (a *api) replyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/reply"}, "Could not leave reply", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/reply"}, "Could not leave reply", res.StatusCode)
 		return
 	}
 

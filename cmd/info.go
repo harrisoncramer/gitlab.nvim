@@ -28,7 +28,7 @@ func (a *api) infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/info"}, "Could not get project info", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/info"}, "Could not get project info", res.StatusCode)
 		return
 	}
 

@@ -22,7 +22,7 @@ func addMergeRequestDiscussionNoteNon200(pid interface{}, mergeRequest int, disc
 
 func TestReplyHandler(t *testing.T) {
 	t.Run("Sends a reply", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/reply", ReplyRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/reply", ReplyRequest{})
 		server, _ := createRouterAndApi(fakeClient{addMergeRequestDiscussionNote: addMergeRequestDiscussionNote})
 		data := serveRequest(t, server, request, ReplyResponse{})
 		assert(t, data.SuccessResponse.Message, "Replied to comment")
@@ -30,23 +30,23 @@ func TestReplyHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/reply", ReplyRequest{})
+		request := makeRequest(t, http.MethodGet, "/mr/reply", ReplyRequest{})
 		server, _ := createRouterAndApi(fakeClient{addMergeRequestDiscussionNote: addMergeRequestDiscussionNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/reply", ReplyRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/reply", ReplyRequest{})
 		server, _ := createRouterAndApi(fakeClient{addMergeRequestDiscussionNote: addMergeRequestDiscussionNoteErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not leave reply")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/reply", ReplyRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/reply", ReplyRequest{})
 		server, _ := createRouterAndApi(fakeClient{addMergeRequestDiscussionNote: addMergeRequestDiscussionNoteNon200})
 		data := serveRequest(t, server, request, ErrorResponse{})
-		checkNon200(t, *data, "Could not leave reply", "/reply")
+		checkNon200(t, *data, "Could not leave reply", "/mr/reply")
 	})
 }

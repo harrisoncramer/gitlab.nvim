@@ -2,14 +2,13 @@
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
-- Read and Edit an MR description
-- Approve or revoke approval for an MR
+- Create, approve, and merge MRs for the current branch
+- Read and edit an MR description
 - Add or remove reviewers and assignees
 - Resolve, reply to, and unresolve discussion threads
-- Create, edit, delete, and reply to comments on an MR
-- View and Manage Pipeline Jobs
-
-And a lot more!
+- Create, edit, delete, and reply to comments
+- View and manage pipeline Jobs
+- Upload files, jump to the browser, and a lot more!
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
@@ -21,13 +20,14 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
 - [Connecting to Gitlab](#connecting-to-gitlab)
 - [Configuring the Plugin](#configuring-the-plugin)
 - [Usage](#usage)
-  - [The summary command](#summary)
-  - [Reviewing Diffs](#reviewing-diffs)
+  - [The Summary view](#the-summary-view)
+  - [Reviewing an MR](#reviewing-an-mr)
   - [Merging](#merging-an-mr)
   - [Discussions and Notes](#discussions-and-notes)
-  - [Discussion signs and diagnostics](#discussion-signs-and-diagnostics)
+  - [Signs and Diagnostics](#signs-and-diagnostics)
   - [Uploading Files](#uploading-files)
-  - [MR Approvals](#mr-approvals)
+  - [Approvals](#mr-approvals)
+  - [Creating an MR](#creating-an-mr)
   - [Pipelines](#pipelines)
   - [Reviewers and Assignees](#reviewers-and-assignees)
   - [Restarting or Shutting down](#restarting-or-shutting-down)
@@ -147,15 +147,16 @@ require("gitlab").setup({
     toggle_node = "t", -- Opens or closes the discussion
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
+    open_in_browser = "b" -- Jump to the URL of the current note/discussion
     size = "20%", -- Size of split
     relative = "editor", -- Position of tree split relative to "editor" or "window"
     resolved = '✓', -- Symbol to show next to resolved discussions
-    unresolved = '✖', -- Symbol to show next to unresolved discussions
+    unresolved = '-', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
     winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                  -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
   },
-  info = { -- Show additional fields in the summary pane
+  info = { -- Show additional fields in the summary view
     enabled = true,
     horizontal = false, -- Display metadata to the left of the summary rather than underneath
     fields = { -- The fields listed here will be displayed, in whatever order you choose
@@ -202,19 +203,23 @@ require("gitlab").setup({
     display_opts = {}, -- see opts in vim.diagnostic.set
   },
   pipeline = {
-    created = "",
+    created = "",
     pending = "",
     preparing = "",
     scheduled = "",
-    running = "ﰌ",
-    canceled = "ﰸ",
-    skipped = "ﰸ",
+    running = "",
+    canceled = "↪",
+    skipped = "↪",
     success = "✓",
     failed = "",
   },
   merge = { -- The default behaviors when merging an MR, see "Merging an MR"
     squash = false,
     delete_branch = false,
+  },
+  create_mr = {
+    target = nil, -- Default branch to target when creating an MR
+    template_file = nil, -- Default MR template in .gitlab/merge_request_templates
   },
   colors = {
     discussion_tree = {
@@ -239,7 +244,7 @@ git checkout feature-branch
 
 Then open Neovim. To begin, try running the `summary` command or the `review` command.
 
-### Summary
+### The Summary view
 
 The `summary` action will open the MR title and description.
 
@@ -251,7 +256,7 @@ After editing the description or title, you may save your changes via the `setti
 
 By default this plugin will also show additional metadata about the MR in a separate pane underneath the description. This can be disabled, and these fields can be reordered or removed. Please see the `settings.info` section of the configuration.
 
-### Reviewing Diffs
+### Reviewing an MR
 
 The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action. In visual mode, add multiline comments with the `create_multiline_comment` command, and add suggested changes with the `create_comment_suggestion` command.
 
@@ -263,19 +268,6 @@ require("gitlab").create_comment_suggestion()
 ```
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
-
-### Merging an MR
-
-The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
-
-```lua
-require("gitlab").merge()
-require("gitlab").merge({ squash = false, delete_branch = false })
-```
-
-You can configure default behaviors via the setup function, values passed into this function will override the defaults.
-
-If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
 
 ### Discussions and Notes
 
@@ -297,7 +289,7 @@ If you'd like to create a note in an MR (like a comment, but not linked to a spe
 require("gitlab").create_note()
 ```
 
-### Discussion signs and diagnostics
+### Signs and diagnostics
 
 By default when reviewing files you will see signs and diagnostics (if enabled in configuration). When cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show`. You can also jump to discussion tree where you can reply, edit or delete discussion.
 
@@ -332,6 +324,32 @@ You can approve or revoke approval for an MR with the `approve` and `revoke` act
 require("gitlab").approve()
 require("gitlab").revoke()
 ```
+
+### Merging an MR
+
+The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
+
+```lua
+require("gitlab").merge()
+require("gitlab").merge({ squash = false, delete_branch = false })
+```
+
+You can configure default behaviors via the setup function, values passed into the `merge` action will override the defaults.
+
+If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
+
+
+### Creating an MR
+
+To create an MR for the current branch, make sure you have the branch checked out. Then, use the `create_mr` action.
+
+```lua
+require("gitlab").create_mr()
+require("gitlab").create_mr({ target = "main" })
+require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
+```
+
+You can configure default behaviors via the setup function, values passed into the `create_mr` action will override your defaults.
 
 ### Pipelines
 
@@ -401,6 +419,7 @@ vim.keymap.set("n", "glR", gitlab.revoke)
 vim.keymap.set("n", "glc", gitlab.create_comment)
 vim.keymap.set("v", "glc", gitlab.create_multiline_comment)
 vim.keymap.set("v", "glC", gitlab.create_comment_suggestion)
+vim.keymap.set("n", "glO", gitlab.create_mr)
 vim.keymap.set("n", "glm", gitlab.move_to_discussion_tree_from_diagnostic)
 vim.keymap.set("n", "gln", gitlab.create_note)
 vim.keymap.set("n", "gld", gitlab.toggle_discussions)
@@ -427,5 +446,5 @@ This plugin uses a Go server to reach out to Gitlab. It's possible that somethin
 The easiest way to debug what's going wrong is to turn on the `debug` options in your setup function. This will allow you to see requests leaving the Go server, and the responses coming back from Gitlab. Once the server is running, you can also interact with the Go server like any other process:
 
 ```
-curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/info
+curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/mr/info
 ```

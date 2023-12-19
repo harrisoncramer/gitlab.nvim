@@ -95,7 +95,7 @@ func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/comment"}, "Could not delete comment", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/comment"}, "Could not delete comment", res.StatusCode)
 		return
 	}
 
@@ -186,7 +186,7 @@ func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/comment"}, "Could not create discussion", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/comment"}, "Could not create discussion", res.StatusCode)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (a *api) editComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/comment"}, "Could not update comment", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/comment"}, "Could not update comment", res.StatusCode)
 		return
 	}
 

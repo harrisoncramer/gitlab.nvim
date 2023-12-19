@@ -18,6 +18,7 @@ The FakeHandlerClient is used to create a fake gitlab client for testing our han
 */
 
 type fakeClient struct {
+	createMrFn                       func(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	getMergeRequestFn                func(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	updateMergeRequestFn             func(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	acceptAndMergeFn                 func(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
@@ -45,6 +46,10 @@ type Author struct {
 	State     string `json:"state"`
 	AvatarURL string `json:"avatar_url"`
 	WebURL    string `json:"web_url"`
+}
+
+func (f fakeClient) CreateMergeRequest(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
+	return f.createMrFn(pid, opt, options...)
 }
 
 func (f fakeClient) AcceptMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
@@ -77,35 +82,6 @@ func (f fakeClient) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.App
 
 func (f fakeClient) ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
 	return f.listMergeRequestDiscussions(pid, mergeRequest, opt, options...)
-
-	// now := time.Now()
-	// later := now.Add(time.Second * 100)
-	//
-	// discussions := []*gitlab.Discussion{
-	// 	{
-	// 		Notes: []*gitlab.Note{
-	// 			{
-	// 				CreatedAt: &now,
-	// 				Type:      "DiffNote",
-	// 				Author: Author{
-	// 					Username: "hcramer",
-	// 				},
-	// 			},
-	// 		},
-	// 	},
-	// 	{
-	// 		Notes: []*gitlab.Note{
-	// 			{
-	// 				CreatedAt: &later,
-	// 				Type:      "DiffNote",
-	// 				Author: Author{
-	// 					Username: "hcramer2",
-	// 				},
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// return discussions, makeResponse(200), nil
 }
 
 func (f fakeClient) ResolveMergeRequestDiscussion(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
@@ -142,6 +118,11 @@ func (f fakeClient) ListPipelineJobs(pid interface{}, pipelineID int, opts *gitl
 
 func (f fakeClient) GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error) {
 	return f.getTraceFile(pid, jobID, options...)
+}
+
+/* This middleware function needs to return an ID for the rest of the handlers */
+func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
+	return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
 }
 
 /* The assert function is a helper function used to check two comparables */

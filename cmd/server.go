@@ -7,14 +7,17 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 /*
 startSever starts the server and runs concurrent goroutines
 to handle potential shutdown requests and incoming HTTP requests.
 */
-func startServer(client *Client, projectInfo *ProjectInfo) {
+func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInfo) {
 
 	m, a := createRouterAndApi(client,
 		func(a *api) error {
@@ -23,6 +26,10 @@ func startServer(client *Client, projectInfo *ProjectInfo) {
 		},
 		func(a *api) error {
 			a.fileReader = attachmentReader{}
+			return nil
+		},
+		func(a *api) error {
+			a.gitInfo = &gitInfo
 			return nil
 		})
 
@@ -73,6 +80,7 @@ with the client value, which is a go-gitlab client.
 type api struct {
 	client      ClientInterface
 	projectInfo *ProjectInfo
+	gitInfo     *GitProjectInfo
 	fileReader  FileReader
 	sigCh       chan os.Signal
 }
@@ -84,11 +92,13 @@ createRouterAndApi wires up the router and attaches all handlers to their respec
 iterates over all option functions to configure API fields such as the project information and default
 file reader functionality
 */
+
 func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
 	m := http.NewServeMux()
 	a := api{
 		client:      client,
 		projectInfo: &ProjectInfo{},
+		gitInfo:     &GitProjectInfo{},
 		fileReader:  nil,
 		sigCh:       make(chan os.Signal, 1),
 	}
@@ -101,24 +111,27 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		}
 	}
 
-	m.Handle("/ping", http.HandlerFunc(pingHandler))
-	m.HandleFunc("/shutdown", a.shutdownHandler)
-	m.HandleFunc("/approve", a.approveHandler)
-	m.HandleFunc("/comment", a.commentHandler)
-	m.HandleFunc("/merge", a.acceptAndMergeHandler)
-	m.HandleFunc("/discussions/list", a.listDiscussionsHandler)
-	m.HandleFunc("/discussions/resolve", a.discussionsResolveHandler)
-	m.HandleFunc("/info", a.infoHandler)
+	m.HandleFunc("/mr/approve", a.withMr(a.approveHandler))
+	m.HandleFunc("/mr/comment", a.withMr(a.commentHandler))
+	m.HandleFunc("/mr/merge", a.withMr(a.acceptAndMergeHandler))
+	m.HandleFunc("/mr/discussions/list", a.withMr(a.listDiscussionsHandler))
+	m.HandleFunc("/mr/discussions/resolve", a.withMr(a.discussionsResolveHandler))
+	m.HandleFunc("/mr/info", a.withMr(a.infoHandler))
+	m.HandleFunc("/mr/assignee", a.withMr(a.assigneesHandler))
+	m.HandleFunc("/mr/summary", a.withMr(a.summaryHandler))
+	m.HandleFunc("/mr/reviewer", a.withMr(a.reviewersHandler))
+	m.HandleFunc("/mr/revisions", a.withMr(a.revisionsHandler))
+	m.HandleFunc("/mr/reply", a.withMr(a.replyHandler))
+	m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
+
+	m.HandleFunc("/attachment", a.attachmentHandler)
+	m.HandleFunc("/create_mr", a.createMr)
 	m.HandleFunc("/job", a.jobHandler)
-	m.HandleFunc("/mr/attachment", a.attachmentHandler)
-	m.HandleFunc("/mr/assignee", a.assigneesHandler)
-	m.HandleFunc("/mr/summary", a.summaryHandler)
-	m.HandleFunc("/mr/reviewer", a.reviewersHandler)
-	m.HandleFunc("/mr/revisions", a.revisionsHandler)
 	m.HandleFunc("/pipeline/", a.pipelineHandler)
 	m.HandleFunc("/project/members", a.projectMembersHandler)
-	m.HandleFunc("/reply", a.replyHandler)
-	m.HandleFunc("/revoke", a.revokeHandler)
+	m.HandleFunc("/shutdown", a.shutdownHandler)
+
+	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return m, a
 }
@@ -156,4 +169,42 @@ func createListener() (l net.Listener) {
 	}
 
 	return l
+}
+
+/* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
+func (a *api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if a.projectInfo.MergeId != 0 {
+			f(w, r)
+			return
+		}
+
+		options := gitlab.ListProjectMergeRequestsOptions{
+			Scope:        gitlab.String("all"),
+			State:        gitlab.String("opened"),
+			SourceBranch: &a.gitInfo.BranchName,
+		}
+
+		mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+		if err != nil {
+			handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
+			return
+		}
+
+		if len(mergeRequests) == 0 {
+			handleError(w, fmt.Errorf("No merge requests found for branch '%s'", a.gitInfo.BranchName), "No merge requests found", http.StatusBadRequest)
+			return
+		}
+
+		mergeId := strconv.Itoa(mergeRequests[0].IID)
+		mergeIdInt, err := strconv.Atoi(mergeId)
+		if err != nil {
+			handleError(w, err, "Could not convert merge ID to integer", http.StatusBadRequest)
+			return
+		}
+
+		a.projectInfo.MergeId = mergeIdInt
+		f(w, r)
+	}
 }

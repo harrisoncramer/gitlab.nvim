@@ -46,7 +46,7 @@ M.confirm_merge = function(merge_body, squash_message)
     merge_body.squash_message = squash_message
   end
 
-  job.run_job("/merge", "POST", merge_body, function(data)
+  job.run_job("/mr/merge", "POST", merge_body, function(data)
     reviewer.close()
     u.notify(data.message, vim.log.levels.INFO)
   end)

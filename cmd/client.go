@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"strconv"
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/xanzy/go-gitlab"
@@ -90,7 +89,7 @@ func initGitlabClient() (error, *Client) {
 	}
 }
 
-/* initProjectSettings fetch the project ID and merge request ID using the client. */
+/* initProjectSettings fetch the project ID using the client */
 func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo) {
 
 	opt := gitlab.GetProjectOptions{}
@@ -109,31 +108,10 @@ func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo
 
 	projectId := fmt.Sprint(project.ID)
 
-	options := gitlab.ListProjectMergeRequestsOptions{
-		Scope:        gitlab.String("all"),
-		State:        gitlab.String("opened"),
-		SourceBranch: &gitInfo.BranchName,
-	}
-
-	mergeRequests, _, err := c.ListProjectMergeRequests(projectId, &options)
-	if err != nil {
-		return fmt.Errorf("Failed to list merge requests: %w", err), nil
-	}
-
-	if len(mergeRequests) == 0 {
-		return errors.New("No merge requests found"), nil
-	}
-
-	mergeId := strconv.Itoa(mergeRequests[0].IID)
-	mergeIdInt, err := strconv.Atoi(mergeId)
-	if err != nil {
-		return err, nil
-	}
-
 	return nil, &ProjectInfo{
-		MergeId:   mergeIdInt,
 		ProjectId: projectId,
 	}
+
 }
 
 /* handleError is a utililty handler that returns errors to the client along with their statuses and messages */
