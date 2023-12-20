@@ -121,7 +121,10 @@ M.get_location = function(range)
   local type
   local is_new
 
-  if layout.a.file.bufnr == bufnr or (M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil) then
+  if
+    layout.a.file.bufnr == bufnr
+    or (M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil)
+  then
     result.file_name = layout.a.file.path
     result.old_line = current_line
     type = "old"
@@ -157,7 +160,7 @@ M.get_location = function(range)
     result.new_line = current_line_info.new_line
   end
 
-  print(current_line_info.in_hunk)
+  vim.print(current_line_info)
 
   -- If users leave single-line comments in the new buffer that should be in the old buffer, we can
   -- tell because the line will not have changed. Send the correct payload.
@@ -174,7 +177,7 @@ M.get_location = function(range)
   end
 
   -- FIXME #2: If line has new_line properties, then don't show diagnostics in old file...
-  result.range_info = { start = {},["end"] = {} }
+  result.range_info = { start = {}, ["end"] = {} }
   if current_line == range.start_line then
     result.range_info.start.old_line = current_line_info.old_line
     result.range_info.start.new_line = current_line_info.new_line
@@ -218,7 +221,6 @@ M.lines_are_same = function(layout)
   local line_b = u.get_line_content(layout.b.file.bufnr, b_cursor)
   return line_a == line_b
 end
-
 
 ---Get currently shown file
 M.get_current_file = function()
