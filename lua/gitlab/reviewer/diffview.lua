@@ -75,7 +75,12 @@ M.jump = function(file_name, new_line, old_line, opts)
       end
       async.await(view:set_file(file))
       -- TODO: Ranged comments on unchanged lines will have both a
-      -- new line and a old line. We need to distinguish them somehow from
+      -- new line and a old line.
+      --
+      -- The same is true when the user leaves a single-line comment
+      -- on an unchanged line in the "b" buffer.
+      --
+      -- We need to distinguish them somehow from
       -- range comments (which also have this) so that we can know
       -- which buffer to jump to. Right now, we jump to the wrong
       -- buffer for ranged comments on unchanged lines.
@@ -100,8 +105,11 @@ M.get_location = function(range)
     u.notify("Diffview reviewer must be initialized first")
     return
   end
+
   local bufnr = vim.api.nvim_get_current_buf()
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- If there's a range, use the start of the visual selection, not the current line
+  local current_line = range and range.start_line or vim.api.nvim_win_get_cursor(0)[1]
 
   -- check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
@@ -160,8 +168,6 @@ M.get_location = function(range)
     result.new_line = current_line_info.new_line
   end
 
-  vim.print(current_line_info)
-
   -- If users leave single-line comments in the new buffer that should be in the old buffer, we can
   -- tell because the line will not have changed. Send the correct payload.
   if M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil then
@@ -176,7 +182,6 @@ M.get_location = function(range)
     return result
   end
 
-  -- FIXME #2: If line has new_line properties, then don't show diagnostics in old file...
   result.range_info = { start = {}, ["end"] = {} }
   if current_line == range.start_line then
     result.range_info.start.old_line = current_line_info.old_line
