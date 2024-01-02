@@ -86,6 +86,7 @@ func initGitlabClient() (error, *Client) {
 		ProjectsService:              client.Projects,
 		ProjectMembersService:        client.ProjectMembers,
 		JobsService:                  client.Jobs,
+		PipelinesService:             client.Pipelines,
 	}
 }
 
