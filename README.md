@@ -10,6 +10,8 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
+To view these help docs in Neovim run `:h gitlab.nvim`
+
 ## Requirements
 
 - <a href="https://go.dev/">Go</a> >= v1.19
@@ -220,7 +222,7 @@ git checkout feature-branch
 
 Then open Neovim. To begin, try running the `summary` command or the `review` command.
 
-### The Summary view
+## The Summary view
 
 The `summary` action will open the MR title and description.
 
@@ -232,7 +234,7 @@ After editing the description or title, you may save your changes via the `setti
 
 By default this plugin will also show additional metadata about the MR in a separate pane underneath the description. This can be disabled, and these fields can be reordered or removed. Please see the `settings.info` section of the configuration.
 
-### Reviewing an MR
+## Reviewing an MR
 
 The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action. In visual mode, add multiline comments with the `create_multiline_comment` command, and add suggested changes with the `create_comment_suggestion` command.
 
@@ -245,7 +247,7 @@ require("gitlab").create_comment_suggestion()
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
 
-### Discussions and Notes
+## Discussions and Notes
 
 Gitlab groups threads of comments together into "discussions."
 
@@ -265,7 +267,7 @@ If you'd like to create a note in an MR (like a comment, but not linked to a spe
 require("gitlab").create_note()
 ```
 
-### Signs and diagnostics
+## Signs and diagnostics
 
 By default when reviewing files you will see signs and diagnostics (if enabled in configuration). When cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show`. You can also jump to discussion tree where you can reply, edit or delete discussion.
 
@@ -284,7 +286,7 @@ Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.d
 
 When interacting with multiline comments, the cursor must be on the "main" line of diagnostic, where the `discussion_sign.text` is shown, otherwise `vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not work.
 
-### Uploading Files
+## Uploading Files
 
 To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the popup is open. This will open a picker that will look for files in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path).
 
@@ -292,7 +294,7 @@ When you have picked the file, it will be added to the current buffer at the cur
 
 Use the `settings.popup.perform_action` to send the changes to Gitlab.
 
-### MR Approvals
+## MR Approvals
 
 You can approve or revoke approval for an MR with the `approve` and `revoke` actions respectively.
 
@@ -301,7 +303,7 @@ require("gitlab").approve()
 require("gitlab").revoke()
 ```
 
-### Merging an MR
+## Merging an MR
 
 The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
 
@@ -315,7 +317,7 @@ You can configure default behaviors via the setup function, values passed into t
 If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
 
 
-### Creating an MR
+## Creating an MR
 
 To create an MR for the current branch, make sure you have the branch checked out. Then, use the `create_mr` action.
 
@@ -327,7 +329,7 @@ require("gitlab").create_mr({ target = "main", template_file = "my-template.md" 
 
 You can configure default behaviors via the setup function, values passed into the `create_mr` action will override your defaults.
 
-### Pipelines
+## Pipelines
 
 You can view the status of the pipeline for the current MR with the `pipeline` action.
 
@@ -337,7 +339,7 @@ require("gitlab").pipeline()
 
 To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding. To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action` keybinding.
 
-### Reviewers and Assignees
+## Reviewers and Assignees
 
 The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are available in the current project:
 
@@ -358,7 +360,7 @@ require("dressing").setup({
 })
 ```
 
-### Restarting or Shutting Down
+## Restarting or Shutting Down
 
 The `gitlab.nvim` server will shut down automatically when you exit Neovim. However, if you would like to manage this yourself (for instance, restart the server when you check out a new branch) you may do so via the `restart` command, or `shutdown` commands, which both accept callbacks.
 
