@@ -1,5 +1,3 @@
-# gitlab.nvim
-
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
 - Create, approve, and merge MRs for the current branch
