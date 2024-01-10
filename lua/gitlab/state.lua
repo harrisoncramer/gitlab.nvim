@@ -15,6 +15,7 @@ M.settings = {
   reviewer = "diffview",
   attachment_dir = "",
   help = "?",
+  open_reviewer_against = "commit",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",

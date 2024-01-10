@@ -119,6 +119,7 @@ require("gitlab").setup({
   debug = { go_request = false, go_response = false }, -- Which values to log
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   help = "?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
+  open_reviewer_against = "commit", -- Options are "commit" or "filesystem"
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -267,6 +268,8 @@ require("gitlab").create_multiline_comment()
 require("gitlab").create_comment_suggestion()
 ```
 
+When opening review you can also choose if reviewer should use specific git commit from merge request or use current filesystem with option `open_reviewer_against`. When using specific commit you are ensured that there are only changes from given merge request but on other hand you cannot use features like LSP. When using filesystem option you can use LSP, diagnostics, jump to definition and other features but if you have additional changes locally it may interfire with reviewer (it is recommended to pull latest changes and stash uncommitted changes before review).
+
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
 
 ### Discussions and Notes
@@ -297,7 +300,7 @@ By default when reviewing files you will see signs and diagnostics (if enabled i
 require("gitlab").move_to_discussion_tree_from_diagnostic()
 ```
 
-The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. This allows users to jump to comments in the current buffer in the reviewer pane directly. Keep in mind that the highlights provided here can be overridden by other highlights (for example from `diffview.nvim`). 
+The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. This allows users to jump to comments in the current buffer in the reviewer pane directly. Keep in mind that the highlights provided here can be overridden by other highlights (for example from `diffview.nvim`).
 
 These diagnostics are configurable in the same way that diagnostics are typically configurable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options (this is directly used as opts in vim.diagnostic.set). Here you can configure values like:
 
@@ -337,7 +340,6 @@ require("gitlab").merge({ squash = false, delete_branch = false })
 You can configure default behaviors via the setup function, values passed into the `merge` action will override the defaults.
 
 If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
-
 
 ### Creating an MR
 
@@ -395,7 +397,7 @@ For instance you could set up the following keybinding to close and reopen the r
 ```lua
 local gitlab = require("gitlab")
 vim.keymap.set("n", "glB", function ()
-    require("gitlab.server").restart(function () 
+    require("gitlab.server").restart(function ()
         vim.cmd.tabclose()
         gitlab.review() -- Reopen the reviewer after the server restarts
     end)
