@@ -3,20 +3,15 @@
 ==============================================================================
 Table of Contents                              *gitlab.nvim-table-of-contents*
 
-1. gitlab.nvim                                       |gitlab.nvim-gitlab.nvim|
-  - Table of Contents              |gitlab.nvim-gitlab.nvim-table-of-contents|
-  - Requirements                        |gitlab.nvim-gitlab.nvim-requirements|
-  - Quick Start                          |gitlab.nvim-gitlab.nvim-quick-start|
-  - Installation                        |gitlab.nvim-gitlab.nvim-installation|
-  - Connecting to Gitlab        |gitlab.nvim-gitlab.nvim-connecting-to-gitlab|
-  - Configuring the Plugin    |gitlab.nvim-gitlab.nvim-configuring-the-plugin|
-  - Usage                                      |gitlab.nvim-gitlab.nvim-usage|
-  - Keybindings                          |gitlab.nvim-gitlab.nvim-keybindings|
-  - Troubleshooting                  |gitlab.nvim-gitlab.nvim-troubleshooting|
-
-==============================================================================
-1. gitlab.nvim                                       *gitlab.nvim-gitlab.nvim*
-
+  - Table of Contents                          |gitlab.nvim-table-of-contents|
+  - Requirements                                    |gitlab.nvim-requirements|
+  - Quick Start                                      |gitlab.nvim-quick-start|
+  - Installation                                    |gitlab.nvim-installation|
+  - Connecting to Gitlab                    |gitlab.nvim-connecting-to-gitlab|
+  - Configuring the Plugin                |gitlab.nvim-configuring-the-plugin|
+  - Usage                                                  |gitlab.nvim-usage|
+  - Keybindings                                      |gitlab.nvim-keybindings|
+  - Troubleshooting                              |gitlab.nvim-troubleshooting|
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within
 the editor. This means you can do things like:
 
@@ -32,7 +27,7 @@ the editor. This means you can do things like:
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
 
-TABLE OF CONTENTS                  *gitlab.nvim-gitlab.nvim-table-of-contents*
+TABLE OF CONTENTS                              *gitlab.nvim-table-of-contents*
 
 - |gitlab.nvim-requirements|
 - |gitlab.nvim-quick-start|
@@ -55,12 +50,12 @@ TABLE OF CONTENTS                  *gitlab.nvim-gitlab.nvim-table-of-contents*
 - |gitlab.nvim-troubleshooting|
 
 
-REQUIREMENTS                            *gitlab.nvim-gitlab.nvim-requirements*
+REQUIREMENTS                                        *gitlab.nvim-requirements*
 
 - Go >= v1.19
 
 
-QUICK START                              *gitlab.nvim-gitlab.nvim-quick-start*
+QUICK START                                          *gitlab.nvim-quick-start*
 
 1. Install Go
 2. Add configuration (see Installation section)
@@ -69,7 +64,7 @@ QUICK START                              *gitlab.nvim-gitlab.nvim-quick-start*
 5. Run `:lua require("gitlab").review()` to open the reviewer pane
 
 
-INSTALLATION                            *gitlab.nvim-gitlab.nvim-installation*
+INSTALLATION                                        *gitlab.nvim-installation*
 
 With Lazy:
 
@@ -111,7 +106,7 @@ And with Packer:
 <
 
 
-CONNECTING TO GITLAB            *gitlab.nvim-gitlab.nvim-connecting-to-gitlab*
+CONNECTING TO GITLAB                        *gitlab.nvim-connecting-to-gitlab*
 
 This plugin requires an auth token to connect to Gitlab. The token can be set
 in the root directory of the project in a `.gitlab.nvim` environment file, or
@@ -141,7 +136,7 @@ file via the `config_path` option. This must be an absolute path to the
 directory that holds your `.gitlab.nvim` file.
 
 
-CONFIGURING THE PLUGIN        *gitlab.nvim-gitlab.nvim-configuring-the-plugin*
+CONFIGURING THE PLUGIN                    *gitlab.nvim-configuring-the-plugin*
 
 Here is the default setup function. All of these values are optional, and if
 you call this function with no values the defaults will be used:
@@ -270,7 +265,7 @@ you call this function with no values the defaults will be used:
 <
 
 
-USAGE                                          *gitlab.nvim-gitlab.nvim-usage*
+USAGE                                                      *gitlab.nvim-usage*
 
 First, check out the branch that you want to review locally.
 
@@ -513,7 +508,7 @@ reviewer when checking out a new branch:
 <
 
 
-KEYBINDINGS                              *gitlab.nvim-gitlab.nvim-keybindings*
+KEYBINDINGS                                          *gitlab.nvim-keybindings*
 
 The plugin does not set up any keybindings outside of the special buffers it
 creates, you need to set them up yourself. Here’s what I’m using (note that
@@ -544,7 +539,7 @@ in normal mode):
 <
 
 
-TROUBLESHOOTING                      *gitlab.nvim-gitlab.nvim-troubleshooting*
+TROUBLESHOOTING                                  *gitlab.nvim-troubleshooting*
 
 **To check that the current settings of the plugin are configured correctly,
 please run: :lua require("gitlab").print_settings()**
