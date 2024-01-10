@@ -29,8 +29,25 @@ M.open = function()
       )
       return
     end
+    -- check if there are any uncommitted changes
+    if vim.fn.trim(vim.fn.system("git status --short")) ~= "" then
+      u.notify(
+        "Local filesystem contains uncommitted changes, please stash or commit all changes before reviewing",
+        vim.log.levels.WARN
+      )
+      return
+    end
     vim.api.nvim_command(string.format("DiffviewOpen %s", diff_refs.base_sha))
   else -- "commit"
+    -- In this case it does not matter if commit is in current branch or not - just need to be
+    -- available locally.
+    if vim.startswith(vim.fn.trim(vim.fn.system("git branch  --contains " .. diff_refs.head_sha)), "error") then
+      u.notify(
+        "Local git repository does not contain commit from merge request, please pull commit " .. diff_refs.head_sha,
+        vim.log.levels.WARN
+      )
+      return
+    end
     vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.base_sha, diff_refs.head_sha))
   end
 

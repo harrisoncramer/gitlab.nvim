@@ -268,7 +268,7 @@ require("gitlab").create_multiline_comment()
 require("gitlab").create_comment_suggestion()
 ```
 
-When opening review you can also choose if reviewer should use specific git commit from merge request or use current filesystem with option `open_reviewer_against`. When using specific commit you are ensured that there are only changes from given merge request but on other hand you cannot use features like LSP. When using filesystem option you can use LSP, diagnostics, jump to definition and other features but if you have additional changes locally it may interfire with reviewer (it is recommended to pull latest changes and stash uncommitted changes before review).
+When opening review you can also choose if reviewer should use specific git commit from merge request or use current filesystem with option `open_reviewer_against`. When using specific commit you are ensured that there are only changes from given merge request but on other hand you cannot use features like LSP. When using filesystem option you can use LSP, diagnostics, jump to definition and other features but if you have additional changes locally it may interfere with reviewer (it is recommended to pull latest changes and stash uncommitted changes before review).
 
 For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
 
