@@ -10,28 +10,6 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
-## Table of Contents
-
-- [Requirements](#requirements)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Connecting to Gitlab](#connecting-to-gitlab)
-- [Configuring the Plugin](#configuring-the-plugin)
-- [Usage](#usage)
-  - [The Summary view](#the-summary-view)
-  - [Reviewing an MR](#reviewing-an-mr)
-  - [Merging](#merging-an-mr)
-  - [Discussions and Notes](#discussions-and-notes)
-  - [Signs and Diagnostics](#signs-and-diagnostics)
-  - [Uploading Files](#uploading-files)
-  - [Approvals](#mr-approvals)
-  - [Creating an MR](#creating-an-mr)
-  - [Pipelines](#pipelines)
-  - [Reviewers and Assignees](#reviewers-and-assignees)
-  - [Restarting or Shutting down](#restarting-or-shutting-down)
-- [Keybindings](#keybindings)
-- [Troubleshooting](#troubleshooting)
-
 ## Requirements
 
 - <a href="https://go.dev/">Go</a> >= v1.19
