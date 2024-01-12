@@ -16,7 +16,7 @@ jobs:
           # The following are all optional
           pandoc: "README.md" # Input pandoc file
           toc: true # Table of contents
-          description: " Create, review, and manage Gitlab reources without leaving Neovim"
+          description: "Create, review, and manage Gitlab reources without leaving Neovim"
           demojify: false # Strip emojis from the vimdoc
           dedupsubheadings: false # Add heading to subheading anchor links to ensure that subheadings are unique
           treesitter: true # Use treesitter for highlighting codeblocks
