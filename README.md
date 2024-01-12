@@ -12,7 +12,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
-To view these help docs and to get more detailed help information, please run `:h gitlab.nvim`
+For more detailed help information, please run `:h gitlab.nvim` or check out `doc/gitlab.nvim.txt`
 
 ## Requirements
 
@@ -225,5 +225,3 @@ git checkout feature-branch
 ```
 
 Then open Neovim. To begin, try running the `summary` command or the `review` command.
-
-For more detailed help information, please run `:h gitlab.nvim` or check out `doc/gitlab.nvim.txt`
