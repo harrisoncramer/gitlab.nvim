@@ -12,7 +12,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
-For more detailed help information, please run `:h gitlab.nvim` or check out `doc/gitlab.nvim.txt`
+To view these help docs and to get more detailed help information, please run `:h gitlab.nvim`
 
 ## Requirements
 
@@ -225,3 +225,33 @@ git checkout feature-branch
 ```
 
 Then open Neovim. To begin, try running the `summary` command or the `review` command.
+
+## Keybindings
+
+The plugin does not set up any keybindings outside of the special buffers it creates,
+you need to set them up yourself. Here's what I'm using:
+
+```lua
+local gitlab = require("gitlab")
+local gitlab_server = require("gitlab.server")
+vim.keymap.set("n", "glr", gitlab.review)
+vim.keymap.set("n", "gls", gitlab.summary)
+vim.keymap.set("n", "glA", gitlab.approve)
+vim.keymap.set("n", "glR", gitlab.revoke)
+vim.keymap.set("n", "glc", gitlab.create_comment)
+vim.keymap.set("v", "glc", gitlab.create_multiline_comment)
+vim.keymap.set("v", "glC", gitlab.create_comment_suggestion)
+vim.keymap.set("n", "glO", gitlab.create_mr)
+vim.keymap.set("n", "glm", gitlab.move_to_discussion_tree_from_diagnostic)
+vim.keymap.set("n", "gln", gitlab.create_note)
+vim.keymap.set("n", "gld", gitlab.toggle_discussions)
+vim.keymap.set("n", "glaa", gitlab.add_assignee)
+vim.keymap.set("n", "glad", gitlab.delete_assignee)
+vim.keymap.set("n", "glra", gitlab.add_reviewer)
+vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
+vim.keymap.set("n", "glp", gitlab.pipeline)
+vim.keymap.set("n", "glo", gitlab.open_in_browser)
+vim.keymap.set("n", "glM", gitlab.merge)
+```
+
+For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

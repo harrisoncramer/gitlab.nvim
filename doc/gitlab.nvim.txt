@@ -37,12 +37,6 @@ the editor. This means you can do things like:
 - View and manage pipeline Jobs
 - Upload files, jump to the browser, and a lot more!
 
-
-https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
-
-To view these help docs in Neovim run |gitlab.nvim|
-
-
 REQUIREMENTS                                        *gitlab.nvim.requirements*
 
 - Go >= v1.19
@@ -559,13 +553,28 @@ you can also interact with the Go server like any other process:
 ==============================================================================
 Lua API							 	*gitlab.nvim.api*
 
-This documentation has not yet been written...
+gitlab.setup							*gitlab.nvim.api.setup*
+
+Call this first to initialize the plugin. With no arguments, it will use the
+defaults, see *gitlab.nvim.configuring-the-plugin*
+>lua
+  require("gitlab").setup()
 
 gitlab.review							*gitlab.nvim.review*
 
-Opens the reviewer pane.
-
+Opens the reviewer pane. Can be used from anywhere within Neovim after the
+plugin is loaded. If run twice, will open a second reviewer pane.
+>lua
+  require("gitlab").review()
+<
 gitlab.summary							*gitlab.nvim.api.summary*
+
+Opens the summary window with information about the current MR, such as the
+description, the author, and the title. Can be configured via the `info` field
+in the setup call, see *gitlab.nvim.api.setup*
+>lua
+  require("gitlab").summary()
+
 gitlab.approve							*gitlab.nvim.api.approve*
 gitlab.revoke							*gitlab.nvim.api.revoke*
 gitlab.create_comment						*gitlab.nvim.api.create_comment*
