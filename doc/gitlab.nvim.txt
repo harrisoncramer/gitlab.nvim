@@ -1,4 +1,4 @@
-*gitlab.nvim.txt*               For               Last change: 2024 January 11
+*gitlab.nvim.txt*Create, review, and manage Gitlab reources without leaving Neovim
 
 ==============================================================================
 Table of Contents                              *gitlab.nvim-table-of-contents*
