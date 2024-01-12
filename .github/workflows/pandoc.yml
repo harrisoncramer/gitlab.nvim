@@ -6,7 +6,8 @@ on:
       - '!main'
 jobs:
   docs:
-    permissions: contents: write
+    permissions: 
+      contents: write
     runs-on: ubuntu-latest
     name: Create Docs 📚
     steps:
