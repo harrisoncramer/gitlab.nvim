@@ -1,30 +1,30 @@
-*gitlab.nvim.txt*Create, review, and manage Gitlab reources without leaving Neovim
+*gitlab.nvim.txt* Create, review, and manage Gitlab reources without leaving Neovim
 
 ==============================================================================
-Table of Contents                              *gitlab.nvim-table-of-contents*
+Table of Contents                              *gitlab.nvim.table-of-contents*
 
-  - gitlab.nvim                                      |gitlab.nvim-gitlab.nvim|
-  - Requirements                                    |gitlab.nvim-requirements|
-  - Quick Start                                      |gitlab.nvim-quick-start|
-  - Installation                                    |gitlab.nvim-installation|
-  - Connecting to Gitlab                    |gitlab.nvim-connecting-to-gitlab|
-  - Configuring the Plugin                |gitlab.nvim-configuring-the-plugin|
-  - Usage                                                  |gitlab.nvim-usage|
-  - The Summary view                            |gitlab.nvim-the-summary-view|
-  - Reviewing an MR                              |gitlab.nvim-reviewing-an-mr|
-  - Discussions and Notes                  |gitlab.nvim-discussions-and-notes|
-  - Signs and diagnostics                  |gitlab.nvim-signs-and-diagnostics|
-  - Uploading Files                              |gitlab.nvim-uploading-files|
-  - MR Approvals                                    |gitlab.nvim-mr-approvals|
-  - Merging an MR                                  |gitlab.nvim-merging-an-mr|
-  - Creating an MR                                |gitlab.nvim-creating-an-mr|
-  - Pipelines                                          |gitlab.nvim-pipelines|
-  - Reviewers and Assignees              |gitlab.nvim-reviewers-and-assignees|
-  - Restarting or Shutting Down      |gitlab.nvim-restarting-or-shutting-down|
-  - Keybindings                                      |gitlab.nvim-keybindings|
-  - Troubleshooting                              |gitlab.nvim-troubleshooting|
+  - Requirements                                    |gitlab.nvim.requirements|
+  - Quick Start                                      |gitlab.nvim.quick-start|
+  - Installation                                    |gitlab.nvim.installation|
+  - Connecting to Gitlab                    |gitlab.nvim.connecting-to-gitlab|
+  - Configuring the Plugin                |gitlab.nvim.configuring-the-plugin|
+  - Usage                                                  |gitlab.nvim.usage|
+  - The Summary view                            |gitlab.nvim.the-summary-view|
+  - Reviewing an MR                              |gitlab.nvim.reviewing-an-mr|
+  - Discussions and Notes                  |gitlab.nvim.discussions-and-notes|
+  - Signs and diagnostics                  |gitlab.nvim.signs-and-diagnostics|
+  - Uploading Files                              |gitlab.nvim.uploading-files|
+  - MR Approvals                                    |gitlab.nvim.mr-approvals|
+  - Merging an MR                                  |gitlab.nvim.merging-an-mr|
+  - Creating an MR                                |gitlab.nvim.creating-an-mr|
+  - Pipelines                                          |gitlab.nvim.pipelines|
+  - Reviewers and Assignees              |gitlab.nvim.reviewers-and-assignees|
+  - Restarting or Shutting Down      |gitlab.nvim.restarting-or-shutting-down|
+  - Keybindings                                      |gitlab.nvim.keybindings|
+  - Troubleshooting                              |gitlab.nvim.troubleshooting|
+  - Api 						     |gitlab.nvim.api|
 
-GITLAB.NVIM                                          *gitlab.nvim-gitlab.nvim*
+SUMMARY                                          	*gitlab.nvim.summary*
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within
 the editor. This means you can do things like:
@@ -43,12 +43,12 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
 To view these help docs in Neovim run |gitlab.nvim|
 
 
-REQUIREMENTS                                        *gitlab.nvim-requirements*
+REQUIREMENTS                                        *gitlab.nvim.requirements*
 
 - Go >= v1.19
 
 
-QUICK START                                          *gitlab.nvim-quick-start*
+QUICK START                                          *gitlab.nvim.quick-start*
 
 1. Install Go
 2. Add configuration (see Installation section)
@@ -57,7 +57,7 @@ QUICK START                                          *gitlab.nvim-quick-start*
 5. Run `:lua require("gitlab").review()` to open the reviewer pane
 
 
-INSTALLATION                                        *gitlab.nvim-installation*
+INSTALLATION                                        *gitlab.nvim.installation*
 
 With Lazy:
 
@@ -99,7 +99,7 @@ And with Packer:
 <
 
 
-CONNECTING TO GITLAB                        *gitlab.nvim-connecting-to-gitlab*
+CONNECTING TO GITLAB                        *gitlab.nvim.connecting-to-gitlab*
 
 This plugin requires an auth token to connect to Gitlab. The token can be set
 in the root directory of the project in a `.gitlab.nvim` environment file, or
@@ -129,7 +129,7 @@ file via the `config_path` option. This must be an absolute path to the
 directory that holds your `.gitlab.nvim` file.
 
 
-CONFIGURING THE PLUGIN                    *gitlab.nvim-configuring-the-plugin*
+CONFIGURING THE PLUGIN                    *gitlab.nvim.configuring-the-plugin*
 
 Here is the default setup function. All of these values are optional, and if
 you call this function with no values the defaults will be used:
@@ -258,7 +258,7 @@ you call this function with no values the defaults will be used:
 <
 
 
-USAGE                                                      *gitlab.nvim-usage*
+USAGE                                                      *gitlab.nvim.usage*
 
 First, check out the branch that you want to review locally.
 
@@ -270,7 +270,7 @@ Then open Neovim. To begin, try running the `summary` command or the `review`
 command.
 
 
-THE SUMMARY VIEW                                *gitlab.nvim-the-summary-view*
+THE SUMMARY VIEW                                *gitlab.nvim.the-summary-view*
 
 The `summary` action will open the MR title and description.
 
@@ -287,7 +287,7 @@ fields can be reordered or removed. Please see the `settings.info` section of
 the configuration.
 
 
-REVIEWING AN MR                                  *gitlab.nvim-reviewing-an-mr*
+REVIEWING AN MR                                  *gitlab.nvim.reviewing-an-mr*
 
 The `review` action will open a diff of the changes. You can leave comments
 using the `create_comment` action. In visual mode, add multiline comments with
@@ -308,7 +308,7 @@ window with Gitlab’s suggest changes
 code block with prefilled code from the visual selection.
 
 
-DISCUSSIONS AND NOTES                      *gitlab.nvim-discussions-and-notes*
+DISCUSSIONS AND NOTES                      *gitlab.nvim.discussions-and-notes*
 
 Gitlab groups threads of comments together into "discussions."
 
@@ -335,7 +335,7 @@ delete/edit/reply are available on the note tree.
 <
 
 
-SIGNS AND DIAGNOSTICS                      *gitlab.nvim-signs-and-diagnostics*
+SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 
 By default when reviewing files you will see signs and diagnostics (if enabled
 in configuration). When cursor is on diagnostic line you can view discussion
@@ -379,7 +379,7 @@ of diagnostic, where the `discussion_sign.text` is shown, otherwise
 work.
 
 
-UPLOADING FILES                                  *gitlab.nvim-uploading-files*
+UPLOADING FILES                                  *gitlab.nvim.uploading-files*
 
 To attach a file to an MR description, reply, comment, and so forth use the
 `settings.popup.perform_linewise_action` keybinding when the popup is open.
@@ -392,7 +392,7 @@ current line.
 Use the `settings.popup.perform_action` to send the changes to Gitlab.
 
 
-MR APPROVALS                                        *gitlab.nvim-mr-approvals*
+MR APPROVALS                                        *gitlab.nvim.mr-approvals*
 
 You can approve or revoke approval for an MR with the `approve` and `revoke`
 actions respectively.
@@ -403,7 +403,7 @@ actions respectively.
 <
 
 
-MERGING AN MR                                      *gitlab.nvim-merging-an-mr*
+MERGING AN MR                                      *gitlab.nvim.merging-an-mr*
 
 The `merge` action will merge an MR. The MR must be in a "mergeable" state for
 this command to work.
@@ -421,7 +421,7 @@ default message, leave the popup empty. Use the `settings.popup.perform_action`
 to merge the MR with your message.
 
 
-CREATING AN MR                                    *gitlab.nvim-creating-an-mr*
+CREATING AN MR                                    *gitlab.nvim.creating-an-mr*
 
 To create an MR for the current branch, make sure you have the branch checked
 out. Then, use the `create_mr` action.
@@ -436,7 +436,7 @@ You can configure default behaviors via the setup function, values passed into
 the `create_mr` action will override your defaults.
 
 
-PIPELINES                                              *gitlab.nvim-pipelines*
+PIPELINES                                              *gitlab.nvim.pipelines*
 
 You can view the status of the pipeline for the current MR with the `pipeline`
 action.
@@ -451,7 +451,7 @@ new Neovim buffer, use your `settings.popup.perform_linewise_action`
 keybinding.
 
 
-REVIEWERS AND ASSIGNEES                  *gitlab.nvim-reviewers-and-assignees*
+REVIEWERS AND ASSIGNEES                  *gitlab.nvim.reviewers-and-assignees*
 
 The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee`
 and `delete_assignee` functions, will let you choose from a list of users who
@@ -476,7 +476,7 @@ install dressing. If you use Dressing, please enable it:
 <
 
 
-RESTARTING OR SHUTTING DOWN          *gitlab.nvim-restarting-or-shutting-down*
+RESTARTING OR SHUTTING DOWN          *gitlab.nvim.restarting-or-shutting-down*
 
 The `gitlab.nvim` server will shut down automatically when you exit Neovim.
 However, if you would like to manage this yourself (for instance, restart the
@@ -501,7 +501,7 @@ reviewer when checking out a new branch:
 <
 
 
-KEYBINDINGS                                          *gitlab.nvim-keybindings*
+KEYBINDINGS                                          *gitlab.nvim.keybindings*
 
 The plugin does not set up any keybindings outside of the special buffers it
 creates, you need to set them up yourself. Here’s what I’m using (note that
@@ -532,7 +532,7 @@ in normal mode):
 <
 
 
-TROUBLESHOOTING                                  *gitlab.nvim-troubleshooting*
+TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
 
 **To check that the current settings of the plugin are configured correctly,
 please run: :lua require("gitlab").print_settings()**
@@ -556,7 +556,31 @@ you can also interact with the Go server like any other process:
 >
     curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/mr/info
 <
+==============================================================================
+Lua API							 	*gitlab.nvim.api*
 
-Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
+This documentation has not yet been written...
+
+gitlab.review							*gitlab.nvim.review*
+
+Opens the reviewer pane.
+
+gitlab.summary							*gitlab.nvim.api.summary*
+gitlab.approve							*gitlab.nvim.api.approve*
+gitlab.revoke							*gitlab.nvim.api.revoke*
+gitlab.create_comment						*gitlab.nvim.api.create_comment*
+gitlab.create_multiline_comment					*gitlab.nvim.api.create_multiline_comment*
+gitlab.create_comment_suggestion				*gitlab.nvim.api.create_comment_suggestion*
+gitlab.create_mr						*gitlab.nvim.api.create_mr*
+gitlab.move_to_discussion_tree_from_diagnostic			*gitlab.nvim.api.move_to_discussion_tree_from_diagnostic*
+gitlab.create_note						*gitlab.nvim.api.create_note*
+gitlab.toggle_discussions					*gitlab.nvim.api.toggle_discussions*
+gitlab.add_assignee						*gitlab.nvim.api.add_assignee*
+gitlab.delete_assignee						*gitlab.nvim.api.delete_assignee*
+gitlab.add_reviewer						*gitlab.nvim.api.add_reviewer*
+gitlab.delete_reviewer						*gitlab.nvim.api.delete_reviewer*
+gitlab.pipeline							*gitlab.nvim.api.pipeline*
+gitlab.open_in_browser						*gitlab.nvim.api.open_in_browser*
+gitlab.merge							*gitlab.nvim.api.merge*
 
 vim:tw=78:ts=8:noet:ft=help:norl:
