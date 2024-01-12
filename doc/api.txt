@@ -1,1 +1,0 @@
-COMMAND_1         *command-1*

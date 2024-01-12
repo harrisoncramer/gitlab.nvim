@@ -1,8 +1,9 @@
 name: panvimdoc
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - '*'
+      - '!main'
 jobs:
   docs:
     permissions: contents: write
@@ -13,18 +14,30 @@ jobs:
       - uses: kdheepak/panvimdoc@v4.0.0
         with:
           vimdoc: gitlab.nvim
-          # The following are all optional
-          pandoc: "README.md" # Input pandoc file
-          toc: true # Table of contents
+          pandoc: "README.md" 
+          toc: true 
           description: "Create, review, and manage Gitlab reources without leaving Neovim"
-          demojify: false # Strip emojis from the vimdoc
-          dedupsubheadings: false # Add heading to subheading anchor links to ensure that subheadings are unique
-          treesitter: true # Use treesitter for highlighting codeblocks
-          ignorerawblocks: true # Ignore raw html blocks in markdown when converting to vimdoc
-          docmapping: false # Use h4 headers as mapping docs
-          docmappingprojectname: false # Use project name in tag when writing mapping docs
-          shiftheadinglevelby: 0 # Shift heading levels by specified number
-          incrementheadinglevelby: 0 # Increment heading levels by specified number
+          demojify: false 
+          dedupsubheadings: false 
+          treesitter: true 
+          ignorerawblocks: true 
+          docmapping: false 
+          docmappingprojectname: false 
+          shiftheadinglevelby: 0 
+          incrementheadinglevelby: 0 
+      - uses: kdheepak/panvimdoc@v4.0.0
+        with:
+          vimdoc: gitlab.nvim.api
+          pandoc: "API.md" 
+          toc: true 
+          demojify: false 
+          dedupsubheadings: false 
+          treesitter: true 
+          ignorerawblocks: true 
+          docmapping: false 
+          docmappingprojectname: false 
+          shiftheadinglevelby: 0 
+          incrementheadinglevelby: 0 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto generate docs"
