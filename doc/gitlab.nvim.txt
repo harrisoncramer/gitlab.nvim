@@ -553,43 +553,91 @@ you can also interact with the Go server like any other process:
 ==============================================================================
 Lua API							 	*gitlab.nvim.api*
 
-gitlab.setup							*gitlab.nvim.api.setup*
+gitlab.setup()							*gitlab.nvim.api.setup*
 
 Call this first to initialize the plugin. With no arguments, it will use the
-defaults, see *gitlab.nvim.configuring-the-plugin*
+default arguments outlined under "Configuring the Plugin".
 >lua
   require("gitlab").setup()
 
-gitlab.review							*gitlab.nvim.review*
+  require("gitlab").setup({ port = 8392 })
+
+  require("gitlab").setup({ discussion_tree = { blacklist = { "some_bot"} } })
+
+gitlab.review()							*gitlab.nvim.review*
 
 Opens the reviewer pane. Can be used from anywhere within Neovim after the
 plugin is loaded. If run twice, will open a second reviewer pane.
 >lua
   require("gitlab").review()
-<
-gitlab.summary							*gitlab.nvim.api.summary*
+
+gitlab.summary()						*gitlab.nvim.api.summary*
 
 Opens the summary window with information about the current MR, such as the
 description, the author, and the title. Can be configured via the `info` field
-in the setup call, see *gitlab.nvim.api.setup*
+in the setup call.
 >lua
   require("gitlab").summary()
 
-gitlab.approve							*gitlab.nvim.api.approve*
-gitlab.revoke							*gitlab.nvim.api.revoke*
-gitlab.create_comment						*gitlab.nvim.api.create_comment*
-gitlab.create_multiline_comment					*gitlab.nvim.api.create_multiline_comment*
-gitlab.create_comment_suggestion				*gitlab.nvim.api.create_comment_suggestion*
-gitlab.create_mr						*gitlab.nvim.api.create_mr*
-gitlab.move_to_discussion_tree_from_diagnostic			*gitlab.nvim.api.move_to_discussion_tree_from_diagnostic*
-gitlab.create_note						*gitlab.nvim.api.create_note*
-gitlab.toggle_discussions					*gitlab.nvim.api.toggle_discussions*
-gitlab.add_assignee						*gitlab.nvim.api.add_assignee*
-gitlab.delete_assignee						*gitlab.nvim.api.delete_assignee*
-gitlab.add_reviewer						*gitlab.nvim.api.add_reviewer*
-gitlab.delete_reviewer						*gitlab.nvim.api.delete_reviewer*
-gitlab.pipeline							*gitlab.nvim.api.pipeline*
-gitlab.open_in_browser						*gitlab.nvim.api.open_in_browser*
-gitlab.merge							*gitlab.nvim.api.merge*
+gitlab.approve()						*gitlab.nvim.approve*
+
+Approves the current MR. Will error if the current user does not have
+permission.
+>lua
+  require("gitlab").approve()
+
+gitlab.revoke()							*gitlab.nvim.revoke*
+
+Revokes approval for the current MR. Will error if the current user does not
+have permission or has not previously approved the MR.
+>lua
+  require("gitlab").approve()
+
+gitlab.create_comment()						*gitlab.nvim.create_comment*
+
+Opens a popup to create a comment on the current line. Must be called when focused on the
+reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
+>lua
+  require("gitlab").comment()
+
+Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
+keybinding, by default `<leader>l`
+
+gitlab.create_multiline_comment()				*gitlab.nvim.create_multiline_comment*
+
+Opens a popup to create a multi-line comment. May only be called in visual
+mode, and will use the currently selected lines.
+>lua
+  require("gitlab").create_multiline_comment()
+
+Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
+keybinding, by default `<leader>l` 
+
+gitlab.create_comment_suggestion()				*gitlab.nvim.create_comment_suggestion*
+
+Opens a popup to create a comment suggestion (aka a comment that makes a committable 
+change suggestion to the currently selected lines). 
+>lua
+  require("gitlab").create_multiline_comment()
+
+Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
+keybinding, by default |<leader>l|
+
+gitlab.create_mr()						*gitlab.nvim.create_mr*
+
+Starts the process of creating an MR for the currently checked out branch.
+>lua
+  require("gitlab").create_mr()
+
+gitlab.move_to_discussion_tree_from_diagnostic()		*gitlab.nvim.move_to_discussion_tree_from_diagnostic*
+gitlab.create_note()						*gitlab.nvim.create_note*
+gitlab.toggle_discussions()					*gitlab.nvim.toggle_discussions*
+gitlab.add_assignee()						*gitlab.nvim.add_assignee*
+gitlab.delete_assignee()					*gitlab.nvim.delete_assignee*
+gitlab.add_reviewer()						*gitlab.nvim.add_reviewer*
+gitlab.delete_reviewer()					*gitlab.nvim.delete_reviewer*
+gitlab.pipeline()						*gitlab.nvim.pipeline*
+gitlab.open_in_browser()					*gitlab.nvim.open_in_browser*
+gitlab.merge()							*gitlab.nvim.merge*
 
 vim:tw=78:ts=8:noet:ft=help:norl:
