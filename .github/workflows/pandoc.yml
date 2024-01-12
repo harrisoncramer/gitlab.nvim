@@ -17,7 +17,7 @@ jobs:
           vimdoc: gitlab.nvim
           pandoc: "README.md" 
           toc: true 
-          description: "Create, review, and manage Gitlab reources without leaving Neovim"
+          description: " Create, review, and manage Gitlab reources without leaving Neovim"
           demojify: false 
           dedupsubheadings: false 
           treesitter: true 
@@ -30,7 +30,7 @@ jobs:
         with:
           vimdoc: gitlab.nvim.api
           pandoc: "API.md" 
-          toc: true 
+          toc: false 
           demojify: false 
           dedupsubheadings: false 
           treesitter: true 
