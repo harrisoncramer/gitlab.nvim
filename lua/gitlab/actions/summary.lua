@@ -128,8 +128,9 @@ M.build_info_lines = function()
     assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
     reviewers = { title = "Reviewers", content = u.make_readable_list(info.reviewers, "name") },
     branch = { title = "Branch", content = info.source_branch },
+    labels = { title = "Labels", content = u.make_comma_separated_readable(info.labels) },
     pipeline = {
-      title = "Pipeline Status:",
+      title = "Pipeline Status",
       content = function()
         return pipeline.get_pipeline_status()
       end,

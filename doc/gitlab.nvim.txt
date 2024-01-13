@@ -187,6 +187,7 @@ you call this function with no values the defaults will be used:
           "reviewers",
           "branch",
           "pipeline",
+	  "labels",
         },
       },
       discussion_sign_and_diagnostic = {
