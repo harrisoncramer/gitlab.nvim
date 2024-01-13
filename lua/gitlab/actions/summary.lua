@@ -236,7 +236,6 @@ M.create_layout = function(info_lines)
   return layout, title_popup, description_popup, details_popup
 end
 
-
 function find_indices(input_string, pattern)
   local start_idx, end_idx = input_string:find(pattern)
   if start_idx then
@@ -247,7 +246,7 @@ function find_indices(input_string, pattern)
 end
 
 M.color_labels = function(bufnr)
-  local label_namespace = vim.api.nvim_create_namespace('Labels')
+  local label_namespace = vim.api.nvim_create_namespace("Labels")
   for i, v in ipairs(state.settings.info.fields) do
     if v == "labels" then
       local line_content = u.get_line_content(bufnr, i)
