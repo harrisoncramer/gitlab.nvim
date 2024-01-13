@@ -18,14 +18,16 @@ local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local revisions = state.dependencies.revisions
 
+-- vim.api.nvim_set_hl(0, "Normal", { fg = "#ff007c" })
+
 return {
   setup = function(args)
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
@@ -61,6 +63,9 @@ return {
   reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
   state = state,
+  color = function()
+    summary.color_labels(0)
+  end,
   print_settings = state.print_settings,
   open_in_browser = async.sequence({ info }, function()
     if state.INFO.web_url == nil then

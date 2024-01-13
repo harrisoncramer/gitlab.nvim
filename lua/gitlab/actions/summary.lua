@@ -89,6 +89,8 @@ M.summary = function()
       vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
     end
 
+    M.color_labels(info_popup.bufnr) -- Color labels in details popup
+
     state.set_popup_keymaps(
       description_popup,
       M.edit_summary,
@@ -231,8 +233,35 @@ M.create_layout = function(info_lines)
   }, internal_layout)
 
   layout:mount()
-
   return layout, title_popup, description_popup, details_popup
+end
+
+
+function find_indices(input_string, pattern)
+  local start_idx, end_idx = input_string:find(pattern)
+  if start_idx then
+    return start_idx, end_idx
+  else
+    return nil, nil
+  end
+end
+
+M.color_labels = function(bufnr)
+  local label_namespace = vim.api.nvim_create_namespace('Labels')
+  for i, v in ipairs(state.settings.info.fields) do
+    if v == "labels" then
+      local line_content = u.get_line_content(bufnr, i)
+      vim.print(line_content)
+      for j, label in ipairs(state.LABELS) do
+        local start_idx, end_idx = line_content:find(label.Name)
+        if start_idx ~= nil and end_idx ~= nil then
+          vim.cmd("highlight " .. "label" .. j .. " guifg=white")
+          vim.api.nvim_set_hl(0, ("label" .. j), { fg = label.Color })
+          vim.api.nvim_buf_add_highlight(bufnr, label_namespace, ("label" .. j), i - 1, start_idx - 1, end_idx)
+        end
+      end
+    end
+  end
 end
 
 return M
