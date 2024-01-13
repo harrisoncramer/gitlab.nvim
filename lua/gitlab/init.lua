@@ -18,16 +18,14 @@ local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local revisions = state.dependencies.revisions
 
--- vim.api.nvim_set_hl(0, "Normal", { fg = "#ff007c" })
-
 return {
   setup = function(args)
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
@@ -37,6 +35,8 @@ return {
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
   delete_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.delete_reviewer),
+  add_label = async.sequence({ info, labels_dep }, labels.add_label),
+  delete_label = async.sequence({ info, labels_dep }, labels.delete_label),
   add_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
   delete_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
   create_comment = async.sequence({ info, revisions }, comment.create_comment),
@@ -58,8 +58,6 @@ return {
   edit_comment = async.sequence({ info }, discussions.edit_comment),
   delete_comment = async.sequence({ info }, discussions.delete_comment),
   toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),
-  add_label = async.sequence({ info, labels_dep }, labels.add_label),
-  delete_label = async.sequence({ info, labels_dep }, labels.delete_label),
   reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
   state = state,
