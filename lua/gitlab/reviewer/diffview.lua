@@ -75,7 +75,12 @@ M.jump = function(file_name, new_line, old_line, opts)
       end
       async.await(view:set_file(file))
       -- TODO: Ranged comments on unchanged lines will have both a
-      -- new line and a old line. We need to distinguish them somehow from
+      -- new line and a old line.
+      --
+      -- The same is true when the user leaves a single-line comment
+      -- on an unchanged line in the "b" buffer.
+      --
+      -- We need to distinguish them somehow from
       -- range comments (which also have this) so that we can know
       -- which buffer to jump to. Right now, we jump to the wrong
       -- buffer for ranged comments on unchanged lines.
@@ -100,8 +105,11 @@ M.get_location = function(range)
     u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
     return
   end
+
   local bufnr = vim.api.nvim_get_current_buf()
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- If there's a range, use the start of the visual selection, not the current line
+  local current_line = range and range.start_line or vim.api.nvim_win_get_cursor(0)[1]
 
   -- check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
@@ -120,7 +128,11 @@ M.get_location = function(range)
   local result = {}
   local type
   local is_new
-  if layout.a.file.bufnr == bufnr then
+
+  if
+    layout.a.file.bufnr == bufnr
+    or (M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil)
+  then
     result.file_name = layout.a.file.path
     result.old_line = current_line
     type = "old"
@@ -154,6 +166,16 @@ M.get_location = function(range)
   if not current_line_info.in_hunk then
     result.old_line = current_line_info.old_line
     result.new_line = current_line_info.new_line
+  end
+
+  -- If users leave single-line comments in the new buffer that should be in the old buffer, we can
+  -- tell because the line will not have changed. Send the correct payload.
+  if M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil then
+    local a_win = u.get_win_from_buf(layout.a.file.bufnr)
+    local a_cursor = vim.api.nvim_win_get_cursor(a_win)[1]
+    result.old_line = a_cursor
+    result.new_line = a_cursor
+    type = "old"
   end
 
   if range == nil then
@@ -192,6 +214,17 @@ end
 ---@return string[]
 M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+end
+
+---@return boolean
+M.lines_are_same = function(layout)
+  local a_win = u.get_win_from_buf(layout.a.file.bufnr)
+  local b_win = u.get_win_from_buf(layout.b.file.bufnr)
+  local a_cursor = vim.api.nvim_win_get_cursor(a_win)[1]
+  local b_cursor = vim.api.nvim_win_get_cursor(b_win)[1]
+  local line_a = u.get_line_content(layout.a.file.bufnr, a_cursor)
+  local line_b = u.get_line_content(layout.b.file.bufnr, b_cursor)
+  return line_a == line_b
 end
 
 ---Get currently shown file

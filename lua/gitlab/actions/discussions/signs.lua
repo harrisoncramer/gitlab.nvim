@@ -192,7 +192,7 @@ M.parse_diagnostics_from_discussions = function(discussions)
         return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
       end
     else -- Diagnostics for single line discussions.
-      if first_note.position.new_line ~= nil then
+      if first_note.position.new_line ~= nil and first_note.position.old_line == nil then
         local new_diagnostic = {
           lnum = first_note.position.new_line - 1,
         }
@@ -306,7 +306,7 @@ M.parse_signs_from_discussions = function(discussions)
       local sign = vim.tbl_deep_extend("force", {
         id = first_note.id,
       }, base_sign)
-      if first_note.position.new_line ~= nil then
+      if first_note.position.new_line ~= nil and first_note.position.old_line == nil then
         table.insert(new_signs, vim.tbl_deep_extend("force", { lnum = first_note.position.new_line }, sign))
       end
       if first_note.position.old_line ~= nil then
