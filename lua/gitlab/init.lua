@@ -61,9 +61,6 @@ return {
   reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
   state = state,
-  color = function()
-    summary.color_labels(0)
-  end,
   print_settings = state.print_settings,
   open_in_browser = async.sequence({ info }, function()
     if state.INFO.web_url == nil then
