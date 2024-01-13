@@ -131,6 +131,7 @@ M.build_info_lines = function()
     reviewers = { title = "Reviewers", content = u.make_readable_list(info.reviewers, "name") },
     branch = { title = "Branch", content = info.source_branch },
     labels = { title = "Labels", content = u.make_comma_separated_readable(info.labels) },
+    target_branch = { title = "Target Branch", content = state.INFO.target_branch },
     pipeline = {
       title = "Pipeline Status",
       content = function()
