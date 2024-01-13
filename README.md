@@ -12,27 +12,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 
-## Table of Contents
-
-- [Requirements](#requirements)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [Connecting to Gitlab](#connecting-to-gitlab)
-- [Configuring the Plugin](#configuring-the-plugin)
-- [Usage](#usage)
-  - [The Summary view](#the-summary-view)
-  - [Reviewing an MR](#reviewing-an-mr)
-  - [Merging](#merging-an-mr)
-  - [Discussions and Notes](#discussions-and-notes)
-  - [Signs and Diagnostics](#signs-and-diagnostics)
-  - [Uploading Files](#uploading-files)
-  - [Approvals](#mr-approvals)
-  - [Creating an MR](#creating-an-mr)
-  - [Pipelines](#pipelines)
-  - [Reviewers and Assignees](#reviewers-and-assignees)
-  - [Restarting or Shutting down](#restarting-or-shutting-down)
-- [Keybindings](#keybindings)
-- [Troubleshooting](#troubleshooting)
+To view these help docs and to get more detailed help information, please run `:h gitlab.nvim`
 
 ## Requirements
 
@@ -45,6 +25,8 @@ https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335
 3. Checkout your feature branch: `git checkout feature-branch`
 4. Open Neovim
 5. Run `:lua require("gitlab").review()` to open the reviewer pane
+
+For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 
 ## Installation
 
@@ -244,170 +226,10 @@ git checkout feature-branch
 
 Then open Neovim. To begin, try running the `summary` command or the `review` command.
 
-### The Summary view
-
-The `summary` action will open the MR title and description.
-
-```lua
-require("gitlab").summary()
-```
-
-After editing the description or title, you may save your changes via the `settings.popup.perform_action` keybinding.
-
-By default this plugin will also show additional metadata about the MR in a separate pane underneath the description. This can be disabled, and these fields can be reordered or removed. Please see the `settings.info` section of the configuration.
-
-### Reviewing an MR
-
-The `review` action will open a diff of the changes. You can leave comments using the `create_comment` action. In visual mode, add multiline comments with the `create_multiline_comment` command, and add suggested changes with the `create_comment_suggestion` command.
-
-```lua
-require("gitlab").review()
-require("gitlab").create_comment()
-require("gitlab").create_multiline_comment()
-require("gitlab").create_comment_suggestion()
-```
-
-For suggesting changes you can use `create_comment_suggestion` in visual mode which works similar to `create_multiline_comment` but prefills the comment window with Gitlab's [suggest changes](https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html) code block with prefilled code from the visual selection.
-
-### Discussions and Notes
-
-Gitlab groups threads of comments together into "discussions."
-
-To display all discussions for the current MR, use the `toggle_discussions` action, which will show the discussions in a split window.
-
-```lua
-require("gitlab").toggle_discussions()
-```
-
-You can jump to the comment's location in the reviewer window by using the `state.settings.discussion_tree.jump_to_reviewer` key, or to the actual file with the `state.settings.discussion_tree.jump_to_file` key.
-
-Within the discussion tree, you can delete/edit/reply to comments with the `state.settings.discussion_tree.SOME_ACTION` keybindings.
-
-If you'd like to create a note in an MR (like a comment, but not linked to a specific line) use the `create_note` action. The same keybindings for delete/edit/reply are available on the note tree.
-
-```lua
-require("gitlab").create_note()
-```
-
-### Signs and diagnostics
-
-By default when reviewing files you will see signs and diagnostics (if enabled in configuration). When cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show`. You can also jump to discussion tree where you can reply, edit or delete discussion.
-
-```lua
-require("gitlab").move_to_discussion_tree_from_diagnostic()
-```
-
-The `discussion_sign` configuration controls the display of signs for discussions in the reviewer pane. This allows users to jump to comments in the current buffer in the reviewer pane directly. Keep in mind that the highlights provided here can be overridden by other highlights (for example from `diffview.nvim`). 
-
-These diagnostics are configurable in the same way that diagnostics are typically configurable in Neovim. For instance, the `severity` key sets the diagnostic severity level and should be set to one of `vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`, `vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The `display_opts` option configures the diagnostic display options (this is directly used as opts in vim.diagnostic.set). Here you can configure values like:
-
-- `virtual_text` - Show virtual text for diagnostics.
-- `underline` - Underline text for diagnostics.
-
-Diagnostics for discussions use the `gitlab_discussion` namespace. See `:h vim.diagnostic.config` and `:h diagnostic-structure` for more details. Signs and diagnostics have common settings in `discussion_sign_and_diagnostic`. This allows customizing if discussions that are resolved or no longer relevant should still display visual indicators in the editor. The `skip_resolved_discussion` Boolean will control visibility of resolved discussions, and `skip_old_revision_discussion` whether to show signs and diagnostics for discussions on outdated diff revisions.
-
-When interacting with multiline comments, the cursor must be on the "main" line of diagnostic, where the `discussion_sign.text` is shown, otherwise `vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not work.
-
-### Uploading Files
-
-To attach a file to an MR description, reply, comment, and so forth use the `settings.popup.perform_linewise_action` keybinding when the popup is open. This will open a picker that will look for files in the directory you specify in the `settings.attachment_dir` folder (this must be an absolute path).
-
-When you have picked the file, it will be added to the current buffer at the current line.
-
-Use the `settings.popup.perform_action` to send the changes to Gitlab.
-
-### MR Approvals
-
-You can approve or revoke approval for an MR with the `approve` and `revoke` actions respectively.
-
-```lua
-require("gitlab").approve()
-require("gitlab").revoke()
-```
-
-### Merging an MR
-
-The `merge` action will merge an MR. The MR must be in a "mergeable" state for this command to work.
-
-```lua
-require("gitlab").merge()
-require("gitlab").merge({ squash = false, delete_branch = false })
-```
-
-You can configure default behaviors via the setup function, values passed into the `merge` action will override the defaults.
-
-If you enable `squash` you will be prompted for a squash message. To use the default message, leave the popup empty. Use the `settings.popup.perform_action` to merge the MR with your message.
-
-
-### Creating an MR
-
-To create an MR for the current branch, make sure you have the branch checked out. Then, use the `create_mr` action.
-
-```lua
-require("gitlab").create_mr()
-require("gitlab").create_mr({ target = "main" })
-require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
-```
-
-You can configure default behaviors via the setup function, values passed into the `create_mr` action will override your defaults.
-
-### Pipelines
-
-You can view the status of the pipeline for the current MR with the `pipeline` action.
-
-```lua
-require("gitlab").pipeline()
-```
-
-To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding. To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action` keybinding.
-
-### Reviewers and Assignees
-
-The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee` and `delete_assignee` functions, will let you choose from a list of users who are available in the current project:
-
-```lua
-require("gitlab").add_reviewer()
-require("gitlab").delete_reviewer()
-require("gitlab").add_assignee()
-require("gitlab").delete_assignee()
-```
-
-These actions use Neovim's built in picker, which is much nicer if you install <a href="https://github.com/stevearc/dressing.nvim">dressing</a>. If you use Dressing, please enable it:
-
-```lua
-require("dressing").setup({
-    input = {
-        enabled = true
-    }
-})
-```
-
-### Restarting or Shutting Down
-
-The `gitlab.nvim` server will shut down automatically when you exit Neovim. However, if you would like to manage this yourself (for instance, restart the server when you check out a new branch) you may do so via the `restart` command, or `shutdown` commands, which both accept callbacks.
-
-```lua
-require("gitlab.server").restart()
-```
-
-For instance you could set up the following keybinding to close and reopen the reviewer when checking out a new branch:
-
-```lua
-local gitlab = require("gitlab")
-vim.keymap.set("n", "glB", function ()
-    require("gitlab.server").restart(function () 
-        vim.cmd.tabclose()
-        gitlab.review() -- Reopen the reviewer after the server restarts
-    end)
-end)
-```
-
 ## Keybindings
 
 The plugin does not set up any keybindings outside of the special buffers it creates,
-you need to set them up yourself.
-Here's what I'm using (note that the `<leader>` prefix is not necessary,
-as `gl` does not have a special meaning in normal mode):
+you need to set them up yourself. Here's what I'm using:
 
 ```lua
 local gitlab = require("gitlab")
@@ -432,19 +254,4 @@ vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
 ```
 
-## Troubleshooting
-
-**To check that the current settings of the plugin are configured correctly, please run: `:lua require("gitlab").print_settings()`**
-
-This plugin uses a Go server to reach out to Gitlab. It's possible that something is going wrong when starting that server or connecting with Gitlab. The Go server runs outside of Neovim, and can be interacted with directly in order to troubleshoot. To start the server, check out your feature branch and run these commands:
-
-```lua
-:lua require("gitlab.server").build(true)
-:lua require("gitlab.server").start(function() print("Server started") end)
-```
-
-The easiest way to debug what's going wrong is to turn on the `debug` options in your setup function. This will allow you to see requests leaving the Go server, and the responses coming back from Gitlab. Once the server is running, you can also interact with the Go server like any other process:
-
-```
-curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/mr/info
-```
+For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

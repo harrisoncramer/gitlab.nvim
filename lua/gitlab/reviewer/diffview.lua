@@ -97,7 +97,7 @@ end
 ---@return ReviewerInfo | nil nil is returned only if error was encountered
 M.get_location = function(range)
   if M.tabnr == nil then
-    u.notify("Diffview reviewer must be initialized first")
+    u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
     return
   end
   local bufnr = vim.api.nvim_get_current_buf()
@@ -106,7 +106,7 @@ M.get_location = function(range)
   -- check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
   if tabnr ~= M.tabnr then
-    u.notify("Line location can only be determined within reviewer window")
+    u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
     return
   end
 
