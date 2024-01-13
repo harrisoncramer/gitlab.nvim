@@ -28,6 +28,16 @@ M.get_last_word = function(sentence, divider)
   return words[#words] or ""
 end
 
+M.filter = function(input_table, value_to_remove)
+  local resultTable = {}
+  for _, v in ipairs(input_table) do
+    if v ~= value_to_remove then
+      table.insert(resultTable, v)
+    end
+  end
+  return resultTable
+end
+
 ---Merges two deeply nested tables together, overriding values from the first with conflicts
 ---@param defaults table The first table
 ---@param overrides table The second table
@@ -326,6 +336,22 @@ M.format_date = function(date_string)
     local formatted_date = os.date("%A, %B %e", date)
     return formatted_date
   end
+end
+
+M.difference = function(a, b)
+  local set_b = {}
+  for _, val in ipairs(b) do
+    set_b[val] = true
+  end
+
+  local not_included = {}
+  for _, val in ipairs(a) do
+    if not set_b[val] then
+      table.insert(not_included, val)
+    end
+  end
+
+  return not_included
 end
 
 M.jump_to_file = function(filename, line_number)
@@ -635,6 +661,10 @@ M.get_icon = function(filename)
   else
     return nil, nil
   end
+end
+
+M.make_comma_separated_readable = function(str)
+  return string.gsub(str, ",", ", ")
 end
 
 ---@param remote? boolean

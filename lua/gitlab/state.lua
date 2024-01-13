@@ -90,6 +90,7 @@ M.settings = {
       "reviewers",
       "branch",
       "pipeline",
+      "labels",
     },
   },
   discussion_sign_and_diagnostic = {
@@ -293,6 +294,7 @@ end
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
   info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
+  labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
   project_members = {
     endpoint = "/project/members",

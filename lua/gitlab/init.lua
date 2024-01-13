@@ -11,8 +11,10 @@ local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
+local labels = require("gitlab.actions.labels")
 
 local info = state.dependencies.info
+local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local revisions = state.dependencies.revisions
 
@@ -28,11 +30,13 @@ return {
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
   end,
   -- Global Actions 🌎
-  summary = async.sequence({ u.merge(info, { refresh = true }) }, summary.summary),
+  summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
   delete_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.delete_reviewer),
+  add_label = async.sequence({ info, labels_dep }, labels.add_label),
+  delete_label = async.sequence({ info, labels_dep }, labels.delete_label),
   add_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
   delete_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
   create_comment = async.sequence({ info, revisions }, comment.create_comment),

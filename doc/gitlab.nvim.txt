@@ -12,6 +12,7 @@ Table of Contents                              *gitlab.nvim.table-of-contents*
   - The Summary view                            |gitlab.nvim.the-summary-view|
   - Reviewing an MR                              |gitlab.nvim.reviewing-an-mr|
   - Discussions and Notes                  |gitlab.nvim.discussions-and-notes|
+  - Labels                 		  	 	  |gitlab.nvim.labels|
   - Signs and diagnostics                  |gitlab.nvim.signs-and-diagnostics|
   - Uploading Files                              |gitlab.nvim.uploading-files|
   - MR Approvals                                    |gitlab.nvim.mr-approvals|
@@ -187,6 +188,7 @@ you call this function with no values the defaults will be used:
           "reviewers",
           "branch",
           "pipeline",
+	  "labels",
         },
       },
       discussion_sign_and_diagnostic = {
@@ -328,6 +330,15 @@ delete/edit/reply are available on the note tree.
     require("gitlab").create_note()
 <
 
+LABELS			                     *gitlab.nvim.labels*
+
+You can add or remove labels from the current MR.
+>lua
+    require("gitlab").add_label()
+    require("gitlab").delete_label()
+
+These labels will be visible in the summary panel, as long as you provide the
+"fields" string in your setup function under the `setting.info.fields` block.
 
 SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 
@@ -680,6 +691,18 @@ gitlab.add_reviewer()						*gitlab.nvim.add_reviewer*
 Opens up a select menu for adding a reviewer for the current merge request.
 >lua
   require("gitlab").add_reviewer()
+
+gitlab.add_label()						*gitlab.nvim.add_label*
+
+Opens up a select menu for adding a label to the current merge request.
+>lua
+  require("gitlab").add_label()
+
+gitlab.delete_label()						*gitlab.nvim.delete_label*
+
+Opens up a select menu for removing an existing label from the current merge request.
+>lua
+  require("gitlab").delete_label()
 
 gitlab.delete_reviewer()					*gitlab.nvim.delete_reviewer*
 
