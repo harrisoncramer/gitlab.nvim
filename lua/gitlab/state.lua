@@ -13,6 +13,11 @@ M.settings = {
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   config_path = nil,
   reviewer = "diffview",
+  reviewer_settings = {
+    diffview = {
+      imply_local = false,
+    },
+  },
   attachment_dir = "",
   help = "?",
   popup = {

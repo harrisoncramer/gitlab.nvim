@@ -9,6 +9,13 @@ local M = {
   tabnr = nil,
 }
 
+local are_git_managed_files_modified = function()
+  -- check if there are any uncommitted changes to tracked files
+  -- TODO: ensure correct CWD?
+  local status_result = vim.system({ "git", "status", "--short", "--untracked-files=no" }, { text = true }):wait()
+  return vim.fn.trim(status_result.stdout) ~= ""
+end
+
 M.open = function()
   local diff_refs = state.INFO.diff_refs
   if diff_refs == nil then
@@ -21,7 +28,20 @@ M.open = function()
     return
   end
 
-  vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.base_sha, diff_refs.head_sha))
+  local diffview_open_command = "DiffviewOpen"
+
+  if state.settings.reviewer_settings.diffview.imply_local then
+    if are_git_managed_files_modified() then
+      u.notify(
+        "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews. Stash or commit all changes to use.",
+        vim.log.levels.WARN
+      )
+    else
+      diffview_open_command = diffview_open_command .. " --imply-local"
+    end
+  end
+
+  vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
   if state.INFO.has_conflicts then
