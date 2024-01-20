@@ -28,20 +28,23 @@ M.open = function()
   end
 
   local diffview_open_command = "DiffviewOpen"
-
-  if state.settings.reviewer_settings.diffview.imply_local then
-    if all_git_manged_files_unmodified() then
-      diffview_open_command = diffview_open_command .. " --imply-local"
-    else
-      u.notify(
-        "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews. Stash or commit all changes to use.",
-        vim.log.levels.WARN
-      )
-    end
+  local diffview_feature_imply_local = {
+    user_requested = state.settings.reviewer_settings.diffview.imply_local,
+    usable = all_git_manged_files_unmodified(),
+  }
+  if diffview_feature_imply_local.user_requested and diffview_feature_imply_local.usable then
+    diffview_open_command = diffview_open_command .. " --imply-local"
   end
 
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
+
+  if diffview_feature_imply_local.user_requested and not diffview_feature_imply_local.usable then
+    u.notify(
+      "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews. Stash or commit all changes to use.",
+      vim.log.levels.WARN
+    )
+  end
 
   if state.INFO.has_conflicts then
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
