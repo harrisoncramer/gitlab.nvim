@@ -9,10 +9,10 @@ local M = {
   tabnr = nil,
 }
 
-local are_git_managed_files_modified = function()
-  -- check if there are any uncommitted changes to tracked files
+local all_git_manged_files_unmodified = function()
+  -- check local managed files are unmodified, matching the state in the MR
   -- TODO: ensure correct CWD?
-  return vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) ~= ""
+  return vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
 end
 
 M.open = function()
@@ -30,13 +30,13 @@ M.open = function()
   local diffview_open_command = "DiffviewOpen"
 
   if state.settings.reviewer_settings.diffview.imply_local then
-    if are_git_managed_files_modified() then
+    if all_git_manged_files_unmodified() then
+      diffview_open_command = diffview_open_command .. " --imply-local"
+    else
       u.notify(
         "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews. Stash or commit all changes to use.",
         vim.log.levels.WARN
       )
-    else
-      diffview_open_command = diffview_open_command .. " --imply-local"
     end
   end
 
