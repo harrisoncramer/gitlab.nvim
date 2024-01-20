@@ -12,8 +12,7 @@ local M = {
 local are_git_managed_files_modified = function()
   -- check if there are any uncommitted changes to tracked files
   -- TODO: ensure correct CWD?
-  local status_result = vim.system({ "git", "status", "--short", "--untracked-files=no" }, { text = true }):wait()
-  return vim.fn.trim(status_result.stdout) ~= ""
+  return vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) ~= ""
 end
 
 M.open = function()
