@@ -103,6 +103,11 @@ require("gitlab").setup({
   config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
   debug = { go_request = false, go_response = false }, -- Which values to log
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
+  reviewer_settings = {
+    diffview = {
+      imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
+    },
+  },
   help = "?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",

@@ -9,6 +9,12 @@ local M = {
   tabnr = nil,
 }
 
+local all_git_manged_files_unmodified = function()
+  -- check local managed files are unmodified, matching the state in the MR
+  -- TODO: ensure correct CWD?
+  return vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
+end
+
 M.open = function()
   local diff_refs = state.INFO.diff_refs
   if diff_refs == nil then
@@ -21,8 +27,24 @@ M.open = function()
     return
   end
 
-  vim.api.nvim_command(string.format("DiffviewOpen %s..%s", diff_refs.base_sha, diff_refs.head_sha))
+  local diffview_open_command = "DiffviewOpen"
+  local diffview_feature_imply_local = {
+    user_requested = state.settings.reviewer_settings.diffview.imply_local,
+    usable = all_git_manged_files_unmodified(),
+  }
+  if diffview_feature_imply_local.user_requested and diffview_feature_imply_local.usable then
+    diffview_open_command = diffview_open_command .. " --imply-local"
+  end
+
+  vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
+
+  if diffview_feature_imply_local.user_requested and not diffview_feature_imply_local.usable then
+    u.notify(
+      "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews. Stash or commit all changes to use.",
+      vim.log.levels.WARN
+    )
+  end
 
   if state.INFO.has_conflicts then
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
