@@ -105,6 +105,9 @@ M.toggle = function(callback)
       return
     end
 
+    local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
+    vim.api.nvim_set_current_win(M.split.winid)
+
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
@@ -118,6 +121,8 @@ M.toggle = function(callback)
 
     M.switch_can_edit_bufs(false)
     winbar.update_winbar(M.discussions, M.unlinked_discussions, default_discussions and "Discussions" or "Notes")
+
+    vim.api.nvim_set_current_win(current_window)
     if type(callback) == "function" then
       callback()
     end
