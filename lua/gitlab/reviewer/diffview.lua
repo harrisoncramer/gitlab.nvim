@@ -50,17 +50,15 @@ M.open = function()
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end
 
-  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.close", {})
-  vim.api.nvim_create_autocmd("User", {
-    pattern = { "DiffviewViewClosed" },
-    group = group,
-    callback = function()
-      --Check if our diffview tab was closed
-      if vim.api.nvim_tabpage_is_valid(M.tabnr) then
-        M.tabnr = nil
-      end
-    end,
-  })
+  -- Register Diffview hook for close event to set tab page # to nil
+  local on_diffview_closed = function(view)
+    if view.tabpage == M.tabnr then
+      M.tabnr = nil
+    end
+  end
+  require("diffview.config").user_emitter:on("view_closed", function(_, ...)
+    on_diffview_closed(...)
+  end)
 
   if state.settings.discussion_tree.auto_open then
     local discussions = require("gitlab.actions.discussions")
