@@ -35,6 +35,7 @@ M.settings = {
     help = nil,
     pipeline = nil,
     squash_message = nil,
+    backup_register = nil,
   },
   discussion_tree = {
     auto_open = true,
@@ -273,6 +274,9 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   if action ~= nil then
     vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
+      if M.settings.popup.backup_register ~= nil then
+        vim.cmd("0,$yank " .. M.settings.popup.backup_register)
+      end
       if opts.action_before_close then
         action(text, popup.bufnr)
         exit(popup, opts)
