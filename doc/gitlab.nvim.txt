@@ -354,6 +354,16 @@ delete/edit/reply are available on the note tree.
     require("gitlab").create_note()
 <
 
+When the 'wrap' option is on, line wrapping can make the discussion tree
+harder to read. You can use the 'breakindent' option to visually indent tree
+nodes at the same level. If you don't want to set 'breakindent' globally, you
+can set this only for the `gitlab` file type (the file type of discussions and
+notes). One way of doing this is by creating a file called
+$XDG_CONFIG_HOME/nvim/after/ftplugin/gitlab.lua with the following contents:
+>lua
+    vim.o.breakindent = true
+<
+
 LABELS			                     *gitlab.nvim.labels*
 
 You can add or remove labels from the current MR.
