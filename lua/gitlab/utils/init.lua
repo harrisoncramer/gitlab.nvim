@@ -148,6 +148,16 @@ M.trim = function(s)
   return res
 end
 
+---Splits a string by new lines and returns an iterator
+---@param s string The string to split
+---@return table: An iterator object
+M.split_by_new_lines = function(s)
+  if s:sub(-1) ~= "\n" then
+    s = s .. "\n"
+  end -- Append a new line to the string, if there's none, otherwise the last line would be lost.
+  return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
+end
+
 -- Reverses the order of elements in a list
 ---@param list table The list to reverse
 ---@return table
