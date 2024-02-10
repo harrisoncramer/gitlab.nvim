@@ -211,6 +211,10 @@ require("gitlab").setup({
   create_mr = {
     target = nil, -- Default branch to target when creating an MR
     template_file = nil, -- Default MR template in .gitlab/merge_request_templates
+    title_input = { -- Default settings for MR title input window
+      width = 40,
+      border = "rounded",
+    },
   },
   colors = {
     discussion_tree = {
