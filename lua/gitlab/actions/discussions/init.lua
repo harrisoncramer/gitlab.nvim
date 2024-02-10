@@ -389,6 +389,97 @@ M.toggle_node = function(tree)
   tree:render()
 end
 
+---This function (settings.discussion_tree.collapse_nodes_recursively) collapses a node and its children.
+---@param tree NuiTree
+---@param node NuiTree.Node
+---@param root_node NuiTree.Node
+---@param opts table? Options specifying which nodes to collapse.
+M.collapse_nodes_recursively = function(tree, node, root_node, opts)
+  if node == nil then
+    return
+  end
+  -- Expand nodes if necessary
+  if opts and opts.keep_current_open and M.get_root_node(tree, node) == root_node then
+    M.expand_nodes_recursively(tree, node, root_node)
+    return
+  end
+  if M.is_node_note(node) and node:is_expanded() then
+    if opts and not opts.collapse_unresolved and not node.resolved then
+      return
+    end
+    node:collapse()
+  end
+  local children = node:get_child_ids()
+  for _, child in ipairs(children) do
+    M.collapse_nodes_recursively(tree, tree:get_node(child), root_node, opts)
+  end
+end
+
+---This function (settings.discussion_tree.collapse_nodes) collapses nodes in the tree.
+---@param tree NuiTree
+---@param opts? table Options specifying which nodes to collapse.
+M.collapse_nodes = function(tree, opts)
+  local current_node = tree:get_node()
+  if current_node == nil then
+    return
+  end
+  local root_node = M.get_root_node(tree, current_node)
+  for _, node in ipairs(tree:get_nodes()) do
+    M.collapse_nodes_recursively(tree, node, root_node, opts)
+  end
+  tree:render()
+  local _, line_number = tree:get_node("-" .. tostring(current_node.id))
+  -- If current_node is has been collapsed, get line number of root node instead
+  if line_number == nil and root_node then
+    _, line_number = tree:get_node("-" .. tostring(root_node.id))
+  end
+  vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+end
+
+---This function (settings.discussion_tree.expand_nodes_recursively) expands a node and its children.
+---@param tree NuiTree
+---@param node NuiTree.Node
+---@param root_node NuiTree.Node
+---@param opts table? Options specifying which nodes to expand.
+M.expand_nodes_recursively = function(tree, node, root_node, opts)
+  if node == nil then
+    return
+  end
+
+  -- Collapse nodes if necessary
+  if opts and not opts.expand_resolved and node.resolved then
+    M.collapse_nodes_recursively(tree, node, root_node)
+    return
+  end
+
+  node:expand()
+  local children = node:get_child_ids()
+  for _, child in ipairs(children) do
+    M.expand_nodes_recursively(tree, tree:get_node(child), root_node, opts)
+  end
+end
+
+---This function (settings.discussion_tree.expand_nodes) expands nodes in the tree.
+---@param tree NuiTree
+---@param opts? table Options specifying which nodes to expand.
+M.expand_nodes = function(tree, opts)
+  local current_node = tree:get_node()
+  if current_node == nil then
+    return
+  end
+  local root_node = M.get_root_node(tree, current_node)
+  for _, node in ipairs(tree:get_nodes()) do
+    M.expand_nodes_recursively(tree, node, root_node, opts)
+  end
+  tree:render()
+  local _, line_number = tree:get_node("-" .. tostring(current_node.id))
+  -- If current_node is has been collapsed, get line number of root node instead
+  if line_number == nil and root_node then
+    _, line_number = tree:get_node("-" .. tostring(root_node.id))
+  end
+  vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+end
+
 --
 -- 🌲 Helper Functions
 --
@@ -560,6 +651,21 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
     M.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
+  vim.keymap.set("n", state.settings.discussion_tree.collapse_all, function()
+    M.collapse_nodes(tree, { collapse_unresolved = true })
+  end, { buffer = bufnr, desc = "Collapse all nodes" })
+  vim.keymap.set("n", state.settings.discussion_tree.collapse_resolved, function()
+    M.collapse_nodes(tree, { collapse_unresolved = false })
+  end, { buffer = bufnr, desc = "Collapse resolved nodes" })
+  vim.keymap.set("n", state.settings.discussion_tree.collapse_other, function()
+    M.collapse_nodes(tree, { collapse_unresolved = true, keep_current_open = true })
+  end, { buffer = bufnr, desc = "Collapse other nodes" })
+  vim.keymap.set("n", state.settings.discussion_tree.expand_all, function()
+    M.expand_nodes(tree, { expand_resolved = true })
+  end, { buffer = bufnr, desc = "Expand all nodes" })
+  vim.keymap.set("n", state.settings.discussion_tree.expand_unresolved, function()
+    M.expand_nodes(tree, { expand_resolved = false })
+  end, { buffer = bufnr, desc = "Expand unresolved nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.reply, function()
     if M.is_current_node_note(tree) then
       M.reply(tree)

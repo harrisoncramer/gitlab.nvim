@@ -136,6 +136,11 @@ require("gitlab").setup({
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
+    collapse_all = "CA", -- Closes all discussions
+    collapse_resolved = "CC", -- Closes all resolved discussions
+    collapse_others = "CO", -- Closes all discussions except for the current one (opens the current one if it was closed)
+    expand_all = "EA", -- Opens all discussions
+    expand_unresolved = "EE", -- Opens all unresolved discussions (closes resolved if they were open)
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     open_in_browser = "b" -- Jump to the URL of the current note/discussion
