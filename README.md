@@ -108,7 +108,7 @@ require("gitlab").setup({
       imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
     },
   },
-  help = "?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
+  help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)

@@ -19,7 +19,7 @@ M.settings = {
     },
   },
   attachment_dir = "",
-  help = "?",
+  help = "g?",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
