@@ -78,21 +78,6 @@ local description_popup_settings = {
   },
 }
 
----Create input options after user settings have been merged with defaults.
-local get_title_input_options = function()
-  return {
-    position = "50%",
-    relative = "editor",
-    size = state.settings.create_mr.title_input.width,
-    border = {
-      style = state.settings.create_mr.title_input.border,
-      text = {
-        top = "Title",
-      },
-    },
-  }
-end
-
 ---1. If the user has already begun writing an MR, prompt them to
 --- continue working on it.
 ---@param args? Args
@@ -189,7 +174,17 @@ end
 ---4. Prompts the user for the title of the MR
 ---@param mr Mr
 M.add_title = function(mr)
-  local input = Input(get_title_input_options(), {
+  local input = Input({
+    position = "50%",
+    relative = "editor",
+    size = state.settings.create_mr.title_input.width,
+    border = {
+      style = state.settings.create_mr.title_input.border,
+      text = {
+        top = "Title",
+      },
+    },
+  }, {
     prompt = "",
     default_value = "",
     on_close = function() end,
