@@ -429,6 +429,9 @@ local function nui_tree_prepare_node(node)
 end
 
 M.rebuild_discussion_tree = function()
+  if M.linked_bufnr == nil then
+    return
+  end
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
@@ -442,6 +445,9 @@ M.rebuild_discussion_tree = function()
 end
 
 M.rebuild_unlinked_discussion_tree = function()
+  if M.unlinked_bufnr == nil then
+    return
+  end
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.unlinked_discussions, true)
