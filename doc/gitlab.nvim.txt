@@ -418,7 +418,7 @@ diagnostics for discussions on outdated diff revisions.
 
 When interacting with multiline comments, the cursor must be on the "main" line
 of diagnostic, where the `discussion_sign.text` is shown, otherwise
-`vim.diagnostic.show` and `jump_to_discussion_tree_from_diagnostic` will not
+`vim.diagnostic.show` and `move_to_discussion_tree_from_diagnostic` will not
 work.
 
 
