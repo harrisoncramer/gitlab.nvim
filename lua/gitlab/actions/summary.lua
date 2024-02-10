@@ -108,10 +108,13 @@ M.build_description_lines = function()
   local description_lines = {}
 
   local description = state.INFO.description
-  for line in description:gmatch("[^\n]+") do
+  for line in u.split_by_new_lines(description) do
     table.insert(description_lines, line)
-    table.insert(description_lines, "")
   end
+  -- TODO: @harrisoncramer Not sure whether the following line should be here at all. It definitely
+  -- didn't belong into the for loop, since it inserted an empty line after each line. But maybe
+  -- there is a purpose for an empty line at the end of the buffer?
+  table.insert(description_lines, "")
 
   return description_lines
 end

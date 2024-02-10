@@ -259,10 +259,11 @@ end
 ---Builds a lua list of strings that contain the MR description
 M.build_description_lines = function(template_content)
   local description_lines = {}
-  for line in template_content:gmatch("[^\n]+") do
+  for line in u.split_by_new_lines(template_content) do
     table.insert(description_lines, line)
-    table.insert(description_lines, "")
   end
+  -- TODO: @harrisoncramer Same as in lua/gitlab/actions/summary.lua:114
+  table.insert(description_lines, "")
 
   return description_lines
 end

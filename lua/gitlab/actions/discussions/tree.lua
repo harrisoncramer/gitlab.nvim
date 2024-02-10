@@ -92,7 +92,7 @@ end
 ---@return NuiTree.Node[]
 local function build_note_body(note, resolve_info)
   local text_nodes = {}
-  for bodyLine in note.body:gmatch("[^\n]+") do
+  for bodyLine in u.split_by_new_lines(note.body) do
     local line = attach_uuid(bodyLine)
     table.insert(
       text_nodes,

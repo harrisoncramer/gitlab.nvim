@@ -1,4 +1,4 @@
-*gitlab.nvim.txt* Create, review, and manage Gitlab reources without leaving Neovim
+*gitlab.nvim.txt* Create, review, and manage Gitlab resources without leaving Neovim
 
 ==============================================================================
 Table of Contents                              *gitlab.nvim.table-of-contents*
@@ -320,7 +320,7 @@ To prevent losing your carefully crafted note/comment/suggestion you can set
 which the contents of the popup window will be saved just before the action is
 performed. A practical setting is `settings.popup.backup_register = "+"` which
 saves to the system clipboard (see |quoteplus|). This lets you easily apply
-the action on Gitlab in a browser, if it keeps failing in `gitlab.nvim`. 
+the action on Gitlab in a browser, if it keeps failing in `gitlab.nvim`.
 
 If you experience such problems, please first read the
 |gitlab.nvim.troubleshooting| section. If it does not help, see if there are
@@ -352,6 +352,16 @@ delete/edit/reply are available on the note tree.
 
 >lua
     require("gitlab").create_note()
+<
+
+When the 'wrap' option is on, line wrapping can make the discussion tree
+harder to read. You can use the 'breakindent' option to visually indent tree
+nodes at the same level. If you don't want to set 'breakindent' globally, you
+can set this only for the `gitlab` file type (the file type of discussions and
+notes). One way of doing this is by creating a file called
+$XDG_CONFIG_HOME/nvim/after/ftplugin/gitlab.lua with the following contents:
+>lua
+    vim.o.breakindent = true
 <
 
 LABELS			                     *gitlab.nvim.labels*
@@ -514,7 +524,7 @@ reviewer when checking out a new branch:
 >lua
     local gitlab = require("gitlab")
     vim.keymap.set("n", "glB", function ()
-        require("gitlab.server").restart(function () 
+        require("gitlab.server").restart(function ()
             vim.cmd.tabclose()
             gitlab.review() -- Reopen the reviewer after the server restarts
         end)
@@ -630,7 +640,7 @@ reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
 >lua
   require("gitlab").comment()
 
-Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
+After the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
 keybinding, by default `<leader>l`
 
 create_multiline_comment()					*gitlab.nvim.create_multiline_comment*
@@ -640,17 +650,17 @@ mode, and will use the currently selected lines.
 >lua
   require("gitlab").create_multiline_comment()
 
-Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
-keybinding, by default `<leader>l` 
+After the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
+keybinding, by default `<leader>l`.
 
 create_comment_suggestion()					*gitlab.nvim.create_comment_suggestion*
 
-Opens a popup to create a comment suggestion (aka a comment that makes a committable 
-change suggestion to the currently selected lines). 
+Opens a popup to create a comment suggestion (aka a comment that makes a committable
+change suggestion to the currently selected lines).
 >lua
   require("gitlab").create_multiline_comment()
 
-Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
+After the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
 keybinding, by default |<leader>l|
 
 create_mr({opts})						*gitlab.nvim.create_mr*
@@ -661,7 +671,7 @@ Starts the process of creating an MR for the currently checked out branch.
     require("gitlab").create_mr({ target = "main" })
     require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
 
-Parameters:  
+Parameters:
   • {opts}         Lua table that can be used to skip certain steps in the MR
   creation process. If `target` is provided, you will not be prompted for one.
   If a template_file is provided, it will be used automatically. Must be
@@ -680,12 +690,12 @@ If there are no diagnostics for the current line, shows a warning message.
 
 gitlab.create_note()						*gitlab.nvim.create_note*
 
-Opens a popup to create a note. Notes are like commments except they are not
+Opens a popup to create a note. Notes are like comments except they are not
 tied to specific changes in an MR.
 >lua
   require("gitlab").create_note()
 
-Afer the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
+After the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
 keybinding, by default |<leader>l|
 
 gitlab.toggle_discussions()					*gitlab.nvim.toggle_discussions*
@@ -694,8 +704,8 @@ Toggles visibility of the discussion tree.
 >lua
   require("gitlab").toggle_discussions()
 
-Once the discussion tree is open, a number of different keybindings are available 
-for interacting with different discussions. Please see the `settings.discussion_tree` 
+Once the discussion tree is open, a number of different keybindings are available
+for interacting with different discussions. Please see the `settings.discussion_tree`
 section of the setup call for more information about different keybindings.
 
 gitlab.add_assignee()						*gitlab.nvim.add_assignee*
@@ -740,7 +750,7 @@ Opens up a popup with information about the pipeline for the current merge reque
 >lua
   require("gitlab").pipeline()
 
-To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding. 
+To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding.
 To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action`
 keybinding.
 

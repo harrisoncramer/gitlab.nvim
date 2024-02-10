@@ -77,7 +77,7 @@ M.create_comment_suggestion = function()
   table.insert(suggestion_lines, backticks)
 
   comment_popup:mount()
-  vim.api.nvim_buf_set_lines(comment_popup.bufnr, 0, 0, false, suggestion_lines)
+  vim.api.nvim_buf_set_lines(comment_popup.bufnr, 0, -1, false, suggestion_lines)
   state.set_popup_keymaps(comment_popup, function(text)
     if range > 0 then
       M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })

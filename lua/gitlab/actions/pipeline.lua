@@ -148,7 +148,7 @@ M.see_logs = function()
     end
 
     local lines = {}
-    for line in file:gmatch("[^\n]+") do
+    for line in u.split_by_new_lines(file) do
       table.insert(lines, line)
     end
 
