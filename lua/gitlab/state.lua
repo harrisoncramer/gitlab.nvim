@@ -81,6 +81,10 @@ M.settings = {
   create_mr = {
     target = nil,
     template_file = nil,
+    title_input = {
+      width = 40,
+      border = "rounded",
+    },
   },
   info = {
     enabled = true,

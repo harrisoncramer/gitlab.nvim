@@ -78,18 +78,6 @@ local description_popup_settings = {
   },
 }
 
-local title_input_options = {
-  position = "50%",
-  relative = "editor",
-  size = 40,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Title",
-    },
-  },
-}
-
 ---1. If the user has already begun writing an MR, prompt them to
 --- continue working on it.
 ---@param args? Args
@@ -186,7 +174,17 @@ end
 ---4. Prompts the user for the title of the MR
 ---@param mr Mr
 M.add_title = function(mr)
-  local input = Input(title_input_options, {
+  local input = Input({
+    position = "50%",
+    relative = "editor",
+    size = state.settings.create_mr.title_input.width,
+    border = {
+      style = state.settings.create_mr.title_input.border,
+      text = {
+        top = "Title",
+      },
+    },
+  }, {
     prompt = "",
     default_value = "",
     on_close = function() end,
