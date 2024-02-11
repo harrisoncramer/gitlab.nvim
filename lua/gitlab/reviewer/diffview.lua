@@ -126,106 +126,82 @@ M.get_location = function(range)
     return
   end
 
-  local bufnr = vim.api.nvim_get_current_buf()
-
   -- If there's a range, use the start of the visual selection, not the current line
   local current_line = range and range.start_line or vim.api.nvim_win_get_cursor(0)[1]
 
-  -- check if we are in the diffview tab
+  -- Check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
   if tabnr ~= M.tabnr then
     u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
     return
   end
 
-  -- check if we are in the diffview buffer
+  -- Check if we are in the diffview buffer
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
-  local layout = view.cur_layout
-  local result = {}
-  local type
-  local is_new
 
-  if
-    layout.a.file.bufnr == bufnr
-    or (M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil)
-  then
-    result.file_name = layout.a.file.path
-    result.old_line = current_line
-    type = "old"
-    is_new = false
-  elseif layout.b.file.bufnr == bufnr then
-    result.file_name = layout.b.file.path
-    result.new_line = current_line
-    type = "new"
-    is_new = true
-  else
-    u.notify("Line location can only be determined within reviewer window")
-    return
+  local layout = view.cur_layout
+
+  --- After ensuring that we are in the reviewer, we must build the API call correctly for Gitlab.
+  --- If this is a comment on a deleted or unchanged line, we want to send the new and old line.
+  --- Otherwise (if the line is new or a modified line) we want to send the new line only.
+  ---@type ReviewerInfo
+  local reviewer_info = {
+    file_name = layout.a.file.path,
+    new_line = nil,
+    old_line = nil,
+    range_info = nil,
+  }
+
+  local diff_refs = state.INFO.diff_refs
+  local a_file_commit = diff_refs.base_sha
+  local b_file_commit = diff_refs.head_sha
+
+  if range == nil then
+    return reviewer_info
   end
 
-  local hunks = u.parse_hunk_headers(result.file_name, state.INFO.target_branch)
+  -- If leaving a multi-line comment, we want to also add range_info to the payload.
+  local hunks = u.parse_hunk_headers(reviewer_info.file_name, state.INFO.target_branch)
   if hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
   end
 
-  local current_line_info
-  if is_new then
-    current_line_info = u.get_lines_from_hunks(hunks, result.new_line, is_new)
-  else
-    current_line_info = u.get_lines_from_hunks(hunks, result.old_line, is_new)
-  end
+  local is_new = reviewer_info.new_line ~= nil
+  local current_line_info = is_new and u.get_lines_from_hunks(hunks, reviewer_info.new_line, is_new) or
+      u.get_lines_from_hunks(hunks, reviewer_info.old_line, is_new)
+  local type = is_new and "new" or "old"
 
-  -- If single line comment is outside of changed lines then we need to specify both new line and old line
-  -- otherwise the API returns error.
-  -- https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
-  if not current_line_info.in_hunk then
-    result.old_line = current_line_info.old_line
-    result.new_line = current_line_info.new_line
-  end
+  ---@type ReviewerRangeInfo
+  local range_info = { start = {},["end"] = {} }
 
-  -- If users leave single-line comments in the new buffer that should be in the old buffer, we can
-  -- tell because the line will not have changed. Send the correct payload.
-  if M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil then
-    local a_win = u.get_win_from_buf(layout.a.file.bufnr)
-    local a_cursor = vim.api.nvim_win_get_cursor(a_win)[1]
-    result.old_line = a_cursor
-    result.new_line = a_cursor
-    type = "old"
-  end
-
-  if range == nil then
-    return result
-  end
-
-  result.range_info = { start = {}, ["end"] = {} }
   if current_line == range.start_line then
-    result.range_info.start.old_line = current_line_info.old_line
-    result.range_info.start.new_line = current_line_info.new_line
-    result.range_info.start.type = type
+    range_info.start.old_line = current_line_info.old_line
+    range_info.start.new_line = current_line_info.new_line
+    range_info.start.type = type
   else
     local start_line_info = u.get_lines_from_hunks(hunks, range.start_line, is_new)
-    result.range_info.start.old_line = start_line_info.old_line
-    result.range_info.start.new_line = start_line_info.new_line
-    result.range_info.start.type = type
+    range_info.start.old_line = start_line_info.old_line
+    range_info.start.new_line = start_line_info.new_line
+    range_info.start.type = type
   end
-
   if current_line == range.end_line then
-    result.range_info["end"].old_line = current_line_info.old_line
-    result.range_info["end"].new_line = current_line_info.new_line
-    result.range_info["end"].type = type
+    range_info["end"].old_line = current_line_info.old_line
+    range_info["end"].new_line = current_line_info.new_line
+    range_info["end"].type = type
   else
     local end_line_info = u.get_lines_from_hunks(hunks, range.end_line, is_new)
-    result.range_info["end"].old_line = end_line_info.old_line
-    result.range_info["end"].new_line = end_line_info.new_line
-    result.range_info["end"].type = type
+    range_info["end"].old_line = end_line_info.old_line
+    range_info["end"].new_line = end_line_info.new_line
+    range_info["end"].type = type
   end
 
-  return result
+  reviewer_info.range_info = range_info
+  return reviewer_info
 end
 
 ---Return content between start_line and end_line
