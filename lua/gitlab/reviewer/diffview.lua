@@ -156,16 +156,51 @@ M.get_location = function(range)
     range_info = nil,
   }
 
-  local diff_refs = state.INFO.diff_refs
-  local a_file_commit = diff_refs.base_sha
-  local b_file_commit = diff_refs.head_sha
+
+  -- Check if we are getting line number from new or old version of the file
+  -- Depending on what we're doing, we need to modify the payload. With Diffview,
+  -- our scrolling is locked so we can easily get both line numbers using the
+  -- nvim_win_get_cursor function.
+
+  -- If we are in the "b" buffer, which is the current version of the file, then we want to
+  -- only send the new line number. The only exception here is if we are trying to make a comment
+  -- on an unchanged line, in which case we actually want to send both, per Gitlab's janky API.
+
+  local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
+  local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+
+  vim.print("B window is " .. b_win)
+
+  if a_win == nil or b_win == nil then
+    u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
+    return
+  end
+
+  local a_linenr = vim.api.nvim_win_get_cursor(a_win)[1]
+  local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
+  local current_bufnr = vim.api.nvim_get_current_buf()
+
+  print("Current buffer is: ", current_bufnr)
+  print("A buffer is: ", layout.a.file.bufnr)
+  print("B buffer is: ", layout.a.file.bufnr)
+
+  local is_current_file = false -- Needed in case this is a multiline comment
+  if layout.b.file.bufnr == current_bufnr and not M.lines_are_same(layout, a_linenr, b_linenr) then
+    is_current_file = true
+    reviewer_info.new_line = nil
+    reviewer_info.old_line = a_linenr
+  else
+    reviewer_info.old_line = a_linenr
+    reviewer_info.new_line = b_linenr
+  end
 
   if range == nil then
     return reviewer_info
   end
 
-  -- If leaving a multi-line comment, we want to also add range_info to the payload.
   local hunks = u.parse_hunk_headers(reviewer_info.file_name, state.INFO.target_branch)
+
+  -- If leaving a multi-line comment, we want to also add range_info to the payload.
   if hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
@@ -212,12 +247,9 @@ M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
+---Checks whether the lines in the two buffers are the same
 ---@return boolean
-M.lines_are_same = function(layout)
-  local a_win = u.get_win_from_buf(layout.a.file.bufnr)
-  local b_win = u.get_win_from_buf(layout.b.file.bufnr)
-  local a_cursor = vim.api.nvim_win_get_cursor(a_win)[1]
-  local b_cursor = vim.api.nvim_win_get_cursor(b_win)[1]
+M.lines_are_same = function(layout, a_cursor, b_cursor)
   local line_a = u.get_line_content(layout.a.file.bufnr, a_cursor)
   local line_b = u.get_line_content(layout.b.file.bufnr, b_cursor)
   return line_a == line_b

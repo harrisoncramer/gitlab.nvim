@@ -463,21 +463,28 @@ M.get_line_content = function(bufnr, start)
   return lines[1]
 end
 
-M.get_wins_from_buf = function(bufnr)
-  local wins = {}
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.fn.winbufnr(win) == bufnr then
-      table.insert(wins, win)
-    end
-  end
-
-  return wins
-end
-
 M.switch_can_edit_buf = function(buf, bool)
   vim.api.nvim_set_option_value("modifiable", bool, { buf = buf })
   vim.api.nvim_set_option_value("readonly", not bool, { buf = buf })
 end
+
+-- Gets the window holding a buffer in the current tab page
+---@param buffer_id number Id of a buffer
+---@return integer|nil
+M.get_window_id_by_buffer_id = function(buffer_id)
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  local windows = vim.api.nvim_tabpage_list_wins(tabpage)
+
+  for _, win_id in ipairs(windows) do
+    local buf_id = vim.api.nvim_win_get_buf(win_id)
+    if buf_id == buffer_id then
+      return win_id
+    end
+  end
+
+  return nil -- Buffer ID not found in any window
+end
+
 
 M.list_files_in_folder = function(folder_path)
   if vim.fn.isdirectory(folder_path) == 0 then
