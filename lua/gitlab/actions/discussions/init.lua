@@ -428,12 +428,7 @@ M.collapse_nodes = function(tree, opts)
     M.collapse_nodes_recursively(tree, node, root_node, opts)
   end
   tree:render()
-  local _, line_number = tree:get_node("-" .. tostring(current_node.id))
-  -- If current_node is has been collapsed, get line number of root node instead
-  if line_number == nil and root_node then
-    _, line_number = tree:get_node("-" .. tostring(root_node.id))
-  end
-  vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+  M.restore_cursor_position(tree, current_node, root_node)
 end
 
 ---This function (settings.discussion_tree.expand_nodes_recursively) expands a node and its children.
@@ -472,12 +467,7 @@ M.expand_nodes = function(tree, opts)
     M.expand_nodes_recursively(tree, node, root_node, opts)
   end
   tree:render()
-  local _, line_number = tree:get_node("-" .. tostring(current_node.id))
-  -- If current_node is has been collapsed, get line number of root node instead
-  if line_number == nil and root_node then
-    _, line_number = tree:get_node("-" .. tostring(root_node.id))
-  end
-  vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+  M.restore_cursor_position(tree, current_node, root_node)
 end
 
 --
@@ -725,6 +715,18 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   end
 
   tree:render()
+end
+
+---Restore cursor position to the original node if possible
+M.restore_cursor_position = function(tree, original_node, root_node)
+  local _, line_number = tree:get_node("-" .. tostring(original_node.id))
+  -- If current_node is has been collapsed, get line number of root node instead
+  if line_number == nil and root_node then
+    _, line_number = tree:get_node("-" .. tostring(root_node.id))
+  end
+  if line_number ~= nil then
+    vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+  end
 end
 
 ---Replace text in discussion after note update.
