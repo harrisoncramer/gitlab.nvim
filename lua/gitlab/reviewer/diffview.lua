@@ -168,8 +168,6 @@ M.get_location = function(range)
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
-  vim.print("B window is " .. b_win)
-
   if a_win == nil or b_win == nil then
     u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
     return
@@ -179,7 +177,7 @@ M.get_location = function(range)
   local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
   local current_bufnr = vim.api.nvim_get_current_buf()
 
-  local modification_type = M.get_modification_type(a_linenr)
+  local modification_type = M.get_modification_type(a_linenr, layout.a.file.path, nil)
 
   -- Comment on new line. Include only new_line in payload.
   if modification_type == "added" then
