@@ -156,7 +156,6 @@ M.get_location = function(range)
     range_info = nil,
   }
 
-
   -- Check if we are getting line number from new or old version of the file
   -- Depending on what we're doing, we need to modify the payload. With Diffview,
   -- our scrolling is locked so we can easily get both line numbers using the
@@ -180,18 +179,24 @@ M.get_location = function(range)
   local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
   local current_bufnr = vim.api.nvim_get_current_buf()
 
-  print("Current buffer is: ", current_bufnr)
-  print("A buffer is: ", layout.a.file.bufnr)
-  print("B buffer is: ", layout.a.file.bufnr)
+  local modification_type = M.get_modification_type(a_linenr)
 
-  local is_current_file = false -- Needed in case this is a multiline comment
-  if layout.b.file.bufnr == current_bufnr and not M.lines_are_same(layout, a_linenr, b_linenr) then
-    is_current_file = true
+  -- Comment on new line. Include only new_line in payload.
+  if modification_type == "added" then
+    reviewer_info.new_line = a_linenr
+    reviewer_info.old_line = nil
+  end
+
+  -- Comment on a deleted line. Include only old_line.
+  if modification_type == "deleted" then
     reviewer_info.new_line = nil
-    reviewer_info.old_line = a_linenr
-  else
-    reviewer_info.old_line = a_linenr
-    reviewer_info.new_line = b_linenr
+    reviewer_info.old_line = b_linenr
+  end
+
+  -- Comment on modified line, or on an unmodified line. Include both new_line and old_line.
+  if modification_type == "modified" or modification_type == "unmodified" then
+    reviewer_info.new_line = a_linenr
+    reviewer_info.old_line = b_linenr
   end
 
   if range == nil then
@@ -330,6 +335,33 @@ M.set_callback_for_reviewer_leave = function(callback)
       end
     end,
   })
+end
+
+---Returns whether the comment is on a new_line, changed line, deleted line, or unmodified line
+---@param linnr number The number of the line
+---@param commit_hash string The hash of the file where the comment was attempted
+---@param file_path string The path to the file in the .git repository
+---@return string
+M.get_modification_type = function(linnr, file_path, commit_hash)
+  -- Parse git diff output to find added and removed lines
+  for line in file_content_past:gmatch('[^\r\n]+') do
+    local mode, _, line_nr = line:match('^([+-])(%d+)')
+    if mode == '+' then
+      added_lines[tonumber(line_nr)] = true
+    elseif mode == '-' then
+      removed_lines[tonumber(line_nr)] = true
+    end
+  end
+
+  if added_lines[linnr] then
+    return 'new_line'
+  elseif removed_lines[linnr] then
+    return 'deleted_line'
+  elseif added_lines[linnr - 1] or removed_lines[linnr - 1] then
+    return 'changed_line'
+  else
+    return 'unmodified_line'
+  end
 end
 
 return M
