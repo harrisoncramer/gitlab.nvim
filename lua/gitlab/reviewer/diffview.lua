@@ -145,9 +145,6 @@ M.get_location = function(range)
 
   local layout = view.cur_layout
 
-  --- After ensuring that we are in the reviewer, we must build the API call correctly for Gitlab.
-  --- If this is a comment on a deleted or unchanged line, we want to send the new and old line.
-  --- Otherwise (if the line is new or a modified line) we want to send the new line only.
   ---@type ReviewerInfo
   local reviewer_info = {
     file_name = layout.a.file.path,
@@ -155,15 +152,6 @@ M.get_location = function(range)
     old_line = nil,
     range_info = nil,
   }
-
-  -- Check if we are getting line number from new or old version of the file
-  -- Depending on what we're doing, we need to modify the payload. With Diffview,
-  -- our scrolling is locked so we can easily get both line numbers using the
-  -- nvim_win_get_cursor function.
-
-  -- If we are in the "b" buffer, which is the current version of the file, then we want to
-  -- only send the new line number. The only exception here is if we are trying to make a comment
-  -- on an unchanged line, in which case we actually want to send both, per Gitlab's janky API.
 
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
@@ -186,10 +174,15 @@ M.get_location = function(range)
 
   local data = u.parse_hunk_headers(current_file, state.INFO.target_branch)
 
+  if data.hunks == nil then
+    u.notify("Could not parse hunks", vim.log.levels.ERROR)
+    return
+  end
+
   -- Will be different depending on focused window.
   local modification_type = M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
 
-  if modification_type == nil then
+  if modification_type == "bad_file_unmodified" then
     u.notify("Comments on unchanged lines must be left in the old file", vim.log.levels.WARN)
     return
   end
@@ -215,11 +208,6 @@ M.get_location = function(range)
   end
 
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
-  if data.hunks == nil then
-    u.notify("Could not parse hunks", vim.log.levels.ERROR)
-    return
-  end
-
   local is_new = reviewer_info.new_line ~= nil
   local current_line_info = is_new and u.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new) or
       u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
@@ -346,7 +334,8 @@ M.set_callback_for_reviewer_leave = function(callback)
   })
 end
 
----Returns whether the comment is on a new_line, changed line, deleted line, or unmodified line
+---Returns whether the comment is on a new_line, changed line, deleted line, or unmodified line.
+---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param a_linenr number
 ---@param b_linenr number
 ---@param is_current_sha boolean
@@ -354,7 +343,8 @@ end
 ---@param all_diff_output table The raw diff output
 function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
   -- If leaving a comment on the old window, we can either be commenting
-  -- on a deletion, a modified line, or an unmodified line. It's a deletion if it's in the range.
+  -- on a deletion, a modified line, or an unmodified line. It's a deletion if it's in the range
+  -- of the hunks and the new range is zero, since that is a deletion hunk.
   if not is_current_sha then
     for _, hunk in ipairs(hunks) do
       local old_line_end = hunk.old_line + hunk.old_range
@@ -363,8 +353,9 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
       end
       local new_line_end = hunk.new_line + hunk.new_range
       if a_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        -- TODO: This might fail in certain circumstances where the line number from the
-        -- old SHA falls in the range of a hunk that is actually only adding lines...
+        -- This check handles when you are commenting on a modified line from the old buffer.
+        -- This may cause errors if the line number also falls in the range of added lines,
+        -- we need to check this
         return "deleted"
       end
     end
@@ -382,7 +373,7 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
 
     -- If we can't find the line, this means the user is trying to leave a comment on an unmodified
     -- line, but in the new buffer. Warn them and do not post the comment.
-    return nil
+    return "bad_file_unmodified"
   end
 
   -- If the line number does not fall within any hunk ranges, it is unmodified
