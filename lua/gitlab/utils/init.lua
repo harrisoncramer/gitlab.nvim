@@ -529,6 +529,26 @@ end
 ---@field hunks Hunk[] list of hunks
 ---@field all_diff_output table The data from the git diff command
 
+---Turn hunk line into Lua table
+---@param line table
+---@return Hunk|nil
+M.parse_possible_hunk_headers = function(line)
+  if line:sub(1, 2) == "@@" then
+    -- match:
+    --  @@ -23 +23 @@ ...
+    --  @@ -23,0 +23 @@ ...
+    --  @@ -41,0 +42,4 @@ ...
+    local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
+
+    return {
+      old_line = tonumber(old_start),
+      old_range = tonumber(old_range) or 0,
+      new_line = tonumber(new_start),
+      new_range = tonumber(new_range) or 0,
+    }
+  end
+end
+
 ---Parse git diff hunks.
 ---@param file_path string Path to file.
 ---@param base_branch string Git base branch of merge request.
@@ -546,19 +566,9 @@ M.parse_hunk_headers = function(file_path, base_branch)
       if return_code == 0 then
         all_diff_output = j:result()
         for _, line in ipairs(all_diff_output) do
-          if line:sub(1, 2) == "@@" then
-            -- match:
-            --  @@ -23 +23 @@ ...
-            --  @@ -23,0 +23 @@ ...
-            --  @@ -41,0 +42,4 @@ ...
-            local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
-
-            table.insert(hunks, {
-              old_line = tonumber(old_start),
-              old_range = tonumber(old_range) or 0,
-              new_line = tonumber(new_start),
-              new_range = tonumber(new_range) or 0,
-            })
+          local hunk = M.parse_possible_hunk_headers(line)
+          if hunk ~= nil then
+            table.insert(hunks, hunk)
           end
         end
       else

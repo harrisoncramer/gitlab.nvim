@@ -183,22 +183,19 @@ M.get_location = function(range)
   local modification_type = M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
 
   if modification_type == "bad_file_unmodified" then
-    u.notify("Comments on unchanged lines must be left in the old file", vim.log.levels.WARN)
-    return
+    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  -- Comment on new line, or comment on modified line (Gitlab splits these
-  -- lines into red/green, commenter was focused on new SHA): Include only new_line in payload.
+  -- Comment on new line: Include only new_line in payload.
   if modification_type == "added" or (modification_type == "modified" and is_current_sha) then
     reviewer_info.old_line = nil
     reviewer_info.new_line = b_linenr
-    -- Comment on deleted line, or comment on modified line and commenter
-    -- was focused on the old SHA: Include only new_line in payload.
-  elseif modification_type == "deleted" or (modification_type == "modified" and is_current_sha) then
+    -- Comment on deleted line: Include only new_line in payload.
+  elseif modification_type == "deleted" then
     reviewer_info.old_line = a_linenr
     reviewer_info.new_line = nil
     -- The line was not found in any hunks, only send the old line number
-  elseif modification_type == "unmodified" then
+  elseif modification_type == "unmodified" or modification_type == "bad_file_unmodified" then
     reviewer_info.old_line = a_linenr
     reviewer_info.new_line = b_linenr
   end
@@ -214,7 +211,7 @@ M.get_location = function(range)
   local type = is_new and "new" or "old"
 
   ---@type ReviewerRangeInfo
-  local range_info = { start = {},["end"] = {} }
+  local range_info = { start = {}, ["end"] = {} }
 
   if current_line == range.start_line then
     range_info.start.old_line = current_line_info.old_line
@@ -334,7 +331,7 @@ M.set_callback_for_reviewer_leave = function(callback)
   })
 end
 
----Returns whether the comment is on a new_line, changed line, deleted line, or unmodified line.
+---Returns whether the comment is on a deleted line, added line, or unmodified line.
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param a_linenr number
 ---@param b_linenr number
@@ -351,23 +348,52 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
       if a_linenr >= hunk.old_line and a_linenr <= old_line_end and hunk.new_range == 0 then
         return "deleted"
       end
-      local new_line_end = hunk.new_line + hunk.new_range
-      if a_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        -- This check handles when you are commenting on a modified line from the old buffer.
-        -- This may cause errors if the line number also falls in the range of added lines,
-        -- we need to check this
-        return "deleted"
+      if a_linenr >= hunk.old_line and a_linenr <= old_line_end then
+        if M.line_was_removed(a_linenr, hunk, all_diff_output) then
+          return "deleted"
+        end
+      end
+      if a_linenr >= hunk.new_line and b_linenr <= hunk.new_line + hunk.new_range then
+        -- If we find a match in the modified hunk we should check if that line was actually deleted
+        -- To do that we have to look at the front of the line. If it's prefixed with
+        -- just a "+" then we happen to be on a line number whose line number is ALSO an added
+        -- line in a new file hunk, do not treat this as a deletion
+        for matching_line_index, line in ipairs(all_diff_output) do
+          local found_hunk = u.parse_possible_hunk_headers(line)
+          if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
+            local j = 1
+            for hunk_line_index = found_hunk.old_line, hunk.new_line + hunk.new_range, 1 do
+              local line_content = all_diff_output[matching_line_index + j]
+              if hunk_line_index == a_linenr then
+                if string.match(line_content, "^%-") then
+                  return "deleted"
+                end
+              end
+            end
+          end
+        end
       end
     end
   else
-    -- If commenting on the new window, we are either leaving a comment on a modified
+    -- If commenting on the new window, we are either leaving a comment on an added
     -- line or an added line.
     for _, hunk in ipairs(hunks) do
       local new_line_end = hunk.new_line + hunk.new_range
       if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        -- TODO: Check if the actual hunk content that it matches has been added.
-        -- If so, mark it as added. Otherwise, mark it as modified.
-        return "modified"
+        for matching_line_index, line in ipairs(all_diff_output) do
+          local found_hunk = u.parse_possible_hunk_headers(line)
+          if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
+            local j = 1
+            for hunk_line_index = found_hunk.new_line, hunk.new_line + hunk.new_range, 1 do
+              local line_content = all_diff_output[matching_line_index + j]
+              if hunk_line_index == b_linenr then
+                if string.match(line_content, "") then
+                  return "added"
+                end
+              end
+            end
+          end
+        end
       end
     end
 
@@ -380,4 +406,23 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
   return "unmodified"
 end
 
+---@param a_linenr number
+---@param hunk Hunk
+---@param all_diff_output table
+M.line_was_removed = function(a_linenr, hunk, all_diff_output)
+  for matching_line_index, line in ipairs(all_diff_output) do
+    local found_hunk = u.parse_possible_hunk_headers(line)
+    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
+      local j = 1
+      for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range - 1, 1 do
+        local line_content = all_diff_output[matching_line_index + j]
+        if hunk_line_index == a_linenr then
+          if string.match(line_content, "^%-") then
+            return "deleted"
+          end
+        end
+      end
+    end
+  end
+end
 return M
