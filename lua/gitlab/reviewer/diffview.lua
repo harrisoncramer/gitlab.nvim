@@ -188,18 +188,24 @@ M.get_location = function(range)
 
   -- Will be different depending on focused window.
   local modification_type = M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
-  print("type is")
-  print(modification_type)
 
-  -- Comment on new line. Include only new_line in payload.
-  if modification_type == "added" then
+  if modification_type == nil then
+    u.notify("Comments on unchanged lines must be left in the old file", vim.log.levels.WARN)
+    return
+  end
+
+  -- Comment on new line, or comment on modified line (Gitlab splits these
+  -- lines into red/green, commenter was focused on new SHA): Include only new_line in payload.
+  if modification_type == "added" or (modification_type == "modified" and is_current_sha) then
     reviewer_info.old_line = nil
     reviewer_info.new_line = b_linenr
-  elseif modification_type == "deleted" then
-    -- Comment on a deleted line. Include only new_line in payload.
+    -- Comment on deleted line, or comment on modified line and commenter
+    -- was focused on the old SHA: Include only new_line in payload.
+  elseif modification_type == "deleted" or (modification_type == "modified" and is_current_sha) then
     reviewer_info.old_line = a_linenr
     reviewer_info.new_line = nil
-  else -- Modified or unmodified. Inculde both lines in the payload.
+    -- The line was not found in any hunks, only send the old line number
+  elseif modification_type == "unmodified" then
     reviewer_info.old_line = a_linenr
     reviewer_info.new_line = b_linenr
   end
@@ -209,14 +215,14 @@ M.get_location = function(range)
   end
 
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
-  if hunks == nil then
+  if data.hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
   end
 
   local is_new = reviewer_info.new_line ~= nil
-  local current_line_info = is_new and u.get_lines_from_hunks(hunks, reviewer_info.new_line, is_new) or
-      u.get_lines_from_hunks(hunks, reviewer_info.old_line, is_new)
+  local current_line_info = is_new and u.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new) or
+      u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
   local type = is_new and "new" or "old"
 
   ---@type ReviewerRangeInfo
@@ -227,7 +233,7 @@ M.get_location = function(range)
     range_info.start.new_line = current_line_info.new_line
     range_info.start.type = type
   else
-    local start_line_info = u.get_lines_from_hunks(hunks, range.start_line, is_new)
+    local start_line_info = u.get_lines_from_hunks(data.hunks, range.start_line, is_new)
     range_info.start.old_line = start_line_info.old_line
     range_info.start.new_line = start_line_info.new_line
     range_info.start.type = type
@@ -237,7 +243,7 @@ M.get_location = function(range)
     range_info["end"].new_line = current_line_info.new_line
     range_info["end"].type = type
   else
-    local end_line_info = u.get_lines_from_hunks(hunks, range.end_line, is_new)
+    local end_line_info = u.get_lines_from_hunks(data.hunks, range.end_line, is_new)
     range_info["end"].old_line = end_line_info.old_line
     range_info["end"].new_line = end_line_info.new_line
     range_info["end"].type = type
@@ -348,7 +354,7 @@ end
 ---@param all_diff_output table The raw diff output
 function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
   -- If leaving a comment on the old window, we can either be commenting
-  -- on a deletion or on a non-modified line. It's a deletion if it's in the range.
+  -- on a deletion, a modified line, or an unmodified line. It's a deletion if it's in the range.
   if not is_current_sha then
     for _, hunk in ipairs(hunks) do
       local old_line_end = hunk.old_line + hunk.old_range
@@ -357,15 +363,14 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
       end
       local new_line_end = hunk.new_line + hunk.new_range
       if a_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        -- TODO: Check if actual hunk content that it matches to has been modified.
-        -- Only then return deleted. Otherwise, do not return anything.
+        -- TODO: This might fail in certain circumstances where the line number from the
+        -- old SHA falls in the range of a hunk that is actually only adding lines...
         return "deleted"
       end
     end
   else
     -- If commenting on the new window, we are either leaving a comment on a modified
-    -- line, an added line, or an unmodified line. To determine this, we have to iterate
-    -- over the actual content of the hunk.
+    -- line or an added line.
     for _, hunk in ipairs(hunks) do
       local new_line_end = hunk.new_line + hunk.new_range
       if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
@@ -374,6 +379,10 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
         return "modified"
       end
     end
+
+    -- If we can't find the line, this means the user is trying to leave a comment on an unmodified
+    -- line, but in the new buffer. Warn them and do not post the comment.
+    return nil
   end
 
   -- If the line number does not fall within any hunk ranges, it is unmodified
