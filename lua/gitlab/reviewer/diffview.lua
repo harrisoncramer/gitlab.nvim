@@ -167,41 +167,46 @@ M.get_location = function(range)
 
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local current_win = vim.fn.win_getid()
+  local is_current_sha = current_win == b_win
 
   if a_win == nil or b_win == nil then
     u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
     return
   end
 
+  local current_file = M.get_current_file()
+  if current_file == nil then
+    u.notify("Error retrieving current file from Diffview", vim.log.levels.ERROR)
+    return
+  end
+
   local a_linenr = vim.api.nvim_win_get_cursor(a_win)[1]
   local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
-  local current_bufnr = vim.api.nvim_get_current_buf()
 
-  local modification_type = M.get_modification_type(a_linenr, layout.a.file.path, nil)
+  local data = u.parse_hunk_headers(current_file, state.INFO.target_branch)
+
+  -- Will be different depending on focused window.
+  local modification_type = M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
+  print("type is")
+  print(modification_type)
 
   -- Comment on new line. Include only new_line in payload.
   if modification_type == "added" then
-    reviewer_info.new_line = a_linenr
     reviewer_info.old_line = nil
-  end
-
-  -- Comment on a deleted line. Include only old_line.
-  if modification_type == "deleted" then
+    reviewer_info.new_line = b_linenr
+  elseif modification_type == "deleted" then
+    -- Comment on a deleted line. Include only new_line in payload.
+    reviewer_info.old_line = a_linenr
     reviewer_info.new_line = nil
-    reviewer_info.old_line = b_linenr
-  end
-
-  -- Comment on modified line, or on an unmodified line. Include both new_line and old_line.
-  if modification_type == "modified" or modification_type == "unmodified" then
-    reviewer_info.new_line = a_linenr
-    reviewer_info.old_line = b_linenr
+  else -- Modified or unmodified. Inculde both lines in the payload.
+    reviewer_info.old_line = a_linenr
+    reviewer_info.new_line = b_linenr
   end
 
   if range == nil then
     return reviewer_info
   end
-
-  local hunks = u.parse_hunk_headers(reviewer_info.file_name, state.INFO.target_branch)
 
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
   if hunks == nil then
@@ -336,30 +341,43 @@ M.set_callback_for_reviewer_leave = function(callback)
 end
 
 ---Returns whether the comment is on a new_line, changed line, deleted line, or unmodified line
----@param linnr number The number of the line
----@param commit_hash string The hash of the file where the comment was attempted
----@param file_path string The path to the file in the .git repository
----@return string
-M.get_modification_type = function(linnr, file_path, commit_hash)
-  -- Parse git diff output to find added and removed lines
-  for line in file_content_past:gmatch('[^\r\n]+') do
-    local mode, _, line_nr = line:match('^([+-])(%d+)')
-    if mode == '+' then
-      added_lines[tonumber(line_nr)] = true
-    elseif mode == '-' then
-      removed_lines[tonumber(line_nr)] = true
+---@param a_linenr number
+---@param b_linenr number
+---@param is_current_sha boolean
+---@param hunks Hunk[] A list of hunks
+---@param all_diff_output table The raw diff output
+function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
+  -- If leaving a comment on the old window, we can either be commenting
+  -- on a deletion or on a non-modified line. It's a deletion if it's in the range.
+  if not is_current_sha then
+    for _, hunk in ipairs(hunks) do
+      local old_line_end = hunk.old_line + hunk.old_range
+      if a_linenr >= hunk.old_line and a_linenr <= old_line_end and hunk.new_range == 0 then
+        return "deleted"
+      end
+      local new_line_end = hunk.new_line + hunk.new_range
+      if a_linenr >= hunk.new_line and b_linenr <= new_line_end then
+        -- TODO: Check if actual hunk content that it matches to has been modified.
+        -- Only then return deleted. Otherwise, do not return anything.
+        return "deleted"
+      end
+    end
+  else
+    -- If commenting on the new window, we are either leaving a comment on a modified
+    -- line, an added line, or an unmodified line. To determine this, we have to iterate
+    -- over the actual content of the hunk.
+    for _, hunk in ipairs(hunks) do
+      local new_line_end = hunk.new_line + hunk.new_range
+      if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
+        -- TODO: Check if the actual hunk content that it matches has been added.
+        -- If so, mark it as added. Otherwise, mark it as modified.
+        return "modified"
+      end
     end
   end
 
-  if added_lines[linnr] then
-    return 'new_line'
-  elseif removed_lines[linnr] then
-    return 'deleted_line'
-  elseif added_lines[linnr - 1] or removed_lines[linnr - 1] then
-    return 'changed_line'
-  else
-    return 'unmodified_line'
-  end
+  -- If the line number does not fall within any hunk ranges, it is unmodified
+  return "unmodified"
 end
 
 return M

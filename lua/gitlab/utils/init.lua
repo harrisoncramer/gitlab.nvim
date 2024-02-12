@@ -525,12 +525,17 @@ end
 ---@field new_line integer
 ---@field new_range integer
 
+---@class HunksAndDiff
+---@field hunks Hunk[] list of hunks
+---@field all_diff_output table The data from the git diff command
+
 ---Parse git diff hunks.
 ---@param file_path string Path to file.
 ---@param base_branch string Git base branch of merge request.
----@return Hunk[] list of hunks.
+---@return HunksAndDiff
 M.parse_hunk_headers = function(file_path, base_branch)
   local hunks = {}
+  local all_diff_output = {}
 
   local Job = require("plenary.job")
 
@@ -539,7 +544,8 @@ M.parse_hunk_headers = function(file_path, base_branch)
     args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
     on_exit = function(j, return_code)
       if return_code == 0 then
-        for _, line in ipairs(j:result()) do
+        all_diff_output = j:result()
+        for _, line in ipairs(all_diff_output) do
           if line:sub(1, 2) == "@@" then
             -- match:
             --  @@ -23 +23 @@ ...
@@ -563,7 +569,7 @@ M.parse_hunk_headers = function(file_path, base_branch)
 
   diff_job:sync()
 
-  return hunks
+  return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
 ---@class LineDiffInfo
