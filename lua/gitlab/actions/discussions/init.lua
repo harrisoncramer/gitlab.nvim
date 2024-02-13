@@ -389,6 +389,86 @@ M.toggle_node = function(tree)
   tree:render()
 end
 
+---@class ToggleNodesOptions
+---@field toggle_resolved boolean Whether to toggle resolved discussions.
+---@field toggle_unresolved boolean Whether to toggle unresolved discussions.
+---@field keep_current_open boolean Whether to keep the current discussion open even if it should otherwise be closed.
+
+---This function (settings.discussion_tree.toggle_nodes) expands/collapses all nodes and their children according to the opts.
+---@param tree NuiTree
+---@param opts ToggleNodesOptions
+M.toggle_nodes = function(tree, opts)
+  local current_node = tree:get_node()
+  if current_node == nil then
+    return
+  end
+  local root_node = M.get_root_node(tree, current_node)
+  for _, node in ipairs(tree:get_nodes()) do
+    if opts.toggle_resolved then
+      if state.resolved_expanded then
+        M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
+      else
+        M.expand_recursively(tree, node, true)
+      end
+    end
+    if opts.toggle_unresolved then
+      if state.unresolved_expanded then
+        M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
+      else
+        M.expand_recursively(tree, node, false)
+      end
+    end
+  end
+  if opts.toggle_resolved then
+    state.resolved_expanded = not state.resolved_expanded
+  end
+  if opts.toggle_unresolved then
+    state.unresolved_expanded = not state.unresolved_expanded
+  end
+  tree:render()
+  M.restore_cursor_position(tree, current_node, root_node)
+end
+
+---This function (settings.discussion_tree.collapse_recursively) collapses a node and its children.
+---@param tree NuiTree
+---@param node NuiTree.Node
+---@param current_root_node NuiTree.Node The root node of the current node.
+---@param keep_current_open boolean If true, the current node stays open, even if it should otherwise be collapsed.
+---@param is_resolved boolean If true, collapse resolved discussions. If false, collapse unresolved discussions.
+M.collapse_recursively = function(tree, node, current_root_node, keep_current_open, is_resolved)
+  if node == nil then
+    return
+  end
+  local root_node = M.get_root_node(tree, node)
+  if M.is_node_note(node) and root_node.resolved == is_resolved then
+    if keep_current_open and root_node == current_root_node then
+      return
+    end
+    node:collapse()
+  end
+  local children = node:get_child_ids()
+  for _, child in ipairs(children) do
+    M.collapse_recursively(tree, tree:get_node(child), current_root_node, keep_current_open, is_resolved)
+  end
+end
+
+---This function (settings.discussion_tree.expand_recursively) expands a node and its children.
+---@param tree NuiTree
+---@param node NuiTree.Node
+---@param is_resolved boolean If true, expand resolved discussions. If false, expand unresolved discussions.
+M.expand_recursively = function(tree, node, is_resolved)
+  if node == nil then
+    return
+  end
+  if M.is_node_note(node) and M.get_root_node(tree, node).resolved == is_resolved then
+    node:expand()
+  end
+  local children = node:get_child_ids()
+  for _, child in ipairs(children) do
+    M.expand_recursively(tree, tree:get_node(child), is_resolved)
+  end
+end
+
 --
 -- 🌲 Helper Functions
 --
@@ -560,6 +640,27 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
     M.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
+    M.toggle_nodes(tree, {
+      toggle_resolved = true,
+      toggle_unresolved = true,
+      keep_current_open = state.settings.discussion_tree.keep_current_open,
+    })
+  end, { buffer = bufnr, desc = "Toggle all nodes" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved_discussions, function()
+    M.toggle_nodes(tree, {
+      toggle_resolved = true,
+      toggle_unresolved = false,
+      keep_current_open = state.settings.discussion_tree.keep_current_open,
+    })
+  end, { buffer = bufnr, desc = "Toggle resolved nodes" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_unresolved_discussions, function()
+    M.toggle_nodes(tree, {
+      toggle_resolved = false,
+      toggle_unresolved = true,
+      keep_current_open = state.settings.discussion_tree.keep_current_open,
+    })
+  end, { buffer = bufnr, desc = "Toggle unresolved nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.reply, function()
     if M.is_current_node_note(tree) then
       M.reply(tree)
@@ -619,6 +720,18 @@ M.redraw_resolved_status = function(tree, note, mark_resolved)
   end
 
   tree:render()
+end
+
+---Restore cursor position to the original node if possible
+M.restore_cursor_position = function(tree, original_node, root_node)
+  local _, line_number = tree:get_node("-" .. tostring(original_node.id))
+  -- If current_node is has been collapsed, get line number of root node instead
+  if line_number == nil and root_node then
+    _, line_number = tree:get_node("-" .. tostring(root_node.id))
+  end
+  if line_number ~= nil then
+    vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+  end
 end
 
 ---Replace text in discussion after note update.
