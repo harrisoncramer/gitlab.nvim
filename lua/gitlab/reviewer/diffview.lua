@@ -181,7 +181,7 @@ M.get_location = function(range)
 
   -- Will be different depending on focused window.
   local modification_type =
-      M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
+    M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
 
   if modification_type == "bad_file_unmodified" then
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
@@ -208,7 +208,7 @@ M.get_location = function(range)
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
   local is_new = reviewer_info.new_line ~= nil
   local current_line_info = is_new and u.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new)
-      or u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
+    or u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
   local type = is_new and "new" or "old"
 
   ---@type ReviewerRangeInfo
@@ -365,8 +365,8 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
         return "deleted"
       end
       if
-          (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
-          or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
+        (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
+        or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
       then
         if M.line_was_removed(a_linenr, hunk, all_diff_output) then
           return "deleted"
