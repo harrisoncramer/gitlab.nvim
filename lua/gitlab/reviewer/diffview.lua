@@ -187,7 +187,7 @@ M.get_location = function(range)
   end
 
   -- Comment on new line: Include only new_line in payload.
-  if modification_type == "added" or (modification_type == "modified" and is_current_sha) then
+  if modification_type == "added" then
     reviewer_info.old_line = nil
     reviewer_info.new_line = b_linenr
     -- Comment on deleted line: Include only new_line in payload.
@@ -197,7 +197,7 @@ M.get_location = function(range)
     -- The line was not found in any hunks, only send the old line number
   elseif modification_type == "unmodified" or modification_type == "bad_file_unmodified" then
     reviewer_info.old_line = a_linenr
-    reviewer_info.new_line = b_linenr
+    reviewer_info.new_line = a_linenr
   end
 
   if range == nil then
@@ -340,70 +340,41 @@ end
 ---@param all_diff_output table The raw diff output
 function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
   -- If leaving a comment on the old window, we can either be commenting
-  -- on a deletion, a modified line, or an unmodified line. It's a deletion if it's in the range
-  -- of the hunks and the new range is zero, since that is a deletion hunk.
+  -- on a deletion or an unmodified line. It's a deletion if it's in the range
+  -- of the hunks and the new range is zero, since that is only a deletion hunk,
+  -- or if we find a match in another hunk with a range, then we should check if that line
+  -- was actually deleted. To do that we have to see whether that line is prefixed
+  -- with a "-" only. If it is, then it's a deletion.
   if not is_current_sha then
     for _, hunk in ipairs(hunks) do
       local old_line_end = hunk.old_line + hunk.old_range
+      local new_line_end = hunk.old_line + hunk.new_range
       if a_linenr >= hunk.old_line and a_linenr <= old_line_end and hunk.new_range == 0 then
         return "deleted"
       end
-      if a_linenr >= hunk.old_line and a_linenr <= old_line_end then
+      if (a_linenr >= hunk.old_line and a_linenr <= old_line_end) or (a_linenr >= hunk.new_line and b_linenr <= new_line_end) then
         if M.line_was_removed(a_linenr, hunk, all_diff_output) then
           return "deleted"
         end
       end
-      if a_linenr >= hunk.new_line and b_linenr <= hunk.new_line + hunk.new_range then
-        -- If we find a match in the modified hunk we should check if that line was actually deleted
-        -- To do that we have to look at the front of the line. If it's prefixed with
-        -- just a "+" then we happen to be on a line number whose line number is ALSO an added
-        -- line in a new file hunk, do not treat this as a deletion
-        for matching_line_index, line in ipairs(all_diff_output) do
-          local found_hunk = u.parse_possible_hunk_headers(line)
-          if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-            local j = 1
-            for hunk_line_index = found_hunk.old_line, hunk.new_line + hunk.new_range, 1 do
-              local line_content = all_diff_output[matching_line_index + j]
-              if hunk_line_index == a_linenr then
-                if string.match(line_content, "^%-") then
-                  return "deleted"
-                end
-              end
-            end
-          end
-        end
-      end
     end
-  else
-    -- If commenting on the new window, we are either leaving a comment on an added
-    -- line or an added line.
-    for _, hunk in ipairs(hunks) do
-      local new_line_end = hunk.new_line + hunk.new_range
-      if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        for matching_line_index, line in ipairs(all_diff_output) do
-          local found_hunk = u.parse_possible_hunk_headers(line)
-          if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-            local j = 1
-            for hunk_line_index = found_hunk.new_line, hunk.new_line + hunk.new_range, 1 do
-              local line_content = all_diff_output[matching_line_index + j]
-              if hunk_line_index == b_linenr then
-                if string.match(line_content, "") then
-                  return "added"
-                end
-              end
-            end
-          end
-        end
-      end
-    end
-
-    -- If we can't find the line, this means the user is trying to leave a comment on an unmodified
-    -- line, but in the new buffer. Warn them and do not post the comment.
-    return "bad_file_unmodified"
+    return "unmodified"
   end
 
-  -- If the line number does not fall within any hunk ranges, it is unmodified
-  return "unmodified"
+  -- If commenting in the newer file, same logic applies, but in reverse. Parse the lines
+  -- of output, if you are making a comment on a line that matches a hunk range for the new
+  -- line or an added line. The same logic applies as above: We need to parse all of the lines in
+  -- the hunk and see whether our line actually was added. It's added if
+  for _, hunk in ipairs(hunks) do
+    local new_line_end = hunk.new_line + hunk.new_range
+    if b_linenr >= hunk.new_line and b_linenr <= new_line_end - 1 then
+      return "added"
+    end
+  end
+
+  -- If we can't find the line, this means the user is trying to leave a comment on an unmodified
+  -- line, but in the new buffer. Warn them and do not post the comment.
+  return "bad_file_unmodified"
 end
 
 ---@param a_linenr number
@@ -415,6 +386,14 @@ M.line_was_removed = function(a_linenr, hunk, all_diff_output)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
       local j = 1
       for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range - 1, 1 do
+        local line_content = all_diff_output[matching_line_index + j]
+        if hunk_line_index == a_linenr then
+          if string.match(line_content, "^%-") then
+            return "deleted"
+          end
+        end
+      end
+      for hunk_line_index = found_hunk.old_line, hunk.new_line + hunk.new_range - 1, 1 do
         local line_content = all_diff_output[matching_line_index + j]
         if hunk_line_index == a_linenr then
           if string.match(line_content, "^%-") then
