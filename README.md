@@ -108,7 +108,7 @@ require("gitlab").setup({
       imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
     },
   },
-  help = "?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
+  help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
     exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
@@ -127,7 +127,7 @@ require("gitlab").setup({
   },
   discussion_tree = { -- The discussion tree that holds all comments
     auto_open = true, -- Automatically open when the reviewer is opened
-    switch_view = "T", -- Toggles between the notes and discussions views
+    switch_view = "S", -- Toggles between the notes and discussions views
     default_view = "discussions" -- Show "discussions" or "notes" by default
     blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
     jump_to_file = "o", -- Jump to comment location in file
@@ -136,6 +136,10 @@ require("gitlab").setup({
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
+    toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
+    toggle_resolved_discussions = "R", -- Open or close all resolved discussions
+    toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
+    keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     open_in_browser = "b" -- Jump to the URL of the current note/discussion
@@ -211,6 +215,10 @@ require("gitlab").setup({
   create_mr = {
     target = nil, -- Default branch to target when creating an MR
     template_file = nil, -- Default MR template in .gitlab/merge_request_templates
+    title_input = { -- Default settings for MR title input window
+      width = 40,
+      border = "rounded",
+    },
   },
   colors = {
     discussion_tree = {

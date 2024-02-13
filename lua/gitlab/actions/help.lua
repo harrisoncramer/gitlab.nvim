@@ -10,7 +10,7 @@ M.open = function()
   local help_content_lines = {}
   for _, keymap in ipairs(keymaps) do
     if keymap.desc ~= nil then
-      local new_line = string.format("%s: %s", keymap.lhs, keymap.desc)
+      local new_line = string.format("%s: %s", keymap.lhs:gsub(" ", "<space>"), keymap.desc)
       table.insert(help_content_lines, new_line)
     end
   end

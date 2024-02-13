@@ -19,7 +19,7 @@ M.settings = {
     },
   },
   attachment_dir = "",
-  help = "?",
+  help = "g?",
   popup = {
     exit = "<Esc>",
     perform_action = "<leader>s",
@@ -39,6 +39,8 @@ M.settings = {
   },
   discussion_tree = {
     auto_open = true,
+    switch_view = "S",
+    default_view = "discussions",
     blacklist = {},
     jump_to_file = "o",
     jump_to_reviewer = "m",
@@ -47,6 +49,10 @@ M.settings = {
     open_in_browser = "b",
     reply = "r",
     toggle_node = "t",
+    toggle_all_discussions = "T",
+    toggle_resolved_discussions = "R",
+    toggle_unresolved_discussions = "U",
+    keep_current_open = false,
     toggle_resolved = "p",
     relative = "editor",
     position = "left",
@@ -54,8 +60,6 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
-    switch_view = "T",
-    default_view = "discussions",
     ---@param t WinbarTable
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
@@ -81,6 +85,10 @@ M.settings = {
   create_mr = {
     target = nil,
     template_file = nil,
+    title_input = {
+      width = 40,
+      border = "rounded",
+    },
   },
   info = {
     enabled = true,
