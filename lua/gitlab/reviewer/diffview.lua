@@ -341,13 +341,17 @@ end
 function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
   for _, hunk in ipairs(hunks) do
     local old_line_end = hunk.old_line + hunk.old_range
-    local new_line_end = hunk.old_line + hunk.new_range
+    local new_line_end = hunk.new_line + hunk.new_range
 
-    -- If leaving a comment on the old window, we can either be commenting
-    -- on a deletion or an unmodified line.
     if is_current_sha then
-      if b_linenr >= hunk.new_line and b_linenr <= new_line_end - 1 then
-        return "added"
+      -- If leaving a comment on the new window, we may be commenting on an added line
+      -- or on an unmodified line. To tell, we have to check whether the line itself is
+      -- prefixed with "+" and only return "added" if it is.
+      if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
+        if hunk.new_range == 0 then return "added" end
+        if M.line_was_added(b_linenr, hunk, all_diff_output) then
+          return "added"
+        end
       end
     else
       -- It's a deletion if it's in the range of the hunks and the new
@@ -371,10 +375,10 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
   return is_current_sha and "bad_file_unmodified" or "unmodified"
 end
 
----@param a_linenr number
+---@param linnr number
 ---@param hunk Hunk
 ---@param all_diff_output table
-M.line_was_removed = function(a_linenr, hunk, all_diff_output)
+M.line_was_removed = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = u.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
@@ -383,11 +387,37 @@ M.line_was_removed = function(a_linenr, hunk, all_diff_output)
       -- to see if that line is deleted or not.
       for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range - 1, 1 do
         local line_content = all_diff_output[matching_line_index + 1]
-        if hunk_line_index == a_linenr then
+        if hunk_line_index == linnr then
           if string.match(line_content, "^%-") then
             return "deleted"
           end
         end
+      end
+    end
+  end
+end
+
+---@param linnr number
+---@param hunk Hunk
+---@param all_diff_output table
+M.line_was_added = function(linnr, hunk, all_diff_output)
+  for matching_line_index, line in ipairs(all_diff_output) do
+    local found_hunk = u.parse_possible_hunk_headers(line)
+    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
+      local index_from_new_lines_diff = found_hunk.new_line + 1 + found_hunk.old_range
+      local i = 0
+      -- For added lines, we only want to iterate over the part of the diff that has has new lines,
+      -- so we skip over the old range. We then keep track of the increment to the original new line index,
+      -- and iterate until we reach the end of the total range of this hunk. If we arrive at the matching
+      -- index for the line number, we check to see if the line was added.
+      for hunk_line_index = matching_line_index + found_hunk.old_range + 1, matching_line_index + found_hunk.old_range + found_hunk.new_range, 1 do
+        local line_content = all_diff_output[hunk_line_index]
+        if (found_hunk.new_line + i) == index_from_new_lines_diff then
+          if string.match(line_content, "^%+") then
+            return "added"
+          end
+        end
+        i = i + 1
       end
     end
   end
