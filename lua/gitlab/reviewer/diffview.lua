@@ -410,12 +410,11 @@ M.line_was_added = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = u.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-      local index_from_new_lines_diff = found_hunk.new_line + 1 + found_hunk.old_range
-      local i = 0
       -- For added lines, we only want to iterate over the part of the diff that has has new lines,
       -- so we skip over the old range. We then keep track of the increment to the original new line index,
       -- and iterate until we reach the end of the total range of this hunk. If we arrive at the matching
       -- index for the line number, we check to see if the line was added.
+      local i = 0
       for hunk_line_index = matching_line_index + found_hunk.old_range + 1, matching_line_index + found_hunk.old_range + found_hunk.new_range, 1 do
         local line_content = all_diff_output[hunk_line_index]
         if (found_hunk.new_line + i) == linnr then
