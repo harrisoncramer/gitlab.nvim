@@ -381,9 +381,8 @@ M.line_was_removed = function(a_linenr, hunk, all_diff_output)
       -- We found a matching hunk, now we need to iterate over the lines from the raw diff output
       -- at that hunk until we reach the line we are looking for. When the indexes match we check
       -- to see if that line is deleted or not.
-      local j = 1
       for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range - 1, 1 do
-        local line_content = all_diff_output[matching_line_index + j]
+        local line_content = all_diff_output[matching_line_index + 1]
         if hunk_line_index == a_linenr then
           if string.match(line_content, "^%-") then
             return "deleted"
