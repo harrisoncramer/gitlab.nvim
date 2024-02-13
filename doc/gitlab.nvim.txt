@@ -160,7 +160,7 @@ you call this function with no values the defaults will be used:
       },
       discussion_tree = { -- The discussion tree that holds all comments
         auto_open = true, -- Automatically open when the reviewer is opened
-        switch_view = "T", -- Toggles between the notes and discussions views
+        switch_view = "S", -- Toggles between the notes and discussions views
         default_view = "discussions" -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
         jump_to_file = "o", -- Jump to comment location in file
@@ -169,11 +169,10 @@ you call this function with no values the defaults will be used:
         delete_comment = "dd", -- Delete comment
         reply = "r", -- Reply to comment
         toggle_node = "t", -- Opens or closes the discussion
-        collapse_all = "CA", -- Closes all discussions
-        collapse_resolved = "CC", -- Closes all resolved discussions
-        collapse_others = "CO", -- Closes all discussions except for the current one (opens the current one if it was closed)
-        expand_all = "EA", -- Opens all discussions
-        expand_unresolved = "EE", -- Opens all unresolved discussions (closes resolved if they were open)
+        toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
+        toggle_resolved_discussions = "R", -- Open or close all resolved discussions
+        toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
+        keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
         position = "left", -- "top", "right", "bottom" or "left"
         open_in_browser = "b" -- Jump to the URL of the current note/discussion

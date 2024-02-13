@@ -39,6 +39,8 @@ M.settings = {
   },
   discussion_tree = {
     auto_open = true,
+    switch_view = "S",
+    default_view = "discussions",
     blacklist = {},
     jump_to_file = "o",
     jump_to_reviewer = "m",
@@ -47,11 +49,10 @@ M.settings = {
     open_in_browser = "b",
     reply = "r",
     toggle_node = "t",
-    collapse_all = "CA",
-    collapse_resolved = "CC",
-    collapse_others = "CO",
-    expand_all = "EA",
-    expand_unresolved = "EE",
+    toggle_all_discussions = "T",
+    toggle_resolved_discussions = "R",
+    toggle_unresolved_discussions = "U",
+    keep_current_open = false,
     toggle_resolved = "p",
     relative = "editor",
     position = "left",
@@ -59,8 +60,6 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
-    switch_view = "T",
-    default_view = "discussions",
     ---@param t WinbarTable
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
