@@ -181,7 +181,7 @@ M.get_location = function(range)
 
   -- Will be different depending on focused window.
   local modification_type =
-    M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
+      M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
 
   if modification_type == "bad_file_unmodified" then
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
@@ -208,7 +208,7 @@ M.get_location = function(range)
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
   local is_new = reviewer_info.new_line ~= nil
   local current_line_info = is_new and u.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new)
-    or u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
+      or u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
   local type = is_new and "new" or "old"
 
   ---@type ReviewerRangeInfo
@@ -365,8 +365,8 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
         return "deleted"
       end
       if
-        (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
-        or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
+          (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
+          or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
       then
         if M.line_was_removed(a_linenr, hunk, all_diff_output) then
           return "deleted"
@@ -418,7 +418,7 @@ M.line_was_added = function(linnr, hunk, all_diff_output)
       -- index for the line number, we check to see if the line was added.
       for hunk_line_index = matching_line_index + found_hunk.old_range + 1, matching_line_index + found_hunk.old_range + found_hunk.new_range, 1 do
         local line_content = all_diff_output[hunk_line_index]
-        if (found_hunk.new_line + i) == index_from_new_lines_diff then
+        if (found_hunk.new_line + i) == linnr then
           if string.match(line_content, "^%+") then
             return "added"
           end
