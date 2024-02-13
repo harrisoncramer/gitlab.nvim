@@ -138,7 +138,7 @@ require("gitlab").setup({
     toggle_node = "t", -- Opens or closes the discussion
     toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
     toggle_resolved_discussions = "R", -- Open or close all resolved discussions
-    toggle_unresolved_discussions = "T", -- Open or close all unresolved discussions
+    toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
     keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
