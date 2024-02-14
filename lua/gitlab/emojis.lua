@@ -1,3 +1,4 @@
+local discussions = require("gitlab.actions.discussions")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local M = {}
@@ -19,7 +20,7 @@ M.init = function()
     u.notify("Could not parse emoji file at " .. emoji_path, vim.log.levels.WARN)
   end
 
-  state.emoji_lookup = data
+  state.emoji_map = data
 end
 
 return M

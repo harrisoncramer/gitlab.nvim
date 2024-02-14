@@ -498,17 +498,22 @@ local function nui_tree_prepare_node(node)
       if node.icon then
         line:append(node.icon .. " ", node.icon_hl)
       end
-
-      local emojis = M.emojis[node.root_note_id]
-      ---@param v Emoji
-      for _, v in ipairs(emojis) do
-        vim.print(v)
-      end
     else
       line:append("  ")
     end
 
     line:append(text, node.text_hl)
+
+    ---@type Emoji[]
+    local emojis = node.is_root and M.emojis[node.root_note_id]
+    if emojis ~= nil then
+      for _, v in ipairs(emojis) do
+        local icon = state.emoji_map[v.name]
+        if icon ~= nil then
+          line:append(" " .. icon.moji)
+        end
+      end
+    end
 
     table.insert(lines, line)
   end
