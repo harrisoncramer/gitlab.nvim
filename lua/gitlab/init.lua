@@ -1,7 +1,7 @@
 local u = require("gitlab.utils")
 local async = require("gitlab.async")
 local server = require("gitlab.server")
-local emojis = require("gitlab.emojis")
+local emoji = require("gitlab.emoji")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
@@ -29,7 +29,7 @@ return {
     require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    emojis.init()                        -- Read in emojis for lookup purposes
+    emoji.init()                         -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),

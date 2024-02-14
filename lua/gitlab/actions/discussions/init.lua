@@ -14,6 +14,7 @@ local discussions_tree = require("gitlab.actions.discussions.tree")
 local signs = require("gitlab.actions.discussions.signs")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
+local emoji = require("gitlab.emoji")
 
 local M = {
   split_visible = false,
@@ -703,6 +704,8 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", "<leader>p", function()
     M.print_node(tree)
   end, { buffer = bufnr, desc = "dev_ Print current node (for debugging)" })
+
+  emoji.init_popup(tree, bufnr)
 end
 
 M.redraw_resolved_status = function(tree, note, mark_resolved)
