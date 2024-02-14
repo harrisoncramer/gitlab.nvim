@@ -267,7 +267,6 @@ M.parse_signs_from_discussions = function(discussions)
         start_line = start_old_line
         end_line = end_old_line
       else
-        vim.print(start_type == "")
         return {}, {}, string.format("Unsupported line range type found for discussion %s", discussion.id)
       end
 

@@ -16,8 +16,9 @@ type DiscussionsRequest struct {
 
 type DiscussionsResponse struct {
 	SuccessResponse
-	Discussions         []*gitlab.Discussion `json:"discussions"`
-	UnlinkedDiscussions []*gitlab.Discussion `json:"unlinked_discussions"`
+	Discussions         []*gitlab.Discussion         `json:"discussions"`
+	UnlinkedDiscussions []*gitlab.Discussion         `json:"unlinked_discussions"`
+	Emojis              map[int][]*gitlab.AwardEmoji `json:"emojis"`
 }
 
 type SortableDiscussions []*gitlab.Discussion
@@ -83,11 +84,16 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	and system discussions, then return them sorted by created date */
 	var unlinkedDiscussions []*gitlab.Discussion
 	var linkedDiscussions []*gitlab.Discussion
+
+	/* Collect IDs in order to fetch emojis */
+	var noteIds []int
+
 	for _, discussion := range discussions {
 		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
 			continue
 		}
 		for _, note := range discussion.Notes {
+			noteIds = append(noteIds, note.ID)
 			if note.Type == gitlab.NoteTypeValue("DiffNote") {
 				linkedDiscussions = append(linkedDiscussions, discussion)
 				break
@@ -97,6 +103,8 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	emojis, err := a.fetchEmojisForNotes(noteIds)
 
 	sortedLinkedDiscussions := SortableDiscussions(linkedDiscussions)
 	sortedUnlinkedDiscussions := SortableDiscussions(unlinkedDiscussions)
@@ -117,6 +125,7 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		},
 		Discussions:         linkedDiscussions,
 		UnlinkedDiscussions: unlinkedDiscussions,
+		Emojis:              emojis,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
