@@ -66,6 +66,17 @@
 ---@field discussions Discussion[]
 ---@field unlinked_discussions UnlinkedDiscussion[]
 
+---@class Emoji
+---@field	Unicode           string
+---@field	UnicodeAlternates string[]
+---@field	Name              string
+---@field	Shortname         string
+---@field	Category          string
+---@field	Aliases           string[]
+---@field	AliasesASCII      string[]
+---@field	Keywords          string[]
+---@field	Moji              string
+
 ---@class WinbarTable
 ---@field name string
 ---@field resolvable_discussions number

@@ -15,12 +15,12 @@ import (
 
 type Emoji struct {
 	Unicode           string   `json:"unicode"`
-	UnicodeAlternates []any    `json:"unicode_alternates"`
+	UnicodeAlternates []string `json:"unicode_alternates"`
 	Name              string   `json:"name"`
 	Shortname         string   `json:"shortname"`
 	Category          string   `json:"category"`
-	Aliases           []any    `json:"aliases"`
-	AliasesASCII      []any    `json:"aliases_ascii"`
+	Aliases           []string `json:"aliases"`
+	AliasesASCII      []string `json:"aliases_ascii"`
 	Keywords          []string `json:"keywords"`
 	Moji              string   `json:"moji"`
 }

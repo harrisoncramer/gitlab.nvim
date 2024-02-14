@@ -24,6 +24,8 @@ local M = {
   discussions = {},
   ---@type UnlinkedDiscussion[]
   unlinked_discussions = {},
+  ---@type Emoji[]
+  emojis = {},
   ---@type number
   linked_bufnr = nil,
   ---@type number
@@ -40,6 +42,7 @@ M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     M.discussions = data.discussions ~= vim.NIL and data.discussions or {}
     M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
+    M.emojis = data.emojis or {}
     if type(callback) == "function" then
       callback(data)
     end
@@ -478,6 +481,7 @@ local function nui_tree_prepare_node(node)
     error("missing node.text")
   end
 
+  vim.print(node)
   local texts = node.text
 
   if type(node.text) ~= "table" or node.text.content then
