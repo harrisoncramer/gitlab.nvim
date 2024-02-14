@@ -60,6 +60,9 @@ M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
     callback = function()
       local node = tree:get_node()
+      if node == nil then
+        return
+      end
       local emojis = require("gitlab.actions.discussions").emojis
       local note_emojis = emojis[node.root_note_id]
       if note_emojis == nil then
