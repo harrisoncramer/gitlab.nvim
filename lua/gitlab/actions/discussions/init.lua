@@ -24,7 +24,7 @@ local M = {
   discussions = {},
   ---@type UnlinkedDiscussion[]
   unlinked_discussions = {},
-  ---@type Emoji[]
+  ---@type EmojiMap
   emojis = {},
   ---@type number
   linked_bufnr = nil,
@@ -481,9 +481,7 @@ local function nui_tree_prepare_node(node)
     error("missing node.text")
   end
 
-  vim.print(node)
   local texts = node.text
-
   if type(node.text) ~= "table" or node.text.content then
     texts = { node.text }
   end
@@ -499,6 +497,12 @@ local function nui_tree_prepare_node(node)
       line:append(node:is_expanded() and " " or " ")
       if node.icon then
         line:append(node.icon .. " ", node.icon_hl)
+      end
+
+      local emojis = M.emojis[node.root_note_id]
+      ---@param v Emoji
+      for _, v in ipairs(emojis) do
+        vim.print(v)
       end
     else
       line:append("  ")

@@ -66,6 +66,7 @@
 ---@field discussions Discussion[]
 ---@field unlinked_discussions UnlinkedDiscussion[]
 
+---@class EmojiMap: table<string, Emoji>
 ---@class Emoji
 ---@field	Unicode           string
 ---@field	UnicodeAlternates string[]

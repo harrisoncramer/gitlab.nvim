@@ -1,6 +1,7 @@
 local u = require("gitlab.utils")
 local async = require("gitlab.async")
 local server = require("gitlab.server")
+local emojis = require("gitlab.emojis")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
@@ -23,11 +24,12 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
+    emojis.init()                        -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),
