@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"sync"
-	"unicode/utf8"
 
 	"github.com/xanzy/go-gitlab"
 )
@@ -118,26 +117,3 @@ func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, 
 
 	return emojis, nil
 }
-
-func isSingleCodePointEmoji(emoji string) error {
-	if utf8.RuneCountInString(emoji) == 1 {
-		return nil
-	}
-	return errors.New("the emoji is not a single code point")
-}
-
-// func getEmojiByName(name string) (string, error) {
-//
-// 	// Check if it's a non-single point code emoji
-// 	err := isSingleCodePointEmoji(name)
-// 	if err != nil {
-// 		return "", errors.New("Emojis must be single-point in terminal views")
-// 	}
-//
-// 	emoji, ok := a.emojiList[name]
-// 	if ok == true {
-// 		return emoji, nil
-// 	}
-//
-// 	return "", errors.New("Emoji not found")
-// }
