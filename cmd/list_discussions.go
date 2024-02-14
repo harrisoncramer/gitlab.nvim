@@ -106,7 +106,7 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	emojis, err := a.fetchEmojisForNotes(noteIds)
 	if err != nil {
-		handleError(w, err, "Could not fetch emojis", http.StatusBadRequest)
+		handleError(w, err, "Could not fetch emojis", http.StatusInternalServerError)
 		return
 	}
 
@@ -115,11 +115,6 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	sort.Sort(sortedLinkedDiscussions)
 	sort.Sort(sortedUnlinkedDiscussions)
-
-	if err != nil {
-		handleError(w, err, "Could not list discussions", http.StatusBadRequest)
-		return
-	}
 
 	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{

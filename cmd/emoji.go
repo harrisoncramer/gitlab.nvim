@@ -25,7 +25,7 @@ func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, 
 		wg.Add(1)
 		go func(noteID int) {
 			defer wg.Done()
-			e, _, err := a.client.ListMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteID, &gitlab.ListAwardEmojiOptions{})
+			emojis, _, err := a.client.ListMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteID, &gitlab.ListAwardEmojiOptions{})
 			if err != nil {
 				errs <- err
 				return
@@ -33,7 +33,7 @@ func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, 
 			emojiChan <- struct {
 				noteID int
 				emojis []*gitlab.AwardEmoji
-			}{noteID, e}
+			}{noteID, emojis}
 		}(noteID)
 	}
 

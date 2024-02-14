@@ -37,6 +37,7 @@ type fakeClient struct {
 	listPipelineJobs                 func(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
 	getTraceFile                     func(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
 	listLabels                       func(pid interface{}, opt *gitlab.ListLabelsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Label, *gitlab.Response, error)
+	listMergeRequestAwardEmojiOnNote func(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
 }
 
 type Author struct {
@@ -123,6 +124,10 @@ func (f fakeClient) GetTraceFile(pid interface{}, jobID int, options ...gitlab.R
 
 func (f fakeClient) ListLabels(pid interface{}, opt *gitlab.ListLabelsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Label, *gitlab.Response, error) {
 	return f.listLabels(pid, opt, options...)
+}
+
+func (f fakeClient) ListMergeRequestAwardEmojiOnNote(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
+	return f.listMergeRequestAwardEmojiOnNote(pid, mr, noteID, opt, options...)
 }
 
 /* This middleware function needs to return an ID for the rest of the handlers */
