@@ -507,11 +507,16 @@ local function nui_tree_prepare_node(node)
 
     ---@type Emoji[]
     local emojis = node.is_root and M.emojis[node.root_note_id]
+    local placed_emojis = {}
     if emojis ~= nil then
       for _, v in ipairs(emojis) do
         local icon = state.emoji_map[v.name]
         if icon ~= nil then
-          line:append(" " .. icon.moji)
+          if not u.contains(placed_emojis, icon.moji) then
+            line:append(" ")
+            line:append(icon.moji)
+            table.insert(placed_emojis, icon.moji)
+          end
         end
       end
     end
