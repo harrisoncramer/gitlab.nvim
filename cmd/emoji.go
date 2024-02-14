@@ -37,13 +37,13 @@ func attachEmojisToApi(a *api) error {
 		return err
 	}
 
-	binPath := fmt.Sprintf(path.Dir(e))
+	binPath := path.Dir(e)
 	filePath := fmt.Sprintf("%s/config/emojis.json", binPath)
 
 	reader, err := a.fileReader.ReadFile(filePath)
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Could not find emojis at %s", filePath))
+		return fmt.Errorf("Could not find emojis at %s", filePath)
 	}
 
 	bytes, err := io.ReadAll(reader)
