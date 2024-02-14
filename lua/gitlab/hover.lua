@@ -16,13 +16,13 @@ M.show_popup = function(char)
 
   -- Define the popup window options
   local opts = {
-    relative = 'cursor',
+    relative = "cursor",
     row = -2,
     col = 0,
     width = 2, -- Width set to 2 to accommodate the border
     height = 1,
-    style = 'minimal',
-    border = 'single',
+    style = "minimal",
+    border = "single",
   }
 
   -- Open the popup window and store its ID
@@ -62,20 +62,21 @@ M.init = function()
         vim.print(v)
       end
 
-
       -- Proceed only if char is not empty (to avoid empty popups)
-      if char == "" then return end
+      if char == "" then
+        return
+      end
 
       M.show_popup(char)
     end,
-    buffer = vim.api.nvim_get_current_buf()
+    buffer = vim.api.nvim_get_current_buf(),
   })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
     callback = function()
       M.close_popup()
     end,
-    buffer = vim.api.nvim_get_current_buf()
+    buffer = vim.api.nvim_get_current_buf(),
   })
 end
 

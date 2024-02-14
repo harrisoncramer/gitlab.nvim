@@ -4,11 +4,11 @@ local M = {}
 
 M.init = function()
   local bin_path = state.settings.bin_path
-  local emoji_path = bin_path ..
-      state.settings.file_separator ..
-      "config" ..
-      state.settings.file_separator ..
-      "emojis.json"
+  local emoji_path = bin_path
+    .. state.settings.file_separator
+    .. "config"
+    .. state.settings.file_separator
+    .. "emojis.json"
   local emojis = u.read_file(emoji_path)
   if emojis == nil then
     u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
@@ -24,15 +24,14 @@ end
 
 -- Define the popup window options
 M.popup_opts = {
-  relative = 'cursor',
+  relative = "cursor",
   row = -2,
   col = 0,
   width = 2, -- Width set dynamically later
   height = 1,
-  style = 'minimal',
-  border = 'single',
+  style = "minimal",
+  border = "single",
 }
-
 
 M.show_popup = function(char)
   -- Close existing popup if it's open
@@ -70,7 +69,7 @@ M.init_popup = function(tree, bufnr)
       local cursor_pos = vim.api.nvim_win_get_cursor(0)
       vim.api.nvim_command('normal! "zyiw')
       vim.api.nvim_win_set_cursor(0, cursor_pos)
-      local word = vim.fn.getreg('z')
+      local word = vim.fn.getreg("z")
 
       for k, v in pairs(state.emoji_map) do
         if v.moji == word then
@@ -82,7 +81,7 @@ M.init_popup = function(tree, bufnr)
         end
       end
     end,
-    buffer = bufnr
+    buffer = bufnr,
   })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {

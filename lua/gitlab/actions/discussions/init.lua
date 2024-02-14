@@ -115,7 +115,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
+      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -262,7 +262,7 @@ M.send_deletion = function(tree, unlinked)
         M.rebuild_discussion_tree()
       end
       M.add_empty_titles({
-        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
+        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -535,7 +535,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -828,10 +828,10 @@ M.get_note_location = function(tree)
     return "", "", "", false, "Could not get discussion node"
   end
   return discussion_node.file_name,
-      discussion_node.new_line,
-      discussion_node.old_line,
-      discussion_node.undefined_type or false,
-      nil
+    discussion_node.new_line,
+    discussion_node.old_line,
+    discussion_node.undefined_type or false,
+    nil
 end
 
 ---@param tree NuiTree
