@@ -105,6 +105,10 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	emojis, err := a.fetchEmojisForNotes(noteIds)
+	if err != nil {
+		handleError(w, err, "Could not fetch emojis", http.StatusBadRequest)
+		return
+	}
 
 	sortedLinkedDiscussions := SortableDiscussions(linkedDiscussions)
 	sortedUnlinkedDiscussions := SortableDiscussions(unlinkedDiscussions)
