@@ -1,10 +1,66 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/xanzy/go-gitlab"
 )
+
+type Emoji struct {
+	Unicode           string   `json:"unicode"`
+	UnicodeAlternates []any    `json:"unicode_alternates"`
+	Name              string   `json:"name"`
+	Shortname         string   `json:"shortname"`
+	Category          string   `json:"category"`
+	Aliases           []any    `json:"aliases"`
+	AliasesASCII      []any    `json:"aliases_ascii"`
+	Keywords          []string `json:"keywords"`
+	Moji              string   `json:"moji"`
+}
+
+type EmojiMap map[string]Emoji
+
+/*
+attachEmojisToApi reads the emojis from our external JSON file
+and attaches them to the API so that they can be looked up later
+*/
+func attachEmojisToApi(a *api) error {
+
+	e, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	binPath := fmt.Sprintf(path.Dir(e))
+	filePath := fmt.Sprintf("%s/config/emojis.json", binPath)
+
+	reader, err := a.fileReader.ReadFile(filePath)
+
+	if err != nil {
+		return errors.New(fmt.Sprintf("Could not find emojis at %s", filePath))
+	}
+
+	bytes, err := io.ReadAll(reader)
+	if err != nil {
+		return errors.New("Could not read emoji file")
+	}
+
+	var emojiMap EmojiMap
+	err = json.Unmarshal(bytes, &emojiMap)
+	if err != nil {
+		return errors.New("Could not unmarshal emojis")
+	}
+
+	a.emojiMap = emojiMap
+	return nil
+}
 
 /*
 FetchEmojisForNotes fetches emojis for a set of notes in parallel and returns a map of note IDs to their emojis.
@@ -62,3 +118,26 @@ func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, 
 
 	return emojis, nil
 }
+
+func isSingleCodePointEmoji(emoji string) error {
+	if utf8.RuneCountInString(emoji) == 1 {
+		return nil
+	}
+	return errors.New("the emoji is not a single code point")
+}
+
+// func getEmojiByName(name string) (string, error) {
+//
+// 	// Check if it's a non-single point code emoji
+// 	err := isSingleCodePointEmoji(name)
+// 	if err != nil {
+// 		return "", errors.New("Emojis must be single-point in terminal views")
+// 	}
+//
+// 	emoji, ok := a.emojiList[name]
+// 	if ok == true {
+// 		return emoji, nil
+// 	}
+//
+// 	return "", errors.New("Emoji not found")
+// }
