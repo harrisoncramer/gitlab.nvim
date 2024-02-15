@@ -55,7 +55,11 @@ func TestListDiscussionsHandler(t *testing.T) {
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
-		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer")
+		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
+		assert(t, data.Discussions[2].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
+		assert(t, data.Discussions[3].Notes[0].Author.Username, "hcramer")
+		assert(t, data.Discussions[4].Notes[0].Author.Username, "hcramer")
+		assert(t, data.Discussions[5].Notes[0].Author.Username, "hcramer")
 	})
 
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
@@ -64,7 +68,7 @@ func TestListDiscussionsHandler(t *testing.T) {
 		data := serveRequest(t, server, request, DiscussionsResponse{})
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
-		assert(t, len(data.Discussions), 1)
+		assert(t, len(data.Discussions), 3)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2")
 	})
 
