@@ -48,7 +48,11 @@ func listMergeRequestDiscussionsNon200(pid interface{}, mergeRequest int, opt *g
 }
 
 func listMergeRequestAwardEmojiOnNote(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
-	return []*gitlab.AwardEmoji{}, nil, nil
+	return []*gitlab.AwardEmoji{}, makeResponse(http.StatusOK), nil
+}
+
+func listMergeRequestAwardEmojiOnNoteFailure(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
+	return nil, makeResponse(http.StatusBadRequest), errors.New("Some error from Gitlab")
 }
 
 func TestListDiscussionsHandler(t *testing.T) {
@@ -93,10 +97,10 @@ func TestListDiscussionsHandler(t *testing.T) {
 		checkNon200(t, *data, "Could not list discussions", "/mr/discussions/list")
 	})
 
-	// t.Run("Handles error from emoji service", func(t *testing.T) {
-	// 	request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-	// 	server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsNon200, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNoteFailure})
-	// 	data := serveRequest(t, server, request, ErrorResponse{})
-	// 	checkErrorFromGitlab(t, *data, "Could not fetch emojis")
-	// })
+	t.Run("Handles error from emoji service", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
+		server, _ := createRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNoteFailure})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		checkErrorFromGitlab(t, *data, "Could not fetch emojis")
+	})
 }
