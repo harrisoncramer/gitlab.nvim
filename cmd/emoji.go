@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"sync"
@@ -116,4 +117,66 @@ func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, 
 	}
 
 	return emojis, nil
+}
+
+type CreateEmojiPost struct {
+	Emoji  string `json:"emoji"`
+	NoteId int    `json:"issue_id"`
+}
+
+type CreateEmojiResponse struct {
+	SuccessResponse
+	Emoji *gitlab.AwardEmoji
+}
+
+/* emojiNoteHandler adds an emojis to a note based on the note's ID */
+func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var emojiPost CreateEmojiPost
+	err = json.Unmarshal(body, &emojiPost)
+
+	if err != nil {
+		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
+		return
+	}
+
+	awardEmoji, res, err := a.client.CreateMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.NoteId, &gitlab.CreateAwardEmojiOptions{})
+
+	if err != nil {
+		handleError(w, err, "Could not post emoji", http.StatusInternalServerError)
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/awardable/note"}, "Could not post emoji", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := CreateEmojiResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Merge requests retrieved",
+			Status:  http.StatusOK,
+		},
+		Emoji: awardEmoji,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
+
 }
