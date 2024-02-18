@@ -1,5 +1,3 @@
-local state = require("gitlab.state")
-
 local M = {}
 
 M.show_popup = function(char)
