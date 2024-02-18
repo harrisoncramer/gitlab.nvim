@@ -136,6 +136,10 @@ func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListPr
 	return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
 }
 
+func (f fakeClient) CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error) {
+	return &gitlab.AwardEmoji{}, &gitlab.Response{}, nil
+}
+
 /* The assert function is a helper function used to check two comparables */
 func assert[T comparable](t *testing.T, got T, want T) {
 	t.Helper()
