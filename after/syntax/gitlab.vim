@@ -6,8 +6,8 @@ syntax match Username "@\S*"
 syntax match Date "\v\d+\s+\w+\s+ago"
 syntax match ChevronDown ""
 syntax match ChevronRight ""
-syntax match Resolved "✓$"
-syntax match Unresolved "-$"
+syntax match Resolved /\s✓\s\?/
+syntax match Unresolved /\s-\s\?/
 
 highlight link Username GitlabUsername
 highlight link Date GitlabDate
