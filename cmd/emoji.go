@@ -213,7 +213,7 @@ func (a *api) emojiCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	awardEmoji, res, err := a.client.CreateMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.CommentId, &gitlab.CreateAwardEmojiOptions{
+	awardEmoji, res, err := a.client.CreateIssuesAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.CommentId, &gitlab.CreateAwardEmojiOptions{
 		Name: emojiPost.Emoji,
 	})
 
