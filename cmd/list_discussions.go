@@ -104,7 +104,7 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	emojis, err := a.fetchEmojisForNotes(noteIds)
+	emojis, err := a.fetchEmojisForNotesAndComments(noteIds)
 	if err != nil {
 		handleError(w, err, "Could not fetch emojis", http.StatusInternalServerError)
 		return

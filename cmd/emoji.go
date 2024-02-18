@@ -27,6 +27,21 @@ type Emoji struct {
 
 type EmojiMap map[string]Emoji
 
+type CreateNoteEmojiPost struct {
+	Emoji  string `json:"emoji"`
+	NoteId int    `json:"note_id"`
+}
+
+type CreateCommentEmojiPost struct {
+	Emoji     string `json:"emoji"`
+	CommentId int    `json:"note_id"`
+}
+
+type CreateEmojiResponse struct {
+	SuccessResponse
+	Emoji *gitlab.AwardEmoji
+}
+
 /*
 attachEmojisToApi reads the emojis from our external JSON file
 and attaches them to the API so that they can be looked up later
@@ -63,10 +78,10 @@ func attachEmojisToApi(a *api) error {
 }
 
 /*
-FetchEmojisForNotes fetches emojis for a set of notes in parallel and returns a map of note IDs to their emojis.
+Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
 Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
 */
-func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
+func (a *api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
 	var wg sync.WaitGroup
 
 	emojis := make(map[int][]*gitlab.AwardEmoji)
@@ -119,16 +134,6 @@ func (a *api) fetchEmojisForNotes(noteIDs []int) (map[int][]*gitlab.AwardEmoji, 
 	return emojis, nil
 }
 
-type CreateEmojiPost struct {
-	Emoji  string `json:"emoji"`
-	NoteId int    `json:"issue_id"`
-}
-
-type CreateEmojiResponse struct {
-	SuccessResponse
-	Emoji *gitlab.AwardEmoji
-}
-
 /* emojiNoteHandler adds an emojis to a note based on the note's ID */
 func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -146,7 +151,7 @@ func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var emojiPost CreateEmojiPost
+	var emojiPost CreateNoteEmojiPost
 	err = json.Unmarshal(body, &emojiPost)
 
 	if err != nil {
@@ -154,10 +159,67 @@ func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	awardEmoji, res, err := a.client.CreateMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.NoteId, &gitlab.CreateAwardEmojiOptions{})
+	awardEmoji, res, err := a.client.CreateMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.NoteId, &gitlab.CreateAwardEmojiOptions{
+		Name: emojiPost.Emoji,
+	})
 
 	if err != nil {
 		handleError(w, err, "Could not post emoji", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/awardable/note"}, "Could not post emoji", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := CreateEmojiResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Merge requests retrieved",
+			Status:  http.StatusOK,
+		},
+		Emoji: awardEmoji,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
+}
+
+/* emojiCommentHandler adds an emoji to a comment based on the TODO */
+func (a *api) emojiCommentHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var emojiPost CreateCommentEmojiPost
+	err = json.Unmarshal(body, &emojiPost)
+
+	if err != nil {
+		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
+		return
+	}
+
+	awardEmoji, res, err := a.client.CreateMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.CommentId, &gitlab.CreateAwardEmojiOptions{
+		Name: emojiPost.Emoji,
+	})
+
+	if err != nil {
+		handleError(w, err, "Could not post emoji", http.StatusInternalServerError)
+		return
 	}
 
 	if res.StatusCode >= 300 {

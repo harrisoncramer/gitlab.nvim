@@ -115,7 +115,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -262,7 +262,7 @@ M.send_deletion = function(tree, unlinked)
         M.rebuild_discussion_tree()
       end
       M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -535,7 +535,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -708,7 +708,10 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   end, { buffer = bufnr, desc = "Open the note in your browser" })
   vim.keymap.set("n", "<leader>p", function()
     M.print_node(tree)
-  end, { buffer = bufnr, desc = "dev_ Print current node (for debugging)" })
+  end, { buffer = bufnr, desc = "Print current node (for debugging)" })
+  vim.keymap.set("n", state.settings.discussion_tree.add_emoji, function()
+    M.add_emoji(tree)
+  end, { buffer = bufnr, desc = "Add an emoji reaction to the note" })
 
   emoji.init_popup(tree, bufnr)
 end
@@ -828,10 +831,10 @@ M.get_note_location = function(tree)
     return "", "", "", false, "Could not get discussion node"
   end
   return discussion_node.file_name,
-    discussion_node.new_line,
-    discussion_node.old_line,
-    discussion_node.undefined_type or false,
-    nil
+      discussion_node.new_line,
+      discussion_node.old_line,
+      discussion_node.undefined_type or false,
+      nil
 end
 
 ---@param tree NuiTree
@@ -848,6 +851,23 @@ M.open_in_browser = function(tree)
   end
 
   u.open_in_browser(url)
+end
+
+M.add_emoji = function(tree)
+  -- Different for note vs. comment
+  local node = tree:get_node()
+  local root_node = M.get_root_node(tree, node)
+  if not root_node then
+    return
+  end
+  emoji.pick_emoji(function(name)
+    local body = { emoji = name, note_id = tonumber(root_node.root_note_id) }
+    vim.print(body)
+    job.run_job("/mr/awardable/note", "POST", body, function(data)
+      print("Success!")
+      vim.print(data)
+    end)
+  end)
 end
 
 -- For developers!
