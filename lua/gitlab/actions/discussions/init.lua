@@ -505,8 +505,10 @@ local function nui_tree_prepare_node(node)
 
     line:append(text, node.text_hl)
 
+    local note_id = tostring(node.is_root and node.root_note_id or node.id)
+
     ---@type Emoji[]
-    local emojis = node.is_root and M.emojis[node.root_note_id]
+    local emojis = M.emojis[note_id]
     local placed_emojis = {}
     if emojis ~= nil then
       for _, v in ipairs(emojis) do
@@ -855,16 +857,29 @@ M.add_emoji = function(tree, unlinked)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)
   if not root_node then
+    print("Could not get root node")
     return
   end
+
+  local note_node = M.get_note_node(tree, node)
+  if not note_node then
+    print("Could not get note node")
+    return
+  end
+
+  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+  local note_id_str = tostring(note_id)
+
   emoji.pick_emoji(function(choice)
     local name = choice.shortname:sub(2, -2)
-    if root_node.root_note_id == nil then
-      return
-    end
-    local body = { emoji = name, note_id = tonumber(root_node.root_note_id) }
+    local body = { emoji = name, note_id = note_id }
     job.run_job("/mr/awardable/note", "POST", body, function(data)
-      table.insert(M.emojis[node.root_note_id], data.Emoji)
+      if M.emojis[note_id_str] == nil then
+        M.emojis[note_id_str] = {}
+        table.insert(M.emojis[note_id_str], data.Emoji)
+      else
+        table.insert(M.emojis[note_id_str], data.Emoji)
+      end
       if unlinked then
         M.rebuild_unlinked_discussion_tree()
       else
