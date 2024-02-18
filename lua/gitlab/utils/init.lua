@@ -38,6 +38,16 @@ M.filter = function(input_table, value_to_remove)
   return resultTable
 end
 
+M.filter_by_key_value = function(input_table, target_key, target_value)
+  local result_table = {}
+  for _, v in ipairs(input_table) do
+    if v[target_key] ~= target_value then
+      table.insert(result_table, v)
+    end
+  end
+  return result_table
+end
+
 ---Merges two deeply nested tables together, overriding values from the first with conflicts
 ---@param defaults table The first table
 ---@param overrides table The second table
@@ -154,7 +164,7 @@ end
 M.split_by_new_lines = function(s)
   if s:sub(-1) ~= "\n" then
     s = s .. "\n"
-  end -- Append a new line to the string, if there's none, otherwise the last line would be lost.
+  end                       -- Append a new line to the string, if there's none, otherwise the last line would be lost.
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
 end
 
@@ -197,7 +207,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 

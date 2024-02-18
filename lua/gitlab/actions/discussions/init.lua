@@ -104,7 +104,7 @@ M.toggle = function(callback)
 
   M.load_discussions(function()
     if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
-      vim.notify("No discussions or notes for this MR", vim.log.levels.WARN)
+      u.notify("No discussions or notes for this MR", vim.log.levels.WARN)
       vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
       return
     end
@@ -115,7 +115,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -163,7 +163,7 @@ M.move_to_discussion_tree = function()
       local discussion_id = diagnostic.user_data.discussion_id
       local discussion_node, line_number = M.discussion_tree:get_node("-" .. discussion_id)
       if discussion_node == {} or discussion_node == nil then
-        vim.notify("Discussion not found", vim.log.levels.WARN)
+        u.notify("Discussion not found", vim.log.levels.WARN)
         return
       end
       if not discussion_node:is_expanded() then
@@ -185,7 +185,7 @@ M.move_to_discussion_tree = function()
   end
 
   if #diagnostics == 0 then
-    vim.notify("No diagnostics for this line", vim.log.levels.WARN)
+    u.notify("No diagnostics for this line", vim.log.levels.WARN)
     return
   elseif #diagnostics > 1 then
     vim.ui.select(diagnostics, {
@@ -262,7 +262,7 @@ M.send_deletion = function(tree, unlinked)
         M.rebuild_discussion_tree()
       end
       M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -535,7 +535,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -710,8 +710,11 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     M.print_node(tree)
   end, { buffer = bufnr, desc = "Print current node (for debugging)" })
   vim.keymap.set("n", state.settings.discussion_tree.add_emoji, function()
-    M.add_emoji(tree, unlinked)
-  end, { buffer = bufnr, desc = "Add an emoji reaction to the note" })
+    M.add_emoji_to_note(tree, unlinked)
+  end, { buffer = bufnr, desc = "Add an emoji reaction to the note/comment" })
+  vim.keymap.set("n", state.settings.discussion_tree.delete_emoji, function()
+    M.delete_emoji_from_note(tree, unlinked)
+  end, { buffer = bufnr, desc = "Remove an emoji reaction from the note/comment" })
 
   emoji.init_popup(tree, bufnr)
 end
@@ -831,10 +834,10 @@ M.get_note_location = function(tree)
     return "", "", "", false, "Could not get discussion node"
   end
   return discussion_node.file_name,
-    discussion_node.new_line,
-    discussion_node.old_line,
-    discussion_node.undefined_type or false,
-    nil
+      discussion_node.new_line,
+      discussion_node.old_line,
+      discussion_node.undefined_type or false,
+      nil
 end
 
 ---@param tree NuiTree
@@ -853,14 +856,14 @@ M.open_in_browser = function(tree)
   u.open_in_browser(url)
 end
 
-M.add_emoji = function(tree, unlinked)
+M.add_emoji_to_note = function(tree, unlinked)
   local node = tree:get_node()
   local note_node = M.get_note_node(tree, node)
   local root_node = M.get_root_node(tree, node)
   local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
   local note_id_str = tostring(note_id)
-  emoji.pick_emoji(function(choice)
-    local name = choice.shortname:sub(2, -2)
+  local emojis = state.emoji_list
+  emoji.pick_emoji(emojis, function(name)
     local body = { emoji = name, note_id = note_id }
     job.run_job("/mr/awardable/note", "POST", body, function(data)
       if M.emojis[note_id_str] == nil then
@@ -874,6 +877,40 @@ M.add_emoji = function(tree, unlinked)
       else
         M.rebuild_discussion_tree()
       end
+      u.notify("Emoji added", vim.log.levels.INFO)
+    end)
+  end)
+end
+
+M.delete_emoji_from_note = function(tree, unlinked)
+  local node = tree:get_node()
+  local note_node = M.get_note_node(tree, node)
+  local root_node = M.get_root_node(tree, node)
+  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+  local note_id_str = tostring(note_id)
+
+  local emojis = {}
+  local current_emojis = M.emojis[note_id_str]
+  for _, e in ipairs(current_emojis) do
+    table.insert(emojis, state.emoji_map[e.name])
+  end
+
+  vim.print(M.emojis[note_id_str])
+  emoji.pick_emoji(emojis, function(name)
+    local awardable_id
+    for _, e in ipairs(current_emojis) do
+      if e.name == name then
+        awardable_id = e.id
+      end
+    end
+    job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function(_)
+      M.emojis[note_id_str] = u.filter_by_key_value(M.emojis[note_id_str], "name", name)
+      if unlinked then
+        M.rebuild_unlinked_discussion_tree()
+      else
+        M.rebuild_discussion_tree()
+      end
+      u.notify("Emoji removed", vim.log.levels.INFO)
     end)
   end)
 end

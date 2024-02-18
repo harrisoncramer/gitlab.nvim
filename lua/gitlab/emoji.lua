@@ -5,10 +5,10 @@ local M = {}
 M.init = function()
   local bin_path = state.settings.bin_path
   local emoji_path = bin_path
-    .. state.settings.file_separator
-    .. "config"
-    .. state.settings.file_separator
-    .. "emojis.json"
+      .. state.settings.file_separator
+      .. "config"
+      .. state.settings.file_separator
+      .. "emojis.json"
   local emojis = u.read_file(emoji_path)
   if emojis == nil then
     u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
@@ -116,9 +116,8 @@ M.get_users_who_reacted_with_emoji = function(name, note_emojis)
   return string.len(result) > 3 and result:sub(1, -3) or result
 end
 
-M.pick_emoji = function(cb)
-  local emojis = state.emoji_list
-  vim.ui.select(emojis, {
+M.pick_emoji = function(options, cb)
+  vim.ui.select(options, {
     prompt = "Choose emoji",
     format_item = function(val)
       return string.format("%s %s", val.moji, val.name)
@@ -127,7 +126,8 @@ M.pick_emoji = function(cb)
     if not choice then
       return
     end
-    cb(choice)
+    local name = choice.shortname:sub(2, -2)
+    cb(name, choice)
   end)
 end
 

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/xanzy/go-gitlab"
@@ -129,15 +131,63 @@ func (a *api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.A
 	return emojis, nil
 }
 
-/* emojiNoteHandler adds an emojis to a note based on the note's ID */
 func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+	switch r.Method {
+	case http.MethodPost:
+		a.postEmojiOnNote(w, r)
+	case http.MethodDelete:
+		a.deleteEmojiFromNote(w, r)
+	default:
+		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodDelete, http.MethodPost))
+		handleError(w, InvalidRequestError{}, "Expected DELETE or POST", http.StatusMethodNotAllowed)
+	}
+}
+
+/* deleteEmojiFromNote deletes an emoji from a note based on the emoji (awardable) ID and the note's ID */
+func (a *api) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
+
+	suffix := strings.TrimPrefix(r.URL.Path, "/mr/awardable/note/")
+	ids := strings.Split(suffix, "/")
+
+	noteId, err := strconv.Atoi(ids[0])
+	if err != nil {
+		handleError(w, err, "Could not convert note ID to integer", http.StatusBadRequest)
 		return
 	}
 
+	awardableId, err := strconv.Atoi(ids[1])
+	if err != nil {
+		handleError(w, err, "Could not convert awardable ID to integer", http.StatusBadRequest)
+		return
+	}
+
+	res, err := a.client.DeleteMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteId, awardableId)
+
+	if err != nil {
+		handleError(w, err, "Could not delete awardable", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not delete awardable", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := SuccessResponse{
+		Message: "Emoji deleted",
+		Status:  http.StatusOK,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
+}
+
+/* postEmojiOnNote adds an emojis to a note based on the note's ID */
+func (a *api) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)

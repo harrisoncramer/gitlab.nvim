@@ -58,9 +58,6 @@ M.init = function()
 
       -- Extract the character (or emoji) under the cursor
       local char = line:sub(byteIndexStart + 1, byteIndexEnd)
-      for _, v in ipairs(state.emoji_map) do
-        vim.print(v)
-      end
 
       -- Proceed only if char is not empty (to avoid empty popups)
       if char == "" then

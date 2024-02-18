@@ -55,6 +55,7 @@ type CommentResponse struct {
 
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
 func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
 		a.postComment(w, r)
@@ -63,7 +64,6 @@ func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		a.deleteComment(w, r)
 	default:
-		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
 		handleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
 	}
@@ -71,7 +71,6 @@ func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
 func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -113,8 +112,6 @@ func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
 
 /* postComment creates a note, multiline comment, or comment. */
 func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -208,7 +205,6 @@ func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 
 /* editComment changes the text of a comment or changes it's resolved status. */
 func (a *api) editComment(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
