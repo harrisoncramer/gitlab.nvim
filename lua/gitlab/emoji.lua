@@ -122,8 +122,7 @@ M.pick_emoji = function(cb)
     if not choice then
       return
     end
-    local name = choice.shortname:sub(2, -2)
-    cb(name)
+    cb(choice)
   end)
 end
 

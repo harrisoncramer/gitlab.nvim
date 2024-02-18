@@ -511,12 +511,10 @@ local function nui_tree_prepare_node(node)
     if emojis ~= nil then
       for _, v in ipairs(emojis) do
         local icon = state.emoji_map[v.name]
-        if icon ~= nil then
-          if not u.contains(placed_emojis, icon.moji) then
-            line:append(" ")
-            line:append(icon.moji)
-            table.insert(placed_emojis, icon.moji)
-          end
+        if icon ~= nil and not u.contains(placed_emojis, icon.moji) then
+          line:append(" ")
+          line:append(icon.moji)
+          table.insert(placed_emojis, icon.moji)
         end
       end
     end
@@ -710,7 +708,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     M.print_node(tree)
   end, { buffer = bufnr, desc = "Print current node (for debugging)" })
   vim.keymap.set("n", state.settings.discussion_tree.add_emoji, function()
-    M.add_emoji(tree)
+    M.add_emoji(tree, unlinked)
   end, { buffer = bufnr, desc = "Add an emoji reaction to the note" })
 
   emoji.init_popup(tree, bufnr)
@@ -853,19 +851,25 @@ M.open_in_browser = function(tree)
   u.open_in_browser(url)
 end
 
-M.add_emoji = function(tree)
-  -- Different for note vs. comment
+M.add_emoji = function(tree, unlinked)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)
   if not root_node then
     return
   end
-  emoji.pick_emoji(function(name)
+  emoji.pick_emoji(function(choice)
+    local name = choice.shortname:sub(2, -2)
+    if root_node.root_note_id == nil then
+      return
+    end
     local body = { emoji = name, note_id = tonumber(root_node.root_note_id) }
-    vim.print(body)
     job.run_job("/mr/awardable/note", "POST", body, function(data)
-      print("Success!")
-      vim.print(data)
+      table.insert(M.emojis[node.root_note_id], data.Emoji)
+      if unlinked then
+        M.rebuild_unlinked_discussion_tree()
+      else
+        M.rebuild_discussion_tree()
+      end
     end)
   end)
 end
