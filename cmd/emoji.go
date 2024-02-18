@@ -32,11 +32,6 @@ type CreateNoteEmojiPost struct {
 	NoteId int    `json:"note_id"`
 }
 
-type CreateCommentEmojiPost struct {
-	Emoji     string `json:"emoji"`
-	CommentId int    `json:"note_id"`
-}
-
 type CreateEmojiResponse struct {
 	SuccessResponse
 	Emoji *gitlab.AwardEmoji
@@ -186,59 +181,4 @@ func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
-}
-
-/* emojiCommentHandler adds an emoji to a comment based on the TODO */
-func (a *api) emojiCommentHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var emojiPost CreateCommentEmojiPost
-	err = json.Unmarshal(body, &emojiPost)
-
-	if err != nil {
-		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-		return
-	}
-
-	awardEmoji, res, err := a.client.CreateIssuesAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, emojiPost.CommentId, &gitlab.CreateAwardEmojiOptions{
-		Name: emojiPost.Emoji,
-	})
-
-	if err != nil {
-		handleError(w, err, "Could not post emoji", http.StatusInternalServerError)
-		return
-	}
-
-	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/awardable/note"}, "Could not post emoji", res.StatusCode)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	response := CreateEmojiResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Merge requests retrieved",
-			Status:  http.StatusOK,
-		},
-		Emoji: awardEmoji,
-	}
-
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
-	}
-
 }
