@@ -345,13 +345,14 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
     local new_line_end = hunk.new_line + hunk.new_range
 
     if is_current_sha then
-      -- If leaving a comment on the new window, we may be commenting on an added line
-      -- or on an unmodified line. To tell, we have to check whether the line itself is
-      -- prefixed with "+" and only return "added" if it is.
+      -- If it is a single line change and neither hunk has a range, then it's added
       if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        if hunk.new_range == 0 then
+        if hunk.new_range == 0 and hunk.old_range == 0 then
           return "added"
         end
+        -- If leaving a comment on the new window, we may be commenting on an added line
+        -- or on an unmodified line. To tell, we have to check whether the line itself is
+        -- prefixed with "+" and only return "added" if it is.
         if M.line_was_added(b_linenr, hunk, all_diff_output) then
           return "added"
         end
@@ -415,7 +416,8 @@ M.line_was_added = function(linnr, hunk, all_diff_output)
       -- and iterate until we reach the end of the total range of this hunk. If we arrive at the matching
       -- index for the line number, we check to see if the line was added.
       local i = 0
-      for hunk_line_index = matching_line_index + found_hunk.old_range + 1, matching_line_index + found_hunk.old_range + found_hunk.new_range, 1 do
+      local old_range = (found_hunk.old_range == 0 and found_hunk.old_line ~= 0) and 1 or found_hunk.old_range
+      for hunk_line_index = matching_line_index + old_range + 1, matching_line_index + old_range + found_hunk.new_range, 1 do
         local line_content = all_diff_output[hunk_line_index]
         if (found_hunk.new_line + i) == linnr then
           if string.match(line_content, "^%+") then
