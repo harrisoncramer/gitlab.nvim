@@ -855,19 +855,13 @@ end
 
 M.add_emoji = function(tree, unlinked)
   local node = tree:get_node()
-  local root_node = M.get_root_node(tree, node)
-  if not root_node then
-    print("Could not get root node")
+
+  if not node.is_root then
+    u.notify("Gitlab's API does not support emojis on non-root nodes", vim.log.levels.WARN)
     return
   end
 
-  local note_node = M.get_note_node(tree, node)
-  if not note_node then
-    print("Could not get note node")
-    return
-  end
-
-  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+  local note_id = tonumber(node.root_note_id)
   local note_id_str = tostring(note_id)
 
   emoji.pick_emoji(function(choice)
