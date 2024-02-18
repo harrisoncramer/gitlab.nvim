@@ -5,10 +5,10 @@ local M = {}
 M.init = function()
   local bin_path = state.settings.bin_path
   local emoji_path = bin_path
-    .. state.settings.file_separator
-    .. "config"
-    .. state.settings.file_separator
-    .. "emojis.json"
+      .. state.settings.file_separator
+      .. "config"
+      .. state.settings.file_separator
+      .. "emojis.json"
   local emojis = u.read_file(emoji_path)
   if emojis == nil then
     u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
@@ -67,8 +67,13 @@ M.init_popup = function(tree, bufnr)
       if node == nil then
         return
       end
+
+      local note_node = require("gitlab.actions.discussions").get_note_node(tree, node)
+      local root_node = require("gitlab.actions.discussions").get_root_node(tree, node)
+      local note_id_str = tostring(note_node.is_root and root_node.root_note_id or note_node.id)
+
       local emojis = require("gitlab.actions.discussions").emojis
-      local note_emojis = emojis[node.root_note_id]
+      local note_emojis = emojis[note_id_str]
       if note_emojis == nil then
         return
       end
