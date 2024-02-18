@@ -85,15 +85,11 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	var unlinkedDiscussions []*gitlab.Discussion
 	var linkedDiscussions []*gitlab.Discussion
 
-	/* Collect IDs in order to fetch emojis */
-	var noteIds []int
-
 	for _, discussion := range discussions {
 		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
 			continue
 		}
 		for _, note := range discussion.Notes {
-			noteIds = append(noteIds, note.ID)
 			if note.Type == gitlab.NoteTypeValue("DiffNote") {
 				linkedDiscussions = append(linkedDiscussions, discussion)
 				break
@@ -101,6 +97,14 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 				unlinkedDiscussions = append(unlinkedDiscussions, discussion)
 				break
 			}
+		}
+	}
+
+	/* Collect IDs in order to fetch emojis */
+	var noteIds []int
+	for _, discussion := range discussions {
+		for _, note := range discussion.Notes {
+			noteIds = append(noteIds, note.ID)
 		}
 	}
 
