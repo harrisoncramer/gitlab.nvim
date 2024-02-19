@@ -904,17 +904,25 @@ M.delete_emoji_from_note = function(tree, unlinked)
   emoji.pick_emoji(emojis, function(name)
     local awardable_id
     for _, current_emoji in ipairs(current_emojis) do
-      if current_emoji.name == name then
+      if current_emoji.name == name and current_emoji.user.id == state.USER.id then
         awardable_id = current_emoji.id
+        break
       end
     end
     job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function(_)
-      M.emojis[note_id_str] = u.filter_by_key_value(M.emojis[note_id_str], "name", name)
+      local keep = {} -- Emojis to keep after deletion in the UI
+      for _, saved in ipairs(M.emojis[note_id_str]) do
+        if saved.name ~= name or saved.user.id ~= state.USER.id then
+          table.insert(keep, saved)
+        end
+      end
+      M.emojis[note_id_str] = keep
       if unlinked then
         M.rebuild_unlinked_discussion_tree()
       else
         M.rebuild_discussion_tree()
       end
+      e.init_popup(tree, unlinked and M.unlinked_bufnr or M.linked_bufnr)
       u.notify("Emoji removed", vim.log.levels.INFO)
     end)
   end)

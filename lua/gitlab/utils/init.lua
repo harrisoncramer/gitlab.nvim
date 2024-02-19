@@ -45,7 +45,6 @@ M.filter_by_key_value = function(input_table, target_key, target_value)
       table.insert(result_table, v)
     end
   end
-  return result_table
 end
 
 ---Merges two deeply nested tables together, overriding values from the first with conflicts
