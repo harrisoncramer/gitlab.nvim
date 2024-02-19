@@ -903,9 +903,9 @@ M.delete_emoji_from_note = function(tree, unlinked)
 
   emoji.pick_emoji(emojis, function(name)
     local awardable_id
-    for _, e in ipairs(current_emojis) do
-      if e.name == name then
-        awardable_id = e.id
+    for _, current_emoji in ipairs(current_emojis) do
+      if current_emoji.name == name then
+        awardable_id = current_emoji.id
       end
     end
     job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function(_)
