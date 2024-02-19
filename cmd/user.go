@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 type UserResponse struct {
-  SuccessResponse
+	SuccessResponse
+	User *gitlab.User `json:"user"`
+}
 
 func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -29,9 +33,16 @@ func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(SuccessResponse{
-    Message: "User fetched successfully",
-    Status: http.StatusOK
-  })
+	response := UserResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "User fetched successfully",
+			Status:  http.StatusOK,
+		},
+		User: user,
+	}
 
+	json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
 }

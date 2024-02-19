@@ -92,6 +92,7 @@ func initGitlabClient() (error, *Client) {
 		PipelinesService:             client.Pipelines,
 		LabelsService:                client.Labels,
 		AwardEmojiService:            client.AwardEmoji,
+		UsersService:                 client.Users,
 	}
 }
 

@@ -58,4 +58,5 @@ type ClientInterface interface {
 	ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
 	CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error)
 	DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	CurrentUser(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error)
 }
