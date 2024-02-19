@@ -315,7 +315,7 @@ end
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
-  user = { endpoint = "/user", key = "user", state = "USER", refresh = false },
+  user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
   info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
   labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
