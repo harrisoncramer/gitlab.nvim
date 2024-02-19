@@ -896,7 +896,9 @@ M.delete_emoji_from_note = function(tree, unlinked)
   local emojis = {}
   local current_emojis = M.emojis[note_id_str]
   for _, current_emoji in ipairs(current_emojis) do
-    table.insert(emojis, e.emoji_map[current_emoji.name])
+    if state.USER.id == current_emoji.user.id then
+      table.insert(emojis, e.emoji_map[current_emoji.name])
+    end
   end
 
   vim.print(M.emojis[note_id_str])
