@@ -865,7 +865,7 @@ M.add_emoji_to_note = function(tree, unlinked)
   local emojis = state.emoji_list
   emoji.pick_emoji(emojis, function(name)
     local body = { emoji = name, note_id = note_id }
-    job.run_job("/mr/awardable/note", "POST", body, function(data)
+    job.run_job("/mr/awardable/note/", "POST", body, function(data)
       if M.emojis[note_id_str] == nil then
         M.emojis[note_id_str] = {}
         table.insert(M.emojis[note_id_str], data.Emoji)
