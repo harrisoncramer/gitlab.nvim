@@ -34,6 +34,7 @@ type Client struct {
 	*gitlab.PipelinesService
 	*gitlab.LabelsService
 	*gitlab.AwardEmojiService
+	*gitlab.UsersService
 }
 
 /* initGitlabClient parses and validates the project settings and initializes the Gitlab client. */
