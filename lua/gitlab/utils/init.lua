@@ -472,17 +472,26 @@ M.get_line_content = function(bufnr, start)
   return lines[1]
 end
 
-M.get_win_from_buf = function(bufnr)
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.fn.winbufnr(win) == bufnr then
-      return win
-    end
-  end
-end
-
 M.switch_can_edit_buf = function(buf, bool)
   vim.api.nvim_set_option_value("modifiable", bool, { buf = buf })
   vim.api.nvim_set_option_value("readonly", not bool, { buf = buf })
+end
+
+-- Gets the window holding a buffer in the current tab page
+---@param buffer_id number Id of a buffer
+---@return integer|nil
+M.get_window_id_by_buffer_id = function(buffer_id)
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  local windows = vim.api.nvim_tabpage_list_wins(tabpage)
+
+  for _, win_id in ipairs(windows) do
+    local buf_id = vim.api.nvim_win_get_buf(win_id)
+    if buf_id == buffer_id then
+      return win_id
+    end
+  end
+
+  return nil -- Buffer ID not found in any window
 end
 
 M.list_files_in_folder = function(folder_path)
@@ -524,12 +533,37 @@ end
 ---@field new_line integer
 ---@field new_range integer
 
+---@class HunksAndDiff
+---@field hunks Hunk[] list of hunks
+---@field all_diff_output table The data from the git diff command
+
+---Turn hunk line into Lua table
+---@param line table
+---@return Hunk|nil
+M.parse_possible_hunk_headers = function(line)
+  if line:sub(1, 2) == "@@" then
+    -- match:
+    --  @@ -23 +23 @@ ...
+    --  @@ -23,0 +23 @@ ...
+    --  @@ -41,0 +42,4 @@ ...
+    local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
+
+    return {
+      old_line = tonumber(old_start),
+      old_range = tonumber(old_range) or 0,
+      new_line = tonumber(new_start),
+      new_range = tonumber(new_range) or 0,
+    }
+  end
+end
+
 ---Parse git diff hunks.
 ---@param file_path string Path to file.
 ---@param base_branch string Git base branch of merge request.
----@return Hunk[] list of hunks.
+---@return HunksAndDiff
 M.parse_hunk_headers = function(file_path, base_branch)
   local hunks = {}
+  local all_diff_output = {}
 
   local Job = require("plenary.job")
 
@@ -538,20 +572,11 @@ M.parse_hunk_headers = function(file_path, base_branch)
     args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
     on_exit = function(j, return_code)
       if return_code == 0 then
-        for _, line in ipairs(j:result()) do
-          if line:sub(1, 2) == "@@" then
-            -- match:
-            --  @@ -23 +23 @@ ...
-            --  @@ -23,0 +23 @@ ...
-            --  @@ -41,0 +42,4 @@ ...
-            local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
-
-            table.insert(hunks, {
-              old_line = tonumber(old_start),
-              old_range = tonumber(old_range) or 0,
-              new_line = tonumber(new_start),
-              new_range = tonumber(new_range) or 0,
-            })
+        all_diff_output = j:result()
+        for _, line in ipairs(all_diff_output) do
+          local hunk = M.parse_possible_hunk_headers(line)
+          if hunk ~= nil then
+            table.insert(hunks, hunk)
           end
         end
       else
@@ -562,7 +587,7 @@ M.parse_hunk_headers = function(file_path, base_branch)
 
   diff_job:sync()
 
-  return hunks
+  return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
 ---@class LineDiffInfo

@@ -112,7 +112,7 @@ end
 ---@field file_name string
 ---@field old_line integer | nil
 ---@field new_line integer | nil
----@field range_info ReviewerRangeInfo
+---@field range_info ReviewerRangeInfo|nil
 
 ---This function (settings.popup.perform_action) will send the comment to the Go server
 ---@param text string comment text

@@ -126,106 +126,117 @@ M.get_location = function(range)
     return
   end
 
-  local bufnr = vim.api.nvim_get_current_buf()
-
   -- If there's a range, use the start of the visual selection, not the current line
   local current_line = range and range.start_line or vim.api.nvim_win_get_cursor(0)[1]
 
-  -- check if we are in the diffview tab
+  -- Check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
   if tabnr ~= M.tabnr then
     u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
     return
   end
 
-  -- check if we are in the diffview buffer
+  -- Check if we are in the diffview buffer
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
-  local layout = view.cur_layout
-  local result = {}
-  local type
-  local is_new
 
-  if
-    layout.a.file.bufnr == bufnr
-    or (M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil)
-  then
-    result.file_name = layout.a.file.path
-    result.old_line = current_line
-    type = "old"
-    is_new = false
-  elseif layout.b.file.bufnr == bufnr then
-    result.file_name = layout.b.file.path
-    result.new_line = current_line
-    type = "new"
-    is_new = true
-  else
-    u.notify("Line location can only be determined within reviewer window")
+  local layout = view.cur_layout
+
+  ---@type ReviewerInfo
+  local reviewer_info = {
+    file_name = layout.a.file.path,
+    new_line = nil,
+    old_line = nil,
+    range_info = nil,
+  }
+
+  local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
+  local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local current_win = vim.fn.win_getid()
+  local is_current_sha = current_win == b_win
+
+  if a_win == nil or b_win == nil then
+    u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
     return
   end
 
-  local hunks = u.parse_hunk_headers(result.file_name, state.INFO.target_branch)
-  if hunks == nil then
+  local current_file = M.get_current_file()
+  if current_file == nil then
+    u.notify("Error retrieving current file from Diffview", vim.log.levels.ERROR)
+    return
+  end
+
+  local a_linenr = vim.api.nvim_win_get_cursor(a_win)[1]
+  local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
+
+  local data = u.parse_hunk_headers(current_file, state.INFO.target_branch)
+
+  if data.hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
   end
 
-  local current_line_info
-  if is_new then
-    current_line_info = u.get_lines_from_hunks(hunks, result.new_line, is_new)
-  else
-    current_line_info = u.get_lines_from_hunks(hunks, result.old_line, is_new)
+  -- Will be different depending on focused window.
+  local modification_type =
+    M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
+
+  if modification_type == "bad_file_unmodified" then
+    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  -- If single line comment is outside of changed lines then we need to specify both new line and old line
-  -- otherwise the API returns error.
-  -- https://docs.gitlab.com/ee/api/discussions.html#create-a-new-thread-in-the-merge-request-diff
-  if not current_line_info.in_hunk then
-    result.old_line = current_line_info.old_line
-    result.new_line = current_line_info.new_line
-  end
-
-  -- If users leave single-line comments in the new buffer that should be in the old buffer, we can
-  -- tell because the line will not have changed. Send the correct payload.
-  if M.lines_are_same(view.cur_layout) and layout.b.file.bufnr == bufnr and range == nil then
-    local a_win = u.get_win_from_buf(layout.a.file.bufnr)
-    local a_cursor = vim.api.nvim_win_get_cursor(a_win)[1]
-    result.old_line = a_cursor
-    result.new_line = a_cursor
-    type = "old"
+  -- Comment on new line: Include only new_line in payload.
+  if modification_type == "added" then
+    reviewer_info.old_line = nil
+    reviewer_info.new_line = b_linenr
+    -- Comment on deleted line: Include only new_line in payload.
+  elseif modification_type == "deleted" then
+    reviewer_info.old_line = a_linenr
+    reviewer_info.new_line = nil
+    -- The line was not found in any hunks, only send the old line number
+  elseif modification_type == "unmodified" or modification_type == "bad_file_unmodified" then
+    reviewer_info.old_line = a_linenr
+    reviewer_info.new_line = b_linenr
   end
 
   if range == nil then
-    return result
+    return reviewer_info
   end
 
-  result.range_info = { start = {}, ["end"] = {} }
+  -- If leaving a multi-line comment, we want to also add range_info to the payload.
+  local is_new = reviewer_info.new_line ~= nil
+  local current_line_info = is_new and u.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new)
+    or u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
+  local type = is_new and "new" or "old"
+
+  ---@type ReviewerRangeInfo
+  local range_info = { start = {}, ["end"] = {} }
+
   if current_line == range.start_line then
-    result.range_info.start.old_line = current_line_info.old_line
-    result.range_info.start.new_line = current_line_info.new_line
-    result.range_info.start.type = type
+    range_info.start.old_line = current_line_info.old_line
+    range_info.start.new_line = current_line_info.new_line
+    range_info.start.type = type
   else
-    local start_line_info = u.get_lines_from_hunks(hunks, range.start_line, is_new)
-    result.range_info.start.old_line = start_line_info.old_line
-    result.range_info.start.new_line = start_line_info.new_line
-    result.range_info.start.type = type
+    local start_line_info = u.get_lines_from_hunks(data.hunks, range.start_line, is_new)
+    range_info.start.old_line = start_line_info.old_line
+    range_info.start.new_line = start_line_info.new_line
+    range_info.start.type = type
   end
-
   if current_line == range.end_line then
-    result.range_info["end"].old_line = current_line_info.old_line
-    result.range_info["end"].new_line = current_line_info.new_line
-    result.range_info["end"].type = type
+    range_info["end"].old_line = current_line_info.old_line
+    range_info["end"].new_line = current_line_info.new_line
+    range_info["end"].type = type
   else
-    local end_line_info = u.get_lines_from_hunks(hunks, range.end_line, is_new)
-    result.range_info["end"].old_line = end_line_info.old_line
-    result.range_info["end"].new_line = end_line_info.new_line
-    result.range_info["end"].type = type
+    local end_line_info = u.get_lines_from_hunks(data.hunks, range.end_line, is_new)
+    range_info["end"].old_line = end_line_info.old_line
+    range_info["end"].new_line = end_line_info.new_line
+    range_info["end"].type = type
   end
 
-  return result
+  reviewer_info.range_info = range_info
+  return reviewer_info
 end
 
 ---Return content between start_line and end_line
@@ -236,12 +247,9 @@ M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
+---Checks whether the lines in the two buffers are the same
 ---@return boolean
-M.lines_are_same = function(layout)
-  local a_win = u.get_win_from_buf(layout.a.file.bufnr)
-  local b_win = u.get_win_from_buf(layout.b.file.bufnr)
-  local a_cursor = vim.api.nvim_win_get_cursor(a_win)[1]
-  local b_cursor = vim.api.nvim_win_get_cursor(b_win)[1]
+M.lines_are_same = function(layout, a_cursor, b_cursor)
   local line_a = u.get_line_content(layout.a.file.bufnr, a_cursor)
   local line_b = u.get_line_content(layout.b.file.bufnr, b_cursor)
   return line_a == line_b
@@ -324,4 +332,101 @@ M.set_callback_for_reviewer_leave = function(callback)
   })
 end
 
+---Returns whether the comment is on a deleted line, added line, or unmodified line.
+---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
+---@param a_linenr number
+---@param b_linenr number
+---@param is_current_sha boolean
+---@param hunks Hunk[] A list of hunks
+---@param all_diff_output table The raw diff output
+function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
+  for _, hunk in ipairs(hunks) do
+    local old_line_end = hunk.old_line + hunk.old_range
+    local new_line_end = hunk.new_line + hunk.new_range
+
+    if is_current_sha then
+      -- If it is a single line change and neither hunk has a range, then it's added
+      if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
+        if hunk.new_range == 0 and hunk.old_range == 0 then
+          return "added"
+        end
+        -- If leaving a comment on the new window, we may be commenting on an added line
+        -- or on an unmodified line. To tell, we have to check whether the line itself is
+        -- prefixed with "+" and only return "added" if it is.
+        if M.line_was_added(b_linenr, hunk, all_diff_output) then
+          return "added"
+        end
+      end
+    else
+      -- It's a deletion if it's in the range of the hunks and the new
+      -- range is zero, since that is only a deletion hunk, or if we find
+      -- a match in another hunk with a range, and the corresponding line is prefixed
+      -- with a "-" only. If it is, then it's a deletion.
+      if a_linenr >= hunk.old_line and a_linenr <= old_line_end and hunk.old_range == 0 then
+        return "deleted"
+      end
+      if
+        (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
+        or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
+      then
+        if M.line_was_removed(a_linenr, hunk, all_diff_output) then
+          return "deleted"
+        end
+      end
+    end
+  end
+
+  -- If we can't find the line, this means the user is either trying to leave
+  -- a comment on an unchanged line in the new or old file SHA. This is only
+  -- allowed in the old file
+  return is_current_sha and "bad_file_unmodified" or "unmodified"
+end
+
+---@param linnr number
+---@param hunk Hunk
+---@param all_diff_output table
+M.line_was_removed = function(linnr, hunk, all_diff_output)
+  for matching_line_index, line in ipairs(all_diff_output) do
+    local found_hunk = u.parse_possible_hunk_headers(line)
+    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
+      -- We found a matching hunk, now we need to iterate over the lines from the raw diff output
+      -- at that hunk until we reach the line we are looking for. When the indexes match we check
+      -- to see if that line is deleted or not.
+      for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range - 1, 1 do
+        local line_content = all_diff_output[matching_line_index + 1]
+        if hunk_line_index == linnr then
+          if string.match(line_content, "^%-") then
+            return "deleted"
+          end
+        end
+      end
+    end
+  end
+end
+
+---@param linnr number
+---@param hunk Hunk
+---@param all_diff_output table
+M.line_was_added = function(linnr, hunk, all_diff_output)
+  for matching_line_index, line in ipairs(all_diff_output) do
+    local found_hunk = u.parse_possible_hunk_headers(line)
+    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
+      -- For added lines, we only want to iterate over the part of the diff that has has new lines,
+      -- so we skip over the old range. We then keep track of the increment to the original new line index,
+      -- and iterate until we reach the end of the total range of this hunk. If we arrive at the matching
+      -- index for the line number, we check to see if the line was added.
+      local i = 0
+      local old_range = (found_hunk.old_range == 0 and found_hunk.old_line ~= 0) and 1 or found_hunk.old_range
+      for hunk_line_index = matching_line_index + old_range + 1, matching_line_index + old_range + found_hunk.new_range, 1 do
+        local line_content = all_diff_output[hunk_line_index]
+        if (found_hunk.new_line + i) == linnr then
+          if string.match(line_content, "^%+") then
+            return "added"
+          end
+        end
+        i = i + 1
+      end
+    end
+  end
+end
 return M
