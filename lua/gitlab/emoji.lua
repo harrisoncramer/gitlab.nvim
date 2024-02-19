@@ -1,14 +1,20 @@
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
-local M = {}
+
+local M = {
+  ---@type EmojiMap|nil
+  emoji_map = {},
+  ---@type Emoji[]
+  emoji_list = {},
+}
 
 M.init = function()
   local bin_path = state.settings.bin_path
   local emoji_path = bin_path
-    .. state.settings.file_separator
-    .. "config"
-    .. state.settings.file_separator
-    .. "emojis.json"
+      .. state.settings.file_separator
+      .. "config"
+      .. state.settings.file_separator
+      .. "emojis.json"
   local emojis = u.read_file(emoji_path)
   if emojis == nil then
     u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
@@ -19,10 +25,10 @@ M.init = function()
     u.notify("Could not parse emoji file at " .. emoji_path, vim.log.levels.WARN)
   end
 
-  state.emoji_map = data
-  state.emoji_list = {}
-  for _, v in pairs(state.emoji_map) do
-    table.insert(state.emoji_list, v)
+  M.emoji_map = data
+  M.emoji_list = {}
+  for _, v in pairs(M.emoji_map) do
+    table.insert(M.emoji_list, v)
   end
 end
 
@@ -83,7 +89,7 @@ M.init_popup = function(tree, bufnr)
       vim.api.nvim_win_set_cursor(0, cursor_pos)
       local word = vim.fn.getreg("z")
 
-      for k, v in pairs(state.emoji_map) do
+      for k, v in pairs(M.emoji_map) do
         if v.moji == word then
           local names = M.get_users_who_reacted_with_emoji(k, note_emojis)
           M.popup_opts.width = string.len(names)

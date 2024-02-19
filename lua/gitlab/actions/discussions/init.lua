@@ -115,7 +115,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -262,7 +262,7 @@ M.send_deletion = function(tree, unlinked)
         M.rebuild_discussion_tree()
       end
       M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+        { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
         { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
       })
       M.switch_can_edit_bufs(false)
@@ -507,12 +507,14 @@ local function nui_tree_prepare_node(node)
 
     local note_id = tostring(node.is_root and node.root_note_id or node.id)
 
+    local e = require("gitlab.emoji")
+
     ---@type Emoji[]
     local emojis = M.emojis[note_id]
     local placed_emojis = {}
     if emojis ~= nil then
       for _, v in ipairs(emojis) do
-        local icon = state.emoji_map[v.name]
+        local icon = e.emoji_map[v.name]
         if icon ~= nil and not u.contains(placed_emojis, icon.moji) then
           line:append(" ")
           line:append(icon.moji)
@@ -535,7 +537,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -834,10 +836,10 @@ M.get_note_location = function(tree)
     return "", "", "", false, "Could not get discussion node"
   end
   return discussion_node.file_name,
-    discussion_node.new_line,
-    discussion_node.old_line,
-    discussion_node.undefined_type or false,
-    nil
+      discussion_node.new_line,
+      discussion_node.old_line,
+      discussion_node.undefined_type or false,
+      nil
 end
 
 ---@param tree NuiTree
@@ -862,7 +864,7 @@ M.add_emoji_to_note = function(tree, unlinked)
   local root_node = M.get_root_node(tree, node)
   local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
   local note_id_str = tostring(note_id)
-  local emojis = state.emoji_list
+  local emojis = require("gitlab.emoji").emoji_list
   emoji.pick_emoji(emojis, function(name)
     local body = { emoji = name, note_id = note_id }
     job.run_job("/mr/awardable/note/", "POST", body, function(data)
@@ -889,10 +891,12 @@ M.delete_emoji_from_note = function(tree, unlinked)
   local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
   local note_id_str = tostring(note_id)
 
+  local e = require("gitlab.emoji")
+
   local emojis = {}
   local current_emojis = M.emojis[note_id_str]
-  for _, e in ipairs(current_emojis) do
-    table.insert(emojis, state.emoji_map[e.name])
+  for _, current_emoji in ipairs(current_emojis) do
+    table.insert(emojis, e.emoji_map[current_emoji.name])
   end
 
   vim.print(M.emojis[note_id_str])
