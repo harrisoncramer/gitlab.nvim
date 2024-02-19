@@ -14,6 +14,7 @@ Table of Contents                              *gitlab.nvim.table-of-contents*
   - Discussions and Notes                  |gitlab.nvim.discussions-and-notes|
   - Labels                                                |gitlab.nvim.labels|
   - Signs and diagnostics                  |gitlab.nvim.signs-and-diagnostics|
+  - Emojis						  gitlab.nvim.emojis
   - Uploading Files                              |gitlab.nvim.uploading-files|
   - MR Approvals                                    |gitlab.nvim.mr-approvals|
   - Merging an MR                                  |gitlab.nvim.merging-an-mr|
@@ -424,6 +425,14 @@ When interacting with multiline comments, the cursor must be on the "main" line
 of diagnostic, where the `discussion_sign.text` is shown, otherwise
 `vim.diagnostic.show` and `move_to_discussion_tree_from_diagnostic` will not
 work.
+
+EMOJIS                                       *gitlab.nvim.emojis*
+
+You can add or remove emojis from a note or comment in the discussion tree.
+
+To see who has reacted with an emoji, hover over the emoji. A popup will
+appear with anyone who has responded with that emoji. You can only delete
+emojis that you have responded with.
 
 
 UPLOADING FILES                                  *gitlab.nvim.uploading-files*
