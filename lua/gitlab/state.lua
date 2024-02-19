@@ -169,6 +169,16 @@ M.settings = {
   },
 }
 
+-- These are the initial states of the discussion trees
+M.discussion_tree = {
+  resolved_expanded = false,
+  unresolved_expanded = false,
+}
+M.unlinked_discussion_tree = {
+  resolved_expanded = false,
+  unresolved_expanded = false,
+}
+
 -- Merges user settings into the default settings, overriding them
 M.merge_settings = function(args)
   M.settings = u.merge(M.settings, args)
