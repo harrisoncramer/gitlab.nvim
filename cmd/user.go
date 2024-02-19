@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
+
+type UserResponse struct {
+  SuccessResponse
 
 func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -20,6 +24,14 @@ func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  if res.StatusCode >= 300 
+	if res.StatusCode >= 300 {
+		handleError(w, err, "User API returned non-200 status", res.StatusCode)
+		return
+	}
+
+	json.NewEncoder(w).Encode(SuccessResponse{
+    Message: "User fetched successfully",
+    Status: http.StatusOK
+  })
 
 }
