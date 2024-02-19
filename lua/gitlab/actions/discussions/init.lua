@@ -901,7 +901,6 @@ M.delete_emoji_from_note = function(tree, unlinked)
     end
   end
 
-  vim.print(M.emojis[note_id_str])
   emoji.pick_emoji(emojis, function(name)
     local awardable_id
     for _, e in ipairs(current_emojis) do
