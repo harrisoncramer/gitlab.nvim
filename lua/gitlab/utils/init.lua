@@ -38,6 +38,15 @@ M.filter = function(input_table, value_to_remove)
   return resultTable
 end
 
+M.filter_by_key_value = function(input_table, target_key, target_value)
+  local result_table = {}
+  for _, v in ipairs(input_table) do
+    if v[target_key] ~= target_value then
+      table.insert(result_table, v)
+    end
+  end
+end
+
 ---Merges two deeply nested tables together, overriding values from the first with conflicts
 ---@param defaults table The first table
 ---@param overrides table The second table

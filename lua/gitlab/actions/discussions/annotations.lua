@@ -66,6 +66,18 @@
 ---@field discussions Discussion[]
 ---@field unlinked_discussions UnlinkedDiscussion[]
 
+---@class EmojiMap: table<string, Emoji>
+---@class Emoji
+---@field	unicode           string
+---@field	unicodeAlternates string[]
+---@field	name              string
+---@field	shortname         string
+---@field	category          string
+---@field	aliases           string[]
+---@field	aliasesASCII      string[]
+---@field	keywords          string[]
+---@field	moji              string
+
 ---@class WinbarTable
 ---@field name string
 ---@field resolvable_discussions number

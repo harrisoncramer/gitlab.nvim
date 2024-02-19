@@ -136,6 +136,8 @@ require("gitlab").setup({
     delete_comment = "dd", -- Delete comment
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
+    add_emoji = "Ea" -- Add an emoji to the note/comment
+    add_emoji = "Ed" -- Remove an emoji from a note/comment
     toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
     toggle_resolved_discussions = "R", -- Open or close all resolved discussions
     toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions

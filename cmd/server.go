@@ -31,6 +31,10 @@ func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInf
 		func(a *api) error {
 			a.gitInfo = &gitInfo
 			return nil
+		},
+		func(a *api) error {
+			err := attachEmojisToApi(a)
+			return err
 		})
 
 	l := createListener()
@@ -82,6 +86,7 @@ type api struct {
 	projectInfo *ProjectInfo
 	gitInfo     *GitProjectInfo
 	fileReader  FileReader
+	emojiMap    EmojiMap
 	sigCh       chan os.Signal
 }
 
@@ -100,6 +105,7 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		projectInfo: &ProjectInfo{},
 		gitInfo:     &GitProjectInfo{},
 		fileReader:  nil,
+		emojiMap:    EmojiMap{},
 		sigCh:       make(chan os.Signal, 1),
 	}
 
@@ -124,7 +130,9 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 	m.HandleFunc("/mr/reply", a.withMr(a.replyHandler))
 	m.HandleFunc("/mr/label", a.withMr(a.labelHandler))
 	m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
+	m.HandleFunc("/mr/awardable/note/", a.withMr(a.emojiNoteHandler))
 
+	m.HandleFunc("/users/me", a.meHandler)
 	m.HandleFunc("/attachment", a.attachmentHandler)
 	m.HandleFunc("/create_mr", a.createMr)
 	m.HandleFunc("/job", a.jobHandler)

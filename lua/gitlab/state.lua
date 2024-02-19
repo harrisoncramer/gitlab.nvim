@@ -6,6 +6,8 @@
 local u = require("gitlab.utils")
 local M = {}
 
+M.emoji_map = nil
+
 -- These are the default settings for the plugin
 M.settings = {
   port = nil, -- choose random port
@@ -49,6 +51,8 @@ M.settings = {
     open_in_browser = "b",
     reply = "r",
     toggle_node = "t",
+    add_emoji = "Ea",
+    delete_emoji = "Ed",
     toggle_all_discussions = "T",
     toggle_resolved_discussions = "R",
     toggle_unresolved_discussions = "U",
@@ -311,6 +315,7 @@ end
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
+  user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
   info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
   labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },

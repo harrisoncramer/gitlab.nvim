@@ -16,8 +16,9 @@ type DiscussionsRequest struct {
 
 type DiscussionsResponse struct {
 	SuccessResponse
-	Discussions         []*gitlab.Discussion `json:"discussions"`
-	UnlinkedDiscussions []*gitlab.Discussion `json:"unlinked_discussions"`
+	Discussions         []*gitlab.Discussion         `json:"discussions"`
+	UnlinkedDiscussions []*gitlab.Discussion         `json:"unlinked_discussions"`
+	Emojis              map[int][]*gitlab.AwardEmoji `json:"emojis"`
 }
 
 type SortableDiscussions []*gitlab.Discussion
@@ -83,6 +84,7 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	and system discussions, then return them sorted by created date */
 	var unlinkedDiscussions []*gitlab.Discussion
 	var linkedDiscussions []*gitlab.Discussion
+
 	for _, discussion := range discussions {
 		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
 			continue
@@ -98,16 +100,25 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	/* Collect IDs in order to fetch emojis */
+	var noteIds []int
+	for _, discussion := range discussions {
+		for _, note := range discussion.Notes {
+			noteIds = append(noteIds, note.ID)
+		}
+	}
+
+	emojis, err := a.fetchEmojisForNotesAndComments(noteIds)
+	if err != nil {
+		handleError(w, err, "Could not fetch emojis", http.StatusInternalServerError)
+		return
+	}
+
 	sortedLinkedDiscussions := SortableDiscussions(linkedDiscussions)
 	sortedUnlinkedDiscussions := SortableDiscussions(unlinkedDiscussions)
 
 	sort.Sort(sortedLinkedDiscussions)
 	sort.Sort(sortedUnlinkedDiscussions)
-
-	if err != nil {
-		handleError(w, err, "Could not list discussions", http.StatusBadRequest)
-		return
-	}
 
 	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{
@@ -117,6 +128,7 @@ func (a *api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		},
 		Discussions:         linkedDiscussions,
 		UnlinkedDiscussions: unlinkedDiscussions,
+		Emojis:              emojis,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

@@ -33,6 +33,8 @@ type Client struct {
 	*gitlab.JobsService
 	*gitlab.PipelinesService
 	*gitlab.LabelsService
+	*gitlab.AwardEmojiService
+	*gitlab.UsersService
 }
 
 /* initGitlabClient parses and validates the project settings and initializes the Gitlab client. */
@@ -89,6 +91,8 @@ func initGitlabClient() (error, *Client) {
 		JobsService:                  client.Jobs,
 		PipelinesService:             client.Pipelines,
 		LabelsService:                client.Labels,
+		AwardEmojiService:            client.AwardEmoji,
+		UsersService:                 client.Users,
 	}
 }
 
