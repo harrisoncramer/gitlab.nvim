@@ -39,6 +39,7 @@ type fakeClient struct {
 	listLabels                         func(pid interface{}, opt *gitlab.ListLabelsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Label, *gitlab.Response, error)
 	listMergeRequestAwardEmojiOnNote   func(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
 	deleteMergeRequestAwardEmojiOnNote func(pid interface{}, mergeRequestIID, noteID, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	currentUser                        func(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error)
 }
 
 type Author struct {
@@ -133,6 +134,10 @@ func (f fakeClient) ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeReque
 
 func (f fakeClient) DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.deleteMergeRequestAwardEmojiOnNote(pid, mergeRequestIID, noteID, awardID)
+}
+
+func (f fakeClient) CurrentUser(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error) {
+	return f.currentUser()
 }
 
 /* This middleware function needs to return an ID for the rest of the handlers */

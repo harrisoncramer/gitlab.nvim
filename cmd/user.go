@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -16,7 +15,7 @@ type UserResponse struct {
 func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s", http.MethodGet))
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
 		return
 	}
@@ -41,7 +40,7 @@ func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
