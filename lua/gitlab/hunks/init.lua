@@ -83,10 +83,10 @@ end
 ---@param a_linenr number
 ---@param b_linenr number
 ---@param b_win number
-function M.get_modification_type(a_linenr, b_linenr, b_win, data)
-  ---@type Hunk[] A list of hunks
-  local hunks = data.hunks
-  local all_diff_output = data.all_diff_output
+---@param hunk_and_diff_data HunksAndDiff
+function M.get_modification_type(a_linenr, b_linenr, b_win, hunk_and_diff_data)
+  local hunks = hunk_and_diff_data.hunks
+  local all_diff_output = hunk_and_diff_data.all_diff_output
 
   local current_win = vim.fn.win_getid()
   local is_current_sha = current_win == b_win
@@ -141,7 +141,7 @@ end
 ---@param file_path string Path to file.
 ---@param base_branch string Git base branch of merge request.
 ---@return HunksAndDiff
-M.parse_hunk_headers = function(file_path, base_branch)
+M.parse_hunks_and_diff = function(file_path, base_branch)
   local hunks = {}
   local all_diff_output = {}
 

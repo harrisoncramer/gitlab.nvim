@@ -163,14 +163,14 @@ M.get_location = function(range)
   local a_linenr = vim.api.nvim_win_get_cursor(a_win)[1]
   local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
 
-  local data = hunks.parse_hunk_headers(current_file, state.INFO.target_branch)
+  local hunk_and_diff_data = hunks.parse_hunks_and_diff(current_file, state.INFO.target_branch)
 
-  if data.hunks == nil then
+  if hunk_and_diff_data.hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
   end
 
-  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, b_win, data)
+  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, b_win, hunk_and_diff_data)
 
   return payload.build_payload(current_file, modification_type, layout.a.file.path, a_linenr, b_linenr, range)
 end

@@ -11,7 +11,7 @@ local M         = {}
 ---@param a_linenr number
 ---@param b_linenr number
 M.build_payload = function(current_file, modification_type, file_name, a_linenr, b_linenr, range)
-  local data = hunks.parse_hunk_headers(current_file, state.INFO.target_branch)
+  local data = hunks.parse_hunks_and_diff(current_file, state.INFO.target_branch)
 
   ---@type ReviewerInfo
   local payload = {
