@@ -128,9 +128,6 @@ M.get_location = function(range)
     return
   end
 
-  -- If there's a range, use the start of the visual selection, not the current line
-  local current_line = range and range.start_line or vim.api.nvim_win_get_cursor(0)[1]
-
   -- Check if we are in the diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
   if tabnr ~= M.tabnr then
@@ -146,10 +143,10 @@ M.get_location = function(range)
   end
 
   local layout = view.cur_layout
-  local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
+  local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
-  if a_win == nil or b_win == nil then
+  if old_win == nil or new_win == nil then
     u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
     return
   end
@@ -160,8 +157,8 @@ M.get_location = function(range)
     return
   end
 
-  local a_linenr = vim.api.nvim_win_get_cursor(a_win)[1]
-  local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
+  local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
+  local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
 
   local hunk_and_diff_data = hunks.parse_hunks_and_diff(current_file, state.INFO.target_branch)
 
@@ -170,9 +167,10 @@ M.get_location = function(range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, b_win, hunk_and_diff_data)
+  local modification_type = hunks.get_modification_type(old_line, new_line, hunk_and_diff_data)
 
-  return payload.build_payload(current_file, modification_type, layout.a.file.path, a_linenr, b_linenr, range)
+  return payload.build_payload(current_file, modification_type, layout.a.file.path, old_line, new_line,
+    range)
 end
 
 ---Return content between start_line and end_line
@@ -181,6 +179,15 @@ end
 ---@return string[]
 M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+end
+
+---Return whether user is focused on the new version of the file
+M.is_current_sha = function()
+  local view = diffview_lib.get_current_view()
+  local layout = view.cur_layout
+  local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local current_win = vim.fn.win_getid()
+  return current_win == b_win
 end
 
 ---Checks whether the lines in the two buffers are the same

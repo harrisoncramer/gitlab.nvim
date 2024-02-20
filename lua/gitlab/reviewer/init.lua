@@ -69,6 +69,9 @@ M.init = function()
   --   • {diagnostics}  The diagnostics to set
   --   • {type}         "new" if diagnostic should be in file after changes else "old"
   --   • {opts}         see opts in :h vim.diagnostic.set
+
+  -- Returns whether user is focused on the new version of the file
+  M.is_current_sha = reviewer.is_current_sha
 end
 
 return M

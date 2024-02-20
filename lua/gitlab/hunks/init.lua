@@ -80,16 +80,14 @@ end
 
 ---Returns whether the comment is on a deleted line, added line, or unmodified line.
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
----@param a_linenr number
----@param b_linenr number
----@param b_win number
+---@param old_line number
+---@param new_line number
 ---@param hunk_and_diff_data HunksAndDiff
-function M.get_modification_type(a_linenr, b_linenr, b_win, hunk_and_diff_data)
+function M.get_modification_type(old_line, new_line, hunk_and_diff_data)
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
 
-  local current_win = vim.fn.win_getid()
-  local is_current_sha = current_win == b_win
+  local is_current_sha = require("gitlab.reviewer").is_current_sha()
 
   for _, hunk in ipairs(hunks) do
     local old_line_end = hunk.old_line + hunk.old_range
@@ -97,14 +95,14 @@ function M.get_modification_type(a_linenr, b_linenr, b_win, hunk_and_diff_data)
 
     if is_current_sha then
       -- If it is a single line change and neither hunk has a range, then it's added
-      if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
+      if new_line >= hunk.new_line and new_line <= new_line_end then
         if hunk.new_range == 0 and hunk.old_range == 0 then
           return "added"
         end
         -- If leaving a comment on the new window, we may be commenting on an added line
         -- or on an unmodified line. To tell, we have to check whether the line itself is
         -- prefixed with "+" and only return "added" if it is.
-        if line_was_added(b_linenr, hunk, all_diff_output) then
+        if line_was_added(new_line, hunk, all_diff_output) then
           return "added"
         end
       end
@@ -113,14 +111,14 @@ function M.get_modification_type(a_linenr, b_linenr, b_win, hunk_and_diff_data)
       -- range is zero, since that is only a deletion hunk, or if we find
       -- a match in another hunk with a range, and the corresponding line is prefixed
       -- with a "-" only. If it is, then it's a deletion.
-      if a_linenr >= hunk.old_line and a_linenr <= old_line_end and hunk.old_range == 0 then
+      if old_line >= hunk.old_line and old_line <= old_line_end and hunk.old_range == 0 then
         return "deleted"
       end
       if
-          (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
-          or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
+          (old_line >= hunk.old_line and old_line <= old_line_end)
+          or (old_line >= hunk.new_line and new_line <= new_line_end)
       then
-        if line_was_removed(a_linenr, hunk, all_diff_output) then
+        if line_was_removed(old_line, hunk, all_diff_output) then
           return "deleted"
         end
       end

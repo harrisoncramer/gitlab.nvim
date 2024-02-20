@@ -1,5 +1,4 @@
 local state     = require("gitlab.state")
-local u         = require("gitlab.utils")
 local hunks     = require("gitlab.hunks")
 local M         = {}
 
@@ -8,9 +7,9 @@ local M         = {}
 ---@param current_file string
 ---@param modification_type string
 ---@param file_name string
----@param a_linenr number
----@param b_linenr number
-M.build_payload = function(current_file, modification_type, file_name, a_linenr, b_linenr, range)
+---@param old_line number
+---@param new_line number
+M.build_payload = function(current_file, modification_type, file_name, old_line, new_line, range)
   local data = hunks.parse_hunks_and_diff(current_file, state.INFO.target_branch)
 
   ---@type ReviewerInfo
@@ -24,15 +23,15 @@ M.build_payload = function(current_file, modification_type, file_name, a_linenr,
   -- Comment on new line: Include only new_line in payload.
   if modification_type == "added" then
     payload.old_line = nil
-    payload.new_line = b_linenr
+    payload.new_line = new_line
     -- Comment on deleted line: Include only new_line in payload.
   elseif modification_type == "deleted" then
-    payload.old_line = a_linenr
+    payload.old_line = old_line
     payload.new_line = nil
     -- The line was not found in any hunks, only send the old line number
   elseif modification_type == "unmodified" or modification_type == "bad_file_unmodified" then
-    payload.old_line = a_linenr
-    payload.new_line = b_linenr
+    payload.old_line = old_line
+    payload.new_line = new_line
   end
 
   if range == nil then
