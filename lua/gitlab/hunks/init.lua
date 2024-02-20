@@ -80,12 +80,15 @@ end
 
 ---Returns whether the comment is on a deleted line, added line, or unmodified line.
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
+---@param current_file string
 ---@param a_linenr number
 ---@param b_linenr number
 ---@param is_current_sha boolean
----@param hunks Hunk[] A list of hunks
----@param all_diff_output table The raw diff output
-function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
+function M.get_modification_type(current_file, a_linenr, b_linenr, is_current_sha, data)
+  ---@type Hunk[] A list of hunks
+  local hunks = data.hunks
+  local all_diff_output = data.all_diff_output
+
   for _, hunk in ipairs(hunks) do
     local old_line_end = hunk.old_line + hunk.old_range
     local new_line_end = hunk.new_line + hunk.new_range
@@ -125,7 +128,11 @@ function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_
   -- If we can't find the line, this means the user is either trying to leave
   -- a comment on an unchanged line in the new or old file SHA. This is only
   -- allowed in the old file
-  return is_current_sha and "bad_file_unmodified" or "unmodified"
+  local result = is_current_sha and "bad_file_unmodified" or "unmodified"
+  if result == "bad_file_unmodified" then
+    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
+  end
+  return result
 end
 
 ---Parse git diff hunks.

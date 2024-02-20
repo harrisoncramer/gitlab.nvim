@@ -1,5 +1,6 @@
 -- This Module contains all of the reviewer code for diffview
 local u = require("gitlab.utils")
+local payload = require("gitlab.reviewer.payload")
 local state = require("gitlab.state")
 local hunks = require("gitlab.hunks")
 local async_ok, async = pcall(require, "diffview.async")
@@ -145,15 +146,6 @@ M.get_location = function(range)
   end
 
   local layout = view.cur_layout
-
-  ---@type ReviewerInfo
-  local reviewer_info = {
-    file_name = layout.a.file.path,
-    new_line = nil,
-    old_line = nil,
-    range_info = nil,
-  }
-
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local current_win = vim.fn.win_getid()
@@ -180,66 +172,9 @@ M.get_location = function(range)
     return
   end
 
-  -- Will be different depending on focused window.
-  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks,
-    data.all_diff_output)
+  local modification_type = hunks.get_modification_type(current_file, a_linenr, b_linenr, is_current_sha, data)
 
-  if modification_type == "bad_file_unmodified" then
-    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
-  end
-
-  -- Comment on new line: Include only new_line in payload.
-  if modification_type == "added" then
-    reviewer_info.old_line = nil
-    reviewer_info.new_line = b_linenr
-    -- Comment on deleted line: Include only new_line in payload.
-  elseif modification_type == "deleted" then
-    reviewer_info.old_line = a_linenr
-    reviewer_info.new_line = nil
-    -- The line was not found in any hunks, only send the old line number
-  elseif modification_type == "unmodified" or modification_type == "bad_file_unmodified" then
-    reviewer_info.old_line = a_linenr
-    reviewer_info.new_line = b_linenr
-  end
-
-  if range == nil then
-    return reviewer_info
-  end
-
-  -- If leaving a multi-line comment, we want to also add range_info to the payload.
-  local is_new = reviewer_info.new_line ~= nil
-  local current_line_info = is_new and hunks.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new) or
-      hunks.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
-  local type = is_new and "new" or "old"
-
-  ---@type ReviewerRangeInfo
-  local range_info = { start = {},["end"] = {} }
-
-  if current_line == range.start_line then
-    range_info.start.old_line = current_line_info.old_line
-    range_info.start.new_line = current_line_info.new_line
-    range_info.start.type = type
-  else
-    local start_line_info = hunks.get_lines_from_hunks(data.hunks, range.start_line, is_new)
-    range_info.start.old_line = start_line_info.old_line
-    range_info.start.new_line = start_line_info.new_line
-    range_info.start.type = type
-  end
-  if current_line == range.end_line then
-    range_info["end"].old_line = current_line_info.old_line
-    range_info["end"].new_line = current_line_info.new_line
-    range_info["end"].type = type
-  else
-    local end_line_info = hunks.get_lines_from_hunks(data.hunks, range.end_line, is_new)
-    range_info["end"].old_line = end_line_info.old_line
-    range_info["end"].new_line = end_line_info.new_line
-    range_info["end"].type = type
-  end
-
-  vim.print(range_info)
-
-  reviewer_info.range_info = range_info
-  return reviewer_info
+  return payload.build_payload(current_file, modification_type, layout.a.file.path, a_linenr, b_linenr, range)
 end
 
 ---Return content between start_line and end_line
