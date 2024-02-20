@@ -172,7 +172,7 @@ M.get_location = function(range)
   end
 
   local is_current_sha = current_win == b_win
-  local modification_type = hunks.get_modification_type(current_file, a_linenr, b_linenr, is_current_sha, data)
+  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, is_current_sha, data)
 
   return payload.build_payload(current_file, modification_type, layout.a.file.path, a_linenr, b_linenr, range)
 end

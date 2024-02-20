@@ -80,11 +80,10 @@ end
 
 ---Returns whether the comment is on a deleted line, added line, or unmodified line.
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
----@param current_file string
 ---@param a_linenr number
 ---@param b_linenr number
 ---@param is_current_sha boolean
-function M.get_modification_type(current_file, a_linenr, b_linenr, is_current_sha, data)
+function M.get_modification_type(a_linenr, b_linenr, is_current_sha, data)
   ---@type Hunk[] A list of hunks
   local hunks = data.hunks
   local all_diff_output = data.all_diff_output
