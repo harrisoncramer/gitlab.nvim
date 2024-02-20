@@ -148,7 +148,6 @@ M.get_location = function(range)
   local layout = view.cur_layout
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
-  local current_win = vim.fn.win_getid()
 
   if a_win == nil or b_win == nil then
     u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
@@ -171,8 +170,7 @@ M.get_location = function(range)
     return
   end
 
-  local is_current_sha = current_win == b_win
-  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, is_current_sha, data)
+  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, b_win, data)
 
   return payload.build_payload(current_file, modification_type, layout.a.file.path, a_linenr, b_linenr, range)
 end

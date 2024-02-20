@@ -82,11 +82,14 @@ end
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param a_linenr number
 ---@param b_linenr number
----@param is_current_sha boolean
-function M.get_modification_type(a_linenr, b_linenr, is_current_sha, data)
+---@param b_win number
+function M.get_modification_type(a_linenr, b_linenr, b_win, data)
   ---@type Hunk[] A list of hunks
   local hunks = data.hunks
   local all_diff_output = data.all_diff_output
+
+  local current_win = vim.fn.win_getid()
+  local is_current_sha = current_win == b_win
 
   for _, hunk in ipairs(hunks) do
     local old_line_end = hunk.old_line + hunk.old_range
