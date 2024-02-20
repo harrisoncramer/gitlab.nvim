@@ -157,17 +157,12 @@ M.get_location = function(range)
     return
   end
 
-  local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
-
-  local hunk_and_diff_data = hunks.parse_hunks_and_diff(current_file, state.INFO.target_branch)
-
-  if hunk_and_diff_data.hunks == nil then
-    u.notify("Could not parse hunks", vim.log.levels.ERROR)
+  local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
+  if modification_type == nil then
     return
   end
-
-  local modification_type = hunks.get_modification_type(old_line, new_line, hunk_and_diff_data)
 
   return payload.build_payload(current_file, modification_type, layout.a.file.path, old_line, new_line,
     range)
@@ -182,6 +177,7 @@ M.get_lines = function(start_line, end_line)
 end
 
 ---Return whether user is focused on the new version of the file
+---@return boolean
 M.is_current_sha = function()
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
@@ -199,6 +195,7 @@ M.lines_are_same = function(layout, a_cursor, b_cursor)
 end
 
 ---Get currently shown file
+---@return string|nil
 M.get_current_file = function()
   local view = diffview_lib.get_current_view()
   if not view then

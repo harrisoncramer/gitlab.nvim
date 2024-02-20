@@ -1,3 +1,4 @@
+local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local M = {}
 
@@ -82,8 +83,15 @@ end
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param old_line number
 ---@param new_line number
----@param hunk_and_diff_data HunksAndDiff
-function M.get_modification_type(old_line, new_line, hunk_and_diff_data)
+---@param current_file string
+---@return string|nil
+function M.get_modification_type(old_line, new_line, current_file)
+  local hunk_and_diff_data = M.parse_hunks_and_diff(current_file, state.INFO.target_branch)
+  if hunk_and_diff_data.hunks == nil then
+    u.notify("Could not parse hunks", vim.log.levels.ERROR)
+    return
+  end
+
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
 
