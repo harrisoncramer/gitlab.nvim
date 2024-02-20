@@ -1,6 +1,6 @@
-local state     = require("gitlab.state")
-local hunks     = require("gitlab.hunks")
-local M         = {}
+local state           = require("gitlab.state")
+local hunks           = require("gitlab.hunks")
+local M               = {}
 
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
@@ -9,7 +9,7 @@ local M         = {}
 ---@param file_name string
 ---@param old_line number
 ---@param new_line number
-M.build_payload = function(current_file, modification_type, file_name, old_line, new_line, range)
+M.build_location_data = function(current_file, modification_type, file_name, old_line, new_line, range)
   local data = hunks.parse_hunks_and_diff(current_file, state.INFO.target_branch)
 
   ---@type ReviewerInfo

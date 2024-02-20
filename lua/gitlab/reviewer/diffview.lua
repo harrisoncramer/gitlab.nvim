@@ -1,6 +1,6 @@
 -- This Module contains all of the reviewer code for diffview
 local u = require("gitlab.utils")
-local payload = require("gitlab.reviewer.payload")
+local location = require("gitlab.reviewer.location")
 local state = require("gitlab.state")
 local hunks = require("gitlab.hunks")
 local async_ok, async = pcall(require, "diffview.async")
@@ -164,7 +164,7 @@ M.get_location = function(range)
     return
   end
 
-  return payload.build_payload(current_file, modification_type, layout.a.file.path, old_line, new_line,
+  return location.build_location_data(current_file, modification_type, layout.a.file.path, old_line, new_line,
     range)
 end
 
