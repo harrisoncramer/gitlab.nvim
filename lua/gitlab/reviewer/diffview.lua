@@ -1,6 +1,7 @@
 -- This Module contains all of the reviewer code for diffview
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
+local hunks = require("gitlab.hunks")
 local async_ok, async = pcall(require, "diffview.async")
 local diffview_lib = require("diffview.lib")
 
@@ -172,7 +173,7 @@ M.get_location = function(range)
   local a_linenr = vim.api.nvim_win_get_cursor(a_win)[1]
   local b_linenr = vim.api.nvim_win_get_cursor(b_win)[1]
 
-  local data = u.parse_hunk_headers(current_file, state.INFO.target_branch)
+  local data = hunks.parse_hunk_headers(current_file, state.INFO.target_branch)
 
   if data.hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
@@ -180,8 +181,8 @@ M.get_location = function(range)
   end
 
   -- Will be different depending on focused window.
-  local modification_type =
-    M.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks, data.all_diff_output)
+  local modification_type = hunks.get_modification_type(a_linenr, b_linenr, is_current_sha, data.hunks,
+    data.all_diff_output)
 
   if modification_type == "bad_file_unmodified" then
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
@@ -207,19 +208,19 @@ M.get_location = function(range)
 
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
   local is_new = reviewer_info.new_line ~= nil
-  local current_line_info = is_new and u.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new)
-    or u.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
+  local current_line_info = is_new and hunks.get_lines_from_hunks(data.hunks, reviewer_info.new_line, is_new) or
+      hunks.get_lines_from_hunks(data.hunks, reviewer_info.old_line, is_new)
   local type = is_new and "new" or "old"
 
   ---@type ReviewerRangeInfo
-  local range_info = { start = {}, ["end"] = {} }
+  local range_info = { start = {},["end"] = {} }
 
   if current_line == range.start_line then
     range_info.start.old_line = current_line_info.old_line
     range_info.start.new_line = current_line_info.new_line
     range_info.start.type = type
   else
-    local start_line_info = u.get_lines_from_hunks(data.hunks, range.start_line, is_new)
+    local start_line_info = hunks.get_lines_from_hunks(data.hunks, range.start_line, is_new)
     range_info.start.old_line = start_line_info.old_line
     range_info.start.new_line = start_line_info.new_line
     range_info.start.type = type
@@ -229,11 +230,13 @@ M.get_location = function(range)
     range_info["end"].new_line = current_line_info.new_line
     range_info["end"].type = type
   else
-    local end_line_info = u.get_lines_from_hunks(data.hunks, range.end_line, is_new)
+    local end_line_info = hunks.get_lines_from_hunks(data.hunks, range.end_line, is_new)
     range_info["end"].old_line = end_line_info.old_line
     range_info["end"].new_line = end_line_info.new_line
     range_info["end"].type = type
   end
+
+  vim.print(range_info)
 
   reviewer_info.range_info = range_info
   return reviewer_info
@@ -332,101 +335,4 @@ M.set_callback_for_reviewer_leave = function(callback)
   })
 end
 
----Returns whether the comment is on a deleted line, added line, or unmodified line.
----This is in order to build the payload for Gitlab correctly by setting the old line and new line.
----@param a_linenr number
----@param b_linenr number
----@param is_current_sha boolean
----@param hunks Hunk[] A list of hunks
----@param all_diff_output table The raw diff output
-function M.get_modification_type(a_linenr, b_linenr, is_current_sha, hunks, all_diff_output)
-  for _, hunk in ipairs(hunks) do
-    local old_line_end = hunk.old_line + hunk.old_range
-    local new_line_end = hunk.new_line + hunk.new_range
-
-    if is_current_sha then
-      -- If it is a single line change and neither hunk has a range, then it's added
-      if b_linenr >= hunk.new_line and b_linenr <= new_line_end then
-        if hunk.new_range == 0 and hunk.old_range == 0 then
-          return "added"
-        end
-        -- If leaving a comment on the new window, we may be commenting on an added line
-        -- or on an unmodified line. To tell, we have to check whether the line itself is
-        -- prefixed with "+" and only return "added" if it is.
-        if M.line_was_added(b_linenr, hunk, all_diff_output) then
-          return "added"
-        end
-      end
-    else
-      -- It's a deletion if it's in the range of the hunks and the new
-      -- range is zero, since that is only a deletion hunk, or if we find
-      -- a match in another hunk with a range, and the corresponding line is prefixed
-      -- with a "-" only. If it is, then it's a deletion.
-      if a_linenr >= hunk.old_line and a_linenr <= old_line_end and hunk.old_range == 0 then
-        return "deleted"
-      end
-      if
-        (a_linenr >= hunk.old_line and a_linenr <= old_line_end)
-        or (a_linenr >= hunk.new_line and b_linenr <= new_line_end)
-      then
-        if M.line_was_removed(a_linenr, hunk, all_diff_output) then
-          return "deleted"
-        end
-      end
-    end
-  end
-
-  -- If we can't find the line, this means the user is either trying to leave
-  -- a comment on an unchanged line in the new or old file SHA. This is only
-  -- allowed in the old file
-  return is_current_sha and "bad_file_unmodified" or "unmodified"
-end
-
----@param linnr number
----@param hunk Hunk
----@param all_diff_output table
-M.line_was_removed = function(linnr, hunk, all_diff_output)
-  for matching_line_index, line in ipairs(all_diff_output) do
-    local found_hunk = u.parse_possible_hunk_headers(line)
-    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-      -- We found a matching hunk, now we need to iterate over the lines from the raw diff output
-      -- at that hunk until we reach the line we are looking for. When the indexes match we check
-      -- to see if that line is deleted or not.
-      for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range - 1, 1 do
-        local line_content = all_diff_output[matching_line_index + 1]
-        if hunk_line_index == linnr then
-          if string.match(line_content, "^%-") then
-            return "deleted"
-          end
-        end
-      end
-    end
-  end
-end
-
----@param linnr number
----@param hunk Hunk
----@param all_diff_output table
-M.line_was_added = function(linnr, hunk, all_diff_output)
-  for matching_line_index, line in ipairs(all_diff_output) do
-    local found_hunk = u.parse_possible_hunk_headers(line)
-    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-      -- For added lines, we only want to iterate over the part of the diff that has has new lines,
-      -- so we skip over the old range. We then keep track of the increment to the original new line index,
-      -- and iterate until we reach the end of the total range of this hunk. If we arrive at the matching
-      -- index for the line number, we check to see if the line was added.
-      local i = 0
-      local old_range = (found_hunk.old_range == 0 and found_hunk.old_line ~= 0) and 1 or found_hunk.old_range
-      for hunk_line_index = matching_line_index + old_range + 1, matching_line_index + old_range + found_hunk.new_range, 1 do
-        local line_content = all_diff_output[hunk_line_index]
-        if (found_hunk.new_line + i) == linnr then
-          if string.match(line_content, "^%+") then
-            return "added"
-          end
-        end
-        i = i + 1
-      end
-    end
-  end
-end
 return M
