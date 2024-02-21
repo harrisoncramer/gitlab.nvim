@@ -1,6 +1,6 @@
-local state           = require("gitlab.state")
-local hunks           = require("gitlab.hunks")
-local M               = {}
+local state = require("gitlab.state")
+local hunks = require("gitlab.hunks")
+local M = {}
 
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
@@ -43,12 +43,12 @@ M.build_location_data = function(current_file, modification_type, file_name, old
 
   -- If leaving a multi-line comment, we want to also add range_info to the payload.
   local is_new = payload.new_line ~= nil
-  local current_line_info = is_new and hunks.get_lines_from_hunks(data.hunks, payload.new_line, is_new) or
-      hunks.get_lines_from_hunks(data.hunks, payload.old_line, is_new)
+  local current_line_info = is_new and hunks.get_lines_from_hunks(data.hunks, payload.new_line, is_new)
+    or hunks.get_lines_from_hunks(data.hunks, payload.old_line, is_new)
   local type = is_new and "new" or "old"
 
   ---@type ReviewerRangeInfo
-  local range_info = { start = {},["end"] = {} }
+  local range_info = { start = {}, ["end"] = {} }
 
   if current_line == range.start_line then
     range_info.start.old_line = current_line_info.old_line

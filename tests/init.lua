@@ -1,14 +1,15 @@
 ---Initialize neovim to use lua modules from luarocks and prepare correct search paths for
 ---modules, neovim plugins and load busted frameworks.
 
+require("gitlab.utils.list")
+
 local function build_path(modules, extensions)
-  local path = ""
-  for _, module_path in ipairs(modules) do
+  return List.new(modules):reduce(function(agg, module_path)
     for _, lua_path_extension in ipairs(extensions) do
-      path = path .. module_path .. lua_path_extension .. ";"
+      agg = agg .. module_path .. lua_path_extension .. ";"
     end
-  end
-  return path
+    return agg
+  end, "")
 end
 
 local plugins_folder = "tests/plugins/*/lua"

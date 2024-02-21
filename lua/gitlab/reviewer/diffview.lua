@@ -164,8 +164,7 @@ M.get_location = function(range)
     return
   end
 
-  return location.build_location_data(current_file, modification_type, layout.a.file.path, old_line, new_line,
-    range)
+  return location.build_location_data(current_file, modification_type, layout.a.file.path, old_line, new_line, range)
 end
 
 ---Return content between start_line and end_line

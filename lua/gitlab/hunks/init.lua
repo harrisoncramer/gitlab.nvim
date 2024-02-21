@@ -123,8 +123,8 @@ function M.get_modification_type(old_line, new_line, current_file)
         return "deleted"
       end
       if
-          (old_line >= hunk.old_line and old_line <= old_line_end)
-          or (old_line >= hunk.new_line and new_line <= new_line_end)
+        (old_line >= hunk.old_line and old_line <= old_line_end)
+        or (old_line >= hunk.new_line and new_line <= new_line_end)
       then
         if line_was_removed(old_line, hunk, all_diff_output) then
           return "deleted"

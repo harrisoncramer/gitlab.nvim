@@ -131,6 +131,7 @@ end
 M.parse_diagnostics_from_discussions = function(discussions)
   local new_diagnostics = {}
   local old_diagnostics = {}
+
   for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
     local message = ""
