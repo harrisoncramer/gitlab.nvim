@@ -159,8 +159,7 @@ M.build_info_lines = function()
     return string.rep(" ", offset + 3)
   end
 
-  local lines = {}
-  for _, v in ipairs(state.settings.info.fields) do
+  return List.new(state.settings.info.fields):map(function(v)
     if v == "merge_status" then
       v = "detailed_merge_status"
     end
@@ -174,10 +173,8 @@ M.build_info_lines = function()
     else
       line = line .. row.content
     end
-    table.insert(lines, line)
-  end
-
-  return lines
+    return line
+  end)
 end
 
 -- This function will PUT the new description to the Go server
