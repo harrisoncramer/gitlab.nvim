@@ -67,13 +67,11 @@ end
 
 M.filter_eligible = function(current, to_remove)
   local ids = u.extract(to_remove, "id")
-  local res = {}
-  for _, member in ipairs(current) do
+  return List.new(current):filter(function(member)
     if not u.contains(ids, member.id) then
-      table.insert(res, member)
+      return true
     end
-  end
-  return res
+  end)
 end
 
 return M
