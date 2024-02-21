@@ -14,11 +14,9 @@ M.delete_label = function()
 end
 
 local refresh_label_state = function(labels)
-  local new_labels = ""
-  for _, label in ipairs(labels) do
-    new_labels = new_labels .. "," .. label
-  end
-  state.INFO.labels = new_labels
+  state.INFO.labels = List.new(labels):reduce(function(agg, label)
+    return agg .. "," .. label
+  end, "")
 end
 
 local get_current_labels = function()
