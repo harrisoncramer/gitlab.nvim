@@ -12,7 +12,7 @@ local get_data = function(nodes)
 
   total_resolvable = List.new(nodes):reduce(function(agg, d)
     local first_child = d.notes[1]
-    if first_child ~= nil and first_child.resolvable then
+    if first_child and first_child.resolvable then
       agg = agg + 1
     end
     return agg
@@ -20,7 +20,7 @@ local get_data = function(nodes)
 
   total_resolved = List.new(nodes):reduce(function(agg, d)
     local first_child = d.notes[1]
-    if first_child ~= nil and first_child.resolved then
+    if first_child and first_child.resolved then
       agg = agg + 1
     end
     return agg
