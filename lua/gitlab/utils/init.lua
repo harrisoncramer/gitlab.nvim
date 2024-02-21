@@ -484,14 +484,10 @@ M.get_window_id_by_buffer_id = function(buffer_id)
   local tabpage = vim.api.nvim_get_current_tabpage()
   local windows = vim.api.nvim_tabpage_list_wins(tabpage)
 
-  for _, win_id in ipairs(windows) do
+  return List.new(windows):find(function(win_id)
     local buf_id = vim.api.nvim_win_get_buf(win_id)
-    if buf_id == buffer_id then
-      return win_id
-    end
-  end
-
-  return nil -- Buffer ID not found in any window
+    return buf_id == buffer_id
+  end)
 end
 
 M.list_files_in_folder = function(folder_path)
