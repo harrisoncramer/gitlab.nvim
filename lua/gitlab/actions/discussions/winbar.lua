@@ -2,27 +2,29 @@ local M = {}
 local state = require("gitlab.state")
 
 ---@param nodes Discussion[]|UnlinkedDiscussion[]|nil
+---@return number, number
 local get_data = function(nodes)
-  if nodes == nil then
-    return 0, 0
-  end
   local total_resolvable = 0
   local total_resolved = 0
-  if nodes == vim.NIL then
-    return ""
+  if nodes == nil or nodes == vim.NIL then
+    return total_resolvable, total_resolved
   end
 
-  for _, d in ipairs(nodes) do
+  total_resolvable = List.new(nodes):reduce(function(agg, d)
     local first_child = d.notes[1]
-    if first_child ~= nil then
-      if first_child.resolvable then
-        total_resolvable = total_resolvable + 1
-      end
-      if first_child.resolved then
-        total_resolved = total_resolved + 1
-      end
+    if first_child ~= nil and first_child.resolvable then
+      agg = agg + 1
     end
-  end
+    return agg
+  end, 0)
+
+  total_resolved = List.new(nodes):reduce(function(agg, d)
+    local first_child = d.notes[1]
+    if first_child ~= nil and first_child.resolved then
+      agg = agg + 1
+    end
+    return agg
+  end, 0)
 
   return total_resolvable, total_resolved
 end
