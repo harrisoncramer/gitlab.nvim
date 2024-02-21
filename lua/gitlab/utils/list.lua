@@ -45,3 +45,12 @@ function List:sort(func)
   table.sort(result, func)
   return result
 end
+
+function List:find(func)
+  for _, v in ipairs(self) do
+    if func(v) == true then
+      return v
+    end
+  end
+  return nil
+end
