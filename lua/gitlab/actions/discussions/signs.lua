@@ -65,7 +65,7 @@ M.refresh_diagnostics = function(discussions)
   )
 end
 
----Filter all discussions which are relevant for currently visible signs and diagnostscs.
+---Filter all discussions which are relevant for currently visible signs and diagnostics.
 ---@return Discussion[]?
 M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   if type(all_discussions) ~= "table" then
