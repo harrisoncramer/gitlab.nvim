@@ -49,12 +49,11 @@ M.start = function(callback)
       end
     end,
     on_stderr = function(_, errors)
-      local err_msg = ""
-      for _, err in ipairs(errors) do
+      local err_msg = List.new(errors):reduce(function(agg, err)
         if err ~= "" and err ~= nil then
-          err_msg = err_msg .. err .. "\n"
+          agg = agg .. err .. "\n"
         end
-      end
+      end, "")
 
       if err_msg ~= "" then
         u.notify(err_msg, vim.log.levels.ERROR)
