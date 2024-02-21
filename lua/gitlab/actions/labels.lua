@@ -29,11 +29,9 @@ local get_current_labels = function()
 end
 
 local get_all_labels = function()
-  local labels = {}
-  for _, label in ipairs(state.LABELS) do -- How can we use the colors??
-    table.insert(labels, label.Name)
-  end
-  return labels
+  return List.new(state.LABELS):map(function(label)
+    return label.Name
+  end)
 end
 
 M.add_popup = function(type)
