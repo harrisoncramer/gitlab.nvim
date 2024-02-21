@@ -75,8 +75,8 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   if not file then
     return
   end
-  local discussions = {}
-  for _, discussion in ipairs(all_discussions) do
+
+  return List.new(all_discussions):filter(function(discussion)
     local first_note = discussion.notes[1]
     if
       type(first_note.position) == "table"
@@ -96,11 +96,10 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
         )
       then
-        table.insert(discussions, discussion)
+        return true
       end
     end
-  end
-  return discussions
+  end)
 end
 
 ---Define signs for discussions if not already defined
