@@ -148,7 +148,7 @@ M.get_start_range = function(visual_range)
   return {
     new_line = new_line,
     old_line = old_line,
-    type = modification_type == "added" and "new" or "old"
+    type = modification_type == "added" and "new" or "old",
   }
 end
 
@@ -185,7 +185,7 @@ M.get_end_range = function(visual_range)
   return {
     new_line = new_line,
     old_line = old_line,
-    type = modification_type == "added" and "new" or "old"
+    type = modification_type == "added" and "new" or "old",
   }
 end
 

@@ -604,4 +604,8 @@ M.open_in_browser = function(url)
   end
 end
 
+M.sleep = function(n)
+  os.execute("sleep " .. tonumber(n))
+end
+
 return M
