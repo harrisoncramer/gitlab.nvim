@@ -133,14 +133,14 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
     local revision = state.MR_REVISIONS[1]
     local body = {
+      type = "text",
       comment = text,
       file_name = reviewer_data.file_name,
-      old_line = location_data.old_line,
-      new_line = location_data.new_line,
       base_commit_sha = revision.base_commit_sha,
       start_commit_sha = revision.start_commit_sha,
       head_commit_sha = revision.head_commit_sha,
-      type = "text",
+      old_line = location_data.old_line,
+      new_line = location_data.new_line,
       line_range = location_data.range_info,
     }
 
