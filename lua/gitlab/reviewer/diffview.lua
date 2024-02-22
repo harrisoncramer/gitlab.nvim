@@ -232,7 +232,7 @@ M.get_current_file = function()
 end
 
 -- Get bufnr of the new SHA revision
----@return string|nil
+---@return number|nil
 M.get_bufnr_of_new_sha = function()
   local view = diffview_lib.get_current_view()
   if not view then
@@ -242,7 +242,7 @@ M.get_bufnr_of_new_sha = function()
 end
 
 -- Get bufnr of the old SHA revision
----@return string|nil
+---@return number|nil
 M.get_bufnr_of_old_sha = function()
   local view = diffview_lib.get_current_view()
   if not view then
