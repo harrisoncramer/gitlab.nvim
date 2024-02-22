@@ -259,10 +259,10 @@ end
 -- Given a modification type, a range, and the hunk data, returns the old line/new line
 -- and type information for the start of the range
 ---@param modification_type string
----@param range LineRange
+---@param visual_range LineRange
 ---@param data any
 ---@return ReviewerLineInfo
-M.get_start_range = function(modification_type, range, data)
+M.get_start_range = function(modification_type, visual_range, data)
   return {
     old_line = 1,
     new_line = 1,
@@ -273,10 +273,10 @@ end
 -- Given a modification type, a range, and the hunk data, returns the old line/new line
 -- and type information for the end of the range
 ---@param modification_type string
----@param range LineRange
+---@param visual_range LineRange
 ---@param data any
 ---@return ReviewerLineInfo
-M.get_end_range = function(modification_type, range, data)
+M.get_end_range = function(modification_type, visual_range, data)
   return {
     old_line = 3,
     new_line = 3,
