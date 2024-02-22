@@ -197,20 +197,41 @@ M.is_current_sha = function()
 end
 
 ---Return the matching line from the other file. For instance, if scrolling in the
----new SHA, find the matching line from the old SHA and return it
+---new SHA, find the matching line from the old SHA and return it. The offset
+---may be zero.
+---@param offset number
 ---@return number|nil
-M.get_matching_line = function()
+M.get_matching_line = function(offset)
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
   if layout == nil then
     return nil
   end
-  local bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
-  local oppposite_win_id = u.get_window_id_by_buffer_id(bufnr)
+  local current_bufnr = M.is_current_sha() and layout.b.file.bufnr or layout.a.file.bufnr
+  local opposite_bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
+
+  local current_win_id = u.get_window_id_by_buffer_id(current_bufnr)
+  if current_win_id == nil then
+    return nil
+  end
+
+  -- Adjust the current cursor X number of lines
+  local original_cursor_position = vim.api.nvim_win_get_cursor(current_win_id)
+  local new_cursor_pos = { original_cursor_position[1] + offset, original_cursor_position[2] }
+
+  vim.api.nvim_win_set_cursor(current_win_id, new_cursor_pos) -- Adjust cursor position by offset
+  vim.cmd("redraw")
+
+  local oppposite_win_id = u.get_window_id_by_buffer_id(opposite_bufnr)
   if oppposite_win_id == nil then
     return nil
   end
-  return vim.api.nvim_win_get_cursor(oppposite_win_id)[1]
+
+  local result = vim.api.nvim_win_get_cursor(oppposite_win_id)[1]
+
+  vim.api.nvim_win_set_cursor(current_win_id, original_cursor_position) -- Reset cursor position
+  vim.cmd("redraw")
+  return result
 end
 
 ---Checks whether the lines in the two buffers are the same
