@@ -86,10 +86,10 @@ M.close = function()
 end
 
 -- Jumps to the location provided in the reviewer window
--- Parameters:
---   • {file_name}      The name of the file to jump to
---   • {new_line}  The new_line of the change
---   • {interval}  The old_line of the change
+---@param file_name string
+---@param new_line number
+---@param old_line number
+---@param opts table
 M.jump = function(file_name, new_line, old_line, opts)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
@@ -235,14 +235,6 @@ M.get_current_file = function()
 end
 
 -- Places a sign on the line for currently reviewed file.
--- Parameters:
---   • {id}    The sign id
---   • {sign}  The sign to place
---   • {group} The sign group to place on
---   • {new_line}  The line to place the sign on
---   • {old_line} The buffer number to place the sign on
----Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
----line for identifing lines before changes and both if line was not changed.
 ---@param signs SignTable[] table of signs. See :h sign_placelist
 ---@param type string "new" if diagnostic should be in file after changes else "old"
 M.place_sign = function(signs, type)
