@@ -54,22 +54,22 @@ function Location:build_location_data()
   }
 
   -- -- Comment on new line: Include only new_line in payload.
-  -- if modification_type == "added" then
-  --   payload.old_line = nil
-  --   payload.new_line = new_line
-  --   -- Comment on deleted line: Include only old_line in payload.
-  -- elseif modification_type == "deleted" then
-  --   payload.old_line = old_line
-  --   payload.new_line = nil
-  --   -- The line was not found in any hunks, send both lines.
-  -- elseif modification_type == "unmodified" or modification_type == "bad_file_unmodified" then
-  --   payload.old_line = old_line
-  --   payload.new_line = new_line
-  -- end
-  --
-  -- if visual_range == nil then
-  --   return payload
-  -- end
+  if reviewer_data.modification_type == "added" then
+    payload.old_line = nil
+    payload.new_line = reviewer_data.new_line_from_buf
+    -- Comment on deleted line: Include only old_line in payload.
+  elseif reviewer_data.modification_type == "deleted" then
+    payload.old_line = reviewer_data.old_line_from_buf
+    payload.new_line = nil
+    -- The line was not found in any hunks, send both lines.
+  elseif reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified" then
+    payload.old_line = reviewer_data.old_line_from_buf
+    payload.new_line = reviewer_data.new_line_from_buf
+  end
+
+  if visual_range == nil then
+    return payload
+  end
   --
   -- local start_range_info = self:get_start_range(visual_range)
   -- local end_range_info = self:get_end_range(visual_range)
