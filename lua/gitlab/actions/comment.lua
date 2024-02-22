@@ -124,29 +124,28 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
   local location = Location:new(reviewer_data, visual_range)
 
-  ---@param location_data CommentPayload | nil
+  ---@param location_data LocationData | nil
   location:run(function(location_data)
     if location_data == nil then
       u.notify("Error getting range information", vim.log.levels.ERROR)
       return
     end
 
-    vim.print(location_data)
-    return
-    --
-    -- local revision = state.MR_REVISIONS[1]
-    -- local body = {
-    --   comment = text,
-    --   file_name = reviewer_data.file_name,
-    --   old_line = location_data.old_line,
-    --   new_line = location_data.new_line,
-    --   base_commit_sha = revision.base_commit_sha,
-    --   start_commit_sha = revision.start_commit_sha,
-    --   head_commit_sha = revision.head_commit_sha,
-    --   type = "text",
-    --   line_range = location_data.range_info,
-    -- }
-    --
+    local revision = state.MR_REVISIONS[1]
+    local body = {
+      comment = text,
+      file_name = reviewer_data.file_name,
+      old_line = location_data.old_line,
+      new_line = location_data.new_line,
+      base_commit_sha = revision.base_commit_sha,
+      start_commit_sha = revision.start_commit_sha,
+      head_commit_sha = revision.head_commit_sha,
+      type = "text",
+      line_range = location_data.range_info,
+    }
+
+    vim.print(body)
+
     -- job.run_job("/mr/comment", "POST", body, function(data)
     --   u.notify("Comment created!", vim.log.levels.INFO)
     --   discussions.add_discussion({ data = data, unlinked = false })
