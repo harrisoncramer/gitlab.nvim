@@ -202,8 +202,11 @@ end
 M.get_matching_line = function()
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
-  local oppposite_win_id = u.get_window_id_by_buffer_id(M.is_current_sha() and layout.a.file.bufnr or
-    layout.b.file.file.bufnr)
+  if layout == nil then
+    return nil
+  end
+  local bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
+  local oppposite_win_id = u.get_window_id_by_buffer_id(bufnr)
   if oppposite_win_id == nil then
     return nil
   end
