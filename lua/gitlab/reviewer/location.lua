@@ -94,6 +94,20 @@ local get_line_number_from_old_sha = function(line, offset)
   return matching_line
 end
 
+-- Returns the current line number from whatever SHA (new or old)
+-- the reviewer is focused in.
+---@return number|nil
+local get_current_line = function()
+  local reviewer = require("gitlab.reviewer")
+  local win_id = reviewer.is_current_sha() and reviewer.get_winnr_of_new_sha() or reviewer.get_winnr_of_old_sha()
+  if win_id == nil then
+    return
+  end
+
+  local current_line = vim.api.nvim_win_get_cursor(win_id)[1]
+  return current_line
+end
+
 -- Given a new_line and old_line from the start of a ranged comment, returns the start
 -- range information for the Gitlab payload
 ---@param visual_range LineRange
@@ -112,7 +126,12 @@ M.get_start_range = function(visual_range)
     return
   end
 
-  local current_line = vim.api.nvim_win_get_cursor(win_id)[1]
+  local current_line = get_current_line()
+  if current_line == nil then
+    u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
+    return
+  end
+
   local offset = current_line - visual_range.start_line
 
   local new_line = get_line_number_from_new_sha(visual_range.start_line, offset)
@@ -141,6 +160,15 @@ M.get_end_range = function(visual_range)
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
   end
+
+  local reviewer = require("gitlab.reviewer")
+  local win_id = reviewer.is_current_sha() and reviewer.get_winnr_of_new_sha() or reviewer.get_winnr_of_old_sha()
+  if win_id == nil then
+    u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
+    return
+  end
+
+  local current_line = vim.api.nvim_win_get_cursor(win_id)[1]
 
   -- local current_line = vim.api.nvim_win_get_cursor(0)[0]
   -- local offset = current_line - visual_range.start_line
