@@ -46,13 +46,13 @@ M.build_location_data = function(current_file, modification_type, file_name, old
     start = {
       old_line = start_range_info.old_line,
       new_line = start_range_info.new_line,
-      type = start_range_info.type
+      type = start_range_info.type,
     },
     ["end"] = {
       old_line = end_range_info.old_line,
       new_line = end_range_info.new_line,
-      type = end_range_info.type
-    }
+      type = end_range_info.type,
+    },
   }
 
   return payload

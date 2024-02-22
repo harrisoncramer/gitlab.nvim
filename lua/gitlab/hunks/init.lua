@@ -123,8 +123,8 @@ function M.get_modification_type(old_line, new_line, current_file)
         return "deleted"
       end
       if
-          (old_line >= hunk.old_line and old_line <= old_line_end)
-          or (old_line >= hunk.new_line and new_line <= new_line_end)
+        (old_line >= hunk.old_line and old_line <= old_line_end)
+        or (old_line >= hunk.new_line and new_line <= new_line_end)
       then
         if line_was_removed(old_line, hunk, all_diff_output) then
           return "deleted"
@@ -266,7 +266,7 @@ M.get_start_range = function(modification_type, visual_range, data)
   return {
     old_line = 1,
     new_line = 1,
-    type = "old"
+    type = "old",
   }
 end
 
@@ -280,7 +280,7 @@ M.get_end_range = function(modification_type, visual_range, data)
   return {
     old_line = 3,
     new_line = 3,
-    type = "old"
+    type = "old",
   }
 end
 
