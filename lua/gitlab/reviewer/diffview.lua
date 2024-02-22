@@ -118,11 +118,9 @@ M.jump = function(file_name, new_line, old_line, opts)
   end
 end
 
----Get the location of a line within the diffview. If range is specified, then also the location
----of the lines in range.
----@param visual_range LineRange | nil Line range to get location for
----@return ReviewerInfo | nil nil is returned only if error was encountered
-M.get_location = function(visual_range)
+---Get the data from diffview, such as line information and file name
+---@return DiffviewInfo | nil nil is returned only if error was encountered
+M.get_reviewer_data = function()
   if M.tabnr == nil then
     u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
     return
@@ -168,14 +166,21 @@ M.get_location = function(visual_range)
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  return location.build_location_data(
-    current_file,
-    modification_type,
-    layout.a.file.path,
-    old_line,
-    new_line,
-    visual_range
-  )
+  local current_bufnr = M.is_current_sha() and layout.b.file.bufnr or layout.a.file.bufnr
+  local current_win_id = u.get_window_id_by_buffer_id(current_bufnr)
+  local opposite_bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
+  local oppposite_win_id = u.get_window_id_by_buffer_id(opposite_bufnr)
+
+  return {
+    file_name = layout.a.file.path,
+    old_line_from_buf = old_line,
+    new_line_from_buf = new_line,
+    modification_type = modification_type,
+    current_win_id = current_win_id,
+    current_bufnr = current_bufnr,
+    oppposite_win_id = oppposite_win_id,
+    opposite_bufnr = opposite_bufnr,
+  }
 end
 
 ---Return content between start_line and end_line
@@ -194,44 +199,6 @@ M.is_current_sha = function()
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local current_win = vim.fn.win_getid()
   return current_win == b_win
-end
-
----Return the matching line from the other file. For instance, if scrolling in the
----new SHA, find the matching line from the old SHA and return it. The offset
----may be zero.
----@param offset number
----@return number|nil
-M.get_matching_line = function(offset)
-  local view = diffview_lib.get_current_view()
-  local layout = view.cur_layout
-  if layout == nil then
-    return nil
-  end
-  local current_bufnr = M.is_current_sha() and layout.b.file.bufnr or layout.a.file.bufnr
-  local opposite_bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
-
-  local current_win_id = u.get_window_id_by_buffer_id(current_bufnr)
-  if current_win_id == nil then
-    return nil
-  end
-
-  -- Adjust the current cursor X number of lines
-  local original_cursor_position = vim.api.nvim_win_get_cursor(current_win_id)
-  local new_cursor_pos = { original_cursor_position[1] + offset, original_cursor_position[2] }
-
-  vim.api.nvim_win_set_cursor(current_win_id, new_cursor_pos) -- Adjust cursor position by offset
-  vim.cmd("redraw")
-
-  local oppposite_win_id = u.get_window_id_by_buffer_id(opposite_bufnr)
-  if oppposite_win_id == nil then
-    return nil
-  end
-
-  local result = vim.api.nvim_win_get_cursor(oppposite_win_id)[1]
-
-  vim.api.nvim_win_set_cursor(current_win_id, original_cursor_position) -- Reset cursor position
-  vim.cmd("redraw")
-  return result
 end
 
 ---Checks whether the lines in the two buffers are the same
