@@ -147,13 +147,13 @@ M.get_location = function(visual_range)
   local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
   if old_win == nil or new_win == nil then
-    u.notify("Error retrieving window IDs for current files", vim.log.levels.ERROR)
+    u.notify("Error getting window IDs for current files", vim.log.levels.ERROR)
     return
   end
 
   local current_file = M.get_current_file()
   if current_file == nil then
-    u.notify("Error retrieving current file from Diffview", vim.log.levels.ERROR)
+    u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
   end
 
@@ -231,24 +231,24 @@ M.get_current_file = function()
   return view.panel.cur_file.path
 end
 
--- Get bufnr of the new SHA revision
+-- Get window number of the new SHA revision
 ---@return number|nil
-M.get_bufnr_of_new_sha = function()
+M.get_winnr_of_new_sha = function()
   local view = diffview_lib.get_current_view()
   if not view then
     return
   end
-  return view.cur_layout.b.file.bufnr
+  return u.get_window_id_by_buffer_id(view.cur_layout.b.file.bufnr)
 end
 
--- Get bufnr of the old SHA revision
+-- Get window number of the old SHA revision
 ---@return number|nil
-M.get_bufnr_of_old_sha = function()
+M.get_winnr_of_old_sha = function()
   local view = diffview_lib.get_current_view()
   if not view then
     return
   end
-  return view.cur_layout.a.file.bufnr
+  return u.get_window_id_by_buffer_id(view.cur_layout.a.file.bufnr)
 end
 
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old

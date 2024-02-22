@@ -101,7 +101,7 @@ end
 M.get_start_range = function(visual_range)
   local current_file = require("gitlab.reviewer.diffview").get_current_file()
   if current_file == nil then
-    u.notify("Error retrieving current file from Diffview", vim.log.levels.ERROR)
+    u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
   end
 
@@ -138,7 +138,7 @@ end
 M.get_end_range = function(visual_range)
   local current_file = require("gitlab.reviewer.diffview").get_current_file()
   if current_file == nil then
-    u.notify("Error retrieving current file from Diffview", vim.log.levels.ERROR)
+    u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
   end
 
