@@ -39,23 +39,20 @@ end
 
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
----@return CommentPayload
+---@return LocationData
 function Location:build_location_data()
   ---@type DiffviewInfo
   local reviewer_data = self.reviewer_data
   ---@type LineRange | nil
   local visual_range = self.visual_range
 
-  vim.print(reviewer_data)
-  vim.print(visual_range)
-  -- ---@type CommentPayload
-  -- local payload = {
-  --   file_name = file_name,
-  --   new_line = nil,
-  --   old_line = nil,
-  --   range_info = nil,
-  -- }
-  --
+  ---@type LocationData
+  local payload = {
+    old_line = nil,
+    new_line = nil,
+    range_info = nil,
+  }
+
   -- -- Comment on new line: Include only new_line in payload.
   -- if modification_type == "added" then
   --   payload.old_line = nil
@@ -94,8 +91,8 @@ function Location:build_location_data()
   --     type = end_range_info.type,
   --   },
   -- }
-  --
-  -- return payload
+
+  return payload
 end
 
 -- Helper methods 🤝
