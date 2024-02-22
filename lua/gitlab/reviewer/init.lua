@@ -32,11 +32,6 @@ M.init = function()
   --   • {new_line}  The new_line of the change
   --   • {interval}  The old_line of the change
 
-  M.get_location = reviewer.get_location
-  -- Parameters:
-  --   • {range}  LineRange if function was triggered from visual selection
-  -- Returns the current location (based on cursor) from the reviewer window as ReviewerInfo class
-
   M.get_lines = reviewer.get_lines
   -- Returns the content of the file in the current location in the reviewer window
 
@@ -73,15 +68,9 @@ M.init = function()
   -- Returns whether user is focused on the new version of the file
   M.is_current_sha = reviewer.is_current_sha
 
-  -- Returns the scroll-locked line from the old SHA if focused on the
-  -- new SHA, and vise-versa
-  M.get_matching_line = reviewer.get_matching_line
-
-  -- Get window number of the new SHA revision
-  M.get_winnr_of_new_sha = reviewer.get_winnr_of_new_sha
-
-  -- Get window number of the old SHA revision
-  M.get_winnr_of_old_sha = reviewer.get_winnr_of_old_sha
+  -- Returns information about the current state of the reviewer, such as
+  -- the old line number, the modification type, the buffer numbers, etc.
+  M.get_reviewer_data = reviewer.get_reviewer_data
 end
 
 return M
