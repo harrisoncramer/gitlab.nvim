@@ -163,7 +163,7 @@ end
 M.split_by_new_lines = function(s)
   if s:sub(-1) ~= "\n" then
     s = s .. "\n"
-  end -- Append a new line to the string, if there's none, otherwise the last line would be lost.
+  end                       -- Append a new line to the string, if there's none, otherwise the last line would be lost.
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
 end
 
@@ -206,7 +206,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -504,17 +504,17 @@ M.list_files_in_folder = function(folder_path)
   local files = {}
   if folder ~= nil then
     files = List.new(folder)
-      :map(function(file)
-        local file_path = folder_path .. M.path_separator .. file
-        local timestamp = vim.fn.getftime(file_path)
-        return { name = file, timestamp = timestamp }
-      end)
-      :sort(function(a, b)
-        return a.timestamp > b.timestamp
-      end)
-      :map(function(file)
-        return file.name
-      end)
+        :map(function(file)
+          local file_path = folder_path .. M.path_separator .. file
+          local timestamp = vim.fn.getftime(file_path)
+          return { name = file, timestamp = timestamp }
+        end)
+        :sort(function(a, b)
+          return a.timestamp > b.timestamp
+        end)
+        :map(function(file)
+          return file.name
+        end)
   end
 
   return files
@@ -556,6 +556,14 @@ M.get_icon = function(filename)
   else
     return nil, nil
   end
+end
+
+---Return content between start_line and end_line
+---@param start_line integer
+---@param end_line integer
+---@return string[]
+M.get_lines = function(start_line, end_line)
+  return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
 M.make_comma_separated_readable = function(str)
