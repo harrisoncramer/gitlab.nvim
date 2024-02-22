@@ -79,6 +79,39 @@ local line_was_added = function(linnr, hunk, all_diff_output)
   end
 end
 
+---Parse git diff hunks.
+---@param file_path string Path to file.
+---@param base_branch string Git base branch of merge request.
+---@return HunksAndDiff
+local parse_hunks_and_diff = function(file_path, base_branch)
+  local hunks = {}
+  local all_diff_output = {}
+
+  local Job = require("plenary.job")
+
+  local diff_job = Job:new({
+    command = "git",
+    args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
+    on_exit = function(j, return_code)
+      if return_code == 0 then
+        all_diff_output = j:result()
+        for _, line in ipairs(all_diff_output) do
+          local hunk = parse_possible_hunk_headers(line)
+          if hunk ~= nil then
+            table.insert(hunks, hunk)
+          end
+        end
+      else
+        M.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
+      end
+    end,
+  })
+
+  diff_job:sync()
+
+  return { hunks = hunks, all_diff_output = all_diff_output }
+end
+
 ---Returns whether the comment is on a deleted line, added line, or unmodified line.
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param old_line number
@@ -86,7 +119,7 @@ end
 ---@param current_file string
 ---@return string|nil
 function M.get_modification_type(old_line, new_line, current_file)
-  local hunk_and_diff_data = M.parse_hunks_and_diff(current_file, state.INFO.target_branch)
+  local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.target_branch)
   if hunk_and_diff_data.hunks == nil then
     u.notify("Could not parse hunks", vim.log.levels.ERROR)
     return
@@ -137,39 +170,6 @@ function M.get_modification_type(old_line, new_line, current_file)
   -- a comment on an unchanged line in the new or old file SHA. This is only
   -- allowed in the old file
   return is_current_sha and "bad_file_unmodified" or "unmodified"
-end
-
----Parse git diff hunks.
----@param file_path string Path to file.
----@param base_branch string Git base branch of merge request.
----@return HunksAndDiff
-M.parse_hunks_and_diff = function(file_path, base_branch)
-  local hunks = {}
-  local all_diff_output = {}
-
-  local Job = require("plenary.job")
-
-  local diff_job = Job:new({
-    command = "git",
-    args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
-    on_exit = function(j, return_code)
-      if return_code == 0 then
-        all_diff_output = j:result()
-        for _, line in ipairs(all_diff_output) do
-          local hunk = parse_possible_hunk_headers(line)
-          if hunk ~= nil then
-            table.insert(hunks, hunk)
-          end
-        end
-      else
-        M.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
-      end
-    end,
-  })
-
-  diff_job:sync()
-
-  return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
 return M
