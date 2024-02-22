@@ -170,6 +170,7 @@ M.get_reviewer_data = function()
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
   if modification_type == nil then
+    u.notify("Error parsing hunks for modification type", vim.log.levels.ERROR)
     return
   end
 
