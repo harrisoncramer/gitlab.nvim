@@ -28,6 +28,15 @@ function Location:new(reviewer_data, visual_range)
   return instance
 end
 
+---Executes the location builder and sends the results to the callback function in order to send the comment
+---@param cb function
+function Location:run(cb)
+  local location_data = self:build_location_data()
+  vim.schedule(function()
+    cb(location_data)
+  end)
+end
+
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
 ---@return CommentPayload
@@ -88,6 +97,8 @@ function Location:build_location_data()
   --
   -- return payload
 end
+
+-- Helper methods 🤝
 
 -- Returns the matching line from the new SHA.
 -- For instance, line 12 in the new SHA may be scroll-linked
@@ -253,14 +264,6 @@ function Location:get_end_range(visual_range)
     old_line = old_line,
     type = modification_type == "added" and "new" or "old",
   }
-end
-
----@param cb function
-function Location:run(cb)
-  local location_data = self:build_location_data()
-  vim.schedule(function()
-    cb(location_data)
-  end)
 end
 
 return M
