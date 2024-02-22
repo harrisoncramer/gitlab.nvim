@@ -146,24 +146,27 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     return
   end
 
-  local revision = state.MR_REVISIONS[1]
-  local body = {
-    comment = text,
-    file_name = reviewer_info.file_name,
-    old_line = reviewer_info.old_line,
-    new_line = reviewer_info.new_line,
-    base_commit_sha = revision.base_commit_sha,
-    start_commit_sha = revision.start_commit_sha,
-    head_commit_sha = revision.head_commit_sha,
-    type = "text",
-    line_range = reviewer_info.range_info,
-  }
+  vim.print(reviewer_info.range_info)
+  return
 
-  job.run_job("/mr/comment", "POST", body, function(data)
-    u.notify("Comment created!", vim.log.levels.INFO)
-    discussions.add_discussion({ data = data, unlinked = false })
-    discussions.refresh_discussion_data()
-  end)
+  -- local revision = state.MR_REVISIONS[1]
+  -- local body = {
+  --   comment = text,
+  --   file_name = reviewer_info.file_name,
+  --   old_line = reviewer_info.old_line,
+  --   new_line = reviewer_info.new_line,
+  --   base_commit_sha = revision.base_commit_sha,
+  --   start_commit_sha = revision.start_commit_sha,
+  --   head_commit_sha = revision.head_commit_sha,
+  --   type = "text",
+  --   line_range = reviewer_info.range_info,
+  -- }
+  --
+  -- job.run_job("/mr/comment", "POST", body, function(data)
+  --   u.notify("Comment created!", vim.log.levels.INFO)
+  --   discussions.add_discussion({ data = data, unlinked = false })
+  --   discussions.refresh_discussion_data()
+  -- end)
 end
 
 return M

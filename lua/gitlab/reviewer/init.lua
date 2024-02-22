@@ -72,6 +72,10 @@ M.init = function()
 
   -- Returns whether user is focused on the new version of the file
   M.is_current_sha = reviewer.is_current_sha
+
+  -- Returns the scroll-locked line from the old SHA if focused on the
+  -- new SHA, and vise-versa
+  M.get_matching_line = reviewer.get_matching_line
 end
 
 return M

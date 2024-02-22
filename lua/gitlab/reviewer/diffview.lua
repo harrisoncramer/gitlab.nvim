@@ -192,6 +192,20 @@ M.is_current_sha = function()
   return current_win == b_win
 end
 
+---Return the matching line from the other file. For instance, if scrolling in the
+---new SHA, find the matching line from the old SHA and return it
+---@return number|nil
+M.get_matching_line = function()
+  local view = diffview_lib.get_current_view()
+  local layout = view.cur_layout
+  local oppposite_win_id = u.get_window_id_by_buffer_id(M.is_current_sha() and layout.a.file.bufnr or
+    layout.b.file.file.bufnr)
+  if oppposite_win_id == nil then
+    return nil
+  end
+  return vim.api.nvim_win_get_cursor(oppposite_win_id)[1]
+end
+
 ---Checks whether the lines in the two buffers are the same
 ---@return boolean
 M.lines_are_same = function(layout, a_cursor, b_cursor)
