@@ -1,6 +1,7 @@
 -- This module is responsible for creating new comments
 -- in the reviewer's buffer. The reviewer will pass back
 -- to this module the data required to make the API calls
+require("gitlab.reviewer.location")
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
@@ -114,6 +115,16 @@ end
 ---@field new_line integer | nil
 ---@field range_info ReviewerRangeInfo|nil
 
+---@class DiffviewInfo
+---@field modification_type string
+---@field file_name string
+---@field current_win_id integer
+---@field current_bufnr integer
+---@field oppposite_win_id integer
+---@field opposite_bufnr integer
+---@field new_line_from_buf integer
+---@field old_line_from_buf integer
+
 ---@class ReviewerInfoWithType
 ---@field type string
 ---@field file_name string
@@ -141,32 +152,43 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     return
   end
 
-  local reviewer_info = reviewer.get_location(visual_range)
-  if not reviewer_info then
+  local reviewer_data = reviewer.get_reviewer_data()
+  if reviewer_data == nil then
+    u.notify("Error getting reviewer data", vim.log.levels.ERROR)
     return
   end
 
-  vim.print(reviewer_info.range_info)
-  return
+  local location = Location:new(reviewer_data, visual_range)
 
-  -- local revision = state.MR_REVISIONS[1]
-  -- local body = {
-  --   comment = text,
-  --   file_name = reviewer_info.file_name,
-  --   old_line = reviewer_info.old_line,
-  --   new_line = reviewer_info.new_line,
-  --   base_commit_sha = revision.base_commit_sha,
-  --   start_commit_sha = revision.start_commit_sha,
-  --   head_commit_sha = revision.head_commit_sha,
-  --   type = "text",
-  --   line_range = reviewer_info.range_info,
-  -- }
-  --
-  -- job.run_job("/mr/comment", "POST", body, function(data)
-  --   u.notify("Comment created!", vim.log.levels.INFO)
-  --   discussions.add_discussion({ data = data, unlinked = false })
-  --   discussions.refresh_discussion_data()
-  -- end)
+  ---@param location_data ReviewerInfo |  nil
+  location:run(function(location_data)
+    if location_data == nil then
+      u.notify("Error getting range information", vim.log.levels.ERROR)
+      return
+    end
+
+    vim.print(location_data)
+    return
+    --
+    -- local revision = state.MR_REVISIONS[1]
+    -- local body = {
+    --   comment = text,
+    --   file_name = reviewer_data.file_name,
+    --   old_line = location_data.old_line,
+    --   new_line = location_data.new_line,
+    --   base_commit_sha = revision.base_commit_sha,
+    --   start_commit_sha = revision.start_commit_sha,
+    --   head_commit_sha = revision.head_commit_sha,
+    --   type = "text",
+    --   line_range = location_data.range_info,
+    -- }
+    --
+    -- job.run_job("/mr/comment", "POST", body, function(data)
+    --   u.notify("Comment created!", vim.log.levels.INFO)
+    --   discussions.add_discussion({ data = data, unlinked = false })
+    --   discussions.refresh_discussion_data()
+    -- end)
+  end)
 end
 
 return M
