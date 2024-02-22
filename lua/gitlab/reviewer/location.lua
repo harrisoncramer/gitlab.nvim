@@ -27,7 +27,7 @@ function Location:new(reviewer_data, visual_range)
   instance.reviewer_data = reviewer_data
   instance.visual_range = visual_range
   instance.location_data = {
-    range_info = {}
+    range_info = {},
   }
   return instance
 end
@@ -65,7 +65,9 @@ function Location:build_location_data()
   elseif reviewer_data.modification_type == "deleted" then
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = nil
-  elseif reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified" then
+  elseif
+    reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
+  then
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = reviewer_data.new_line_from_buf
   end
