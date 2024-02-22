@@ -115,8 +115,7 @@
 ---@field new_line_from_buf integer
 ---@field old_line_from_buf integer
 
----@class CommentPayload
----@field file_name string
+---@class LocationData
 ---@field old_line integer | nil
 ---@field new_line integer | nil
 ---@field range_info ReviewerRangeInfo|nil
