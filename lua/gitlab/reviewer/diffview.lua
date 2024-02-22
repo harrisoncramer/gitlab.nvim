@@ -231,6 +231,26 @@ M.get_current_file = function()
   return view.panel.cur_file.path
 end
 
+-- Get bufnr of the new SHA revision
+---@return string|nil
+M.get_bufnr_of_new_sha = function()
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  return view.cur_layout.b.file.bufnr
+end
+
+-- Get bufnr of the old SHA revision
+---@return string|nil
+M.get_bufnr_of_old_sha = function()
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  return view.cur_layout.a.file.bufnr
+end
+
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
 ---line for identifing lines before changes and both if line was not changed.
 ---@param signs SignTable[] table of signs. See :h sign_placelist
