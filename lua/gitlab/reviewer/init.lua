@@ -76,6 +76,12 @@ M.init = function()
   -- Returns the scroll-locked line from the old SHA if focused on the
   -- new SHA, and vise-versa
   M.get_matching_line = reviewer.get_matching_line
+
+  -- Get bufnr of the new SHA revision
+  M.get_bufnr_of_new_sha = reviewer.get_bufnr_of_new_sha
+
+  -- Get bufnr of the old SHA revision
+  M.get_bufnr_of_old_sha = reviewer.get_bufnr_of_old_sha
 end
 
 return M
