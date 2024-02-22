@@ -66,15 +66,15 @@ end
 -- For instance, line 12 in the new SHA may be scroll-linked
 -- to line 10 in the old SHA.
 ---@param line number
----@param current_line number
+---@param offset number
 ---@return number|nil
-local get_line_number_from_new_sha = function(line, current_line)
+local get_line_number_from_new_sha = function(line, offset)
   local reviewer = require("gitlab.reviewer")
   local is_current_sha = reviewer.is_current_sha()
   if is_current_sha then
     return line
   end
-  local matching_line = reviewer.get_matching_line()
+  local matching_line = reviewer.get_matching_line(offset)
   return matching_line
 end
 
@@ -82,15 +82,15 @@ end
 -- For instance, line 12 in the new SHA may be scroll-linked
 -- to line 10 in the old SHA.
 ---@param line number
----@param current_line number
+---@param offset number
 ---@return number|nil
-local get_line_number_from_old_sha = function(line, current_line)
+local get_line_number_from_old_sha = function(line, offset)
   local reviewer = require("gitlab.reviewer")
   local is_current_sha = reviewer.is_current_sha()
   if not is_current_sha then
     return line
   end
-  local matching_line = reviewer.get_matching_line()
+  local matching_line = reviewer.get_matching_line(offset)
   return matching_line
 end
 
@@ -132,8 +132,12 @@ M.get_start_range = function(visual_range)
     return
   end
 
-  local new_line = get_line_number_from_new_sha(visual_range.start_line, current_line)
-  local old_line = get_line_number_from_old_sha(visual_range.start_line, current_line)
+  -- If the start line in the range is greater than the current line, pass the
+  -- negative difference so we can get the actual start line
+  local offset = (current_line - visual_range.start_line) * -1
+
+  local new_line = get_line_number_from_new_sha(visual_range.start_line, offset)
+  local old_line = get_line_number_from_old_sha(visual_range.start_line, offset)
   if new_line == nil or old_line == nil then
     u.notify("Error getting new or old line for start range", vim.log.levels.ERROR)
     return
@@ -165,8 +169,12 @@ M.get_end_range = function(visual_range)
     return
   end
 
-  local new_line = get_line_number_from_new_sha(visual_range.end_line, current_line)
-  local old_line = get_line_number_from_old_sha(visual_range.end_line, current_line)
+  -- If the end line in the range is greater than the current line, pass the difference
+  -- so we can get the actual end line
+  local offset = visual_range.end_line - current_line
+
+  local new_line = get_line_number_from_new_sha(visual_range.end_line, offset)
+  local old_line = get_line_number_from_old_sha(visual_range.end_line, offset)
 
   if new_line == nil or old_line == nil then
     u.notify("Error getting new or old line for end range", vim.log.levels.ERROR)
