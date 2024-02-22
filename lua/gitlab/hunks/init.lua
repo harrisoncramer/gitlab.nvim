@@ -176,40 +176,4 @@ M.parse_hunks_and_diff = function(file_path, base_branch)
   return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
--- Given a new_line and old_line from the start of a ranged comment returns the start
--- range information for the Gitlab payload
----@param new_line number
----@param old_line number
----@param modification_type string
----@return ReviewerLineInfo
-M.get_start_range = function(new_line, old_line, modification_type)
-  return {
-    new_line = new_line,
-    old_line = old_line,
-    type = modification_type == "added" and "new" or "old"
-  }
-end
-
--- Given a modification type, a range, and the hunk data, returns the old line/new line
--- and type information for the end of the range
----@param new_line number
----@param old_line number
----@param visual_range LineRange
----@return ReviewerLineInfo
-M.get_end_range = function(new_line, old_line, visual_range, current_file)
-  -- TODO:
-  -- Get the  the visual range to detect the end of the range and new lines.
-  -- from the current SHA and the old SHA.
-  -- Once we have those lines, we pass them into the modification_type function, to get the type.
-  -- Pass all three to the result table.
-  -- local is_current = reviewer.is_current_sha()
-  -- local lines_spanned = visual_range.end_line - visual_range.start_line
-  -- local modification_type = M.get_modification_type()
-  return {
-    old_line = 3,
-    new_line = 3,
-    type = "old",
-  }
-end
-
 return M
