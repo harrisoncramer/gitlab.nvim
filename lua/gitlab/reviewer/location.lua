@@ -4,12 +4,13 @@ local M = {}
 
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
+---@param current_file string
 ---@param modification_type string
 ---@param file_name string
 ---@param old_line number
 ---@param new_line number
 ---@param visual_range LineRange | nil
-M.build_location_data = function(modification_type, file_name, old_line, new_line, visual_range)
+M.build_location_data = function(current_file, modification_type, file_name, old_line, new_line, visual_range)
   ---@type ReviewerInfo
   local payload = {
     file_name = file_name,
@@ -38,7 +39,7 @@ M.build_location_data = function(modification_type, file_name, old_line, new_lin
 
   -- Assume at top of visual range in the new buffer...
   local start_range_info = hunks.get_start_range(new_line, old_line, modification_type)
-  local end_range_info = hunks.get_end_range(new_line, old_line, visual_range)
+  local end_range_info = hunks.get_end_range(new_line, old_line, visual_range, current_file)
 
   payload.range_info = {
     start = {
