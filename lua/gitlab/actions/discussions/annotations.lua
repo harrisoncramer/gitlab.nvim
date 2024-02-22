@@ -108,9 +108,9 @@
 ---@class DiffviewInfo
 ---@field modification_type string
 ---@field file_name string
----@field current_win_id integer
 ---@field current_bufnr integer
----@field oppposite_win_id integer
+---@field new_sha_win_id integer
+---@field old_sha_win_id integer
 ---@field opposite_bufnr integer
 ---@field new_line_from_buf integer
 ---@field old_line_from_buf integer

@@ -167,18 +167,18 @@ M.get_reviewer_data = function()
   end
 
   local current_bufnr = M.is_current_sha() and layout.b.file.bufnr or layout.a.file.bufnr
-  local current_win_id = u.get_window_id_by_buffer_id(current_bufnr)
   local opposite_bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
-  local oppposite_win_id = u.get_window_id_by_buffer_id(opposite_bufnr)
+  local old_sha_win_id = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
+  local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
   return {
     file_name = layout.a.file.path,
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
-    current_win_id = current_win_id,
+    new_sha_win_id = new_sha_win_id,
     current_bufnr = current_bufnr,
-    oppposite_win_id = oppposite_win_id,
+    old_sha_win_id = old_sha_win_id,
     opposite_bufnr = opposite_bufnr,
   }
 end
@@ -217,26 +217,6 @@ M.get_current_file = function()
     return
   end
   return view.panel.cur_file.path
-end
-
--- Get window number of the new SHA revision
----@return number|nil
-M.get_winnr_of_new_sha = function()
-  local view = diffview_lib.get_current_view()
-  if not view then
-    return
-  end
-  return u.get_window_id_by_buffer_id(view.cur_layout.b.file.bufnr)
-end
-
--- Get window number of the old SHA revision
----@return number|nil
-M.get_winnr_of_old_sha = function()
-  local view = diffview_lib.get_current_view()
-  if not view then
-    return
-  end
-  return u.get_window_id_by_buffer_id(view.cur_layout.a.file.bufnr)
 end
 
 ---Place a sign in currently reviewed file. Use new line for identifing lines after changes, old
