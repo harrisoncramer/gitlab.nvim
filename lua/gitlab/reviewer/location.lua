@@ -108,7 +108,7 @@ M.get_start_range = function(visual_range)
   local reviewer = require("gitlab.reviewer")
   local win_id = reviewer.is_current_sha() and reviewer.get_winnr_of_new_sha() or reviewer.get_winnr_of_old_sha()
   if win_id == nil then
-    u.notify("Error getting bufnr of SHA for start range", vim.log.levels.ERROR)
+    u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
     return
   end
 
