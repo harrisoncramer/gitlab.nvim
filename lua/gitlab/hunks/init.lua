@@ -123,8 +123,8 @@ function M.get_modification_type(old_line, new_line, current_file)
         return "deleted"
       end
       if
-        (old_line >= hunk.old_line and old_line <= old_line_end)
-        or (old_line >= hunk.new_line and new_line <= new_line_end)
+          (old_line >= hunk.old_line and old_line <= old_line_end)
+          or (old_line >= hunk.new_line and new_line <= new_line_end)
       then
         if line_was_removed(old_line, hunk, all_diff_output) then
           return "deleted"
@@ -204,19 +204,20 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
           new_line = target_line,
           in_hunk = false,
         }
-        -- target line is within the current hunk
-      elseif hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
-        -- this is interesting magic of gitlab calculation
+      end
+
+      -- target line is within the current hunk
+      if hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
         return {
           old_line = hunk.old_line + hunk.old_range + 1,
           new_line = target_line,
           in_hunk = true,
         }
-        -- target line is after the current hunk
-      else
-        current_new_line = hunk.new_line + hunk.new_range
-        current_old_line = hunk.old_line + hunk.old_range
       end
+
+      -- target line not found, reset ranges
+      current_new_line = hunk.new_line + hunk.new_range
+      current_old_line = hunk.old_line + hunk.old_range
     end
     -- target line is after last hunk
     return {
@@ -253,6 +254,34 @@ M.get_lines_from_hunks = function(hunks, target_line, is_new)
       in_hunk = false,
     }
   end
+end
+
+-- Given a modification type, a range, and the hunk data, returns the old line/new line
+-- and type information for the start of the range
+---@param modification_type string
+---@param range LineRange
+---@param data any
+---@return ReviewerLineInfo
+M.get_start_range = function(modification_type, range, data)
+  return {
+    old_line = 1,
+    new_line = 1,
+    type = "old"
+  }
+end
+
+-- Given a modification type, a range, and the hunk data, returns the old line/new line
+-- and type information for the end of the range
+---@param modification_type string
+---@param range LineRange
+---@param data any
+---@return ReviewerLineInfo
+M.get_end_range = function(modification_type, range, data)
+  return {
+    old_line = 3,
+    new_line = 3,
+    type = "old"
+  }
 end
 
 return M
