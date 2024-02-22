@@ -136,8 +136,7 @@ function M.get_modification_type(old_line, new_line, current_file)
   -- If we can't find the line, this means the user is either trying to leave
   -- a comment on an unchanged line in the new or old file SHA. This is only
   -- allowed in the old file
-  local result = is_current_sha and "bad_file_unmodified" or "unmodified"
-  return result
+  return is_current_sha and "bad_file_unmodified" or "unmodified"
 end
 
 ---Parse git diff hunks.
