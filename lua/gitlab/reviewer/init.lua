@@ -10,12 +10,7 @@ local M = {
   tabnr = nil,
 }
 
-local all_git_manged_files_unmodified = function()
-  -- check local managed files are unmodified, matching the state in the MR
-  -- TODO: ensure correct CWD?
-  return vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
-end
-
+-- Checks for legacy installations, only Diffview is supported.
 M.init = function()
   if state.settings.reviewer ~= "diffview" then
     vim.notify(
@@ -25,7 +20,7 @@ M.init = function()
   end
 end
 
--- Opens the reviewer window
+-- Opens the reviewer window.
 M.open = function()
   local diff_refs = state.INFO.diff_refs
   if diff_refs == nil then
@@ -41,7 +36,7 @@ M.open = function()
   local diffview_open_command = "DiffviewOpen"
   local diffview_feature_imply_local = {
     user_requested = state.settings.reviewer_settings.diffview.imply_local,
-    usable = all_git_manged_files_unmodified(),
+    usable = vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
   }
   if diffview_feature_imply_local.user_requested and diffview_feature_imply_local.usable then
     diffview_open_command = diffview_open_command .. " --imply-local"
@@ -133,8 +128,9 @@ M.jump = function(file_name, new_line, old_line, opts)
   end
 end
 
----Get the data from diffview, such as line information and file name
----@return DiffviewInfo | nil nil is returned only if error was encountered
+---Get the data from diffview, such as line information and file name. May be used by
+---other modules such as the comment module to create line codes or set diagnostics
+---@return DiffviewInfo | nil
 M.get_reviewer_data = function()
   if M.tabnr == nil then
     u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
@@ -196,14 +192,6 @@ M.get_reviewer_data = function()
     old_sha_win_id = old_sha_win_id,
     opposite_bufnr = opposite_bufnr,
   }
-end
-
----Return content between start_line and end_line
----@param start_line integer
----@param end_line integer
----@return string[]
-M.get_lines = function(start_line, end_line)
-  return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
 ---Return whether user is focused on the new version of the file
