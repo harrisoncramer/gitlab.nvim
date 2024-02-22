@@ -120,9 +120,9 @@ end
 
 ---Get the location of a line within the diffview. If range is specified, then also the location
 ---of the lines in range.
----@param range LineRange | nil Line range to get location for
+---@param visual_range LineRange | nil Line range to get location for
 ---@return ReviewerInfo | nil nil is returned only if error was encountered
-M.get_location = function(range)
+M.get_location = function(visual_range)
   if M.tabnr == nil then
     u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
     return
@@ -164,7 +164,8 @@ M.get_location = function(range)
     return
   end
 
-  return location.build_location_data(current_file, modification_type, layout.a.file.path, old_line, new_line, range)
+  return location.build_location_data(current_file, modification_type, layout.a.file.path, old_line, new_line,
+    visual_range)
 end
 
 ---Return content between start_line and end_line

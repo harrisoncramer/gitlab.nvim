@@ -114,11 +114,18 @@ end
 ---@field new_line integer | nil
 ---@field range_info ReviewerRangeInfo|nil
 
+---@class ReviewerInfoWithType
+---@field type string
+---@field file_name string
+---@field old_line integer | nil
+---@field new_line integer | nil
+---@field range_info ReviewerRangeInfo|nil
+
 ---This function (settings.popup.perform_action) will send the comment to the Go server
 ---@param text string comment text
----@param range LineRange | nil range of visuel selection or nil
+---@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean | nil if true, the comment is not linked to a line
-M.confirm_create_comment = function(text, range, unlinked)
+M.confirm_create_comment = function(text, visual_range, unlinked)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
@@ -134,7 +141,7 @@ M.confirm_create_comment = function(text, range, unlinked)
     return
   end
 
-  local reviewer_info = reviewer.get_location(range)
+  local reviewer_info = reviewer.get_location(visual_range)
   if not reviewer_info then
     return
   end
