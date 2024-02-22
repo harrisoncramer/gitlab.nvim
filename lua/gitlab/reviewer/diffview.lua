@@ -164,6 +164,10 @@ M.get_location = function(visual_range)
     return
   end
 
+  if modification_type == "bad_file_unmodified" then
+    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
+  end
+
   return location.build_location_data(
     current_file,
     modification_type,

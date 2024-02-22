@@ -137,9 +137,6 @@ function M.get_modification_type(old_line, new_line, current_file)
   -- a comment on an unchanged line in the new or old file SHA. This is only
   -- allowed in the old file
   local result = is_current_sha and "bad_file_unmodified" or "unmodified"
-  if result == "bad_file_unmodified" then
-    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
-  end
   return result
 end
 
