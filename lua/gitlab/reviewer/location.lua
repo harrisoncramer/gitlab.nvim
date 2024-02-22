@@ -106,14 +106,13 @@ M.get_start_range = function(visual_range)
   end
 
   local reviewer = require("gitlab.reviewer")
-  local bufnr = reviewer.is_current_sha() and reviewer.get_bufnr_of_new_sha() or reviewer.get_bufnr_of_old_sha()
-  if bufnr == nil then
+  local win_id = reviewer.is_current_sha() and reviewer.get_winnr_of_new_sha() or reviewer.get_winnr_of_old_sha()
+  if win_id == nil then
     u.notify("Error getting bufnr of SHA for start range", vim.log.levels.ERROR)
     return
   end
 
-  local current_line = vim.api.nvim_win_get_cursor(bufnr)[1]
-
+  local current_line = vim.api.nvim_win_get_cursor(win_id)[1]
   local offset = current_line - visual_range.start_line
 
   local new_line = get_line_number_from_new_sha(visual_range.start_line, offset)
@@ -143,11 +142,11 @@ M.get_end_range = function(visual_range)
     return
   end
 
-  local current_line = vim.api.nvim_win_get_cursor(0)[0]
-  local offset = current_line - visual_range.start_line
+  -- local current_line = vim.api.nvim_win_get_cursor(0)[0]
+  -- local offset = current_line - visual_range.start_line
 
-  local new_line = get_line_number_from_new_sha(visual_range.end_line, offset)
-  local old_line = get_line_number_from_old_sha(visual_range.end_line, offset)
+  local new_line = get_line_number_from_new_sha(visual_range.end_line, 0)
+  local old_line = get_line_number_from_old_sha(visual_range.end_line, 0)
 
   if new_line == nil or old_line == nil then
     u.notify("Error getting new or old line for end range", vim.log.levels.ERROR)
