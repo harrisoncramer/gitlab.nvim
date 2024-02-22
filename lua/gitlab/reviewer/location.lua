@@ -7,6 +7,15 @@ local M = {}
 ---@field run function
 ---@field build_location_data function
 
+---@class ReviewerLineInfo
+---@field old_line integer
+---@field new_line integer
+---@field type string either "new" or "old"
+
+---@class ReviewerRangeInfo
+---@field start ReviewerLineInfo
+---@field end ReviewerLineInfo
+
 Location = {}
 Location.__index = Location
 ---@param reviewer_data DiffviewInfo
@@ -21,6 +30,7 @@ end
 
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
+---@return CommentPayload
 function Location:build_location_data()
   ---@type DiffviewInfo
   local reviewer_data = self.reviewer_data
@@ -29,7 +39,7 @@ function Location:build_location_data()
 
   vim.print(reviewer_data)
   vim.print(visual_range)
-  -- ---@type ReviewerInfo
+  -- ---@type CommentPayload
   -- local payload = {
   --   file_name = file_name,
   --   new_line = nil,

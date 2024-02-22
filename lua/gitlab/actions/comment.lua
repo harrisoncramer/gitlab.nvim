@@ -96,42 +96,6 @@ M.create_note = function()
   end, miscellaneous.attach_file)
 end
 
----@class LineRange
----@field start_line integer
----@field end_line integer
-
----@class ReviewerLineInfo
----@field old_line integer
----@field new_line integer
----@field type string either "new" or "old"
-
----@class ReviewerRangeInfo
----@field start ReviewerLineInfo
----@field end ReviewerLineInfo
-
----@class ReviewerInfo
----@field file_name string
----@field old_line integer | nil
----@field new_line integer | nil
----@field range_info ReviewerRangeInfo|nil
-
----@class DiffviewInfo
----@field modification_type string
----@field file_name string
----@field current_win_id integer
----@field current_bufnr integer
----@field oppposite_win_id integer
----@field opposite_bufnr integer
----@field new_line_from_buf integer
----@field old_line_from_buf integer
-
----@class ReviewerInfoWithType
----@field type string
----@field file_name string
----@field old_line integer | nil
----@field new_line integer | nil
----@field range_info ReviewerRangeInfo|nil
-
 ---This function (settings.popup.perform_action) will send the comment to the Go server
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
@@ -160,7 +124,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
   local location = Location:new(reviewer_data, visual_range)
 
-  ---@param location_data ReviewerInfo |  nil
+  ---@param location_data CommentPayload | nil
   location:run(function(location_data)
     if location_data == nil then
       u.notify("Error getting range information", vim.log.levels.ERROR)

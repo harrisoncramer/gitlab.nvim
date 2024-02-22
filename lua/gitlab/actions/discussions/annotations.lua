@@ -100,3 +100,23 @@
 ---@field user_data table
 ---@field source string
 ---@field code string?
+
+---@class LineRange
+---@field start_line integer
+---@field end_line integer
+
+---@class DiffviewInfo
+---@field modification_type string
+---@field file_name string
+---@field current_win_id integer
+---@field current_bufnr integer
+---@field oppposite_win_id integer
+---@field opposite_bufnr integer
+---@field new_line_from_buf integer
+---@field old_line_from_buf integer
+
+---@class CommentPayload
+---@field file_name string
+---@field old_line integer | nil
+---@field new_line integer | nil
+---@field range_info ReviewerRangeInfo|nil
