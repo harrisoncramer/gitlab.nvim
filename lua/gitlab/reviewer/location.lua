@@ -105,6 +105,7 @@ function Location:get_line_number_from_new_sha(line, offset)
     return nil
   end
 
+  -- Otherwise we want to get the matching line in the opposite buffer
   local matching_line = self:get_matching_line(offset)
   return matching_line
 end
@@ -128,6 +129,7 @@ function Location:get_line_number_from_old_sha(line, offset)
     return nil
   end
 
+  -- Otherwise we want to get the matching line in the opposite buffer
   local matching_line = self:get_matching_line(offset)
   return matching_line
 end
