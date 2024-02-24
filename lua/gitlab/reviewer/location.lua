@@ -9,9 +9,9 @@ local M = {}
 ---@field build_location_data function
 
 ---@class ReviewerLineInfo
----@field old_line integer
----@field new_line integer
----@field type string either "new" or "old"
+---@field old_line integer|nil
+---@field new_line integer|nil
+---@field type "new"|"old"
 
 ---@class ReviewerRangeInfo
 ---@field start ReviewerLineInfo
@@ -26,11 +26,6 @@ function Location:new(reviewer_data, visual_range)
   local instance = setmetatable({}, Location)
   instance.reviewer_data = reviewer_data
   instance.visual_range = visual_range
-  instance.location_data = {
-    old_line = nil,
-    new_line = nil,
-    range_info = {},
-  }
   return instance
 end
 
@@ -55,7 +50,7 @@ function Location:build_location_data()
   local location_data = {
     old_line = nil,
     new_line = nil,
-    range_info = nil,
+    range_info = {}
   }
 
   -- Comment on new line: Include only new_line in payload.
@@ -68,7 +63,7 @@ function Location:build_location_data()
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = nil
   elseif
-    reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
+      reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
   then
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = reviewer_data.new_line_from_buf
@@ -81,14 +76,15 @@ function Location:build_location_data()
 
   -- Ranged comments should always use the end of the range.
   -- Otherwise they will not highlight the full comment in Gitlab.
-  if self.location_data.old_line == visual_range.start_line then
-    self.location_data.old_line = visual_range.end_line
-  end
-  if self.location_data.new_line == visual_range.start_line then
-    self.location_data.old_line = visual_range.end_line
+  if visual_range.end_line > visual_range.start_line then
+    if reviewer_data.modification_type == "added" then
+      self.location_data.new_line = visual_range.end_line
+    end
+    if self.reviewer_data.modification_type == "deleted" then
+      self.location_data.old_line = visual_range.end_line
+    end
   end
 
-  self.location_data.range_info = {}
   self:set_start_range(visual_range)
   self:set_end_range(visual_range)
 end
@@ -131,6 +127,13 @@ function Location:get_line_number_from_old_sha(line, offset)
   if not is_current_sha then
     return line
   end
+  -- We are in the old file and looking for the line number
+  -- in the new SHA. If the diffview information is "deleted"
+  -- then we want to return nil.
+  if self.reviewer_data.modification_type == "added" then
+    return nil
+  end
+
   local matching_line = self:get_matching_line(offset)
   return matching_line
 end
@@ -180,8 +183,8 @@ function Location:set_start_range(visual_range)
   local new_line = self:get_line_number_from_new_sha(visual_range.start_line, offset)
   local old_line = self:get_line_number_from_old_sha(visual_range.start_line, offset)
   if
-    (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
-    or (old_line == nil and self.reviewer_data.modification_type == "added")
+      (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
+      or (old_line == nil and self.reviewer_data.modification_type ~= "added")
   then
     u.notify("Error getting new or old line for start range", vim.log.levels.ERROR)
     return
@@ -229,8 +232,8 @@ function Location:set_end_range(visual_range)
   local old_line = self:get_line_number_from_old_sha(visual_range.end_line, offset)
 
   if
-    (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
-    or (old_line == nil and self.reviewer_data.modification_type == "added")
+      (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
+      or (old_line == nil and self.reviewer_data.modification_type ~= "added")
   then
     u.notify("Error getting new or old line for end range", vim.log.levels.ERROR)
     return
