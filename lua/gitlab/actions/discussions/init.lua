@@ -327,7 +327,15 @@ end
 -- This function (settings.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
 M.toggle_discussion_resolved = function(tree)
   local note = tree:get_node()
-  if not note or not note.resolvable then
+  if note == nil then
+    return
+  end
+
+  -- Switch to the root node to enable toggling from child nodes and note bodies
+  if not note.resolvable and M.is_node_note(note) then
+    note = M.get_root_node(tree, note)
+  end
+  if note == nil then
     return
   end
 
