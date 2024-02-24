@@ -370,6 +370,15 @@ M.toggle_node = function(tree)
   if node == nil then
     return
   end
+
+  -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
+  if node.type == "note_body" then
+    node = tree:get_node(node:get_parent_id())
+  end
+  if node == nil then
+    return
+  end
+
   local children = node:get_child_ids()
   if node == nil then
     return
