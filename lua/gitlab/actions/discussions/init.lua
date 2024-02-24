@@ -75,6 +75,16 @@ M.refresh_discussion_data = function()
   end)
 end
 
+---Toggle tree type between "simple" and "by_file_name"
+M.toggle_tree_type = function()
+  if state.settings.discussion_tree.tree_type == "simple" then
+    state.settings.discussion_tree.tree_type = "by_file_name"
+  else
+    state.settings.discussion_tree.tree_type = "simple"
+  end
+  M.rebuild_discussion_tree()
+end
+
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
@@ -680,6 +690,9 @@ M.is_current_node_note = function(tree)
 end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
+    M.toggle_tree_type()
+  end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     if M.is_current_node_note(tree) then
       M.edit_comment(tree, unlinked)

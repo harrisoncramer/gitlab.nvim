@@ -64,6 +64,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
+    toggle_tree_type = "i",
     ---@param t WinbarTable
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
