@@ -42,12 +42,13 @@ local function content(discussions, unlinked_discussions, file_name)
     resolved_discussions = resolved_discussions,
     resolvable_notes = resolvable_notes,
     resolved_notes = resolved_notes,
+    help_keymap = state.settings.help,
   }
 
   return state.settings.discussion_tree.winbar(t)
 end
 
----This function sends the edited comment to the Go server
+---This function updates the winbar
 ---@param discussions Discussion[]
 ---@param unlinked_discussions UnlinkedDiscussion[]
 ---@param base_title string
