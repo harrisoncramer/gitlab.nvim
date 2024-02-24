@@ -74,19 +74,13 @@ function Location:build_location_data()
     return
   end
 
-  -- Ranged comments should always use the end of the range.
-  -- Otherwise they will not highlight the full comment in Gitlab.
-  if visual_range.end_line > visual_range.start_line then
-    if reviewer_data.modification_type == "added" then
-      self.location_data.new_line = visual_range.end_line
-    end
-    if self.reviewer_data.modification_type == "deleted" then
-      self.location_data.old_line = visual_range.end_line
-    end
-  end
-
   self:set_start_range(visual_range)
   self:set_end_range(visual_range)
+
+  -- Ranged comments should always use the end of the range.
+  -- Otherwise they will not highlight the full comment in Gitlab.
+  self.location_data.old_line = self.location_data.range_info["end"].old_line
+  self.location_data.new_line = self.location_data.range_info["end"].new_line
 end
 
 -- Helper methods 🤝
