@@ -84,6 +84,7 @@
 ---@field resolved_discussions number
 ---@field resolvable_notes number
 ---@field resolved_notes number
+---@field help_keymap string
 ---
 ---@class SignTable
 ---@field name string
