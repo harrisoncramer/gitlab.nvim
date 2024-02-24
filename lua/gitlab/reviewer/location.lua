@@ -68,7 +68,7 @@ function Location:build_location_data()
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = nil
   elseif
-      reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
+    reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
   then
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = reviewer_data.new_line_from_buf
@@ -179,7 +179,10 @@ function Location:set_start_range(visual_range)
 
   local new_line = self:get_line_number_from_new_sha(visual_range.start_line, offset)
   local old_line = self:get_line_number_from_old_sha(visual_range.start_line, offset)
-  if (new_line == nil and self.reviewer_data.modification_type ~= "deleted") or (old_line == nil and self.reviewer_data.modification_type == "added") then
+  if
+    (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
+    or (old_line == nil and self.reviewer_data.modification_type == "added")
+  then
     u.notify("Error getting new or old line for start range", vim.log.levels.ERROR)
     return
   end
@@ -225,7 +228,10 @@ function Location:set_end_range(visual_range)
   local new_line = self:get_line_number_from_new_sha(visual_range.end_line, offset)
   local old_line = self:get_line_number_from_old_sha(visual_range.end_line, offset)
 
-  if (new_line == nil and self.reviewer_data.modification_type ~= "deleted") or (old_line == nil and self.reviewer_data.modification_type == "added") then
+  if
+    (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
+    or (old_line == nil and self.reviewer_data.modification_type == "added")
+  then
     u.notify("Error getting new or old line for end range", vim.log.levels.ERROR)
     return
   end
