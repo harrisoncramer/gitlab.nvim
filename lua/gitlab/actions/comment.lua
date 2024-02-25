@@ -141,10 +141,12 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
       head_commit_sha = revision.head_commit_sha,
       old_line = location_data.old_line,
       new_line = location_data.new_line,
-      line_range = location_data.range_info,
     }
 
-    vim.print(body)
+
+    if (location_data.range_info) then
+      body.line_range = location_data.range_info
+    end
 
     job.run_job("/mr/comment", "POST", body, function(data)
       u.notify("Comment created!", vim.log.levels.INFO)
