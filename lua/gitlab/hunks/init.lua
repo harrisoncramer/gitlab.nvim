@@ -111,65 +111,6 @@ local parse_hunks_and_diff = function(file_path, base_branch)
   return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
----Returns whether the comment is on a deleted line, added line, or unmodified line.
----This is in order to build the payload for Gitlab correctly by setting the old line and new line.
----@param old_line number|nil
----@param new_line number|nil
----@param current_file string
----@return string|nil
-function M.get_modification_type(old_line, new_line, current_file)
-  local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.target_branch)
-  if hunk_and_diff_data.hunks == nil then
-    return
-  end
-
-  local hunks = hunk_and_diff_data.hunks
-  local all_diff_output = hunk_and_diff_data.all_diff_output
-
-  local is_current_sha = require("gitlab.reviewer").is_current_sha()
-
-  for _, hunk in ipairs(hunks) do
-    local old_line_end = hunk.old_line + hunk.old_range
-    local new_line_end = hunk.new_line + hunk.new_range
-
-    if is_current_sha then
-      -- If it is a single line change and neither hunk has a range, then it's added
-      if new_line >= hunk.new_line and new_line <= new_line_end then
-        if hunk.new_range == 0 and hunk.old_range == 0 then
-          return "added"
-        end
-        -- If leaving a comment on the new window, we may be commenting on an added line
-        -- or on an unmodified line. To tell, we have to check whether the line itself is
-        -- prefixed with "+" and only return "added" if it is.
-        if line_was_added(new_line, hunk, all_diff_output) then
-          return "added"
-        end
-      end
-    else
-      -- It's a deletion if it's in the range of the hunks and the new
-      -- range is zero, since that is only a deletion hunk, or if we find
-      -- a match in another hunk with a range, and the corresponding line is prefixed
-      -- with a "-" only. If it is, then it's a deletion.
-      if old_line >= hunk.old_line and old_line <= old_line_end and hunk.old_range == 0 then
-        return "deleted"
-      end
-      if
-          (old_line >= hunk.old_line and old_line <= old_line_end)
-          or (old_line >= hunk.new_line and new_line <= new_line_end)
-      then
-        if line_was_removed(old_line, hunk, all_diff_output) then
-          return "deleted"
-        end
-      end
-    end
-  end
-
-  -- If we can't find the line, this means the user is either trying to leave
-  -- a comment on an unchanged line in the new or old file SHA. This is only
-  -- allowed in the old file
-  return is_current_sha and "bad_file_unmodified" or "unmodified"
-end
-
 -- Parses the lines from a diff and returns the
 -- index of the next hunk, when provided an initial index
 ---@param lines table
@@ -228,6 +169,65 @@ local count_changes = function(lines)
     end
   end
   return total
+end
+
+---Returns whether the comment is on a deleted line, added line, or unmodified line.
+---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
+---@param old_line number|nil
+---@param new_line number|nil
+---@param current_file string
+---@return string|nil
+function M.get_modification_type(old_line, new_line, current_file)
+  local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.target_branch)
+  if hunk_and_diff_data.hunks == nil then
+    return
+  end
+
+  local hunks = hunk_and_diff_data.hunks
+  local all_diff_output = hunk_and_diff_data.all_diff_output
+
+  local is_current_sha = require("gitlab.reviewer").is_current_sha()
+
+  for _, hunk in ipairs(hunks) do
+    local old_line_end = hunk.old_line + hunk.old_range
+    local new_line_end = hunk.new_line + hunk.new_range
+
+    if is_current_sha then
+      -- If it is a single line change and neither hunk has a range, then it's added
+      if new_line >= hunk.new_line and new_line <= new_line_end then
+        if hunk.new_range == 0 and hunk.old_range == 0 then
+          return "added"
+        end
+        -- If leaving a comment on the new window, we may be commenting on an added line
+        -- or on an unmodified line. To tell, we have to check whether the line itself is
+        -- prefixed with "+" and only return "added" if it is.
+        if line_was_added(new_line, hunk, all_diff_output) then
+          return "added"
+        end
+      end
+    else
+      -- It's a deletion if it's in the range of the hunks and the new
+      -- range is zero, since that is only a deletion hunk, or if we find
+      -- a match in another hunk with a range, and the corresponding line is prefixed
+      -- with a "-" only. If it is, then it's a deletion.
+      if old_line >= hunk.old_line and old_line <= old_line_end and hunk.old_range == 0 then
+        return "deleted"
+      end
+      if
+          (old_line >= hunk.old_line and old_line <= old_line_end)
+          or (old_line >= hunk.new_line and new_line <= new_line_end)
+      then
+        if line_was_removed(old_line, hunk, all_diff_output) then
+          return "deleted"
+        end
+      end
+    end
+  end
+
+  -- If we can't find the line, this means the user is either trying to leave
+  -- a comment on an unchanged line in the new or old file SHA. This is only
+  -- allowed in the old file
+  return is_current_sha and "bad_file_unmodified" or "unmodified"
 end
 
 ---Returns the matching line number of a line in the new/old version of the file compared to the current SHA.
