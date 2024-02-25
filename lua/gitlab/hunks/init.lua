@@ -170,18 +170,12 @@ function M.get_modification_type(old_line, new_line, current_file)
   return is_current_sha and "bad_file_unmodified" or "unmodified"
 end
 
-local old_sha = "156e5ee50884cdf9e735a2a069948ae0883a6cc8"
-local new_sha = "c46d21d09082b8e2a43f67dfb830f2933d0d5749"
-local file_path = "README.md"
-local original_line_number = 35
-
-
 -- Parses the lines from a diff and returns the
 -- index of the next hunk, when provided an initial index
 ---@param lines table
 ---@param i integer
 ---@return integer|nil
-M.next_hunk_index = function(lines, i)
+local next_hunk_index = function(lines, i)
   for j, line in ipairs(lines) do
     local hunk = M.parse_possible_hunk_headers(line)
     if hunk ~= nil and j > i then
@@ -191,19 +185,39 @@ M.next_hunk_index = function(lines, i)
   return nil
 end
 
---- Processes the changes until the target is reached
-local function process_until_line_number(line_number, lines)
-  local total = 0
+--- Processes the number of changes until the target is reached. This returns
+--- a negative or positive number indicating the number of lines in the hunk
+--that have been added or removed prior to the target line
+---comment
+---@param line_number number
+---@param hunk Hunk
+---@param lines table
+---@return integer
+local net_changed_in_hunk_before_line = function(line_number, hunk, lines)
+  local net_lines = 0
+  local current_line_old = hunk.old_line
+
   for _, line in ipairs(lines) do
-    if line:match("^%+") then
-      total = total + 1
+    if line:sub(1, 1) == "-" then
+      if current_line_old < line_number then
+        net_lines = net_lines - 1
+      end
+      current_line_old = current_line_old + 1
+    elseif line:sub(1, 1) == "+" then
+      if current_line_old < line_number then
+        net_lines = net_lines + 1
+      end
     else
-      total = total - 1
+      current_line_old = current_line_old + 1
     end
   end
-  return total
+
+  return net_lines
 end
 
+---Counts the total number of changes in a set of lines, can be positive if added lines or negative if removed lines
+---@param lines table
+---@return integer
 local count_changes = function(lines)
   local total = 0
   for _, line in ipairs(lines) do
@@ -216,13 +230,19 @@ local count_changes = function(lines)
   return total
 end
 
-local function calculate_matching_line_new(line_number)
+---Returns the matching line number of a line in the new/old version of the file compared to the current SHA.
+---@param old_sha string
+---@param new_sha string
+---@param file_path string
+---@param line_number number
+---@return number|nil
+M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_number)
   local net_change = 0
   local diff_cmd = string.format('git diff --minimal --unified=0 --no-color %s %s -- %s', old_sha, new_sha, file_path)
   local handle = io.popen(diff_cmd)
   if handle == nil then
     print(string.format("Error running git diff command for %s", file_path))
-    return
+    return nil
   end
 
   local all_lines = List.new({})
@@ -233,46 +253,28 @@ local function calculate_matching_line_new(line_number)
   for i, line in ipairs(all_lines) do
     local hunk = M.parse_possible_hunk_headers(line)
     if hunk ~= nil then
-      if line_number < hunk.old_line then
+      if line_number <= hunk.old_line then
+        -- We have reached a hunk which starts after our target, return the changed total lines
         return line_number +
-            net_change -- We have reached a hunk which starts after our target, return the changed total lines
+            net_change
       end
 
-      local n = M.next_hunk_index(all_lines, i) or #all_lines
+      local n = next_hunk_index(all_lines, i) or #all_lines
       local diff_lines = all_lines:slice(i + 1, n - 1)
 
-      -- If the line is IN the hunk, process it and return the change
+      -- If the line is IN the hunk, process the hunk and return the change until that line
       if line_number >= hunk.old_line and line_number < hunk.old_line + hunk.old_range then
-        net_change = net_change + process_until_line_number(line_number, diff_lines)
+        net_change = line_number + net_change + net_changed_in_hunk_before_line(line_number, hunk, diff_lines)
+        return net_change
       end
 
-      -- If it's not it's after this hunk, just count all the changes
+      -- If it's not it's after this hunk, just add all the changes and keep iterating
       net_change = net_change + count_changes(diff_lines)
     end
   end
 
-  -- If we never reach the line number, return an error??
-  return line_number + net_change
+  return line_number
 end
-
--- Example usage
-local new_line_number = calculate_matching_line_new(original_line_number)
-print("New line number:", new_line_number)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 return M
