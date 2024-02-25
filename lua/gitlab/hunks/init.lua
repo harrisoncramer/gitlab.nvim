@@ -1,5 +1,4 @@
 local state = require("gitlab.state")
-local u = require("gitlab.utils")
 local M = {}
 
 ---@class Hunk
@@ -15,7 +14,7 @@ local M = {}
 ---Turn hunk line into Lua table
 ---@param line table
 ---@return Hunk|nil
-local parse_possible_hunk_headers = function(line)
+M.parse_possible_hunk_headers = function(line)
   if line:sub(1, 2) == "@@" then
     -- match:
     --  @@ -23 +23 @@ ...
@@ -36,7 +35,7 @@ end
 ---@param all_diff_output table
 local line_was_removed = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
-    local found_hunk = parse_possible_hunk_headers(line)
+    local found_hunk = M.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
       -- We found a matching hunk, now we need to iterate over the lines from the raw diff output
       -- at that hunk until we reach the line we are looking for. When the indexes match we check
@@ -58,7 +57,7 @@ end
 ---@param all_diff_output table
 local line_was_added = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
-    local found_hunk = parse_possible_hunk_headers(line)
+    local found_hunk = M.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
       -- For added lines, we only want to iterate over the part of the diff that has has new lines,
       -- so we skip over the old range. We then keep track of the increment to the original new line index,
@@ -96,7 +95,7 @@ local parse_hunks_and_diff = function(file_path, base_branch)
       if return_code == 0 then
         all_diff_output = j:result()
         for _, line in ipairs(all_diff_output) do
-          local hunk = parse_possible_hunk_headers(line)
+          local hunk = M.parse_possible_hunk_headers(line)
           if hunk ~= nil then
             table.insert(hunks, hunk)
           end
@@ -114,8 +113,8 @@ end
 
 ---Returns whether the comment is on a deleted line, added line, or unmodified line.
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
----@param old_line number
----@param new_line number
+---@param old_line number|nil
+---@param new_line number|nil
 ---@param current_file string
 ---@return string|nil
 function M.get_modification_type(old_line, new_line, current_file)
@@ -170,5 +169,110 @@ function M.get_modification_type(old_line, new_line, current_file)
   -- allowed in the old file
   return is_current_sha and "bad_file_unmodified" or "unmodified"
 end
+
+local old_sha = "156e5ee50884cdf9e735a2a069948ae0883a6cc8"
+local new_sha = "c46d21d09082b8e2a43f67dfb830f2933d0d5749"
+local file_path = "README.md"
+local original_line_number = 35
+
+
+-- Parses the lines from a diff and returns the
+-- index of the next hunk, when provided an initial index
+---@param lines table
+---@param i integer
+---@return integer|nil
+M.next_hunk_index = function(lines, i)
+  for j, line in ipairs(lines) do
+    local hunk = M.parse_possible_hunk_headers(line)
+    if hunk ~= nil and j > i then
+      return j
+    end
+  end
+  return nil
+end
+
+--- Processes the changes until the target is reached
+local function process_until_line_number(line_number, lines)
+  local total = 0
+  for _, line in ipairs(lines) do
+    if line:match("^%+") then
+      total = total + 1
+    else
+      total = total - 1
+    end
+  end
+  return total
+end
+
+local count_changes = function(lines)
+  local total = 0
+  for _, line in ipairs(lines) do
+    if line:match("^%+") then
+      total = total + 1
+    else
+      total = total - 1
+    end
+  end
+  return total
+end
+
+local function calculate_matching_line_new(line_number)
+  local net_change = 0
+  local diff_cmd = string.format('git diff --minimal --unified=0 --no-color %s %s -- %s', old_sha, new_sha, file_path)
+  local handle = io.popen(diff_cmd)
+  if handle == nil then
+    print(string.format("Error running git diff command for %s", file_path))
+    return
+  end
+
+  local all_lines = List.new({})
+  for line in handle:lines() do
+    table.insert(all_lines, line)
+  end
+
+  for i, line in ipairs(all_lines) do
+    local hunk = M.parse_possible_hunk_headers(line)
+    if hunk ~= nil then
+      if line_number < hunk.old_line then
+        return line_number +
+            net_change -- We have reached a hunk which starts after our target, return the changed total lines
+      end
+
+      local n = M.next_hunk_index(all_lines, i) or #all_lines
+      local diff_lines = all_lines:slice(i + 1, n - 1)
+
+      -- If the line is IN the hunk, process it and return the change
+      if line_number >= hunk.old_line and line_number < hunk.old_line + hunk.old_range then
+        net_change = net_change + process_until_line_number(line_number, diff_lines)
+      end
+
+      -- If it's not it's after this hunk, just count all the changes
+      net_change = net_change + count_changes(diff_lines)
+    end
+  end
+
+  -- If we never reach the line number, return an error??
+  return line_number + net_change
+end
+
+-- Example usage
+local new_line_number = calculate_matching_line_new(original_line_number)
+print("New line number:", new_line_number)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 return M
