@@ -75,6 +75,7 @@ function Location:build_location_data()
 
   self.location_data = location_data
   if visual_range == nil then
+    self.location_data.range_info = nil
     return
   end
 
@@ -100,14 +101,6 @@ function Location:get_line_number_from_new_sha(line)
   if is_current_sha then
     return line
   end
-
-  -- We are in the old file and looking for the line number
-  -- in the new SHA. If the diffview information is "deleted"
-  -- then we want to return nil.
-  if self.reviewer_data.modification_type == "deleted" then
-    return nil
-  end
-
   -- Otherwise we want to get the matching line in the opposite buffer
   return hunks.calculate_matching_line_new(self.base_sha, self.head_sha, self.reviewer_data.file_name, line)
 end
@@ -122,12 +115,6 @@ function Location:get_line_number_from_old_sha(line)
   local is_current_sha = reviewer.is_current_sha()
   if not is_current_sha then
     return line
-  end
-  -- We are in the old file and looking for the line number
-  -- in the new SHA. If the diffview information is "deleted"
-  -- then we want to return nil.
-  if self.reviewer_data.modification_type == "added" then
-    return nil
   end
 
   -- Otherwise we want to get the matching line in the opposite buffer
@@ -185,8 +172,8 @@ function Location:set_start_range(visual_range)
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
 
   self.location_data.range_info.start = {
-    new_line = new_line,
-    old_line = old_line,
+    new_line = modification_type ~= "deleted" and new_line or nil,
+    old_line = modification_type ~= "added" and old_line or nil,
     type = modification_type == "added" and "new" or "old",
   }
 end
@@ -220,8 +207,8 @@ function Location:set_end_range(visual_range)
 
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
   self.location_data.range_info["end"] = {
-    new_line = new_line,
-    old_line = old_line,
+    new_line = modification_type ~= "deleted" and new_line or nil,
+    old_line = modification_type ~= "added" and old_line or nil,
     type = modification_type == "added" and "new" or "old",
   }
 end
