@@ -273,6 +273,7 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_numbe
     end
   end
 
+  -- TODO: Possibly handle lines that are out of range in the new files
   return line_number
 end
 
