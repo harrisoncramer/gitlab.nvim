@@ -1,5 +1,6 @@
 local u = require("gitlab.utils")
 local hunks = require("gitlab.hunks")
+local state = require("gitlab.state")
 local M = {}
 
 ---@class Location
@@ -16,6 +17,7 @@ local M = {}
 ---@class ReviewerRangeInfo
 ---@field start ReviewerLineInfo
 ---@field end ReviewerLineInfo
+--
 
 Location = {}
 Location.__index = Location
@@ -26,6 +28,8 @@ function Location:new(reviewer_data, visual_range)
   local instance = setmetatable({}, Location)
   instance.reviewer_data = reviewer_data
   instance.visual_range = visual_range
+  instance.base_sha = state.INFO.diff_refs.base_sha
+  instance.head_sha = state.INFO.diff_refs.head_sha
   return instance
 end
 
@@ -89,9 +93,8 @@ end
 -- For instance, line 12 in the new SHA may be scroll-linked
 -- to line 10 in the old SHA.
 ---@param line number
----@param offset number
 ---@return number|nil
-function Location:get_line_number_from_new_sha(line, offset)
+function Location:get_line_number_from_new_sha(line)
   local reviewer = require("gitlab.reviewer")
   local is_current_sha = reviewer.is_current_sha()
   if is_current_sha then
@@ -106,17 +109,15 @@ function Location:get_line_number_from_new_sha(line, offset)
   end
 
   -- Otherwise we want to get the matching line in the opposite buffer
-  local matching_line = self:get_matching_line(offset)
-  return matching_line
+  return hunks.calculate_matching_line_new(self.base_sha, self.head_sha, self.reviewer_data.file_name, line)
 end
 
 -- Returns the matching line from the old SHA.
 -- For instance, line 12 in the new SHA may be scroll-linked
 -- to line 10 in the old SHA.
 ---@param line number
----@param offset number
 ---@return number|nil
-function Location:get_line_number_from_old_sha(line, offset)
+function Location:get_line_number_from_old_sha(line)
   local reviewer = require("gitlab.reviewer")
   local is_current_sha = reviewer.is_current_sha()
   if not is_current_sha then
@@ -130,8 +131,7 @@ function Location:get_line_number_from_old_sha(line, offset)
   end
 
   -- Otherwise we want to get the matching line in the opposite buffer
-  local matching_line = self:get_matching_line(offset)
-  return matching_line
+  return hunks.calculate_matching_line_new(self.head_sha, self.base_sha, self.reviewer_data.file_name, line)
 end
 
 -- Returns the current line number from whatever SHA (new or old)
@@ -172,12 +172,8 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  -- If the start line in the range is greater than the current line, pass the
-  -- negative difference so we can get the actual start line
-  local offset = (current_line - visual_range.start_line) * -1
-
-  local new_line = self:get_line_number_from_new_sha(visual_range.start_line, offset)
-  local old_line = self:get_line_number_from_old_sha(visual_range.start_line, offset)
+  local new_line = self:get_line_number_from_new_sha(visual_range.start_line)
+  local old_line = self:get_line_number_from_old_sha(visual_range.start_line)
   if
       (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
       or (old_line == nil and self.reviewer_data.modification_type ~= "added")
@@ -193,15 +189,6 @@ function Location:set_start_range(visual_range)
     old_line = old_line,
     type = modification_type == "added" and "new" or "old",
   }
-end
-
----Return the matching line from the other file. For instance, if scrolling in the
----new SHA, find the matching line from the old SHA and return it. The offset
----may be zero.
----@param offset number
----@return number|nil
-function Location:get_matching_line(offset)
-  return 0
 end
 
 -- Given a modification type, a range, and the hunk data, returns the end range information
@@ -220,12 +207,8 @@ function Location:set_end_range(visual_range)
     return
   end
 
-  -- If the end line in the range is greater than the current line, pass the difference
-  -- so we can get the actual end line
-  local offset = visual_range.end_line - current_line
-
-  local new_line = self:get_line_number_from_new_sha(visual_range.end_line, offset)
-  local old_line = self:get_line_number_from_old_sha(visual_range.end_line, offset)
+  local new_line = self:get_line_number_from_new_sha(visual_range.end_line)
+  local old_line = self:get_line_number_from_old_sha(visual_range.end_line)
 
   if
       (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
