@@ -753,4 +753,11 @@ M.open_in_browser = function(url)
   end
 end
 
+---Trims the trailing slash from a URL
+---@param s string
+---@return string
+M.trim_slash = function(s)
+  return (s:gsub("/+$", ""))
+end
+
 return M
