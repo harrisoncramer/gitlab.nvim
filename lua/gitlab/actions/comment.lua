@@ -123,36 +123,32 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
   end
 
   local location = Location:new(reviewer_data, visual_range)
+  location:build_location_data()
+  local location_data = location.location_data
+  if location_data == nil then
+    u.notify("Error getting location information", vim.log.levels.ERROR)
+    return
+  end
 
-  ---@param location_data LocationData | nil
-  location:run(function(location_data)
-    if location_data == nil then
-      u.notify("Error getting range information", vim.log.levels.ERROR)
-      return
-    end
+  local revision = state.MR_REVISIONS[1]
+  local body = {
+    type = "text",
+    comment = text,
+    file_name = reviewer_data.file_name,
+    base_commit_sha = revision.base_commit_sha,
+    start_commit_sha = revision.start_commit_sha,
+    head_commit_sha = revision.head_commit_sha,
+    old_line = location_data.old_line,
+    new_line = location_data.new_line,
+    line_range = location_data.line_range
+  }
 
-    local revision = state.MR_REVISIONS[1]
-    local body = {
-      type = "text",
-      comment = text,
-      file_name = reviewer_data.file_name,
-      base_commit_sha = revision.base_commit_sha,
-      start_commit_sha = revision.start_commit_sha,
-      head_commit_sha = revision.head_commit_sha,
-      old_line = location_data.old_line,
-      new_line = location_data.new_line,
-    }
+  vim.print("Payload is: ", body)
 
-
-    if (location_data.range_info) then
-      body.line_range = location_data.range_info
-    end
-
-    job.run_job("/mr/comment", "POST", body, function(data)
-      u.notify("Comment created!", vim.log.levels.INFO)
-      discussions.add_discussion({ data = data, unlinked = false })
-      discussions.refresh_discussion_data()
-    end)
+  job.run_job("/mr/comment", "POST", body, function(data)
+    u.notify("Comment created!", vim.log.levels.INFO)
+    discussions.add_discussion({ data = data, unlinked = false })
+    discussions.refresh_discussion_data()
   end)
 end
 
