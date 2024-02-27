@@ -54,7 +54,7 @@ end
 M.initialize_discussions = function()
   signs.setup_signs()
   -- Setup callback to refresh discussion data, discussion signs and diagnostics whenever the reviewed file changes.
-  reviewer.set_callback_for_file_changed(M.refresh_discussion_data)
+  reviewer.set_callback_for_file_changed(M.refresh_view)
   -- Setup callback to clear signs and diagnostics whenever reviewer is left.
   reviewer.set_callback_for_reviewer_leave(signs.clear_signs_and_diagnostics)
 end
@@ -62,17 +62,21 @@ end
 ---Refresh discussion data, signs, diagnostics, and winbar with new data from API
 M.refresh_discussion_data = function()
   M.load_discussions(function()
-    if state.settings.discussion_sign.enabled then
-      signs.refresh_signs(M.discussions)
-    end
-    if state.settings.discussion_diagnostic.enabled then
-      signs.refresh_diagnostics(M.discussions)
-    end
-    if M.split_visible then
-      local linked_is_focused = M.linked_bufnr == M.focused_bufnr
-      winbar.update_winbar(M.discussions, M.unlinked_discussions, linked_is_focused and "Discussions" or "Notes")
-    end
+    M.refresh_view()
   end)
+end
+
+M.refresh_view = function()
+  if state.settings.discussion_sign.enabled then
+    signs.refresh_signs(M.discussions)
+  end
+  if state.settings.discussion_diagnostic.enabled then
+    signs.refresh_diagnostics(M.discussions)
+  end
+  if M.split_visible then
+    local linked_is_focused = M.linked_bufnr == M.focused_bufnr
+    winbar.update_winbar(M.discussions, M.unlinked_discussions, linked_is_focused and "Discussions" or "Notes")
+  end
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
@@ -115,7 +119,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -401,8 +405,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-        or (not unlinked and state.discussion_tree.resolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+          or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -411,8 +415,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-        or (not unlinked and state.discussion_tree.unresolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+          or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -544,7 +548,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -847,10 +851,10 @@ M.get_note_location = function(tree)
     return "", "", "", false, "Could not get discussion node"
   end
   return discussion_node.file_name,
-    discussion_node.new_line,
-    discussion_node.old_line,
-    discussion_node.undefined_type or false,
-    nil
+      discussion_node.new_line,
+      discussion_node.old_line,
+      discussion_node.undefined_type or false,
+      nil
 end
 
 ---@param tree NuiTree
