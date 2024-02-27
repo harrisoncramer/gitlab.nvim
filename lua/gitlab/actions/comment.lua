@@ -6,6 +6,7 @@ local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
@@ -21,6 +22,14 @@ end
 -- This function will open a comment popup in order to create a comment on the changed/updated
 -- line in the current MR
 M.create_comment = function()
+  local has_clean_tree = git.has_clean_tree()
+  if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
+    u.notify(
+      "Cannot leave comments on a dirty tree. \n Please stash all local changes or push them up.",
+      vim.log.levels.WARN
+    )
+    return
+  end
   local comment_popup = create_comment_popup()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)

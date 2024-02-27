@@ -43,6 +43,13 @@ M.open = function()
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
+  if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
+    u.notify(
+      "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews.\n Stash or commit all changes to use.",
+      vim.log.levels.WARN
+    )
+  end
+
   if state.INFO.has_conflicts then
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end

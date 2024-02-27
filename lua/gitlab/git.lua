@@ -1,8 +1,9 @@
+local u = require("gitlab.utils")
+local state = require("gitlab.state")
 local M = {}
 
 M.has_clean_tree = function()
-  local clean_tree = vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
-  return clean_tree
+  return vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
 end
 
 M.base_dir = function()
