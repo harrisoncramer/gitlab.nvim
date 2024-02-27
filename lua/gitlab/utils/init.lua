@@ -590,7 +590,7 @@ M.get_all_git_branches = function(remote)
     end
     handle:close()
   else
-    print("Error running 'git branch' command.")
+    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
   end
 
   return branches

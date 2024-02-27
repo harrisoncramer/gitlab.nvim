@@ -1,6 +1,7 @@
 -- This Module contains all of the reviewer code for diffview
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
+local git = require("gitlab.git")
 local hunks = require("gitlab.hunks")
 local async_ok, async = pcall(require, "diffview.async")
 local diffview_lib = require("diffview.lib")
@@ -34,23 +35,13 @@ M.open = function()
   end
 
   local diffview_open_command = "DiffviewOpen"
-  local diffview_feature_imply_local = {
-    user_requested = state.settings.reviewer_settings.diffview.imply_local,
-    usable = vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == "",
-  }
-  if diffview_feature_imply_local.user_requested and diffview_feature_imply_local.usable then
+  local has_clean_tree = git.has_clean_tree()
+  if state.settings.reviewer_settings.diffview.imply_local and has_clean_tree then
     diffview_open_command = diffview_open_command .. " --imply-local"
   end
 
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
   M.tabnr = vim.api.nvim_get_current_tabpage()
-
-  if diffview_feature_imply_local.user_requested and not diffview_feature_imply_local.usable then
-    u.notify(
-      "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews. Stash or commit all changes to use.",
-      vim.log.levels.WARN
-    )
-  end
 
   if state.INFO.has_conflicts then
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
@@ -265,7 +256,7 @@ end
 M.set_callback_for_file_changed = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
   vim.api.nvim_create_autocmd("User", {
-    pattern = { "DiffviewDiffBufWinEnter", "DiffviewViewEnter" },
+    pattern = { "DiffviewDiffBufWinEnter" },
     group = group,
     callback = function(...)
       if M.tabnr == vim.api.nvim_get_current_tabpage() then
@@ -286,6 +277,17 @@ M.set_callback_for_reviewer_leave = function(callback)
       if M.tabnr == vim.api.nvim_get_current_tabpage() then
         callback(...)
       end
+    end,
+  })
+end
+
+M.set_callback_for_reviewer_enter = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.enter", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewViewOpened" },
+    group = group,
+    callback = function(...)
+      callback(...)
     end,
   })
 end

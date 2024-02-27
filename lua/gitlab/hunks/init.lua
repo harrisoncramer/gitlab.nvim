@@ -241,7 +241,7 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_numbe
   local diff_cmd = string.format("git diff --minimal --unified=0 --no-color %s %s -- %s", old_sha, new_sha, file_path)
   local handle = io.popen(diff_cmd)
   if handle == nil then
-    print(string.format("Error running git diff command for %s", file_path))
+    u.notify(string.format("Error running git diff command for %s", file_path), vim.log.levels.ERROR)
     return nil
   end
 
