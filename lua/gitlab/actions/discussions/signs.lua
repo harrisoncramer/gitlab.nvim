@@ -79,22 +79,22 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   return List.new(all_discussions):filter(function(discussion)
     local first_note = discussion.notes[1]
     if
-      type(first_note.position) == "table"
-      and (first_note.position.new_path == file or first_note.position.old_path == file)
+        type(first_note.position) == "table"
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-        --Skip resolved discussions
-        not (
-          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-          and first_note.resolvable
-          and first_note.resolved
-        )
-        --Skip discussions from old revisions
-        and not (
-          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-          and u.from_iso_format_date_to_timestamp(first_note.created_at)
+      --Skip resolved discussions
+          not (
+            state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+            and first_note.resolvable
+            and first_note.resolved
+          )
+          --Skip discussions from old revisions
+          and not (
+            state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+            and u.from_iso_format_date_to_timestamp(first_note.created_at)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-        )
+          )
       then
         return true
       end
@@ -132,33 +132,34 @@ M.parse_diagnostics_from_discussions = function(discussions)
   local new_diagnostics = {}
   local old_diagnostics = {}
 
-  local discussion_list = List.new(discussions)
-  local old_discussions = discussion_list:filter(function(d)
-    local first_note = d.notes[1]
-    return first_note.position.old_line ~= nil
-  end)
-  local new_discussions = discussion_list
-    :filter(function(d)
-      local first_note = d.notes[1]
-      return first_note.position.old_line ~= nil
-    end)
-    :map(function(d)
-      local message = ""
-      for _, note in ipairs(d.notes) do
-        message = message .. M.build_note_header(note) .. "\n" .. note.body .. "\n"
-      end
-
-      local diagnostic = {
-        data = d,
-        message = message,
-        col = 0,
-        severity = state.settings.discussion_diagnostic.severity,
-        user_data = { discussion_id = d.id, header = M.build_note_header(d.notes[1]) },
-        source = "gitlab",
-        code = state.settings.discussion_diagnostic.code,
-      }
-      return diagnostic
-    end)
+  -- local discussion_list = List.new(discussions)
+  -- local old_discussions = discussion_list:filter(function(d)
+  --   local first_note = d.notes[1]
+  --   return first_note.position.old_line ~= nil
+  -- end)
+  -- local new_discussions = discussion_list
+  --   :filter(function(d)
+  --     local first_note = d.notes[1]
+  --     return first_note.position.old_line ~= nil
+  --   end)
+  --   :map(function(d)
+  --     local message = ""
+  --     for _, note in ipairs(d.notes) do
+  --       message = message .. M.build_note_header(note) .. "\n" .. note.body .. "\n"
+  --     end
+  --
+  --     local diagnostic = {
+  --       data = d,
+  --       message = message,
+  --       col = 0,
+  --       severity = state.settings.discussion_diagnostic.severity,
+  --       user_data = { discussion_id = d.id, header = M.build_note_header(d.notes[1]) },
+  --       source = "gitlab",
+  --       code = state.settings.discussion_diagnostic.code,
+  --     }
+  --     return diagnostic
+  --   end)
+  --
 
   for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
