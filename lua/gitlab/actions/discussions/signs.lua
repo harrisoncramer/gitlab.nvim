@@ -79,22 +79,22 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   return List.new(all_discussions):filter(function(discussion)
     local first_note = discussion.notes[1]
     if
-        type(first_note.position) == "table"
-        and (first_note.position.new_path == file or first_note.position.old_path == file)
+      type(first_note.position) == "table"
+      and (first_note.position.new_path == file or first_note.position.old_path == file)
     then
       if
-      --Skip resolved discussions
-          not (
-            state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
-            and first_note.resolvable
-            and first_note.resolved
-          )
-          --Skip discussions from old revisions
-          and not (
-            state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-            and u.from_iso_format_date_to_timestamp(first_note.created_at)
+        --Skip resolved discussions
+        not (
+          state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion
+          and first_note.resolvable
+          and first_note.resolved
+        )
+        --Skip discussions from old revisions
+        and not (
+          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+          and u.from_iso_format_date_to_timestamp(first_note.created_at)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-          )
+        )
       then
         return true
       end
