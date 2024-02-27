@@ -119,4 +119,4 @@
 ---@class LocationData
 ---@field old_line integer | nil
 ---@field new_line integer | nil
----@field range_info ReviewerRangeInfo|nil
+---@field line_range ReviewerRangeInfo|nil

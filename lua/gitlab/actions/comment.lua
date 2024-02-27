@@ -140,7 +140,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     head_commit_sha = revision.head_commit_sha,
     old_line = location_data.old_line,
     new_line = location_data.new_line,
-    line_range = location_data.line_range
+    line_range = location_data.line_range,
   }
 
   vim.print("Payload is: ", body)

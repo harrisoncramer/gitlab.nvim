@@ -36,7 +36,7 @@ M.open = function()
   local diffview_open_command = "DiffviewOpen"
   local diffview_feature_imply_local = {
     user_requested = state.settings.reviewer_settings.diffview.imply_local,
-    usable = vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == ""
+    usable = vim.fn.trim(vim.fn.system({ "git", "status", "--short", "--untracked-files=no" })) == "",
   }
   if diffview_feature_imply_local.user_requested and diffview_feature_imply_local.usable then
     diffview_open_command = diffview_open_command .. " --imply-local"

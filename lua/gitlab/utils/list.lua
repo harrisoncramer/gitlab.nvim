@@ -54,3 +54,11 @@ function List:find(func)
   end
   return nil
 end
+
+function List:slice(first, last, step)
+  local sliced = {}
+  for i = first or 1, last or #self, step or 1 do
+    sliced[#sliced + 1] = self[i]
+  end
+  return sliced
+end

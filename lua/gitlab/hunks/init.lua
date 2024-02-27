@@ -214,8 +214,8 @@ function M.get_modification_type(old_line, new_line, current_file)
         return "deleted"
       end
       if
-          (old_line >= hunk.old_line and old_line <= old_line_end)
-          or (old_line >= hunk.new_line and new_line <= new_line_end)
+        (old_line >= hunk.old_line and old_line <= old_line_end)
+        or (old_line >= hunk.new_line and new_line <= new_line_end)
       then
         if line_was_removed(old_line, hunk, all_diff_output) then
           return "deleted"
@@ -238,7 +238,7 @@ end
 ---@return number|nil
 M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_number)
   local net_change = 0
-  local diff_cmd = string.format('git diff --minimal --unified=0 --no-color %s %s -- %s', old_sha, new_sha, file_path)
+  local diff_cmd = string.format("git diff --minimal --unified=0 --no-color %s %s -- %s", old_sha, new_sha, file_path)
   local handle = io.popen(diff_cmd)
   if handle == nil then
     print(string.format("Error running git diff command for %s", file_path))
@@ -255,8 +255,7 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_numbe
     if hunk ~= nil then
       if line_number <= hunk.old_line then
         -- We have reached a hunk which starts after our target, return the changed total lines
-        return line_number +
-            net_change
+        return line_number + net_change
       end
 
       local n = next_hunk_index(all_lines, i) or #all_lines
@@ -276,6 +275,5 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_numbe
   -- TODO: Possibly handle lines that are out of range in the new files
   return line_number
 end
-
 
 return M

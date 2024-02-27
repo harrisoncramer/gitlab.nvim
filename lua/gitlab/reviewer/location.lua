@@ -33,15 +33,6 @@ function Location:new(reviewer_data, visual_range)
   return instance
 end
 
----Executes the location builder and sends the results to the callback function in order to send the comment
----@param cb function
-function Location:run(cb)
-  self:build_location_data()
-  vim.schedule(function()
-    cb(self.location_data)
-  end)
-end
-
 ---Takes in information about the current changes, such as the file name, modification type of the diff, and the line numbers
 ---and builds the appropriate payload when creating a comment.
 function Location:build_location_data()
@@ -67,7 +58,7 @@ function Location:build_location_data()
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = nil
   elseif
-      reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
+    reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
   then
     location_data.old_line = reviewer_data.old_line_from_buf
     location_data.new_line = reviewer_data.new_line_from_buf
@@ -163,8 +154,8 @@ function Location:set_start_range(visual_range)
   local new_line = self:get_line_number_from_new_sha(visual_range.start_line)
   local old_line = self:get_line_number_from_old_sha(visual_range.start_line)
   if
-      (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
-      or (old_line == nil and self.reviewer_data.modification_type ~= "added")
+    (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
+    or (old_line == nil and self.reviewer_data.modification_type ~= "added")
   then
     u.notify("Error getting new or old line for start range", vim.log.levels.ERROR)
     return
@@ -199,8 +190,8 @@ function Location:set_end_range(visual_range)
   local old_line = self:get_line_number_from_old_sha(visual_range.end_line)
 
   if
-      (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
-      or (old_line == nil and self.reviewer_data.modification_type ~= "added")
+    (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
+    or (old_line == nil and self.reviewer_data.modification_type ~= "added")
   then
     u.notify("Error getting new or old line for end range", vim.log.levels.ERROR)
     return

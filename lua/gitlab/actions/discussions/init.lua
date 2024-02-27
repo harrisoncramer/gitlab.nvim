@@ -245,29 +245,16 @@ M.send_deletion = function(tree, unlinked)
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
-
   local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
-
   job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    if not note_node.is_root then
-      tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
-      tree:render()
+    if note_node.is_root then
+      -- Replace root node w/ current node's contents...
+      tree:remove_node("-" .. root_node.id)
     else
-      if unlinked then
-        M.unlinked_discussions = u.remove_first_value(M.unlinked_discussions)
-        M.rebuild_unlinked_discussion_tree()
-      else
-        M.discussions = u.remove_first_value(M.discussions)
-        M.rebuild_discussion_tree()
-      end
-      M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
-        { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-      })
-      M.switch_can_edit_bufs(false)
+      tree:remove_node("-" .. note_id)
     end
-
+    tree:render()
     M.refresh_discussion_data()
   end)
 end
