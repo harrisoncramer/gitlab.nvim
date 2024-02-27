@@ -1,3 +1,4 @@
+local List = require("gitlab.utils.list")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local M = {}
 

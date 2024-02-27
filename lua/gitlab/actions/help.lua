@@ -2,6 +2,7 @@ local M = {}
 
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
 
 M.open = function()

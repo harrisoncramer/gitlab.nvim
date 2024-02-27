@@ -1,5 +1,3 @@
-local u = require("gitlab.utils")
-local state = require("gitlab.state")
 local M = {}
 
 M.has_clean_tree = function()

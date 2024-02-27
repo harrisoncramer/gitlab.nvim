@@ -1,7 +1,6 @@
 local u = require("gitlab.utils")
 local hunks = require("gitlab.hunks")
 local state = require("gitlab.state")
-local M = {}
 
 ---@class Location
 ---@field location_data LocationData
@@ -17,14 +16,13 @@ local M = {}
 ---@class ReviewerRangeInfo
 ---@field start ReviewerLineInfo
 ---@field end ReviewerLineInfo
---
 
-Location = {}
+local Location = {}
 Location.__index = Location
 ---@param reviewer_data DiffviewInfo
 ---@param visual_range LineRange | nil
 ---@return Location
-function Location:new(reviewer_data, visual_range)
+function Location.new(reviewer_data, visual_range)
   local instance = setmetatable({}, Location)
   instance.reviewer_data = reviewer_data
   instance.visual_range = visual_range
@@ -205,4 +203,4 @@ function Location:set_end_range(visual_range)
   }
 end
 
-return M
+return Location

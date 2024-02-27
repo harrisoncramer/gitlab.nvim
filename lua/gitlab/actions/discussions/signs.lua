@@ -1,4 +1,5 @@
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local discussion_sign_name = "gitlab_discussion"

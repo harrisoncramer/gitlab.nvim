@@ -1,7 +1,6 @@
 -- This module is responsible for creating new comments
 -- in the reviewer's buffer. The reviewer will pass back
 -- to this module the data required to make the API calls
-require("gitlab.reviewer.location")
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
@@ -10,6 +9,7 @@ local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
+local Location = require("gitlab.reviewer.location")
 local M = {}
 
 -- Popup creation is wrapped in a function so that it is performed *after* user

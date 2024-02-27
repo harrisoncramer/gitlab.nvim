@@ -2,6 +2,7 @@
 -- and assignees in Gitlab, those who must review an MR.
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
+local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local M = {}
 

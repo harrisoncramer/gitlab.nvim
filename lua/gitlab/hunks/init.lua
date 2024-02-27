@@ -1,3 +1,5 @@
+local List = require("gitlab.utils.list")
+local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local M = {}
 

@@ -3,6 +3,7 @@
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local M = {}
 
 M.add_label = function()

@@ -1,5 +1,6 @@
 local M = {}
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 
 ---@param nodes Discussion[]|UnlinkedDiscussion[]|nil
 ---@return number, number

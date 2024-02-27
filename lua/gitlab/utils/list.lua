@@ -1,4 +1,4 @@
-List = {}
+local List = {}
 List.__index = List
 
 function List.new(t)
@@ -62,3 +62,5 @@ function List:slice(first, last, step)
   end
   return sliced
 end
+
+return List

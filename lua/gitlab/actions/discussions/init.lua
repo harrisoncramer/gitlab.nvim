@@ -9,7 +9,7 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
-local git = require("gitlab.git")
+local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local diffview_lib = require("diffview.lib")
@@ -270,7 +270,7 @@ end
 
 -- This function will actually send the deletion to Gitlab
 -- when you make a selection, and re-render the tree
-M.send_deletion = function(tree, unlinked)
+M.send_deletion = function(tree)
   local current_node = tree:get_node()
 
   local note_node = M.get_note_node(tree, current_node)
