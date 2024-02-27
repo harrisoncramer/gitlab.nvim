@@ -49,6 +49,6 @@ $ luacheck --globals vim busted --no-max-line-length -- .
 
 Please provide a description of the feature, and links to any relevant issues. 
 
-That's it! I'll try to respond to any incoming merge request in a few days. Once we've reviewed it, it will be merged into the develop branc, it will be merged into the develop branch. 
+That's it! I'll try to respond to any incoming merge request in a few days. Once we've reviewed it, it will be merged into the develop branch. 
 
 After some time, if the develop branch is found to be stable, that branch will be merged into `main` and released. When merged into `main` the pipeline will detect whether we're merging in a patch, minor, or major change, and create a new tag (e.g. 1.0.12) and release.
