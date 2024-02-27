@@ -1,6 +1,7 @@
 -- This module contains the logic responsible for building and starting
 -- the Golang server. The Go server is responsible for making API calls
 -- to Gitlab and returning the data
+local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
@@ -49,12 +50,12 @@ M.start = function(callback)
       end
     end,
     on_stderr = function(_, errors)
-      local err_msg = ""
-      for _, err in ipairs(errors) do
+      local err_msg = List.new(errors):reduce(function(agg, err)
         if err ~= "" and err ~= nil then
-          err_msg = err_msg .. err .. "\n"
+          agg = agg .. err .. "\n"
         end
-      end
+        return agg
+      end, "")
 
       if err_msg ~= "" then
         u.notify(err_msg, vim.log.levels.ERROR)

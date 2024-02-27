@@ -1,3 +1,4 @@
+require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local async = require("gitlab.async")
 local server = require("gitlab.server")

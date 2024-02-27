@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - main
+      - develop
 jobs:
   go_lint:
     name: Lint Go 💅 

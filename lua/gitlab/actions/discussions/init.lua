@@ -9,8 +9,10 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
+local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
+local diffview_lib = require("diffview.lib")
 local signs = require("gitlab.actions.discussions.signs")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
@@ -53,26 +55,53 @@ end
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
 M.initialize_discussions = function()
   signs.setup_signs()
-  -- Setup callback to refresh discussion data, discussion signs and diagnostics whenever the reviewed file changes.
-  reviewer.set_callback_for_file_changed(M.refresh_discussion_data)
-  -- Setup callback to clear signs and diagnostics whenever reviewer is left.
-  reviewer.set_callback_for_reviewer_leave(signs.clear_signs_and_diagnostics)
+  reviewer.set_callback_for_file_changed(function()
+    M.refresh_view()
+    M.modifiable(false)
+  end)
+  reviewer.set_callback_for_reviewer_enter(function()
+    M.modifiable(false)
+  end)
+  reviewer.set_callback_for_reviewer_leave(function()
+    signs.clear_signs_and_diagnostics()
+    M.modifiable(true)
+  end)
+end
+
+--- Ensures that the both buffers in the reviewer are/not modifiable. Relevant if the user is using
+--- the --imply-local setting
+M.modifiable = function(bool)
+  local view = diffview_lib.get_current_view()
+  local a = view.cur_layout.a.file.bufnr
+  local b = view.cur_layout.b.file.bufnr
+  if vim.api.nvim_buf_is_loaded(a) then
+    vim.api.nvim_buf_set_option(a, "modifiable", bool)
+  end
+  if vim.api.nvim_buf_is_loaded(b) then
+    vim.api.nvim_buf_set_option(b, "modifiable", bool)
+  end
 end
 
 ---Refresh discussion data, signs, diagnostics, and winbar with new data from API
-M.refresh_discussion_data = function()
+--- and rebuild the entire view
+M.refresh = function()
   M.load_discussions(function()
-    if state.settings.discussion_sign.enabled then
-      signs.refresh_signs(M.discussions)
-    end
-    if state.settings.discussion_diagnostic.enabled then
-      signs.refresh_diagnostics(M.discussions)
-    end
-    if M.split_visible then
-      local linked_is_focused = M.linked_bufnr == M.focused_bufnr
-      winbar.update_winbar(M.discussions, M.unlinked_discussions, linked_is_focused and "Discussions" or "Notes")
-    end
+    M.refresh_view()
   end)
+end
+
+--- Take existing data and refresh the diagnostics, the winbar, and the signs
+M.refresh_view = function()
+  if state.settings.discussion_sign.enabled then
+    signs.refresh_signs(M.discussions)
+  end
+  if state.settings.discussion_diagnostic.enabled then
+    signs.refresh_diagnostics(M.discussions)
+  end
+  if M.split_visible then
+    local linked_is_focused = M.linked_bufnr == M.focused_bufnr
+    winbar.update_winbar(M.discussions, M.unlinked_discussions, linked_is_focused and "Discussions" or "Notes")
+  end
 end
 
 ---Toggle Discussions tree type between "simple" and "by_file_name"
@@ -148,6 +177,7 @@ M.toggle = function(callback)
   end)
 end
 
+-- Change between views in the discussion panel, either notes or discussions
 local switch_view_type = function()
   local change_to_unlinked = M.linked_bufnr == M.focused_bufnr
   local new_bufnr = change_to_unlinked and M.unlinked_bufnr or M.linked_bufnr
@@ -254,36 +284,23 @@ end
 
 -- This function will actually send the deletion to Gitlab
 -- when you make a selection, and re-render the tree
-M.send_deletion = function(tree, unlinked)
+M.send_deletion = function(tree)
   local current_node = tree:get_node()
 
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
-
   local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
-
   job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    if not note_node.is_root then
-      tree:remove_node("-" .. note_id) -- Note is not a discussion root, safe to remove
-      tree:render()
+    if note_node.is_root then
+      -- Replace root node w/ current node's contents...
+      tree:remove_node("-" .. root_node.id)
     else
-      if unlinked then
-        M.unlinked_discussions = u.remove_first_value(M.unlinked_discussions)
-        M.rebuild_unlinked_discussion_tree()
-      else
-        M.discussions = u.remove_first_value(M.discussions)
-        M.rebuild_discussion_tree()
-      end
-      M.add_empty_titles({
-        { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
-        { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-      })
-      M.switch_can_edit_bufs(false)
+      tree:remove_node("-" .. note_id)
     end
-
-    M.refresh_discussion_data()
+    tree:render()
+    M.refresh()
   end)
 end
 
@@ -293,18 +310,22 @@ M.edit_comment = function(tree, unlinked)
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)
+  if note_node == nil or root_node == nil then
+    u.notify("Could not get root or note node", vim.log.levels.ERROR)
+    return
+  end
 
   edit_popup:mount()
 
-  local lines = {} -- Gather all lines from immediate children that aren't note nodes
-  local children_ids = note_node:get_child_ids()
-  for _, child_id in ipairs(children_ids) do
+  -- Gather all lines from immediate children that aren't note nodes
+  local lines = List.new(note_node:get_child_ids()):reduce(function(agg, child_id)
     local child_node = tree:get_node(child_id)
     if not child_node:has_children() then
       local line = tree:get_node(child_id).text
-      table.insert(lines, line)
+      table.insert(agg, line)
     end
-  end
+    return agg
+  end, {})
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
@@ -362,7 +383,7 @@ M.toggle_discussion_resolved = function(tree)
   job.run_job("/mr/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.redraw_resolved_status(tree, note, not note.resolved)
-    M.refresh_discussion_data()
+    M.refresh()
   end)
 end
 
@@ -373,7 +394,17 @@ M.jump_to_reviewer = function(tree)
     u.notify(error, vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(file_name, new_line, old_line, { is_undefined_type = is_undefined_type })
+
+  local new_line_int = tonumber(new_line)
+  local old_line_int = tonumber(old_line)
+
+  if new_line_int == nil and old_line_int == nil then
+    u.notify("Could not get new or old line", vim.log.levels.ERROR)
+    return
+  end
+
+  reviewer.jump(file_name, new_line_int, old_line_int, { is_undefined_type = is_undefined_type })
+  M.refresh_view()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab

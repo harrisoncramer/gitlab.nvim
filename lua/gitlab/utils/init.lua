@@ -1,3 +1,4 @@
+local List = require("gitlab.utils.list")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local M = {}
 
@@ -484,14 +485,10 @@ M.get_window_id_by_buffer_id = function(buffer_id)
   local tabpage = vim.api.nvim_get_current_tabpage()
   local windows = vim.api.nvim_tabpage_list_wins(tabpage)
 
-  for _, win_id in ipairs(windows) do
+  return List.new(windows):find(function(win_id)
     local buf_id = vim.api.nvim_win_get_buf(win_id)
-    if buf_id == buffer_id then
-      return win_id
-    end
-  end
-
-  return nil -- Buffer ID not found in any window
+    return buf_id == buffer_id
+  end)
 end
 
 M.list_files_in_folder = function(folder_path)
@@ -507,166 +504,21 @@ M.list_files_in_folder = function(folder_path)
 
   local files = {}
   if folder ~= nil then
-    for _, file in ipairs(folder) do
-      local file_path = folder_path .. M.path_separator .. file
-      local timestamp = vim.fn.getftime(file_path)
-      table.insert(files, { name = file, timestamp = timestamp })
-    end
+    files = List.new(folder)
+      :map(function(file)
+        local file_path = folder_path .. M.path_separator .. file
+        local timestamp = vim.fn.getftime(file_path)
+        return { name = file, timestamp = timestamp }
+      end)
+      :sort(function(a, b)
+        return a.timestamp > b.timestamp
+      end)
+      :map(function(file)
+        return file.name
+      end)
   end
 
-  -- Sort the table by timestamp in descending order (newest first)
-  table.sort(files, function(a, b)
-    return a.timestamp > b.timestamp
-  end)
-
-  local result = {}
-  for _, file in ipairs(files) do
-    table.insert(result, file.name)
-  end
-
-  return result
-end
-
----@class Hunk
----@field old_line integer
----@field old_range integer
----@field new_line integer
----@field new_range integer
-
----@class HunksAndDiff
----@field hunks Hunk[] list of hunks
----@field all_diff_output table The data from the git diff command
-
----Turn hunk line into Lua table
----@param line table
----@return Hunk|nil
-M.parse_possible_hunk_headers = function(line)
-  if line:sub(1, 2) == "@@" then
-    -- match:
-    --  @@ -23 +23 @@ ...
-    --  @@ -23,0 +23 @@ ...
-    --  @@ -41,0 +42,4 @@ ...
-    local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
-
-    return {
-      old_line = tonumber(old_start),
-      old_range = tonumber(old_range) or 0,
-      new_line = tonumber(new_start),
-      new_range = tonumber(new_range) or 0,
-    }
-  end
-end
-
----Parse git diff hunks.
----@param file_path string Path to file.
----@param base_branch string Git base branch of merge request.
----@return HunksAndDiff
-M.parse_hunk_headers = function(file_path, base_branch)
-  local hunks = {}
-  local all_diff_output = {}
-
-  local Job = require("plenary.job")
-
-  local diff_job = Job:new({
-    command = "git",
-    args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
-    on_exit = function(j, return_code)
-      if return_code == 0 then
-        all_diff_output = j:result()
-        for _, line in ipairs(all_diff_output) do
-          local hunk = M.parse_possible_hunk_headers(line)
-          if hunk ~= nil then
-            table.insert(hunks, hunk)
-          end
-        end
-      else
-        M.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
-      end
-    end,
-  })
-
-  diff_job:sync()
-
-  return { hunks = hunks, all_diff_output = all_diff_output }
-end
-
----@class LineDiffInfo
----@field old_line integer
----@field new_line integer
----@field in_hunk boolean
-
----Search git diff hunks to find old and new line number corresponding to target line.
----This function does not check if target line is outside of boundaries of file.
----@param hunks Hunk[] git diff parsed hunks.
----@param target_line integer line number to search for - based on is_new paramter the search is
----either in new lines or old lines of hunks.
----@param is_new boolean whether to search for new line or old line
----@return LineDiffInfo
-M.get_lines_from_hunks = function(hunks, target_line, is_new)
-  if #hunks == 0 then
-    -- If there are zero hunks, return target_line for both old and new lines
-    return { old_line = target_line, new_line = target_line, in_hunk = false }
-  end
-  local current_new_line = 0
-  local current_old_line = 0
-  if is_new then
-    for _, hunk in ipairs(hunks) do
-      -- target line is before current hunk
-      if target_line < hunk.new_line then
-        return {
-          old_line = current_old_line + (target_line - current_new_line),
-          new_line = target_line,
-          in_hunk = false,
-        }
-        -- target line is within the current hunk
-      elseif hunk.new_line <= target_line and target_line <= (hunk.new_line + hunk.new_range) then
-        -- this is interesting magic of gitlab calculation
-        return {
-          old_line = hunk.old_line + hunk.old_range + 1,
-          new_line = target_line,
-          in_hunk = true,
-        }
-        -- target line is after the current hunk
-      else
-        current_new_line = hunk.new_line + hunk.new_range
-        current_old_line = hunk.old_line + hunk.old_range
-      end
-    end
-    -- target line is after last hunk
-    return {
-      old_line = current_old_line + (target_line - current_new_line),
-      new_line = target_line,
-      in_hunk = false,
-    }
-  else
-    for _, hunk in ipairs(hunks) do
-      -- target line is before current hunk
-      if target_line < hunk.old_line then
-        return {
-          old_line = target_line,
-          new_line = current_new_line + (target_line - current_old_line),
-          in_hunk = false,
-        }
-        -- target line is within the current hunk
-      elseif hunk.old_line <= target_line and target_line <= (hunk.old_line + hunk.old_range) then
-        return {
-          old_line = target_line,
-          new_line = hunk.new_line,
-          in_hunk = true,
-        }
-        -- target line is after the current hunk
-      else
-        current_new_line = hunk.new_line + hunk.new_range
-        current_old_line = hunk.old_line + hunk.old_range
-      end
-    end
-    -- target line is after last hunk
-    return {
-      old_line = current_old_line + (target_line - current_new_line),
-      new_line = target_line,
-      in_hunk = false,
-    }
-  end
+  return files
 end
 
 ---Check if current mode is visual mode
@@ -707,6 +559,14 @@ M.get_icon = function(filename)
   end
 end
 
+---Return content between start_line and end_line
+---@param start_line integer
+---@param end_line integer
+---@return string[]
+M.get_lines = function(start_line, end_line)
+  return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+end
+
 M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
@@ -731,7 +591,7 @@ M.get_all_git_branches = function(remote)
     end
     handle:close()
   else
-    print("Error running 'git branch' command.")
+    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
   end
 
   return branches

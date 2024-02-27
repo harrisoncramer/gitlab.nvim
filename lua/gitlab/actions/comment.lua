@@ -5,9 +5,11 @@ local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
+local Location = require("gitlab.reviewer.location")
 local M = {}
 
 -- Popup creation is wrapped in a function so that it is performed *after* user
@@ -20,6 +22,14 @@ end
 -- This function will open a comment popup in order to create a comment on the changed/updated
 -- line in the current MR
 M.create_comment = function()
+  local has_clean_tree = git.has_clean_tree()
+  if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
+    u.notify(
+      "Cannot leave comments on a dirty tree. \n Please stash all local changes or push them up.",
+      vim.log.levels.WARN
+    )
+    return
+  end
   local comment_popup = create_comment_popup()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
@@ -95,30 +105,11 @@ M.create_note = function()
   end, miscellaneous.attach_file)
 end
 
----@class LineRange
----@field start_line integer
----@field end_line integer
-
----@class ReviewerLineInfo
----@field old_line integer
----@field new_line integer
----@field type string either "new" or "old"
-
----@class ReviewerRangeInfo
----@field start ReviewerLineInfo
----@field end ReviewerLineInfo
-
----@class ReviewerInfo
----@field file_name string
----@field old_line integer | nil
----@field new_line integer | nil
----@field range_info ReviewerRangeInfo|nil
-
 ---This function (settings.popup.perform_action) will send the comment to the Go server
 ---@param text string comment text
----@param range LineRange | nil range of visuel selection or nil
+---@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean | nil if true, the comment is not linked to a line
-M.confirm_create_comment = function(text, range, unlinked)
+M.confirm_create_comment = function(text, visual_range, unlinked)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
@@ -129,33 +120,42 @@ M.confirm_create_comment = function(text, range, unlinked)
     job.run_job("/mr/comment", "POST", body, function(data)
       u.notify("Note created!", vim.log.levels.INFO)
       discussions.add_discussion({ data = data, unlinked = true })
-      discussions.refresh_discussion_data()
+      discussions.refresh()
     end)
     return
   end
 
-  local reviewer_info = reviewer.get_location(range)
-  if not reviewer_info then
+  local reviewer_data = reviewer.get_reviewer_data()
+  if reviewer_data == nil then
+    u.notify("Error getting reviewer data", vim.log.levels.ERROR)
+    return
+  end
+
+  local location = Location:new(reviewer_data, visual_range)
+  location:build_location_data()
+  local location_data = location.location_data
+  if location_data == nil then
+    u.notify("Error getting location information", vim.log.levels.ERROR)
     return
   end
 
   local revision = state.MR_REVISIONS[1]
   local body = {
+    type = "text",
     comment = text,
-    file_name = reviewer_info.file_name,
-    old_line = reviewer_info.old_line,
-    new_line = reviewer_info.new_line,
+    file_name = reviewer_data.file_name,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
     head_commit_sha = revision.head_commit_sha,
-    type = "text",
-    line_range = reviewer_info.range_info,
+    old_line = location_data.old_line,
+    new_line = location_data.new_line,
+    line_range = location_data.line_range,
   }
 
   job.run_job("/mr/comment", "POST", body, function(data)
     u.notify("Comment created!", vim.log.levels.INFO)
     discussions.add_discussion({ data = data, unlinked = false })
-    discussions.refresh_discussion_data()
+    discussions.refresh()
   end)
 end
 
