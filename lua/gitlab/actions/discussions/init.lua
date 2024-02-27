@@ -75,6 +75,21 @@ M.refresh_discussion_data = function()
   end)
 end
 
+---Toggle Discussions tree type between "simple" and "by_file_name"
+---@param unlinked boolean True if selected view type is Notes (unlinked discussions)
+M.toggle_tree_type = function(unlinked)
+  if unlinked then
+    u.notify("Toggling tree type is only possible in Discussions", vim.log.levels.INFO)
+    return
+  end
+  if state.settings.discussion_tree.tree_type == "simple" then
+    state.settings.discussion_tree.tree_type = "by_file_name"
+  else
+    state.settings.discussion_tree.tree_type = "simple"
+  end
+  M.rebuild_discussion_tree()
+end
+
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
@@ -327,7 +342,15 @@ end
 -- This function (settings.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
 M.toggle_discussion_resolved = function(tree)
   local note = tree:get_node()
-  if not note or not note.resolvable then
+  if note == nil then
+    return
+  end
+
+  -- Switch to the root node to enable toggling from child nodes and note bodies
+  if not note.resolvable and M.is_node_note(note) then
+    note = M.get_root_node(tree, note)
+  end
+  if note == nil then
     return
   end
 
@@ -370,6 +393,15 @@ M.toggle_node = function(tree)
   if node == nil then
     return
   end
+
+  -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
+  if node.type == "note_body" then
+    node = tree:get_node(node:get_parent_id())
+  end
+  if node == nil then
+    return
+  end
+
   local children = node:get_child_ids()
   if node == nil then
     return
@@ -401,7 +433,7 @@ end
 ---This function (settings.discussion_tree.toggle_nodes) expands/collapses all nodes and their children according to the opts.
 ---@param tree NuiTree
 ---@param opts ToggleNodesOptions
-M.toggle_nodes = function(tree, opts)
+M.toggle_nodes = function(tree, unlinked, opts)
   local current_node = tree:get_node()
   if current_node == nil then
     return
@@ -409,25 +441,41 @@ M.toggle_nodes = function(tree, opts)
   local root_node = M.get_root_node(tree, current_node)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
-      if state.resolved_expanded then
+      if
+        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+        or (not unlinked and state.discussion_tree.resolved_expanded)
+      then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
         M.expand_recursively(tree, node, true)
       end
     end
     if opts.toggle_unresolved then
-      if state.unresolved_expanded then
+      if
+        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+        or (not unlinked and state.discussion_tree.unresolved_expanded)
+      then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
         M.expand_recursively(tree, node, false)
       end
     end
   end
+  -- Reset states of resolved discussions after toggling
   if opts.toggle_resolved then
-    state.resolved_expanded = not state.resolved_expanded
+    if unlinked then
+      state.unlinked_discussion_tree.resolved_expanded = not state.unlinked_discussion_tree.resolved_expanded
+    else
+      state.discussion_tree.resolved_expanded = not state.discussion_tree.resolved_expanded
+    end
   end
+  -- Reset states of unresolved discussions after toggling
   if opts.toggle_unresolved then
-    state.unresolved_expanded = not state.unresolved_expanded
+    if unlinked then
+      state.unlinked_discussion_tree.unresolved_expanded = not state.unlinked_discussion_tree.unresolved_expanded
+    else
+      state.discussion_tree.unresolved_expanded = not state.discussion_tree.unresolved_expanded
+    end
   end
   tree:render()
   M.restore_cursor_position(tree, current_node, root_node)
@@ -543,6 +591,8 @@ M.rebuild_discussion_tree = function()
   M.discussion_tree = discussion_tree
   M.switch_can_edit_bufs(false)
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
+  state.discussion_tree.resolved_expanded = false
+  state.discussion_tree.unresolved_expanded = false
 end
 
 M.rebuild_unlinked_discussion_tree = function()
@@ -561,6 +611,8 @@ M.rebuild_unlinked_discussion_tree = function()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   M.switch_can_edit_bufs(false)
+  state.unlinked_discussion_tree.resolved_expanded = false
+  state.unlinked_discussion_tree.unresolved_expanded = false
 end
 
 M.switch_can_edit_bufs = function(bool)
@@ -643,6 +695,9 @@ M.is_current_node_note = function(tree)
 end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
+    M.toggle_tree_type(unlinked)
+  end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     if M.is_current_node_note(tree) then
       M.edit_comment(tree, unlinked)
@@ -662,21 +717,21 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     M.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
-    M.toggle_nodes(tree, {
+    M.toggle_nodes(tree, unlinked, {
       toggle_resolved = true,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
     })
   end, { buffer = bufnr, desc = "Toggle all nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved_discussions, function()
-    M.toggle_nodes(tree, {
+    M.toggle_nodes(tree, unlinked, {
       toggle_resolved = true,
       toggle_unresolved = false,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
     })
   end, { buffer = bufnr, desc = "Toggle resolved nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_unresolved_discussions, function()
-    M.toggle_nodes(tree, {
+    M.toggle_nodes(tree, unlinked, {
       toggle_resolved = false,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,

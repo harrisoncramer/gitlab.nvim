@@ -64,6 +64,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
+    toggle_tree_type = "i",
     ---@param t WinbarTable
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
@@ -79,7 +80,8 @@ M.settings = {
         discussions_content = "%#Comment#" .. discussions_content
         notes_content = "%#Text#" .. notes_content
       end
-      return " " .. discussions_content .. " %#Comment#| " .. notes_content
+      local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
+      return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
     end,
   },
   merge = {
@@ -167,6 +169,16 @@ M.settings = {
       unresolved = "DiagnosticSignWarn",
     },
   },
+}
+
+-- These are the initial states of the discussion trees
+M.discussion_tree = {
+  resolved_expanded = false,
+  unresolved_expanded = false,
+}
+M.unlinked_discussion_tree = {
+  resolved_expanded = false,
+  unresolved_expanded = false,
 }
 
 -- Merges user settings into the default settings, overriding them
