@@ -54,7 +54,7 @@ function Location:build_location_data()
   local location_data = {
     old_line = nil,
     new_line = nil,
-    range_info = {}
+    line_range = nil,
   }
 
   -- Comment on new line: Include only new_line in payload.
@@ -75,8 +75,9 @@ function Location:build_location_data()
 
   self.location_data = location_data
   if visual_range == nil then
-    self.location_data.range_info = nil
     return
+  else
+    self.location_data.line_range = {}
   end
 
   self:set_start_range(visual_range)
@@ -84,8 +85,8 @@ function Location:build_location_data()
 
   -- Ranged comments should always use the end of the range.
   -- Otherwise they will not highlight the full comment in Gitlab.
-  self.location_data.old_line = self.location_data.range_info["end"].old_line
-  self.location_data.new_line = self.location_data.range_info["end"].new_line
+  self.location_data.old_line = self.location_data.line_range["end"].old_line
+  self.location_data.new_line = self.location_data.line_range["end"].new_line
 end
 
 -- Helper methods 🤝
@@ -171,7 +172,7 @@ function Location:set_start_range(visual_range)
 
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
 
-  self.location_data.range_info.start = {
+  self.location_data.line_range.start = {
     new_line = modification_type ~= "deleted" and new_line or nil,
     old_line = modification_type ~= "added" and old_line or nil,
     type = modification_type == "added" and "new" or "old",
@@ -206,7 +207,7 @@ function Location:set_end_range(visual_range)
   end
 
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
-  self.location_data.range_info["end"] = {
+  self.location_data.line_range["end"] = {
     new_line = modification_type ~= "deleted" and new_line or nil,
     old_line = modification_type ~= "added" and old_line or nil,
     type = modification_type == "added" and "new" or "old",
