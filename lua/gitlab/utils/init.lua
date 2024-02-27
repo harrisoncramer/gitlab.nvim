@@ -618,3 +618,5 @@ end
 M.trim_slash = function(s)
   return (s:gsub("/+$", ""))
 end
+
+return M
