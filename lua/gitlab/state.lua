@@ -64,6 +64,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
+    toggle_tree_type = "i",
     ---@param t WinbarTable
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
@@ -253,7 +254,7 @@ M.setPluginConfiguration = function()
   end
 
   M.settings.auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
-  M.settings.gitlab_url = file_properties.gitlab_url or os.getenv("GITLAB_URL") or "https://gitlab.com"
+  M.settings.gitlab_url = u.trim_slash(file_properties.gitlab_url or os.getenv("GITLAB_URL") or "https://gitlab.com")
 
   if M.settings.auth_token == nil then
     vim.notify(
