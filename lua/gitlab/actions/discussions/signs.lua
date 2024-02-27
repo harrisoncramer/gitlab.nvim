@@ -132,35 +132,6 @@ M.parse_diagnostics_from_discussions = function(discussions)
   local new_diagnostics = {}
   local old_diagnostics = {}
 
-  -- local discussion_list = List.new(discussions)
-  -- local old_discussions = discussion_list:filter(function(d)
-  --   local first_note = d.notes[1]
-  --   return first_note.position.old_line ~= nil
-  -- end)
-  -- local new_discussions = discussion_list
-  --   :filter(function(d)
-  --     local first_note = d.notes[1]
-  --     return first_note.position.old_line ~= nil
-  --   end)
-  --   :map(function(d)
-  --     local message = ""
-  --     for _, note in ipairs(d.notes) do
-  --       message = message .. M.build_note_header(note) .. "\n" .. note.body .. "\n"
-  --     end
-  --
-  --     local diagnostic = {
-  --       data = d,
-  --       message = message,
-  --       col = 0,
-  --       severity = state.settings.discussion_diagnostic.severity,
-  --       user_data = { discussion_id = d.id, header = M.build_note_header(d.notes[1]) },
-  --       source = "gitlab",
-  --       code = state.settings.discussion_diagnostic.code,
-  --     }
-  --     return diagnostic
-  --   end)
-  --
-
   for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
     local message = ""
