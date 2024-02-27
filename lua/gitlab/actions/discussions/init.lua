@@ -90,6 +90,20 @@ M.refresh = function()
   end)
 end
 
+--- Take existing data and refresh the diagnostics, the winbar, and the signs
+M.refresh_view = function()
+  if state.settings.discussion_sign.enabled then
+    signs.refresh_signs(M.discussions)
+  end
+  if state.settings.discussion_diagnostic.enabled then
+    signs.refresh_diagnostics(M.discussions)
+  end
+  if M.split_visible then
+    local linked_is_focused = M.linked_bufnr == M.focused_bufnr
+    winbar.update_winbar(M.discussions, M.unlinked_discussions, linked_is_focused and "Discussions" or "Notes")
+  end
+end
+
 ---Toggle Discussions tree type between "simple" and "by_file_name"
 ---@param unlinked boolean True if selected view type is Notes (unlinked discussions)
 M.toggle_tree_type = function(unlinked)
@@ -380,7 +394,17 @@ M.jump_to_reviewer = function(tree)
     u.notify(error, vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(file_name, new_line, old_line, { is_undefined_type = is_undefined_type })
+
+  local new_line_int = tonumber(new_line)
+  local old_line_int = tonumber(old_line)
+
+  if new_line_int == nil and old_line_int == nil then
+    u.notify("Could not get new or old line", vim.log.levels.ERROR)
+    return
+  end
+
+  reviewer.jump(file_name, new_line_int, old_line_int, { is_undefined_type = is_undefined_type })
+  M.refresh_view()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab

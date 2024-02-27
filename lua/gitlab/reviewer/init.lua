@@ -80,8 +80,8 @@ end
 
 -- Jumps to the location provided in the reviewer window
 ---@param file_name string
----@param new_line number
----@param old_line number
+---@param new_line number|nil
+---@param old_line number|nil
 ---@param opts table
 M.jump = function(file_name, new_line, old_line, opts)
   if M.tabnr == nil then
@@ -116,10 +116,10 @@ M.jump = function(file_name, new_line, old_line, opts)
       -- buffer for ranged comments on unchanged lines.
       if new_line ~= nil and not opts.is_undefined_type then
         layout.b:focus()
-        vim.api.nvim_win_set_cursor(0, { tonumber(new_line), 0 })
+        vim.api.nvim_win_set_cursor(0, { new_line, 0 })
       elseif old_line ~= nil then
         layout.a:focus()
-        vim.api.nvim_win_set_cursor(0, { tonumber(old_line), 0 })
+        vim.api.nvim_win_set_cursor(0, { old_line, 0 })
       end
       break
     end

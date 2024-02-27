@@ -1,5 +1,4 @@
 local state = require("gitlab.state")
-local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local discussion_sign_name = "gitlab_discussion"
@@ -66,7 +65,7 @@ M.refresh_diagnostics = function(discussions)
   )
 end
 
----Filter all discussions which are relevant for currently visible signs and diagnostics.
+---Filter all discussions which are relevant for currently visible signs and diagnostscs.
 ---@return Discussion[]?
 M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   if type(all_discussions) ~= "table" then
@@ -76,8 +75,8 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   if not file then
     return
   end
-
-  return List.new(all_discussions):filter(function(discussion)
+  local discussions = {}
+  for _, discussion in ipairs(all_discussions) do
     local first_note = discussion.notes[1]
     if
       type(first_note.position) == "table"
@@ -97,10 +96,11 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
             <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
         )
       then
-        return true
+        table.insert(discussions, discussion)
       end
     end
-  end)
+  end
+  return discussions
 end
 
 ---Define signs for discussions if not already defined
@@ -132,7 +132,6 @@ end
 M.parse_diagnostics_from_discussions = function(discussions)
   local new_diagnostics = {}
   local old_diagnostics = {}
-
   for _, discussion in ipairs(discussions) do
     local first_note = discussion.notes[1]
     local message = ""
