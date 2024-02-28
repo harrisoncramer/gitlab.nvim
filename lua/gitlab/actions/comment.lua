@@ -23,9 +23,10 @@ end
 -- line in the current MR
 M.create_comment = function()
   local has_clean_tree = git.has_clean_tree()
-  if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
+  local is_modified = vim.api.nvim_buf_get_option(0, "modified")
+  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
     u.notify(
-      "Cannot leave comments on a dirty tree. \n Please stash all local changes or push them up.",
+      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
       vim.log.levels.WARN
     )
     return
