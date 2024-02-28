@@ -74,10 +74,10 @@ M.modifiable = function(bool)
   local view = diffview_lib.get_current_view()
   local a = view.cur_layout.a.file.bufnr
   local b = view.cur_layout.b.file.bufnr
-  if vim.api.nvim_buf_is_loaded(a) then
+  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
     vim.api.nvim_buf_set_option(a, "modifiable", bool)
   end
-  if vim.api.nvim_buf_is_loaded(b) then
+  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
     vim.api.nvim_buf_set_option(b, "modifiable", bool)
   end
 end
