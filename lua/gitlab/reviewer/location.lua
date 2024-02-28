@@ -204,6 +204,8 @@ function Location:set_end_range(visual_range)
     return
   end
 
+  local reviewer = require("gitlab.reviewer")
+  local is_current_sha = reviewer.is_current_sha()
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
