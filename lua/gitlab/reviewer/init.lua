@@ -199,7 +199,14 @@ M.is_current_sha = function()
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local current_win = vim.fn.win_getid()
+
+  -- Handle cases where user navigates tabs in the middle of making a comment
+  if a_win ~= current_win and b_win ~= current_win then
+    current_win = M.stored_win
+    M.stored_win = nil
+  end
   return current_win == b_win
 end
 
@@ -266,6 +273,7 @@ M.set_callback_for_file_changed = function(callback)
     pattern = { "DiffviewDiffBufWinEnter" },
     group = group,
     callback = function(...)
+      M.stored_win = vim.api.nvim_get_current_win()
       if M.tabnr == vim.api.nvim_get_current_tabpage() then
         callback(...)
       end
