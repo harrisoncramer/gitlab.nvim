@@ -35,6 +35,7 @@ end
 ---@param linnr number
 ---@param hunk Hunk
 ---@param all_diff_output table
+---@return boolean
 local line_was_removed = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = M.parse_possible_hunk_headers(line)
@@ -46,17 +47,19 @@ local line_was_removed = function(linnr, hunk, all_diff_output)
         local line_content = all_diff_output[matching_line_index + 1]
         if hunk_line_index == linnr then
           if string.match(line_content, "^%-") then
-            return "deleted"
+            return true
           end
         end
       end
     end
   end
+  return false
 end
 
 ---@param linnr number
 ---@param hunk Hunk
 ---@param all_diff_output table
+---@return boolean
 local line_was_added = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = M.parse_possible_hunk_headers(line)
@@ -71,13 +74,14 @@ local line_was_added = function(linnr, hunk, all_diff_output)
         local line_content = all_diff_output[hunk_line_index]
         if (found_hunk.new_line + i) == linnr then
           if string.match(line_content, "^%+") then
-            return "added"
+            return true
           end
         end
         i = i + 1
       end
     end
   end
+  return false
 end
 
 ---Parse git diff hunks.
@@ -181,26 +185,12 @@ local function get_modification_type_from_new_sha(new_line, hunks, all_diff_outp
   if new_line == nil then
     return nil
   end
-  for _, hunk in ipairs(hunks) do
-    -- If it is a single line change and neither hunk has a range, then it's added
+  return List.new(hunks):find(function(hunk)
     local new_line_end = hunk.new_line + hunk.new_range
-    if new_line >= hunk.new_line and new_line <= new_line_end then
-      if hunk.new_range == 0 and hunk.old_range == 0 then
-        print("1")
-        return "added"
-      end
-      -- If leaving a comment on the new window, we may be commenting on an added line
-      -- or on an unmodified line. To tell, we have to check whether the line itself is
-      -- prefixed with "+" and only return "added" if it is.
-      if line_was_added(new_line, hunk, all_diff_output) then
-        print("2")
-        return "added"
-      end
-    end
-  end
-
-  print("bad_file_unmodified")
-  return "bad_file_unmodified"
+    local in_new_range = new_line >= hunk.new_line and new_line <= new_line_end
+    local is_range_zero = hunk.new_range == 0 and hunk.old_range == 0
+    return in_new_range and (is_range_zero or line_was_added(new_line, hunk, all_diff_output))
+  end) and "added" or "bad_file_unmodified"
 end
 
 ---@param old_line number|nil
@@ -218,9 +208,7 @@ local function get_modification_type_from_old_sha(old_line, new_line, hunks, all
     local new_line_end = hunk.new_line + hunk.new_range
     local in_old_range = old_line >= hunk.old_line and old_line <= old_line_end
     local in_new_range = old_line >= hunk.new_line and new_line <= new_line_end
-    if (in_old_range or in_new_range) and line_was_removed(old_line, hunk, all_diff_output) then
-      return true
-    end
+    return (in_old_range or in_new_range) and line_was_removed(old_line, hunk, all_diff_output)
   end) and "deleted" or "unmodified"
 end
 
@@ -240,7 +228,7 @@ function M.get_modification_type(old_line, new_line, current_file, is_current_sh
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
   return is_current_sha and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
-      or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
+    or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
 end
 
 ---Returns the matching line number of a line in the new/old version of the file compared to the current SHA.
