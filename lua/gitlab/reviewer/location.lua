@@ -23,7 +23,8 @@ Location.__index = Location
 ---@param visual_range LineRange | nil
 ---@return Location
 function Location.new(reviewer_data, visual_range)
-  local instance = setmetatable({}, Location)
+  local location = {}
+  local instance = setmetatable(location, Location)
   instance.reviewer_data = reviewer_data
   instance.visual_range = visual_range
   instance.base_sha = state.INFO.diff_refs.base_sha
@@ -66,7 +67,10 @@ function Location:build_location_data()
   if visual_range == nil then
     return
   else
-    self.location_data.line_range = {}
+    self.location_data.line_range = {
+      start = {},
+      ["end"] = {},
+    }
   end
 
   self:set_start_range(visual_range)
@@ -145,7 +149,7 @@ function Location:set_start_range(visual_range)
 
   local current_line = self:get_current_line()
   if current_line == nil then
-    u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
+    u.notify("Error getting current line for start range", vim.log.levels.ERROR)
     return
   end
 
@@ -180,7 +184,7 @@ function Location:set_end_range(visual_range)
 
   local current_line = self:get_current_line()
   if current_line == nil then
-    u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
+    u.notify("Error getting current line for end range", vim.log.levels.ERROR)
     return
   end
 
