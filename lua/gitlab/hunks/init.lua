@@ -212,25 +212,16 @@ local function get_modification_type_from_old_sha(old_line, new_line, hunks, all
   if old_line == nil then
     return nil
   end
-  for _, hunk in ipairs(hunks) do
+
+  return List.new(hunks):find(function(hunk)
     local old_line_end = hunk.old_line + hunk.old_range
     local new_line_end = hunk.new_line + hunk.new_range
-    vim.print(hunk)
-
-    -- It's a deletion if it's in the range of the hunks and the new
-    -- if we find a match in another hunk with a range, and the corresponding line is
-    -- prefixed with a "-" only. If it is, then it's a deletion.
-    if
-      (old_line >= hunk.old_line and old_line <= old_line_end)
-      or (old_line >= hunk.new_line and new_line <= new_line_end)
-    then
-      if line_was_removed(old_line, hunk, all_diff_output) then
-        return "deleted"
-      end
+    local in_old_range = old_line >= hunk.old_line and old_line <= old_line_end
+    local in_new_range = old_line >= hunk.new_line and new_line <= new_line_end
+    if (in_old_range or in_new_range) and line_was_removed(old_line, hunk, all_diff_output) then
+      return true
     end
-  end
-
-  return "unmodified"
+  end) and "deleted" or "unmodified"
 end
 
 ---Returns whether the comment is on a deleted line, added line, or unmodified line.
@@ -249,7 +240,7 @@ function M.get_modification_type(old_line, new_line, current_file, is_current_sh
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
   return is_current_sha and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
-    or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
+      or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
 end
 
 ---Returns the matching line number of a line in the new/old version of the file compared to the current SHA.
