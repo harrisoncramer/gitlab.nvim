@@ -131,7 +131,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     return
   end
 
-  local location = Location:new(reviewer_data, visual_range)
+  local location = Location.new(reviewer_data, visual_range)
   location:build_location_data()
   local location_data = location.location_data
   if location_data == nil then
