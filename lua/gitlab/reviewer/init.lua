@@ -9,6 +9,7 @@ local diffview_lib = require("diffview.lib")
 local M = {
   bufnr = nil,
   tabnr = nil,
+  stored_win = nil,
 }
 
 -- Checks for legacy installations, only Diffview is supported.
