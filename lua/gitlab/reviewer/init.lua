@@ -167,9 +167,11 @@ M.get_reviewer_data = function()
 
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
+
+  local is_current_sha = M.is_current_sha()
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
   if modification_type == nil then
-    u.notify("Error parsing hunks for modification type", vim.log.levels.ERROR)
+    u.notify("Error getting modification type", vim.log.levels.ERROR)
     return
   end
 
@@ -177,8 +179,8 @@ M.get_reviewer_data = function()
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  local current_bufnr = M.is_current_sha() and layout.b.file.bufnr or layout.a.file.bufnr
-  local opposite_bufnr = M.is_current_sha() and layout.a.file.bufnr or layout.b.file.bufnr
+  local current_bufnr = is_current_sha and layout.b.file.bufnr or layout.a.file.bufnr
+  local opposite_bufnr = is_current_sha and layout.a.file.bufnr or layout.b.file.bufnr
   local old_sha_win_id = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
