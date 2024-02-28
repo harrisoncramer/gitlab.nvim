@@ -141,7 +141,8 @@ function Location:set_start_range(visual_range)
   end
 
   local reviewer = require("gitlab.reviewer")
-  local win_id = reviewer.is_current_sha() and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
+  local is_current_sha = reviewer.is_current_sha()
+  local win_id = is_current_sha and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
   if win_id == nil then
     u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
     return
@@ -163,7 +164,11 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
+  if modification_type == nil then
+    u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
+    return
+  end
 
   self.location_data.line_range.start = {
     new_line = modification_type ~= "deleted" and new_line or nil,
@@ -199,7 +204,12 @@ function Location:set_end_range(visual_range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file)
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
+  if modification_type == nil then
+    u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
+    return
+  end
+
   self.location_data.line_range["end"] = {
     new_line = modification_type ~= "deleted" and new_line or nil,
     old_line = modification_type ~= "added" and old_line or nil,
