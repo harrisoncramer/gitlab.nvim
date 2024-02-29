@@ -159,7 +159,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
+      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -389,7 +389,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree)
-  local file_name, new_line, old_line, is_undefined_type, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
@@ -403,13 +403,13 @@ M.jump_to_reviewer = function(tree)
     return
   end
 
-  reviewer.jump(file_name, new_line_int, old_line_int, { is_undefined_type = is_undefined_type })
+  reviewer.jump(file_name, new_line_int, old_line_int)
   M.refresh_view()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
 M.jump_to_file = function(tree)
-  local file_name, new_line, old_line, _, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
@@ -473,8 +473,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-          or (not unlinked and state.discussion_tree.resolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+        or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -483,8 +483,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-          or (not unlinked and state.discussion_tree.unresolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+        or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -616,7 +616,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -911,21 +911,17 @@ end
 
 ---Get note location
 ---@param tree NuiTree
----@return string, string, string, boolean, string?
+---@return string, string, string, string?
 M.get_note_location = function(tree)
   local node = tree:get_node()
   if node == nil then
-    return "", "", "", false, "Could not get node"
+    return "", "", "", "Could not get node"
   end
   local discussion_node = M.get_root_node(tree, node)
   if discussion_node == nil then
-    return "", "", "", false, "Could not get discussion node"
+    return "", "", "", "Could not get discussion node"
   end
-  return discussion_node.file_name,
-      discussion_node.new_line,
-      discussion_node.old_line,
-      discussion_node.undefined_type or false,
-      nil
+  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line, nil
 end
 
 ---@param tree NuiTree
