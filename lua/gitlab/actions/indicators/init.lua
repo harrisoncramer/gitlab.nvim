@@ -7,5 +7,7 @@ M.clear_signs_and_diagnostics = function()
   vim.diagnostic.reset(diagnostics.diagnostics_namespace)
 end
 
+M.diagnostics = diagnostics
+M.signs = signs
 
 return M

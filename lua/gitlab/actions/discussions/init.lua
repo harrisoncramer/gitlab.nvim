@@ -13,8 +13,6 @@ local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local diffview_lib = require("diffview.lib")
-local signs = require("gitlab.actions.indicators.signs")
-local diagnostics = require("gitlab.actions.indicators.diagnostics")
 local indicators = require("gitlab.actions.indicators")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
@@ -56,7 +54,7 @@ end
 
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
 M.initialize_discussions = function()
-  signs.setup_signs()
+  indicators.signs.setup_signs()
   reviewer.set_callback_for_file_changed(function()
     M.refresh_view()
     M.modifiable(false)
@@ -65,7 +63,7 @@ M.initialize_discussions = function()
     M.modifiable(false)
   end)
   reviewer.set_callback_for_reviewer_leave(function()
-    indicators.clear_signs_and_diagnostics()
+    indicators.diagnostics.clear_signs_and_diagnostics()
     M.modifiable(true)
   end)
 end
@@ -95,10 +93,10 @@ end
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
   if state.settings.discussion_sign.enabled then
-    signs.refresh_signs(M.discussions)
+    indicators.signs.refresh_signs(M.discussions)
   end
   if state.settings.discussion_diagnostic.enabled then
-    diagnostics.refresh_diagnostics(M.discussions)
+    indicators.diagnostics.refresh_diagnostics(M.discussions)
   end
   if M.split_visible then
     local linked_is_focused = M.linked_bufnr == M.focused_bufnr
@@ -200,7 +198,7 @@ end
 ---Move to the discussion tree at the discussion from diagnostic on current line.
 M.move_to_discussion_tree = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local d = vim.diagnostic.get(0, { namespace = signs.diagnostics_namespace, lnum = current_line - 1 })
+  local d = vim.diagnostic.get(0, { namespace = indicators.signs.diagnostics_namespace, lnum = current_line - 1 })
 
   ---Function used to jump to the discussion tree after the menu selection.
   local jump_after_menu_selection = function(diagnostic)
