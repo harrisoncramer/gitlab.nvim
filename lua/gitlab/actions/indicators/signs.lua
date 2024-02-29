@@ -32,25 +32,14 @@ local function parse_old_signs_from_discussions(discussions)
     return {}
   end
 
-  return List.new(discussions)
-      :filter(function(discussion)
-        local first_note = discussion.notes[1]
-        local line_range = first_note.position.line_range
-        return line_range == nil
-      end)
-      :map(function(discussion)
-        return discussion.notes[1]
-      end)
-      :map(function(note)
-        return create_sign(note)
-      end)
+  return List.new(discussions):filter(common.is_single_line):map(common.get_first_note):map(create_sign)
 end
 
 ---Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
 ---string for sign name and sign group ( currently there is only one sign needed)
 ---@param discussions Discussion[]
 M.refresh_signs = function(discussions)
-  local filtered_discussions = common.filter_discussions(discussions)
+  local filtered_discussions = common.filter_placeable_discussions(discussions)
   local old_signs = parse_old_signs_from_discussions(filtered_discussions)
   if old_signs == nil then
     vim.notify("Could not parse old signs from discussions", vim.log.levels.ERROR)
