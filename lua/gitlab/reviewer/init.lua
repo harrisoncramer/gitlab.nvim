@@ -1,4 +1,5 @@
 -- This Module contains all of the reviewer code for diffview
+local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local git = require("gitlab.git")
@@ -83,8 +84,7 @@ end
 ---@param file_name string
 ---@param new_line number|nil
 ---@param old_line number|nil
----@param opts table
-M.jump = function(file_name, new_line, old_line, opts)
+M.jump = function(file_name, new_line, old_line)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
@@ -96,34 +96,24 @@ M.jump = function(file_name, new_line, old_line, opts)
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
+  if not async_ok then
+    u.notify("Could not load Diffview async", vim.log.levels.ERROR)
+    return
+  end
+
   local files = view.panel:ordered_file_list()
+  local file = List.new(files):find(function(file)
+    return file.path == file_name
+  end)
+  async.await(view:set_file(file))
+
   local layout = view.cur_layout
-  for _, file in ipairs(files) do
-    if file.path == file_name then
-      if not async_ok then
-        u.notify("Could not load Diffview async", vim.log.levels.ERROR)
-        return
-      end
-      async.await(view:set_file(file))
-      -- TODO: Ranged comments on unchanged lines will have both a
-      -- new line and a old line.
-      --
-      -- The same is true when the user leaves a single-line comment
-      -- on an unchanged line in the "b" buffer.
-      --
-      -- We need to distinguish them somehow from
-      -- range comments (which also have this) so that we can know
-      -- which buffer to jump to. Right now, we jump to the wrong
-      -- buffer for ranged comments on unchanged lines.
-      if new_line ~= nil and not opts.is_undefined_type then
-        layout.b:focus()
-        vim.api.nvim_win_set_cursor(0, { new_line, 0 })
-      elseif old_line ~= nil then
-        layout.a:focus()
-        vim.api.nvim_win_set_cursor(0, { old_line, 0 })
-      end
-      break
-    end
+  if old_line == nil then
+    layout.b:focus()
+    vim.api.nvim_win_set_cursor(0, { new_line, 0 })
+  else
+    layout.a:focus()
+    vim.api.nvim_win_set_cursor(0, { old_line, 0 })
   end
 end
 

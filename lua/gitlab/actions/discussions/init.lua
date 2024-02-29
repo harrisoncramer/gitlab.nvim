@@ -14,6 +14,8 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local diffview_lib = require("diffview.lib")
 local signs = require("gitlab.actions.discussions.signs")
+local diagnostics = require("gitlab.actions.discussions.diagnostics")
+local signs_and_diagnostics = require("gitlab.actions.discussions.signs_and_diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
 local emoji = require("gitlab.emoji")
@@ -63,7 +65,7 @@ M.initialize_discussions = function()
     M.modifiable(false)
   end)
   reviewer.set_callback_for_reviewer_leave(function()
-    signs.clear_signs_and_diagnostics()
+    signs_and_diagnostics.clear_signs_and_diagnostics()
     M.modifiable(true)
   end)
 end
@@ -96,7 +98,7 @@ M.refresh_view = function()
     signs.refresh_signs(M.discussions)
   end
   if state.settings.discussion_diagnostic.enabled then
-    signs.refresh_diagnostics(M.discussions)
+    diagnostics.refresh_diagnostics(M.discussions)
   end
   if M.split_visible then
     local linked_is_focused = M.linked_bufnr == M.focused_bufnr
@@ -159,7 +161,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -198,7 +200,7 @@ end
 ---Move to the discussion tree at the discussion from diagnostic on current line.
 M.move_to_discussion_tree = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local diagnostics = vim.diagnostic.get(0, { namespace = signs.diagnostics_namespace, lnum = current_line - 1 })
+  local d = vim.diagnostic.get(0, { namespace = signs.diagnostics_namespace, lnum = current_line - 1 })
 
   ---Function used to jump to the discussion tree after the menu selection.
   local jump_after_menu_selection = function(diagnostic)
@@ -229,11 +231,11 @@ M.move_to_discussion_tree = function()
     end
   end
 
-  if #diagnostics == 0 then
+  if #d == 0 then
     u.notify("No diagnostics for this line", vim.log.levels.WARN)
     return
-  elseif #diagnostics > 1 then
-    vim.ui.select(diagnostics, {
+  elseif #d > 1 then
+    vim.ui.select(d, {
       prompt = "Choose discussion to jump to",
       format_item = function(diagnostic)
         return diagnostic.message
@@ -245,7 +247,7 @@ M.move_to_discussion_tree = function()
       jump_after_menu_selection(diagnostic)
     end)
   else
-    jump_after_menu_selection(diagnostics[1])
+    jump_after_menu_selection(d[1])
   end
 end
 
@@ -473,8 +475,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-        or (not unlinked and state.discussion_tree.resolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+          or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -483,8 +485,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-        or (not unlinked and state.discussion_tree.unresolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+          or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -616,7 +618,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
