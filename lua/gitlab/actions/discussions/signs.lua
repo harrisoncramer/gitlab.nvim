@@ -47,8 +47,15 @@ local function create_sign(note)
   }
 end
 
+---@param discussion Discussion
+---@return boolean
+local function place_in_old_sha(discussion)
+  local first_note = discussion.notes[1]
+  return first_note.position.old_line ~= nil
+end
+
 ---Takes in a list of discussions and turns them into a list of
----signs to be placed in the reviewer
+---signs to be placed in the old SHA
 ---@param discussions Discussion[]
 ---@return SignTable[]
 local function parse_old_signs_from_discussions(discussions)
@@ -58,24 +65,24 @@ local function parse_old_signs_from_discussions(discussions)
   end
 
   return List.new(discussions)
-    :filter(function(discussion)
-      local first_note = discussion.notes[1]
-      local line_range = first_note.position.line_range
-      return line_range == nil
-    end)
-    :map(function(discussion)
-      return discussion.notes[1]
-    end)
-    :map(function(note)
-      return create_sign(note)
-    end)
+      :filter(function(discussion)
+        local first_note = discussion.notes[1]
+        local line_range = first_note.position.line_range
+        return line_range == nil
+      end)
+      :map(function(discussion)
+        return discussion.notes[1]
+      end)
+      :map(function(note)
+        return create_sign(note)
+      end)
 end
 
 ---Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
 ---string for sign name and sign group ( currently there is only one sign needed)
 ---@param discussions Discussion[]
 M.refresh_signs = function(discussions)
-  local filtered_discussions = M.filter_discussions_for_signs_and_diagnostics(discussions)
+  local filtered_discussions = M.filter_discussions(discussions)
   if filtered_discussions == nil then
     vim.diagnostic.reset(diagnostics_namespace)
     return
@@ -87,7 +94,8 @@ M.refresh_signs = function(discussions)
     return
   end
 
-  -- vim.fn.sign_unplace(discussion_sign_name)
+  -- TODO: This is not working, the signs are not being placed
+  vim.fn.sign_unplace(discussion_sign_name)
   vim.fn.sign_placelist(old_signs)
 end
 
@@ -100,9 +108,7 @@ end
 ---Refresh the diagnostics for the currently reviewed file
 ---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
-  -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
-  -- 1-based indexing
-  local filtered_discussions = M.filter_discussions_for_signs_and_diagnostics(discussions)
+  local filtered_discussions = M.filter_discussions(discussions)
   if filtered_discussions == nil then
     vim.diagnostic.reset(diagnostics_namespace)
     return
@@ -121,9 +127,9 @@ M.refresh_diagnostics = function(discussions)
   )
 end
 
----Filter all discussions which are relevant for currently visible signs and diagnostscs.
+---Filter all discussions which are relevant for currently visible signs and diagnostics.
 ---@return Discussion[]?
-M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
+M.filter_discussions = function(all_discussions)
   if type(all_discussions) ~= "table" then
     return
   end
@@ -134,23 +140,23 @@ M.filter_discussions_for_signs_and_diagnostics = function(all_discussions)
   return List.new(all_discussions):filter(function(discussion)
     local first_note = discussion.notes[1]
     return type(first_note.position) == "table"
-      --Do not include unlinked notes
-      and (first_note.position.new_path == file or first_note.position.old_path == file)
-      --Skip resolved discussions if user wants to
-      and not (state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion and first_note.resolvable and first_note.resolved)
-      --Skip discussions from old revisions
-      and not (
-        state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
-        and u.from_iso_format_date_to_timestamp(first_note.created_at)
+        --Do not include unlinked notes
+        and (first_note.position.new_path == file or first_note.position.old_path == file)
+        --Skip resolved discussions if user wants to
+        and
+        not (state.settings.discussion_sign_and_diagnostic.skip_resolved_discussion and first_note.resolvable and first_note.resolved)
+        --Skip discussions from old revisions
+        and not (
+          state.settings.discussion_sign_and_diagnostic.skip_old_revision_discussion
+          and u.from_iso_format_date_to_timestamp(first_note.created_at)
           <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
-      )
+        )
   end)
 end
 
 ---Define signs for discussions if not already defined
 M.setup_signs = function()
   local discussion_sign = state.settings.discussion_sign
-  print(discussion_sign)
   local signs = {
     [discussion_sign_name] = discussion_sign.text,
     [discussion_helper_sign_start] = discussion_sign.helper_signs.start,
@@ -186,27 +192,26 @@ M.parse_old_diagnostics = function(discussions)
   if discussions == nil then
     return {}
   end
-  local old_discussions = List.new(discussions):filter(function(discussion)
-    local first_note = discussion.notes[1]
-    return first_note.position.old_line ~= nil
-  end)
+  local old_discussions = List.new(discussions):filter(place_in_old_sha)
 
+  -- Keep in mind that diagnostic line numbers use 0-based indexing while line numbers use
+  -- 1-based indexing
   local single_line_diagnostics = old_discussions
-    :filter(function(discussion)
-      local first_note = discussion.notes[1]
-      local line_range = first_note.position.line_range
-      return line_range == nil
-    end)
-    :map(function(discussion)
-      local first_note = discussion.notes[1]
-      return {
-        range_info = { lnum = first_note.position.old_line - 1 },
-        discussion = discussion,
-      }
-    end)
-    :map(function(d)
-      return create_diagnostic(d.range_info, d.discussion)
-    end)
+      :filter(function(discussion)
+        local first_note = discussion.notes[1]
+        local line_range = first_note.position.line_range
+        return line_range == nil
+      end)
+      :map(function(discussion)
+        local first_note = discussion.notes[1]
+        return {
+          range_info = { lnum = first_note.position.old_line - 1 },
+          discussion = discussion,
+        }
+      end)
+      :map(function(d)
+        return create_diagnostic(d.range_info, d.discussion)
+      end)
 
   return single_line_diagnostics
 end
