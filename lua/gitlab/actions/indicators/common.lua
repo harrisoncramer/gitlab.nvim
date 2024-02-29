@@ -5,13 +5,6 @@ local List = require("gitlab.utils.list")
 
 local M = {}
 
-M.clear_signs_and_diagnostics = function()
-  local diagnostics = require("gitlab.actions.discussions.diagnostics")
-  local signs = require("gitlab.actions.discussions.signs")
-  vim.fn.sign_unplace(signs.discussion_sign_name)
-  vim.diagnostic.reset(diagnostics.diagnostics_namespace)
-end
-
 ---Filter all discussions which are relevant for currently visible signs and diagnostics.
 ---@return Discussion[]
 M.filter_discussions = function(all_discussions)

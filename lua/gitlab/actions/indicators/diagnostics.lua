@@ -1,6 +1,6 @@
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
-local signs_and_diagnostics = require("gitlab.actions.discussions.signs_and_diagnostics")
+local common = require("gitlab.actions.indicators.common")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local discussion_sign_name = "gitlab_discussion"
@@ -50,7 +50,7 @@ end
 ---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
   vim.diagnostic.reset(diagnostics_namespace)
-  local filtered_discussions = signs_and_diagnostics.filter_discussions(discussions)
+  local filtered_discussions = common.filter_discussions(discussions)
   if filtered_discussions == nil then
     return
   end

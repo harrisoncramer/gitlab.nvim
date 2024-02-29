@@ -1,6 +1,6 @@
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
-local signs_and_diagnostics = require("gitlab.actions.discussions.signs_and_diagnostics")
+local common = require("gitlab.actions.indicators.common")
 local diffview_lib = require("diffview.lib")
 local discussion_helper_sign_start = "gitlab_discussion_helper_start"
 local discussion_helper_sign_mid = "gitlab_discussion_helper_mid"
@@ -50,7 +50,7 @@ end
 ---string for sign name and sign group ( currently there is only one sign needed)
 ---@param discussions Discussion[]
 M.refresh_signs = function(discussions)
-  local filtered_discussions = signs_and_diagnostics.filter_discussions(discussions)
+  local filtered_discussions = common.filter_discussions(discussions)
   local old_signs = parse_old_signs_from_discussions(filtered_discussions)
   if old_signs == nil then
     vim.notify("Could not parse old signs from discussions", vim.log.levels.ERROR)
