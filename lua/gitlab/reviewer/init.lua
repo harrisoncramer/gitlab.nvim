@@ -251,21 +251,41 @@ M.place_sign = function(signs, type)
   vim.fn.sign_placelist(signs)
 end
 
----Set diagnostics in currently reviewed file.
----@param namespace integer namespace for diagnostics
----@param diagnostics table see :h vim.diagnostic.set
----@param type string "new" if diagnostic should be in file after changes else "old"
----@param opts table? see :h vim.diagnostic.set
-M.set_diagnostics = function(namespace, diagnostics, type, opts)
+-- Places signs in new SHA
+---@param signs SignTable[] table of signs. See :h sign_placelist
+M.place_signs_in_new_sha = function(signs, type)
   local view = diffview_lib.get_current_view()
   if not view then
     return
   end
-  if type == "new" and view.cur_layout.b.file.bufnr then
-    vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
-  elseif type == "old" and view.cur_layout.a.file.bufnr then
-    vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
+  for _, sign in ipairs(signs) do
+    sign.buffer = view.cur_layout.b.file.bufnr
   end
+  vim.fn.sign_placelist(signs)
+end
+
+---Set diagnostics in currently new SHA.
+---@param namespace number namespace for diagnostics
+---@param diagnostics table see :h vim.diagnostic.set
+---@param opts table? see :h vim.diagnostic.set
+M.set_diagnostics_in_new_sha = function(namespace, diagnostics, opts)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
+end
+
+---Set diagnostics in old SHA.
+---@param namespace number namespace for diagnostics
+---@param diagnostics table see :h vim.diagnostic.set
+---@param opts table? see :h vim.diagnostic.set
+M.set_diagnostics_in_old_sha = function(namespace, diagnostics, opts)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
 end
 
 ---Diffview exposes events which can be used to setup autocommands.

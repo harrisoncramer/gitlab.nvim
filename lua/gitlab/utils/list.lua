@@ -63,4 +63,13 @@ function List:slice(first, last, step)
   return sliced
 end
 
+function List:values()
+  local result = {}
+  for _, v in ipairs(self) do
+    table.insert(result, v)
+  end
+
+  return result
+end
+
 return List
