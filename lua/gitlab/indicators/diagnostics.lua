@@ -28,10 +28,10 @@ local function create_diagnostic(range_info, discussion)
   local diagnostic = {
     message = message,
     col = 0,
-    severity = state.settings.discussion_diagnostic.severity,
+    severity = state.settings.discussion_signs.severity,
     user_data = { discussion_id = discussion.id, header = discussion_tree.build_note_header(discussion.notes[1]) },
     source = "gitlab",
-    code = state.settings.discussion_diagnostic.code,
+    code = "gitlab.nvim"
   }
   return vim.tbl_deep_extend("force", diagnostic, range_info)
 end
@@ -81,6 +81,7 @@ local set_diagnostics_in_new_sha = function(namespace, diagnostics, opts)
     return
   end
   vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
+  require("gitlab.indicators.signs").set_signs(diagnostics, view.cur_layout.b.file.bufnr)
 end
 
 ---Set diagnostics in old SHA.
@@ -93,28 +94,38 @@ local set_diagnostics_in_old_sha = function(namespace, diagnostics, opts)
     return
   end
   vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
+  require("gitlab.indicators.signs").set_signs(diagnostics, view.cur_layout.a.file.bufnr)
 end
 
 ---Refresh the diagnostics for the currently reviewed file
 ---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
   local ok, err = pcall(function()
+    require("gitlab.indicators.signs").clear_signs()
     M.clear_diagnostics()
     local filtered_discussions = common.filter_placeable_discussions(discussions)
     if filtered_discussions == nil then
       return
     end
 
+    local new_diagnostics = M.parse_new_diagnostics(filtered_discussions)
     set_diagnostics_in_new_sha(
       diagnostics_namespace,
-      M.parse_new_diagnostics(filtered_discussions),
-      state.settings.discussion_diagnostic.display_opts
+      new_diagnostics,
+      {
+        virtual_text = state.settings.discussion_signs.virtual_text,
+        severity_sort = true,
+      }
     )
 
+    local old_diagnostics = M.parse_old_diagnostics(filtered_discussions)
     set_diagnostics_in_old_sha(
       diagnostics_namespace,
-      M.parse_old_diagnostics(filtered_discussions),
-      state.settings.discussion_diagnostic.display_opts
+      old_diagnostics,
+      {
+        virtual_text = state.settings.discussion_signs.virtual_text,
+        severity_sort = true,
+      }
     )
   end)
 

@@ -69,10 +69,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
+          or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
+          or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -114,35 +114,13 @@ M.settings = {
       "labels",
     },
   },
-  discussion_sign_and_diagnostic = {
+  discussion_signs = {
+    enabled = true,
     skip_resolved_discussion = false,
     skip_old_revision_discussion = false,
-  },
-  discussion_sign = {
-    -- See :h sign_define for details about sign configuration.
-    enabled = true,
-    text = "💬",
-    linehl = nil,
-    texthl = nil,
-    culhl = nil,
-    numhl = nil,
-    priority = 20,
-    helper_signs = {
-      -- For multiline comments the helper signs are used to indicate the whole context
-      -- Priority of helper signs is lower than the main sign (-1).
-      enabled = true,
-      start = "↑",
-      mid = "|",
-      ["end"] = "↓",
-    },
-  },
-  discussion_diagnostic = {
-    -- If you want to customize diagnostics for discussions you can make special config
-    -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
-    enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
-    display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
+    icon = "↳",
+    virtual_text = true,
   },
   pipeline = {
     created = "",
