@@ -73,4 +73,37 @@ M.setup_signs = function()
   end
 end
 
+-- Places a sign on the line for currently reviewed file.
+---@param signs SignTable[] table of signs. See :h sign_placelist
+---@param type string "new" if diagnostic should be in file after changes else "old"
+M.place_sign = function(signs, type)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  if type == "new" then
+    for _, sign in ipairs(signs) do
+      sign.buffer = view.cur_layout.b.file.bufnr
+    end
+  elseif type == "old" then
+    for _, sign in ipairs(signs) do
+      sign.buffer = view.cur_layout.a.file.bufnr
+    end
+  end
+  vim.fn.sign_placelist(signs)
+end
+
+-- Places signs in new SHA
+---@param signs SignTable[] table of signs. See :h sign_placelist
+M.place_signs_in_new_sha = function(signs, type)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  for _, sign in ipairs(signs) do
+    sign.buffer = view.cur_layout.b.file.bufnr
+  end
+  vim.fn.sign_placelist(signs)
+end
+
 return M

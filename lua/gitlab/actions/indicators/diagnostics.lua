@@ -1,5 +1,4 @@
-local u = require("gitlab.utils")
-local reviewer = require("gitlab.reviewer")
+local diffview_lib = require("diffview.lib")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local common = require("gitlab.actions.indicators.common")
 local List = require("gitlab.utils.list")
@@ -33,6 +32,31 @@ local function create_diagnostic(range_info, discussion)
   return vim.tbl_deep_extend("force", diagnostic, range_info)
 end
 
+---Set diagnostics in currently new SHA.
+---@param namespace number namespace for diagnostics
+---@param diagnostics table see :h vim.diagnostic.set
+---@param opts table? see :h vim.diagnostic.set
+local set_diagnostics_in_new_sha = function(namespace, diagnostics, opts)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
+end
+
+---Set diagnostics in old SHA.
+---@param namespace number namespace for diagnostics
+---@param diagnostics table see :h vim.diagnostic.set
+---@param opts table? see :h vim.diagnostic.set
+local set_diagnostics_in_old_sha = function(namespace, diagnostics, opts)
+  local view = diffview_lib.get_current_view()
+  if not view then
+    return
+  end
+  vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
+end
+
+
 ---Refresh the diagnostics for the currently reviewed file
 ---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
@@ -42,12 +66,12 @@ M.refresh_diagnostics = function(discussions)
     return
   end
 
-  reviewer.set_diagnostics_in_new_sha(
+  set_diagnostics_in_new_sha(
     diagnostics_namespace,
     M.parse_new_diagnostics(filtered_discussions),
     state.settings.discussion_diagnostic.display_opts
   )
-  reviewer.set_diagnostics_in_old_sha(
+  set_diagnostics_in_old_sha(
     diagnostics_namespace,
     M.parse_old_diagnostics(filtered_discussions),
     state.settings.discussion_diagnostic.display_opts
