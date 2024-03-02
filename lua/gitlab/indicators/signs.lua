@@ -23,6 +23,8 @@ M.set_signs = function(diagnostics, bufnr)
     return
   end
 
+  -- TODO: Detect whether diagnostic is ranged and set helper signs
+
   -- Filter diagnostics from the 'gitlab' source and apply custom signs
   for _, diagnostic in ipairs(diagnostics) do
     local sign_id = string.format("%s__%d", namespace, diagnostic.lnum)
