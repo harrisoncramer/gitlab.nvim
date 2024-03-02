@@ -6,9 +6,12 @@ local state = require("gitlab.state")
 local discussion_sign_name = "gitlab_discussion"
 
 local M = {}
-
 local diagnostics_namespace = vim.api.nvim_create_namespace(discussion_sign_name)
 M.diagnostics_namespace = diagnostics_namespace
+M.discussion_sign_name = discussion_sign_name
+M.clear_diagnostics = function()
+  vim.diagnostic.reset(M.diagnostics_namespace)
+end
 
 ---Takes some range information and data about a discussion
 ---and creates a diagnostic to be placed in the reviewer

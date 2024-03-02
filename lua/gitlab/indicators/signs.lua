@@ -5,9 +5,12 @@ local diffview_lib = require("diffview.lib")
 local discussion_helper_sign_start = "gitlab_discussion_helper_start"
 local discussion_helper_sign_mid = "gitlab_discussion_helper_mid"
 local discussion_helper_sign_end = "gitlab_discussion_helper_end"
+local discussion_sign_name = require("gitlab.indicators.diagnostics").discussion_sign_name
 
 local M = {}
-M.discussion_sign_name = "gitlab_discussion"
+M.clear_signs = function()
+  vim.fn.sign_unplace(discussion_sign_name)
+end
 
 ---Takes in a note and creates a sign to be placed in the reviewer
 ---@param note Note
@@ -15,8 +18,8 @@ M.discussion_sign_name = "gitlab_discussion"
 local function create_sign(note)
   return {
     id = note.id,
-    name = M.discussion_sign_name,
-    group = M.discussion_sign_name,
+    name = discussion_sign_name,
+    group = discussion_sign_name,
     priority = state.settings.discussion_sign.priority,
     buffer = nil,
   }
@@ -47,7 +50,7 @@ M.refresh_signs = function(discussions)
   end
 
   -- TODO: This is not working, the signs are not being placed
-  vim.fn.sign_unplace(M.discussion_sign_name)
+  vim.fn.sign_unplace(discussion_sign_name)
   vim.fn.sign_placelist(old_signs)
 end
 
@@ -55,7 +58,7 @@ end
 M.setup_signs = function()
   local discussion_sign = state.settings.discussion_sign
   local signs = {
-    [M.discussion_sign_name] = discussion_sign.text,
+    [discussion_sign_name] = discussion_sign.text,
     [discussion_helper_sign_start] = discussion_sign.helper_signs.start,
     [discussion_helper_sign_mid] = discussion_sign.helper_signs.mid,
     [discussion_helper_sign_end] = discussion_sign.helper_signs["end"],
