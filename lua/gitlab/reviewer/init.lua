@@ -1,4 +1,8 @@
--- This Module contains all of the reviewer code for diffview
+-- This Module contains all of the reviewer code. This is the code
+-- that parses or interacts with diffview directly, such as opening
+-- and closing, getting metadata about the current view, and registering
+-- callbacks for open/close actions.
+
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
