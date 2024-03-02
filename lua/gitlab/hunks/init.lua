@@ -70,7 +70,7 @@ local line_was_added = function(linnr, hunk, all_diff_output)
       -- index for the line number, we check to see if the line was added.
       local i = 0
       local old_range = (found_hunk.old_range == 0 and found_hunk.old_line ~= 0) and 1 or found_hunk.old_range
-      for hunk_line_index = matching_line_index + old_range + 1, matching_line_index + old_range + found_hunk.new_range, 1 do
+      for hunk_line_index = matching_line_index + old_range, matching_line_index + old_range + found_hunk.new_range, 1 do
         local line_content = all_diff_output[hunk_line_index]
         if (found_hunk.new_line + i) == linnr then
           if string.match(line_content, "^%+") then
