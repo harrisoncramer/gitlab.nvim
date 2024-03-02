@@ -217,9 +217,9 @@ end
 ---@param old_line number|nil
 ---@param new_line number|nil
 ---@param current_file string
----@param is_current_sha boolean
+---@param is_current_sha_focused boolean
 ---@return string|nil
-function M.get_modification_type(old_line, new_line, current_file, is_current_sha)
+function M.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
   local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.target_branch)
   if hunk_and_diff_data.hunks == nil then
     return
@@ -227,7 +227,7 @@ function M.get_modification_type(old_line, new_line, current_file, is_current_sh
 
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
-  return is_current_sha and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
+  return is_current_sha_focused and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
     or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
 end
 

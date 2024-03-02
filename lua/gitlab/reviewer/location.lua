@@ -91,8 +91,8 @@ end
 ---@return number|nil
 function Location:get_line_number_from_new_sha(line)
   local reviewer = require("gitlab.reviewer")
-  local is_current_sha = reviewer.is_current_sha()
-  if is_current_sha then
+  local is_current_sha_focused = reviewer.is_current_sha_focused()
+  if is_current_sha_focused then
     return line
   end
   -- Otherwise we want to get the matching line in the opposite buffer
@@ -106,8 +106,8 @@ end
 ---@return number|nil
 function Location:get_line_number_from_old_sha(line)
   local reviewer = require("gitlab.reviewer")
-  local is_current_sha = reviewer.is_current_sha()
-  if not is_current_sha then
+  local is_current_sha_focused = reviewer.is_current_sha_focused()
+  if not is_current_sha_focused then
     return line
   end
 
@@ -120,7 +120,7 @@ end
 ---@return number|nil
 function Location:get_current_line()
   local reviewer = require("gitlab.reviewer")
-  local win_id = reviewer.is_current_sha() and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
+  local win_id = reviewer.is_current_sha_focused() and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
   if win_id == nil then
     return
   end
@@ -141,8 +141,8 @@ function Location:set_start_range(visual_range)
   end
 
   local reviewer = require("gitlab.reviewer")
-  local is_current_sha = reviewer.is_current_sha()
-  local win_id = is_current_sha and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
+  local is_current_sha_focused = reviewer.is_current_sha_focused()
+  local win_id = is_current_sha_focused and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
   if win_id == nil then
     u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
     return
@@ -164,7 +164,7 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
     return
@@ -205,8 +205,8 @@ function Location:set_end_range(visual_range)
   end
 
   local reviewer = require("gitlab.reviewer")
-  local is_current_sha = reviewer.is_current_sha()
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
+  local is_current_sha_focused = reviewer.is_current_sha_focused()
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
     return
