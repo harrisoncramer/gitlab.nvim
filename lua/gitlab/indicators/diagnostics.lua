@@ -10,7 +10,7 @@ local diagnostics_namespace = vim.api.nvim_create_namespace(discussion_sign_name
 M.diagnostics_namespace = diagnostics_namespace
 M.discussion_sign_name = discussion_sign_name
 M.clear_diagnostics = function()
-  vim.diagnostic.reset(M.diagnostics_namespace)
+  vim.diagnostic.reset(diagnostics_namespace)
 end
 
 ---Takes some range information and data about a discussion
@@ -59,11 +59,10 @@ local set_diagnostics_in_old_sha = function(namespace, diagnostics, opts)
   vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
 end
 
-
 ---Refresh the diagnostics for the currently reviewed file
 ---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
-  vim.diagnostic.reset(diagnostics_namespace)
+  M.clear_diagnostics()
   local filtered_discussions = common.filter_placeable_discussions(discussions)
   if filtered_discussions == nil then
     return
@@ -86,7 +85,12 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_new_diagnostics = function(discussions)
-  return {}
+  return discussions:filter(common.is_new_sha):filter(common.is_single_line):map(function(discussion)
+    local first_note = discussion.notes[1]
+    return create_diagnostic({
+      lnum = first_note.position.new_line - 1,
+    }, discussion)
+  end)
 end
 
 ---Iterates over each discussion and returns a list of tables with sign
@@ -94,12 +98,13 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_old_diagnostics = function(discussions)
-  return List.new(discussions):filter(common.is_old_sha):filter(common.is_single_line):map(function(discussion)
+  local res = discussions:filter(common.is_old_sha):filter(common.is_single_line):map(function(discussion)
     local first_note = discussion.notes[1]
     return create_diagnostic({
       lnum = first_note.position.old_line - 1,
     }, discussion)
   end)
+  return res
 end
 
 return M

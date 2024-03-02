@@ -49,8 +49,7 @@ M.refresh_signs = function(discussions)
     return
   end
 
-  -- TODO: This is not working, the signs are not being placed
-  vim.fn.sign_unplace(discussion_sign_name)
+  M.clear_signs()
   vim.fn.sign_placelist(old_signs)
 end
 

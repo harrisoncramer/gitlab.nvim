@@ -40,6 +40,13 @@ end
 
 ---@param discussion Discussion
 ---@return boolean
+M.is_new_sha = function(discussion)
+  local first_note = discussion.notes[1]
+  return first_note.position.old_line == nil
+end
+
+---@param discussion Discussion
+---@return boolean
 M.is_single_line = function(discussion)
   local first_note = discussion.notes[1]
   local line_range = first_note.position.line_range

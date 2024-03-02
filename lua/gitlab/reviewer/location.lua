@@ -120,7 +120,8 @@ end
 ---@return number|nil
 function Location:get_current_line()
   local reviewer = require("gitlab.reviewer")
-  local win_id = reviewer.is_current_sha_focused() and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
+  local win_id = reviewer.is_current_sha_focused() and self.reviewer_data.new_sha_win_id
+    or self.reviewer_data.old_sha_win_id
   if win_id == nil then
     return
   end
