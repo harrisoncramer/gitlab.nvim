@@ -56,7 +56,7 @@ function List:find(func)
 end
 
 function List:slice(first, last, step)
-  local sliced = {}
+  local sliced = List.new()
   for i = first or 1, last or #self, step or 1 do
     sliced[#sliced + 1] = self[i]
   end
@@ -68,7 +68,6 @@ function List:values()
   for _, v in ipairs(self) do
     table.insert(result, v)
   end
-
   return result
 end
 

@@ -1,3 +1,4 @@
+local u = require("gitlab.utils")
 local diffview_lib = require("diffview.lib")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local common = require("gitlab.indicators.common")
@@ -62,22 +63,28 @@ end
 ---Refresh the diagnostics for the currently reviewed file
 ---@param discussions Discussion[]
 M.refresh_diagnostics = function(discussions)
-  M.clear_diagnostics()
-  local filtered_discussions = common.filter_placeable_discussions(discussions)
-  if filtered_discussions == nil then
-    return
-  end
+  local ok, err = pcall(function()
+    M.clear_diagnostics()
+    local filtered_discussions = common.filter_placeable_discussions(discussions)
+    if filtered_discussions == nil then
+      return
+    end
 
-  set_diagnostics_in_new_sha(
-    diagnostics_namespace,
-    M.parse_new_diagnostics(filtered_discussions),
-    state.settings.discussion_diagnostic.display_opts
-  )
-  set_diagnostics_in_old_sha(
-    diagnostics_namespace,
-    M.parse_old_diagnostics(filtered_discussions),
-    state.settings.discussion_diagnostic.display_opts
-  )
+    set_diagnostics_in_new_sha(
+      diagnostics_namespace,
+      M.parse_new_diagnostics(filtered_discussions),
+      state.settings.discussion_diagnostic.display_opts
+    )
+    set_diagnostics_in_old_sha(
+      diagnostics_namespace,
+      M.parse_old_diagnostics(filtered_discussions),
+      state.settings.discussion_diagnostic.display_opts
+    )
+  end)
+
+  if not ok then
+    u.notify(string.format("Error setting diagnostics: %s", err), vim.log.levels.ERROR)
+  end
 end
 
 ---Iterates over each discussion and returns a list of tables with sign
@@ -85,12 +92,17 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_new_diagnostics = function(discussions)
-  return List.new(discussions):filter(common.is_new_sha):filter(common.is_single_line):map(function(discussion)
+  local new_diagnostics = List.new(discussions):filter(common.is_new_sha)
+  local single_line = new_diagnostics:filter(common.is_single_line):map(function(discussion)
     local first_note = discussion.notes[1]
     return create_diagnostic({
       lnum = first_note.position.new_line - 1,
     }, discussion)
   end)
+  local multi_line = new_diagnostics:filter(common.is_multi_line):map(function(discussion)
+    return {} -- Something
+  end)
+  return u.combine(single_line, multi_line)
 end
 
 ---Iterates over each discussion and returns a list of tables with sign
@@ -98,13 +110,17 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_old_diagnostics = function(discussions)
-  local res = List.new(discussions):filter(common.is_old_sha):filter(common.is_single_line):map(function(discussion)
+  local old_diagnostics = List.new(discussions):filter(common.is_old_sha)
+  local single_line = old_diagnostics:filter(common.is_single_line):map(function(discussion)
     local first_note = discussion.notes[1]
     return create_diagnostic({
       lnum = first_note.position.old_line - 1,
     }, discussion)
   end)
-  return res
+  local multi_line = old_diagnostics:filter(common.is_multi_line):map(function(discussion)
+    return {} -- Something
+  end)
+  return u.combine(single_line, multi_line)
 end
 
 return M
