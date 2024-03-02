@@ -16,10 +16,9 @@ end
 
 ---Takes some range information and data about a discussion
 ---and creates a diagnostic to be placed in the reviewer
----@param range_info table
 ---@param discussion Discussion
 ---@return Diagnostic
-local function create_diagnostic(range_info, discussion)
+local function create_diagnostic(discussion)
   local message = ""
   for _, note in ipairs(discussion.notes) do
     message = message .. discussion_tree.build_note_header(note) .. "\n" .. note.body .. "\n"
@@ -33,6 +32,14 @@ local function create_diagnostic(range_info, discussion)
     source = "gitlab",
     code = state.settings.discussion_diagnostic.code,
   }
+
+  local first_note = discussion.notes[1]
+  local range_info = {
+    lnum = common.is_new_sha(discussion) and
+        first_note.position.new_line - 1
+        or first_note.position.old_line - 1
+  }
+
   return vim.tbl_deep_extend("force", diagnostic, range_info)
 end
 
@@ -93,16 +100,7 @@ end
 ---@return DiagnosticTable[]
 M.parse_new_diagnostics = function(discussions)
   local new_diagnostics = List.new(discussions):filter(common.is_new_sha)
-  local single_line = new_diagnostics:filter(common.is_single_line):map(function(discussion)
-    local first_note = discussion.notes[1]
-    return create_diagnostic({
-      lnum = first_note.position.new_line - 1,
-    }, discussion)
-  end)
-  local multi_line = new_diagnostics:filter(common.is_multi_line):map(function(discussion)
-    return {} -- Something
-  end)
-  return u.combine(single_line, multi_line)
+  return new_diagnostics:map(create_diagnostic)
 end
 
 ---Iterates over each discussion and returns a list of tables with sign
@@ -111,16 +109,7 @@ end
 ---@return DiagnosticTable[]
 M.parse_old_diagnostics = function(discussions)
   local old_diagnostics = List.new(discussions):filter(common.is_old_sha)
-  local single_line = old_diagnostics:filter(common.is_single_line):map(function(discussion)
-    local first_note = discussion.notes[1]
-    return create_diagnostic({
-      lnum = first_note.position.old_line - 1,
-    }, discussion)
-  end)
-  local multi_line = old_diagnostics:filter(common.is_multi_line):map(function(discussion)
-    return {} -- Something
-  end)
-  return u.combine(single_line, multi_line)
+  return old_diagnostics:map(create_diagnostic)
 end
 
 return M
