@@ -1,5 +1,5 @@
-local diagnostics = require("gitlab.actions.indicators.diagnostics")
-local signs = require("gitlab.actions.indicators.signs")
+local diagnostics = require("gitlab.indicators.diagnostics")
+local signs = require("gitlab.indicators.signs")
 
 local M = {}
 M.clear_signs_and_diagnostics = function()

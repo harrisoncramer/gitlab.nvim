@@ -1,6 +1,6 @@
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
-local common = require("gitlab.actions.indicators.common")
+local common = require("gitlab.indicators.common")
 local diffview_lib = require("diffview.lib")
 local discussion_helper_sign_start = "gitlab_discussion_helper_start"
 local discussion_helper_sign_mid = "gitlab_discussion_helper_mid"
