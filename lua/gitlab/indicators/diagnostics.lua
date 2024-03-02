@@ -85,7 +85,7 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_new_diagnostics = function(discussions)
-  return discussions:filter(common.is_new_sha):filter(common.is_single_line):map(function(discussion)
+  return List.new(discussions):filter(common.is_new_sha):filter(common.is_single_line):map(function(discussion)
     local first_note = discussion.notes[1]
     return create_diagnostic({
       lnum = first_note.position.new_line - 1,
@@ -98,7 +98,7 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_old_diagnostics = function(discussions)
-  local res = discussions:filter(common.is_old_sha):filter(common.is_single_line):map(function(discussion)
+  local res = List.new(discussions):filter(common.is_old_sha):filter(common.is_single_line):map(function(discussion)
     local first_note = discussion.notes[1]
     return create_diagnostic({
       lnum = first_note.position.old_line - 1,
