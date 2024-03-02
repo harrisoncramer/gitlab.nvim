@@ -119,8 +119,11 @@ M.settings = {
     skip_resolved_discussion = false,
     skip_old_revision_discussion = false,
     severity = vim.diagnostic.severity.INFO,
-    icon = "↳",
     virtual_text = true,
+    icons = {
+      comment = "→|",
+      range = " |",
+    },
   },
   pipeline = {
     created = "",

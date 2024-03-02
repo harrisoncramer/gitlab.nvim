@@ -14,6 +14,13 @@ M.clear_diagnostics = function()
   vim.diagnostic.reset(diagnostics_namespace)
 end
 
+-- Display options for the diagnostic
+local display_opts = {
+  virtual_text = state.settings.discussion_signs.virtual_text,
+  severity_sort = true,
+  underline = false,
+}
+
 ---Takes some range information and data about a discussion
 ---and creates a diagnostic to be placed in the reviewer
 ---@param range_info table
@@ -31,7 +38,7 @@ local function create_diagnostic(range_info, discussion)
     severity = state.settings.discussion_signs.severity,
     user_data = { discussion_id = discussion.id, header = discussion_tree.build_note_header(discussion.notes[1]) },
     source = "gitlab",
-    code = "gitlab.nvim"
+    code = "gitlab.nvim",
   }
   return vim.tbl_deep_extend("force", diagnostic, range_info)
 end
@@ -109,24 +116,10 @@ M.refresh_diagnostics = function(discussions)
     end
 
     local new_diagnostics = M.parse_new_diagnostics(filtered_discussions)
-    set_diagnostics_in_new_sha(
-      diagnostics_namespace,
-      new_diagnostics,
-      {
-        virtual_text = state.settings.discussion_signs.virtual_text,
-        severity_sort = true,
-      }
-    )
+    set_diagnostics_in_new_sha(diagnostics_namespace, new_diagnostics, display_opts)
 
     local old_diagnostics = M.parse_old_diagnostics(filtered_discussions)
-    set_diagnostics_in_old_sha(
-      diagnostics_namespace,
-      old_diagnostics,
-      {
-        virtual_text = state.settings.discussion_signs.virtual_text,
-        severity_sort = true,
-      }
-    )
+    set_diagnostics_in_old_sha(diagnostics_namespace, old_diagnostics, display_opts)
   end)
 
   if not ok then
