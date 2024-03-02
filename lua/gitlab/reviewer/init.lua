@@ -203,14 +203,6 @@ M.is_current_sha = function()
   return current_win == b_win
 end
 
----Checks whether the lines in the two buffers are the same
----@return boolean
-M.lines_are_same = function(layout, a_cursor, b_cursor)
-  local line_a = u.get_line_content(layout.a.file.bufnr, a_cursor)
-  local line_b = u.get_line_content(layout.b.file.bufnr, b_cursor)
-  return line_a == line_b
-end
-
 ---Get currently shown file
 ---@return string|nil
 M.get_current_file = function()
