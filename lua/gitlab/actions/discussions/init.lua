@@ -13,7 +13,8 @@ local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local diffview_lib = require("diffview.lib")
-local signs = require("gitlab.actions.discussions.signs")
+local signs = require("gitlab.indicators.signs")
+local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
 local emoji = require("gitlab.emoji")
@@ -63,7 +64,8 @@ M.initialize_discussions = function()
     M.modifiable(false)
   end)
   reviewer.set_callback_for_reviewer_leave(function()
-    signs.clear_signs_and_diagnostics()
+    signs.clear_signs()
+    diagnostics.clear_diagnostics()
     M.modifiable(true)
   end)
 end
@@ -92,11 +94,8 @@ end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
-  if state.settings.discussion_sign.enabled then
-    signs.refresh_signs(M.discussions)
-  end
-  if state.settings.discussion_diagnostic.enabled then
-    signs.refresh_diagnostics(M.discussions)
+  if state.settings.discussion_signs.enabled then
+    diagnostics.refresh_diagnostics(M.discussions)
   end
   if M.split_visible then
     local linked_is_focused = M.linked_bufnr == M.focused_bufnr
@@ -168,7 +167,7 @@ M.toggle = function(callback)
     M.focused_bufnr = default_buffer
 
     M.switch_can_edit_bufs(false)
-    winbar.update_winbar(M.discussions, M.unlinked_discussions, default_discussions and "Discussions" or "Notes")
+    M.refresh_view()
 
     vim.api.nvim_set_current_win(current_window)
     if type(callback) == "function" then
@@ -198,7 +197,7 @@ end
 ---Move to the discussion tree at the discussion from diagnostic on current line.
 M.move_to_discussion_tree = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local diagnostics = vim.diagnostic.get(0, { namespace = signs.diagnostics_namespace, lnum = current_line - 1 })
+  local d = vim.diagnostic.get(0, { namespace = diagnostics.diagnostics_namespace, lnum = current_line - 1 })
 
   ---Function used to jump to the discussion tree after the menu selection.
   local jump_after_menu_selection = function(diagnostic)
@@ -229,11 +228,11 @@ M.move_to_discussion_tree = function()
     end
   end
 
-  if #diagnostics == 0 then
+  if #d == 0 then
     u.notify("No diagnostics for this line", vim.log.levels.WARN)
     return
-  elseif #diagnostics > 1 then
-    vim.ui.select(diagnostics, {
+  elseif #d > 1 then
+    vim.ui.select(d, {
       prompt = "Choose discussion to jump to",
       format_item = function(diagnostic)
         return diagnostic.message
@@ -245,7 +244,7 @@ M.move_to_discussion_tree = function()
       jump_after_menu_selection(diagnostic)
     end)
   else
-    jump_after_menu_selection(diagnostics[1])
+    jump_after_menu_selection(d[1])
   end
 end
 
@@ -389,7 +388,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree)
-  local file_name, new_line, old_line, is_undefined_type, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
@@ -403,13 +402,13 @@ M.jump_to_reviewer = function(tree)
     return
   end
 
-  reviewer.jump(file_name, new_line_int, old_line_int, { is_undefined_type = is_undefined_type })
+  reviewer.jump(file_name, new_line_int, old_line_int)
   M.refresh_view()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
 M.jump_to_file = function(tree)
-  local file_name, new_line, old_line, _, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
@@ -911,21 +910,17 @@ end
 
 ---Get note location
 ---@param tree NuiTree
----@return string, string, string, boolean, string?
+---@return string, string, string, string?
 M.get_note_location = function(tree)
   local node = tree:get_node()
   if node == nil then
-    return "", "", "", false, "Could not get node"
+    return "", "", "", "Could not get node"
   end
   local discussion_node = M.get_root_node(tree, node)
   if discussion_node == nil then
-    return "", "", "", false, "Could not get discussion node"
+    return "", "", "", "Could not get discussion node"
   end
-  return discussion_node.file_name,
-    discussion_node.new_line,
-    discussion_node.old_line,
-    discussion_node.undefined_type or false,
-    nil
+  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line, nil
 end
 
 ---@param tree NuiTree

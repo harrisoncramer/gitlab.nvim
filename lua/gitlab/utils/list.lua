@@ -13,8 +13,8 @@ end
 ---@return List<T> @Returns a new list of elements mutated by func
 function List:map(func)
   local result = List.new()
-  for i, v in ipairs(self) do
-    result[i] = func(v)
+  for _, v in ipairs(self) do
+    table.insert(result, func(v))
   end
   return result
 end
@@ -25,9 +25,9 @@ end
 ---@return List<T> @Returns a new list of elements for which func returns true
 function List:filter(func)
   local result = List.new()
-  for i, v in ipairs(self) do
+  for _, v in ipairs(self) do
     if func(v) == true then
-      result[i] = v
+      table.insert(result, v)
     end
   end
   return result
@@ -56,11 +56,19 @@ function List:find(func)
 end
 
 function List:slice(first, last, step)
-  local sliced = {}
+  local sliced = List.new()
   for i = first or 1, last or #self, step or 1 do
     sliced[#sliced + 1] = self[i]
   end
   return sliced
+end
+
+function List:values()
+  local result = {}
+  for _, v in ipairs(self) do
+    table.insert(result, v)
+  end
+  return result
 end
 
 return List

@@ -1,4 +1,9 @@
--- This Module contains all of the reviewer code for diffview
+-- This Module contains all of the reviewer code. This is the code
+-- that parses or interacts with diffview directly, such as opening
+-- and closing, getting metadata about the current view, and registering
+-- callbacks for open/close actions.
+
+local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local git = require("gitlab.git")
@@ -55,6 +60,13 @@ M.open = function()
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end
 
+  if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
+    u.notify(
+      "Diagnostics are now configured settings.discussion_signs, see :h gitlab.signs_and_diagnostics",
+      vim.log.levels.WARN
+    )
+  end
+
   -- Register Diffview hook for close event to set tab page # to nil
   local on_diffview_closed = function(view)
     if view.tabpage == M.tabnr then
@@ -83,8 +95,7 @@ end
 ---@param file_name string
 ---@param new_line number|nil
 ---@param old_line number|nil
----@param opts table
-M.jump = function(file_name, new_line, old_line, opts)
+M.jump = function(file_name, new_line, old_line)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
@@ -96,34 +107,24 @@ M.jump = function(file_name, new_line, old_line, opts)
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
+  if not async_ok then
+    u.notify("Could not load Diffview async", vim.log.levels.ERROR)
+    return
+  end
+
   local files = view.panel:ordered_file_list()
+  local file = List.new(files):find(function(file)
+    return file.path == file_name
+  end)
+  async.await(view:set_file(file))
+
   local layout = view.cur_layout
-  for _, file in ipairs(files) do
-    if file.path == file_name then
-      if not async_ok then
-        u.notify("Could not load Diffview async", vim.log.levels.ERROR)
-        return
-      end
-      async.await(view:set_file(file))
-      -- TODO: Ranged comments on unchanged lines will have both a
-      -- new line and a old line.
-      --
-      -- The same is true when the user leaves a single-line comment
-      -- on an unchanged line in the "b" buffer.
-      --
-      -- We need to distinguish them somehow from
-      -- range comments (which also have this) so that we can know
-      -- which buffer to jump to. Right now, we jump to the wrong
-      -- buffer for ranged comments on unchanged lines.
-      if new_line ~= nil and not opts.is_undefined_type then
-        layout.b:focus()
-        vim.api.nvim_win_set_cursor(0, { new_line, 0 })
-      elseif old_line ~= nil then
-        layout.a:focus()
-        vim.api.nvim_win_set_cursor(0, { old_line, 0 })
-      end
-      break
-    end
+  if old_line == nil then
+    layout.b:focus()
+    vim.api.nvim_win_set_cursor(0, { new_line, 0 })
+  else
+    layout.a:focus()
+    vim.api.nvim_win_set_cursor(0, { old_line, 0 })
   end
 end
 
@@ -168,8 +169,8 @@ M.get_reviewer_data = function()
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
-  local is_current_sha = M.is_current_sha()
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha)
+  local is_current_sha_focused = M.is_current_sha_focused()
+  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type", vim.log.levels.ERROR)
     return
@@ -179,8 +180,8 @@ M.get_reviewer_data = function()
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  local current_bufnr = is_current_sha and layout.b.file.bufnr or layout.a.file.bufnr
-  local opposite_bufnr = is_current_sha and layout.a.file.bufnr or layout.b.file.bufnr
+  local current_bufnr = is_current_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
+  local opposite_bufnr = is_current_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
   local old_sha_win_id = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
@@ -198,7 +199,7 @@ end
 
 ---Return whether user is focused on the new version of the file
 ---@return boolean
-M.is_current_sha = function()
+M.is_current_sha_focused = function()
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
@@ -213,14 +214,6 @@ M.is_current_sha = function()
   return current_win == b_win
 end
 
----Checks whether the lines in the two buffers are the same
----@return boolean
-M.lines_are_same = function(layout, a_cursor, b_cursor)
-  local line_a = u.get_line_content(layout.a.file.bufnr, a_cursor)
-  local line_b = u.get_line_content(layout.b.file.bufnr, b_cursor)
-  return line_a == line_b
-end
-
 ---Get currently shown file
 ---@return string|nil
 M.get_current_file = function()
@@ -229,43 +222,6 @@ M.get_current_file = function()
     return
   end
   return view.panel.cur_file.path
-end
-
--- Places a sign on the line for currently reviewed file.
----@param signs SignTable[] table of signs. See :h sign_placelist
----@param type string "new" if diagnostic should be in file after changes else "old"
-M.place_sign = function(signs, type)
-  local view = diffview_lib.get_current_view()
-  if not view then
-    return
-  end
-  if type == "new" then
-    for _, sign in ipairs(signs) do
-      sign.buffer = view.cur_layout.b.file.bufnr
-    end
-  elseif type == "old" then
-    for _, sign in ipairs(signs) do
-      sign.buffer = view.cur_layout.a.file.bufnr
-    end
-  end
-  vim.fn.sign_placelist(signs)
-end
-
----Set diagnostics in currently reviewed file.
----@param namespace integer namespace for diagnostics
----@param diagnostics table see :h vim.diagnostic.set
----@param type string "new" if diagnostic should be in file after changes else "old"
----@param opts table? see :h vim.diagnostic.set
-M.set_diagnostics = function(namespace, diagnostics, type, opts)
-  local view = diffview_lib.get_current_view()
-  if not view then
-    return
-  end
-  if type == "new" and view.cur_layout.b.file.bufnr then
-    vim.diagnostic.set(namespace, view.cur_layout.b.file.bufnr, diagnostics, opts)
-  elseif type == "old" and view.cur_layout.a.file.bufnr then
-    vim.diagnostic.set(namespace, view.cur_layout.a.file.bufnr, diagnostics, opts)
-  end
 end
 
 ---Diffview exposes events which can be used to setup autocommands.

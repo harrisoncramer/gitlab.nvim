@@ -59,6 +59,21 @@ M.merge = function(defaults, overrides)
   return vim.tbl_deep_extend("force", defaults, overrides)
 end
 
+---Combines two list-like (non associative) tables, keeping values from both
+---@param t1 table The first table
+---@param ... table[] The first table
+---@return table
+M.combine = function(t1, ...)
+  local result = t1
+  local tables = { ... }
+  for _, t in ipairs(tables) do
+    for _, v in ipairs(t) do
+      table.insert(result, v)
+    end
+  end
+  return result
+end
+
 ---Pluralizes the input word, e.g. "3 cows"
 ---@param num integer The count of the item/word
 ---@param word string The word to pluralize

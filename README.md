@@ -170,35 +170,16 @@ require("gitlab").setup({
       "pipeline",
     },
   },
-  discussion_sign_and_diagnostic = {
+  discussion_signs = {
+    enabled = true, -- Show diagnostics for gitlab comments in the reviewer
     skip_resolved_discussion = false,
-    skip_old_revision_discussion = true,
-  },
-  discussion_sign = {
-    -- See :h sign_define for details about sign configuration.
-    enabled = true,
-    text = "💬",
-    linehl = nil,
-    texthl = nil,
-    culhl = nil,
-    numhl = nil,
-    priority = 20, -- Priority of sign, the lower the number the higher the priority
-    helper_signs = {
-      -- For multiline comments the helper signs are used to indicate the whole context
-      -- Priority of helper signs is lower than the main sign (-1).
-      enabled = true,
-      start = "↑",
-      mid = "|",
-      ["end"] = "↓",
-    },
-  },
-  discussion_diagnostic = {
-    -- If you want to customize diagnostics for discussions you can make special config
-    -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
-    enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
-    display_opts = {}, -- see opts in vim.diagnostic.set
+    virtual_text = false,
+    icons = {
+      comment = "→|",
+      range = " |",
+    },
+    skip_old_revision_discussion = false, 
   },
   pipeline = {
     created = "",
@@ -231,7 +212,7 @@ require("gitlab").setup({
       directory = "Directory",
       directory_icon = "DiffviewFolderSign",
       file_name = "Normal",
-      }
+    }
   }
 })
 ```

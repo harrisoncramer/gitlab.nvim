@@ -114,35 +114,16 @@ M.settings = {
       "labels",
     },
   },
-  discussion_sign_and_diagnostic = {
+  discussion_signs = {
+    enabled = true,
     skip_resolved_discussion = false,
-    skip_old_revision_discussion = false,
-  },
-  discussion_sign = {
-    -- See :h sign_define for details about sign configuration.
-    enabled = true,
-    text = "💬",
-    linehl = nil,
-    texthl = nil,
-    culhl = nil,
-    numhl = nil,
-    priority = 20,
-    helper_signs = {
-      -- For multiline comments the helper signs are used to indicate the whole context
-      -- Priority of helper signs is lower than the main sign (-1).
-      enabled = true,
-      start = "↑",
-      mid = "|",
-      ["end"] = "↓",
-    },
-  },
-  discussion_diagnostic = {
-    -- If you want to customize diagnostics for discussions you can make special config
-    -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
-    enabled = true,
     severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
-    display_opts = {}, -- this is dirrectly used as opts in vim.diagnostic.set, see :h vim.diagnostic.config.
+    virtual_text = false,
+    icons = {
+      comment = "→|",
+      range = " |",
+    },
+    skip_old_revision_discussion = false,
   },
   pipeline = {
     created = "",

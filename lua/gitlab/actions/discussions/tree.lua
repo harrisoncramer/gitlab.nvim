@@ -81,7 +81,7 @@ end
 ---Build note header from note.
 ---@param note Note
 ---@return string
-local function build_note_header(note)
+M.build_note_header = function(note)
   return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
 
@@ -112,7 +112,7 @@ local function build_note_body(note, resolve_info)
       or state.settings.discussion_tree.unresolved
   end
 
-  local noteHeader = build_note_header(note) .. " " .. resolve_symbol
+  local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end
