@@ -32,6 +32,12 @@ M.filter_placeable_discussions = function(all_discussions)
   end)
 end
 
+M.parse_line_code = function(line_code)
+  local line_code_regex = "%w+_(%d+)_(%d+)"
+  local old_line, new_line = line_code:match(line_code_regex)
+  return tonumber(old_line), tonumber(new_line)
+end
+
 ---@param discussion Discussion
 ---@return boolean
 M.is_old_sha = function(discussion)

@@ -16,9 +16,10 @@ end
 
 ---Takes some range information and data about a discussion
 ---and creates a diagnostic to be placed in the reviewer
+---@param range_info table
 ---@param discussion Discussion
 ---@return Diagnostic
-local function create_diagnostic(discussion)
+local function create_diagnostic(range_info, discussion)
   local message = ""
   for _, note in ipairs(discussion.notes) do
     message = message .. discussion_tree.build_note_header(note) .. "\n" .. note.body .. "\n"
@@ -32,15 +33,42 @@ local function create_diagnostic(discussion)
     source = "gitlab",
     code = state.settings.discussion_diagnostic.code,
   }
-
-  local first_note = discussion.notes[1]
-  local range_info = {
-    lnum = common.is_new_sha(discussion) and
-        first_note.position.new_line - 1
-        or first_note.position.old_line - 1
-  }
-
   return vim.tbl_deep_extend("force", diagnostic, range_info)
+end
+
+---Creates a single line diagnostic
+---@param discussion Discussion
+---@return Diagnostic
+local create_single_line_diagnostic = function(discussion)
+  local first_note = discussion.notes[1]
+  return create_diagnostic({
+    lnum = first_note.position.new_line - 1,
+  }, discussion)
+end
+
+---Creates a mutli-line line diagnostic
+---@param discussion Discussion
+---@return Diagnostic
+local create_multiline_diagnostic = function(discussion)
+  local first_note = discussion.notes[1]
+  local line_range = first_note.position.line_range
+  if line_range == nil then
+    error("Parsing multi-line comment but note does not contain line range")
+  end
+
+  local start_old_line, start_new_line = common.parse_line_code(line_range.start.line_code)
+
+  if common.is_new_sha(discussion) then
+    return create_diagnostic({
+      lnum = first_note.position.new_line - 1,
+      end_lnum = start_new_line - 1,
+    }, discussion)
+  else
+    return create_diagnostic({
+      lnum = first_note.position.old_line - 1,
+      end_lnum = start_old_line - 1,
+    }, discussion)
+  end
 end
 
 ---Set diagnostics in currently new SHA.
@@ -82,6 +110,7 @@ M.refresh_diagnostics = function(discussions)
       M.parse_new_diagnostics(filtered_discussions),
       state.settings.discussion_diagnostic.display_opts
     )
+
     set_diagnostics_in_old_sha(
       diagnostics_namespace,
       M.parse_old_diagnostics(filtered_discussions),
@@ -100,7 +129,9 @@ end
 ---@return DiagnosticTable[]
 M.parse_new_diagnostics = function(discussions)
   local new_diagnostics = List.new(discussions):filter(common.is_new_sha)
-  return new_diagnostics:map(create_diagnostic)
+  local single_line = new_diagnostics:filter(common.is_single_line):map(create_single_line_diagnostic)
+  local multi_line = new_diagnostics:filter(common.is_multi_line):map(create_multiline_diagnostic)
+  return u.combine(single_line, multi_line)
 end
 
 ---Iterates over each discussion and returns a list of tables with sign
@@ -109,7 +140,9 @@ end
 ---@return DiagnosticTable[]
 M.parse_old_diagnostics = function(discussions)
   local old_diagnostics = List.new(discussions):filter(common.is_old_sha)
-  return old_diagnostics:map(create_diagnostic)
+  local single_line = old_diagnostics:filter(common.is_single_line):map(create_single_line_diagnostic)
+  local multi_line = old_diagnostics:filter(common.is_multi_line):map(create_multiline_diagnostic)
+  return u.combine(single_line, multi_line)
 end
 
 return M
