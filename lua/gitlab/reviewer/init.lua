@@ -60,6 +60,13 @@ M.open = function()
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end
 
+  if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
+    u.notify(
+      "Diagnostics are now configured settings.discussion_signs, see :h gitlab.signs_and_diagnostics",
+      vim.log.levels.WARN
+    )
+  end
+
   -- Register Diffview hook for close event to set tab page # to nil
   local on_diffview_closed = function(view)
     if view.tabpage == M.tabnr then

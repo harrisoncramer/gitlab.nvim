@@ -171,13 +171,6 @@ M.merge_settings = function(args)
     u.notify("The dialogue field has been deprecated, please remove it from your setup function", vim.log.levels.WARN)
   end
 
-  if M.settings.discussion_diagnostic ~= nil or M.settings.discussion_sign ~= nil then
-    u.notify(
-      "The %s and %s have been deprecated, please use discussion_signs instead, see :h gitlab.signs_and_diagnostics",
-      vim.log.levels.WARN
-    )
-  end
-
   if M.settings.reviewer == "delta" then
     u.notify(
       "Delta is no longer a supported reviewer, please use diffview and update your setup function",
