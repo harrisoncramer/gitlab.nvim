@@ -60,13 +60,13 @@ local create_multiline_diagnostic = function(discussion)
 
   if common.is_new_sha(discussion) then
     return create_diagnostic({
-      lnum = first_note.position.new_line - 1,
-      end_lnum = start_new_line - 1,
+      lnum = start_new_line - 1,
+      end_lnum = first_note.position.new_line - 1,
     }, discussion)
   else
     return create_diagnostic({
-      lnum = first_note.position.old_line - 1,
-      end_lnum = start_old_line - 1,
+      lnum = start_old_line - 1,
+      end_lnum = first_note.position.old_line - 1,
     }, discussion)
   end
 end
