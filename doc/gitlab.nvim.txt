@@ -182,6 +182,7 @@ you call this function with no values the defaults will be used:
         resolved = '✓', -- Symbol to show next to resolved discussions
         unresolved = '-', -- Symbol to show next to unresolved discussions
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
+        toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
@@ -203,35 +204,16 @@ you call this function with no values the defaults will be used:
           "labels",
         },
       },
-      discussion_sign_and_diagnostic = {
-        skip_resolved_discussion = false,
-        skip_old_revision_discussion = true,
-      },
-      discussion_sign = {
-        -- See :h sign_define for details about sign configuration.
-        enabled = true,
-        text = "💬",
-        linehl = nil,
-        texthl = nil,
-        culhl = nil,
-        numhl = nil,
-        priority = 20, -- Priority of sign, the lower the number the higher the priority
-        helper_signs = {
-          -- For multiline comments the helper signs are used to indicate the whole context
-          -- Priority of helper signs is lower than the main sign (-1).
-          enabled = true,
-          start = "↑",
-          mid = "|",
-          ["end"] = "↓",
-        },
-      },
-      discussion_diagnostic = {
-        -- If you want to customize diagnostics for discussions you can make special config
-        -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
-        enabled = true,
-        severity = vim.diagnostic.severity.INFO,
-        code = nil, -- see :h diagnostic-structure
-        display_opts = {}, -- see opts in vim.diagnostic.set
+      discussion_signs = {
+	enabled = true,
+	skip_resolved_discussion = false,
+	skip_old_revision_discussion = false,
+	severity = vim.diagnostic.severity.INFO,
+	virtual_text = false,
+	icons = {
+	  comment = "→|",
+	  range = " |",
+	},
       },
       pipeline = {
         created = "",
@@ -385,46 +367,17 @@ These labels will be visible in the summary panel, as long as you provide the
 
 SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 
-By default when reviewing files you will see signs and diagnostics (if enabled
-in configuration). When cursor is on diagnostic line you can view discussion
-thread by using `vim.diagnostic.show`. You can also jump to discussion tree
-where you can reply, edit or delete discussion.
+By default when reviewing files you will see diagnostics in the reviewer 
+for comments that have been added to a review. When the cursor is on 
+diagnostic line you can view discussion thread by using `vim.diagnostic.show`. 
 
+You can also jump to discussion tree for the given comment:
 >lua
     require("gitlab").move_to_discussion_tree_from_diagnostic()
-<
 
-The `discussion_sign` configuration controls the display of signs for
-discussions in the reviewer pane. This allows users to jump to comments in the
-current buffer in the reviewer pane directly. Keep in mind that the highlights
-provided here can be overridden by other highlights (for example from
-`diffview.nvim`).
-
-These diagnostics are configurable in the same way that diagnostics are
-typically configurable in Neovim. For instance, the `severity` key sets the
-diagnostic severity level and should be set to one of
-`vim.diagnostic.severity.ERROR`, `vim.diagnostic.severity.WARN`,
-`vim.diagnostic.severity.INFO`, or `vim.diagnostic.severity.HINT`. The
-`display_opts` option configures the diagnostic display options (this is
-directly used as opts in vim.diagnostic.set). Here you can configure values
-like:
-
-- `virtual_text` - Show virtual text for diagnostics.
-- `underline` - Underline text for diagnostics.
-
-Diagnostics for discussions use the `gitlab_discussion` namespace. See
-|vim.diagnostic.config| and |diagnostic-structure| for more details. Signs and
-diagnostics have common settings in `discussion_sign_and_diagnostic`. This
-allows customizing if discussions that are resolved or no longer relevant
-should still display visual indicators in the editor. The
-`skip_resolved_discussion` Boolean will control visibility of resolved
-discussions, and `skip_old_revision_discussion` whether to show signs and
-diagnostics for discussions on outdated diff revisions.
-
-When interacting with multiline comments, the cursor must be on the "main" line
-of diagnostic, where the `discussion_sign.text` is shown, otherwise
-`vim.diagnostic.show` and `move_to_discussion_tree_from_diagnostic` will not
-work.
+You may skip resolved discussions by toggling `discussion_signs.skip_resolved_discussion`
+in your setup function to true. By default, discussions from this plugin
+are shown at the INFO severity level (see :h vim.diagnostic.severity).
 
 EMOJIS                                       *gitlab.nvim.emojis*
 

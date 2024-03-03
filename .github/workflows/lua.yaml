@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - main
+      - develop
 jobs:
   lua_lint:
     name: Lint Lua 💅

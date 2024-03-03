@@ -81,7 +81,7 @@ end
 ---Build note header from note.
 ---@param note Note
 ---@return string
-local function build_note_header(note)
+M.build_note_header = function(note)
   return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
 
@@ -112,7 +112,7 @@ local function build_note_body(note, resolve_info)
       or state.settings.discussion_tree.unresolved
   end
 
-  local noteHeader = build_note_header(note) .. " " .. resolve_symbol
+  local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end
@@ -158,8 +158,9 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_id
     local root_text_nodes = {}
     local resolvable = false
+    ---@type GitlabLineRange|nil
+    local range = nil
     local resolved = false
-    local undefined_type = false
     local root_new_line = nil
     local root_old_line = nil
     local root_url
@@ -175,16 +176,7 @@ M.add_discussions_to_table = function(items, unlinked)
         resolvable = note.resolvable
         resolved = note.resolved
         root_url = state.INFO.web_url .. "#note_" .. note.id
-
-        -- This appears to be a Gitlab 🐛 where the "type" is returned as an empty string in some cases
-        -- We link these comments to the old file by default
-        if
-          type(note.position) == "table"
-          and note.position.line_range ~= nil
-          and note.position.line_range.start.type == ""
-        then
-          undefined_type = true
-        end
+        range = (type(note.position) == "table" and note.position.line_range or nil)
       else -- Otherwise insert it as a child node...
         local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
@@ -194,6 +186,7 @@ M.add_discussions_to_table = function(items, unlinked)
     -- Creates the first node in the discussion, and attaches children
     local body = u.spread(root_text_nodes, discussion_children)
     local root_node = NuiTree.Node({
+      range = range,
       text = root_text,
       type = "note",
       is_root = true,
@@ -204,7 +197,6 @@ M.add_discussions_to_table = function(items, unlinked)
       old_line = root_old_line,
       resolvable = resolvable,
       resolved = resolved,
-      undefined_type = undefined_type,
       url = root_url,
     }, body)
 

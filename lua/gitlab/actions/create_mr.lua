@@ -5,6 +5,7 @@ local Input = require("nui.input")
 local Popup = require("nui.popup")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local git = require("gitlab.git")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 
@@ -124,7 +125,7 @@ M.pick_target = function(args)
 end
 
 local function make_template_path(t)
-  local base_dir = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
+  local base_dir = git.base_dir()
   return base_dir
     .. state.settings.file_separator
     .. ".gitlab"

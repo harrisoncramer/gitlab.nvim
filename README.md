@@ -150,6 +150,7 @@ require("gitlab").setup({
     resolved = '✓', -- Symbol to show next to resolved discussions
     unresolved = '-', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
+    toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
     winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                  -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
   },
@@ -169,35 +170,16 @@ require("gitlab").setup({
       "pipeline",
     },
   },
-  discussion_sign_and_diagnostic = {
-    skip_resolved_discussion = false,
-    skip_old_revision_discussion = true,
-  },
-  discussion_sign = {
-    -- See :h sign_define for details about sign configuration.
-    enabled = true,
-    text = "💬",
-    linehl = nil,
-    texthl = nil,
-    culhl = nil,
-    numhl = nil,
-    priority = 20, -- Priority of sign, the lower the number the higher the priority
-    helper_signs = {
-      -- For multiline comments the helper signs are used to indicate the whole context
-      -- Priority of helper signs is lower than the main sign (-1).
-      enabled = true,
-      start = "↑",
-      mid = "|",
-      ["end"] = "↓",
+  discussion_signs = {
+    enabled = true, -- Show diagnostics for gitlab comments in the reviewer
+    skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
+    severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
+    virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+    priority = 100, -- Higher will override LSP warnings, etc
+    icons = {
+      comment = "→|",
+      range = " |",
     },
-  },
-  discussion_diagnostic = {
-    -- If you want to customize diagnostics for discussions you can make special config
-    -- for namespace `gitlab_discussion`. See :h vim.diagnostic.config
-    enabled = true,
-    severity = vim.diagnostic.severity.INFO,
-    code = nil, -- see :h diagnostic-structure
-    display_opts = {}, -- see opts in vim.diagnostic.set
   },
   pipeline = {
     created = "",
@@ -230,7 +212,7 @@ require("gitlab").setup({
       directory = "Directory",
       directory_icon = "DiffviewFolderSign",
       file_name = "Normal",
-      }
+    }
   }
 })
 ```

@@ -2,18 +2,19 @@ local M = {}
 
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
 
 M.open = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local keymaps = vim.api.nvim_buf_get_keymap(bufnr, "n")
-  local help_content_lines = {}
-  for _, keymap in ipairs(keymaps) do
+  local help_content_lines = List.new(keymaps):reduce(function(agg, keymap)
     if keymap.desc ~= nil then
       local new_line = string.format("%s: %s", keymap.lhs:gsub(" ", "<space>"), keymap.desc)
-      table.insert(help_content_lines, new_line)
+      table.insert(agg, new_line)
     end
-  end
+    return agg
+  end, {})
   local longest_line = u.get_longest_string(help_content_lines)
   local help_popup =
     Popup(u.create_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines + 3, 60))

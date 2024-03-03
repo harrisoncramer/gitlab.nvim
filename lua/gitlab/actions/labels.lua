@@ -3,6 +3,7 @@
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local M = {}
 
 M.add_label = function()
@@ -14,11 +15,9 @@ M.delete_label = function()
 end
 
 local refresh_label_state = function(labels)
-  local new_labels = ""
-  for _, label in ipairs(labels) do
-    new_labels = new_labels .. "," .. label
-  end
-  state.INFO.labels = new_labels
+  state.INFO.labels = List.new(labels):reduce(function(agg, label)
+    return agg .. "," .. label
+  end, "")
 end
 
 local get_current_labels = function()
@@ -31,11 +30,9 @@ local get_current_labels = function()
 end
 
 local get_all_labels = function()
-  local labels = {}
-  for _, label in ipairs(state.LABELS) do -- How can we use the colors??
-    table.insert(labels, label.Name)
-  end
-  return labels
+  return List.new(state.LABELS):map(function(label)
+    return label.Name
+  end)
 end
 
 M.add_popup = function(type)
