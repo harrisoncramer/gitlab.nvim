@@ -31,8 +31,8 @@ M.set_signs = function(diagnostics, bufnr)
   -- Filter diagnostics from the 'gitlab' source and apply custom signs
   for _, diagnostic in ipairs(diagnostics) do
     ---@type SignTable[]
-    local existing_signs = vim.fn.sign_getplaced(vim.api.nvim_get_current_buf(), { group = "gitlab_discussion" })[1]
-        .signs
+    local existing_signs =
+      vim.fn.sign_getplaced(vim.api.nvim_get_current_buf(), { group = "gitlab_discussion" })[1].signs
 
     local sign_id = string.format("%s__%d", namespace, diagnostic.lnum)
     if diagnostic.end_lnum then

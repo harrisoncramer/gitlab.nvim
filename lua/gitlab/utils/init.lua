@@ -29,6 +29,14 @@ M.get_last_word = function(sentence, divider)
   return words[#words] or ""
 end
 
+---Returns whether a string ends with a substring
+---@param str string
+---@param ending string
+---@return boolean
+M.ends_with = function(str, ending)
+  return ending == "" or str:sub(-#ending) == ending
+end
+
 M.filter = function(input_table, value_to_remove)
   local resultTable = {}
   for _, v in ipairs(input_table) do
