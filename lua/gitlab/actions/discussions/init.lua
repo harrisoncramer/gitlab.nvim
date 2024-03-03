@@ -159,7 +159,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
+      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -395,7 +395,9 @@ local function get_new_line(node)
   ---@type GitlabLineRange|nil
   local range = node.range
   if range == nil then
-    if node.new_line == nil then return nil end
+    if node.new_line == nil then
+      return nil
+    end
     return node.new_line
   end
 
@@ -413,7 +415,6 @@ local function get_old_line(node)
   if range == nil then
     return node.old_line
   end
-
 
   local _, start_old_line = common.parse_line_code(range.start.line_code)
   return start_old_line
@@ -511,8 +512,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-          or (not unlinked and state.discussion_tree.resolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+        or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -521,8 +522,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-          or (not unlinked and state.discussion_tree.unresolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+        or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -654,7 +655,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
