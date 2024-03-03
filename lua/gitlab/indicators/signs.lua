@@ -1,4 +1,6 @@
+local u = require("gitlab.utils")
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local discussion_sign_name = require("gitlab.indicators.diagnostics").discussion_sign_name
 local namespace = require("gitlab.indicators.diagnostics").diagnostics_namespace
 
@@ -28,19 +30,27 @@ M.set_signs = function(diagnostics, bufnr)
 
   -- Filter diagnostics from the 'gitlab' source and apply custom signs
   for _, diagnostic in ipairs(diagnostics) do
-    local sign_id = string.format("%s__%d", namespace, diagnostic.lnum)
+    ---@type SignTable[]
+    local existing_signs = vim.fn.sign_getplaced(vim.api.nvim_get_current_buf(), { group = "gitlab_discussion" })[1]
+        .signs
 
+    local sign_id = string.format("%s__%d", namespace, diagnostic.lnum)
     if diagnostic.end_lnum then
       local linenr = diagnostic.lnum + 1
       while linenr <= diagnostic.end_lnum do
         linenr = linenr + 1
-        vim.fn.sign_place(
-          sign_id,
-          discussion_sign_name,
-          "DiagnosticSign" .. M.severity .. gitlab_range,
-          bufnr,
-          { lnum = linenr, priority = 999998 }
-        )
+        local conflicting_comment_sign = List.new(existing_signs):find(function(sign)
+          return u.ends_with(sign.name, gitlab_comment) and sign.lnum == linenr
+        end)
+        if conflicting_comment_sign == nil then
+          vim.fn.sign_place(
+            sign_id,
+            discussion_sign_name,
+            "DiagnosticSign" .. M.severity .. gitlab_range,
+            bufnr,
+            { lnum = linenr, priority = state.settings.discussion_signs.priority }
+          )
+        end
       end
     end
 
@@ -49,7 +59,7 @@ M.set_signs = function(diagnostics, bufnr)
       discussion_sign_name,
       "DiagnosticSign" .. M.severity .. gitlab_comment,
       bufnr,
-      { lnum = diagnostic.lnum + 1, priority = 999999 }
+      { lnum = diagnostic.lnum + 1, priority = state.settings.discussion_signs.priority }
     )
 
     -- TODO: Detect whether diagnostic is ranged and set helper signs
