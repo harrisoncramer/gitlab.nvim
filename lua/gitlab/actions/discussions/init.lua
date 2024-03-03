@@ -388,7 +388,7 @@ end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree)
-  local file_name, new_line, old_line, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, _, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
@@ -408,13 +408,13 @@ end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
 M.jump_to_file = function(tree)
-  local file_name, new_line, old_line, error = M.get_note_location(tree)
+  local file_name, new_line, old_line, range, error = M.get_note_location(tree)
   if error ~= nil then
     u.notify(error, vim.log.levels.ERROR)
     return
   end
   vim.cmd.tabnew()
-  u.jump_to_file(file_name, (new_line or old_line))
+  u.jump_to_file(file_name, (new_line or old_line), range)
 end
 
 -- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
@@ -910,17 +910,17 @@ end
 
 ---Get note location
 ---@param tree NuiTree
----@return string, string, string, string?
+---@return string, string, string, GitlabLineRange|nil, string?
 M.get_note_location = function(tree)
   local node = tree:get_node()
   if node == nil then
-    return "", "", "", "Could not get node"
+    return "", "", "", nil, "Could not get node"
   end
   local discussion_node = M.get_root_node(tree, node)
   if discussion_node == nil then
-    return "", "", "", "Could not get discussion node"
+    return "", "", "", nil, "Could not get discussion node"
   end
-  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line, nil
+  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line, discussion_node.range, nil
 end
 
 ---@param tree NuiTree
