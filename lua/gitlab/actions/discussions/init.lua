@@ -387,6 +387,10 @@ M.toggle_discussion_resolved = function(tree)
   end)
 end
 
+---Takes a node and returns the line where the note is positioned in the new SHA. If
+---the line is not in the new SHA, returns nil
+---@param node any
+---@return number|nil
 local function get_new_line(node)
   if node.new_line == nil then
     return nil
@@ -405,6 +409,10 @@ local function get_new_line(node)
   return start_new_line
 end
 
+---Takes a node and returns the line where the note is positioned in the old SHA. If
+---the line is not in the old SHA, returns nil
+---@param node any
+---@return number|nil
 local function get_old_line(node)
   if node.old_line == nil then
     return nil
