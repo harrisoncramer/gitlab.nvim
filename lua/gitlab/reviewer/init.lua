@@ -62,7 +62,7 @@ M.open = function()
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
     u.notify(
-      "Diagnostics are now configured settings.discussion_signs, see :h gitlab.signs_and_diagnostics",
+      "Diagnostics are now configured as settings.discussion_signs, see :h gitlab.nvim.signs-and-diagnostics",
       vim.log.levels.WARN
     )
   end
