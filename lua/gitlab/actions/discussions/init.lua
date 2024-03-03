@@ -13,6 +13,7 @@ local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local diffview_lib = require("diffview.lib")
+local common = require("gitlab.indicators.common")
 local signs = require("gitlab.indicators.signs")
 local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
@@ -158,7 +159,7 @@ M.toggle = function(callback)
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
+      { M.linked_bufnr,   M.discussions,          "No Discussions for this MR" },
       { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
     })
 
@@ -387,11 +388,35 @@ M.toggle_discussion_resolved = function(tree)
 end
 
 local function get_new_line(node)
-  return 1
+  if node.new_line == nil then
+    return nil
+  end
+
+  ---@type GitlabLineRange|nil
+  local range = node.range
+  if range == nil then
+    if node.new_line == nil then return nil end
+    return node.new_line
+  end
+
+  local start_new_line, _ = common.parse_line_code(range.start.line_code)
+  return start_new_line
 end
 
 local function get_old_line(node)
-  return 1
+  if node.old_line == nil then
+    return nil
+  end
+
+  ---@type GitlabLineRange|nil
+  local range = node.range
+  if range == nil then
+    return node.old_line
+  end
+
+
+  local _, start_old_line = common.parse_line_code(range.start.line_code)
+  return start_old_line
 end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
@@ -415,7 +440,20 @@ M.jump_to_file = function(tree)
     return
   end
   vim.cmd.tabnew()
-  u.jump_to_file(root_node.file_name, get_new_line(root_node) or get_old_line(root_node))
+  local line_number = get_new_line(root_node) or get_old_line(root_node)
+  if line_number == nil then
+    line_number = 1
+  end
+  local bufnr = vim.fn.bufnr(root_node.filename)
+  if bufnr ~= -1 then
+    vim.cmd("buffer " .. bufnr)
+    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+    return
+  end
+
+  -- If buffer is not already open, open it
+  vim.cmd("edit " .. root_node.filename)
+  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
 -- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
@@ -473,8 +511,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-        or (not unlinked and state.discussion_tree.resolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+          or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -483,8 +521,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-        or (not unlinked and state.discussion_tree.unresolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+          or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -616,7 +654,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree

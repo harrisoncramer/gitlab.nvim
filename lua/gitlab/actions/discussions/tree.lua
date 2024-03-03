@@ -109,7 +109,7 @@ local function build_note_body(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-      or state.settings.discussion_tree.unresolved
+        or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
