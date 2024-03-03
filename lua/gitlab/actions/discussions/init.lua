@@ -13,6 +13,7 @@ local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local diffview_lib = require("diffview.lib")
+local common = require("gitlab.indicators.common")
 local signs = require("gitlab.indicators.signs")
 local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
@@ -386,35 +387,82 @@ M.toggle_discussion_resolved = function(tree)
   end)
 end
 
+---Takes a node and returns the line where the note is positioned in the new SHA. If
+---the line is not in the new SHA, returns nil
+---@param node any
+---@return number|nil
+local function get_new_line(node)
+  if node.new_line == nil then
+    return nil
+  end
+
+  ---@type GitlabLineRange|nil
+  local range = node.range
+  if range == nil then
+    if node.new_line == nil then
+      return nil
+    end
+    return node.new_line
+  end
+
+  local start_new_line, _ = common.parse_line_code(range.start.line_code)
+  return start_new_line
+end
+
+---Takes a node and returns the line where the note is positioned in the old SHA. If
+---the line is not in the old SHA, returns nil
+---@param node any
+---@return number|nil
+local function get_old_line(node)
+  if node.old_line == nil then
+    return nil
+  end
+
+  ---@type GitlabLineRange|nil
+  local range = node.range
+  if range == nil then
+    return node.old_line
+  end
+
+  local _, start_old_line = common.parse_line_code(range.start.line_code)
+  return start_old_line
+end
+
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree)
-  local file_name, new_line, old_line, error = M.get_note_location(tree)
-  if error ~= nil then
-    u.notify(error, vim.log.levels.ERROR)
+  local node = tree:get_node()
+  local root_node = M.get_root_node(tree, node)
+  if root_node == nil then
+    u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
-
-  local new_line_int = tonumber(new_line)
-  local old_line_int = tonumber(old_line)
-
-  if new_line_int == nil and old_line_int == nil then
-    u.notify("Could not get new or old line", vim.log.levels.ERROR)
-    return
-  end
-
-  reviewer.jump(file_name, new_line_int, old_line_int)
+  reviewer.jump(root_node.file_name, get_new_line(root_node), get_old_line(root_node))
   M.refresh_view()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
 M.jump_to_file = function(tree)
-  local file_name, new_line, old_line, error = M.get_note_location(tree)
-  if error ~= nil then
-    u.notify(error, vim.log.levels.ERROR)
+  local node = tree:get_node()
+  local root_node = M.get_root_node(tree, node)
+  if root_node == nil then
+    u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
   vim.cmd.tabnew()
-  u.jump_to_file(file_name, (new_line or old_line))
+  local line_number = get_new_line(root_node) or get_old_line(root_node)
+  if line_number == nil then
+    line_number = 1
+  end
+  local bufnr = vim.fn.bufnr(root_node.filename)
+  if bufnr ~= -1 then
+    vim.cmd("buffer " .. bufnr)
+    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+    return
+  end
+
+  -- If buffer is not already open, open it
+  vim.cmd("edit " .. root_node.filename)
+  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
 -- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
@@ -906,21 +954,6 @@ M.add_reply_to_tree = function(tree, note, discussion_id)
   note_node:expand()
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
-end
-
----Get note location
----@param tree NuiTree
----@return string, string, string, string?
-M.get_note_location = function(tree)
-  local node = tree:get_node()
-  if node == nil then
-    return "", "", "", "Could not get node"
-  end
-  local discussion_node = M.get_root_node(tree, node)
-  if discussion_node == nil then
-    return "", "", "", "Could not get discussion node"
-  end
-  return discussion_node.file_name, discussion_node.new_line, discussion_node.old_line, nil
 end
 
 ---@param tree NuiTree

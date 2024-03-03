@@ -124,6 +124,7 @@ M.settings = {
       range = " |",
     },
     skip_old_revision_discussion = false,
+    priority = 100,
   },
   pipeline = {
     created = "",

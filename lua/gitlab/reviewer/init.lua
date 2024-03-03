@@ -8,7 +8,7 @@ local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local git = require("gitlab.git")
 local hunks = require("gitlab.hunks")
-local async_ok, async = pcall(require, "diffview.async")
+local async = require("diffview.async")
 local diffview_lib = require("diffview.lib")
 
 local M = {
@@ -105,10 +105,6 @@ M.jump = function(file_name, new_line, old_line)
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
-    return
-  end
-  if not async_ok then
-    u.notify("Could not load Diffview async", vim.log.levels.ERROR)
     return
   end
 
