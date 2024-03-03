@@ -24,7 +24,7 @@ local severity_map = {
 ---@param diagnostics Diagnostic[]
 ---@param bufnr number
 M.set_signs = function(diagnostics, bufnr)
-  if not state.settings.discussion_sign.enabled then
+  if not state.settings.discussion_signs.enabled then
     return
   end
 
