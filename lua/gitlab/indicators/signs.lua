@@ -32,7 +32,7 @@ M.set_signs = function(diagnostics, bufnr)
 
     if diagnostic.end_lnum then
       local linenr = diagnostic.lnum + 1
-      while linenr < diagnostic.end_lnum do
+      while linenr <= diagnostic.end_lnum do
         linenr = linenr + 1
         vim.fn.sign_place(
           sign_id,
