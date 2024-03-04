@@ -153,13 +153,11 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     line_range = location_data.line_range,
   }
 
-  vim.print(body)
-
-  -- job.run_job("/mr/comment", "POST", body, function(data)
-  --   u.notify("Comment created!", vim.log.levels.INFO)
-  --   discussions.add_discussion({ data = data, unlinked = false })
-  --   discussions.refresh()
-  -- end)
+  job.run_job("/mr/comment", "POST", body, function(data)
+    u.notify("Comment created!", vim.log.levels.INFO)
+    discussions.add_discussion({ data = data, unlinked = false })
+    discussions.refresh()
+  end)
 end
 
 return M

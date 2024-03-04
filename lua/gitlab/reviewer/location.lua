@@ -167,8 +167,6 @@ function Location:set_start_range(visual_range)
 
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
 
-  print(string.format("Modification type of start range is %s", modification_type))
-
   if modification_type == nil then
     u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
     return
@@ -211,8 +209,6 @@ function Location:set_end_range(visual_range)
   local reviewer = require("gitlab.reviewer")
   local is_current_sha_focused = reviewer.is_current_sha_focused()
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
-
-  print(string.format("Modification type of end range is %s", modification_type))
 
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
