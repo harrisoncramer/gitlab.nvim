@@ -64,16 +64,19 @@ local create_multiline_diagnostic = function(discussion)
   end
 
   local start_old_line, start_new_line = common.parse_line_code(line_range.start.line_code)
+  local end_old_line, end_new_line = common.parse_line_code(line_range["end"].line_code)
 
   if common.is_new_sha(discussion) then
+    -- TODO: Fix when making ranged comments in the new buffer that span
+    -- from an added line to an unmodified line
     return create_diagnostic({
       lnum = start_new_line - 1,
-      end_lnum = first_note.position.new_line - 1,
+      end_lnum = end_new_line - 1,
     }, discussion)
   else
     return create_diagnostic({
       lnum = start_old_line - 1,
-      end_lnum = first_note.position.old_line - 1,
+      end_lnum = end_old_line - 1,
     }, discussion)
   end
 end
