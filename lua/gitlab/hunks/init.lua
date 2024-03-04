@@ -64,20 +64,25 @@ local line_was_added = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = M.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-      -- For added lines, we only want to iterate over the part of the diff that has has new lines,
-      -- so we skip over the old range. We then keep track of the increment to the original new line index,
-      -- and iterate until we reach the end of the total range of this hunk. If we arrive at the matching
-      -- index for the line number, we check to see if the line was added.
-      local i = 0
-      local old_range = (found_hunk.old_range == 0 and found_hunk.old_line ~= 0) and 1 or found_hunk.old_range
-      for hunk_line_index = matching_line_index + old_range, matching_line_index + old_range + found_hunk.new_range, 1 do
-        local line_content = all_diff_output[hunk_line_index]
-        if (found_hunk.new_line + i) == linnr then
-          if string.match(line_content, "^%+") then
-            return true
-          end
+      -- Parse the lines from the hunk and return only the added lines
+      local hunk_lines = {}
+      local i = 1
+      local line_content = all_diff_output[matching_line_index + i]
+      while line_content ~= nil and line_content:sub(1, 2) ~= "@@" do
+        if string.match(line_content, "^%+") then
+          table.insert(hunk_lines, line_content)
         end
         i = i + 1
+        line_content = all_diff_output[matching_line_index + i]
+      end
+
+      -- We are only looking at added lines in the changed hunk to see if their index
+      -- matches the index of a line that was added
+      local starting_index = found_hunk.new_line - 1 -- The "+j" will add one
+      for j, _ in ipairs(hunk_lines) do
+        if (starting_index + j) == linnr then
+          return true
+        end
       end
     end
   end
@@ -274,7 +279,7 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_numbe
   end
 
   -- TODO: Possibly handle lines that are out of range in the new files
-  return line_number
+  return line_number + net_change + 1
 end
 
 return M
