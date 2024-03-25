@@ -39,46 +39,6 @@ M.reset_state = function()
   M.mr.description = ""
 end
 
-local title_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Title",
-    },
-  },
-}
-
-local target_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Target branch",
-    },
-  },
-}
-
-local description_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  enter = true,
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Description",
-    },
-  },
-}
-
 ---1. If the user has already begun writing an MR, prompt them to
 --- continue working on it.
 ---@param args? Args
@@ -284,11 +244,11 @@ M.create_mr = function()
 end
 
 M.create_layout = function()
-  local title_popup = Popup(title_popup_settings)
+  local title_popup = Popup(u.create_box_popup_state("Title", false))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(description_popup_settings)
+  local description_popup = Popup(u.create_box_popup_state("Description", true))
   M.description_bufnr = description_popup.bufnr
-  local target_branch_popup = Popup(target_popup_settings)
+  local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false))
   M.target_bufnr = target_branch_popup.bufnr
 
   local internal_layout

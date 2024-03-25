@@ -17,43 +17,6 @@ local M = {
   description_bufnr = nil,
 }
 
-local title_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-  },
-}
-
-local details_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Details",
-    },
-  },
-}
-
-local description_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  enter = true,
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Description",
-    },
-  },
-}
-
 -- The function will render a popup containing the MR title and MR description, and optionally,
 -- any additional metadata that the user wants. The title and description are editable and
 -- can be changed via the local action keybinding, which also closes the popup
@@ -196,15 +159,15 @@ M.edit_summary = function()
 end
 
 M.create_layout = function(info_lines)
-  local title_popup = Popup(title_popup_settings)
+  local title_popup = Popup(u.create_box_popup_state(nil, false))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(description_popup_settings)
+  local description_popup = Popup(u.create_box_popup_state("Description", true))
   M.description_bufnr = description_popup.bufnr
   local details_popup
 
   local internal_layout
   if state.settings.info.enabled then
-    details_popup = Popup(details_popup_settings)
+    details_popup = Popup(u.create_box_popup_state("Details", false))
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({

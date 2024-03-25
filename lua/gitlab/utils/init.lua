@@ -431,6 +431,27 @@ M.create_popup_state = function(title, settings, width, height, zindex)
   return view_opts
 end
 
+---Create view_opts for Box popups used inside popup Layouts
+---@param title string The string to appear on top of the popup
+---@param enter boolean Whether the pop should be focused after creation
+---@return table
+M.create_box_popup_state = function(title, enter)
+  local settings = require("gitlab.state").settings.popup
+  return {
+    buf_options = {
+      filetype = "markdown",
+    },
+    enter = enter or false,
+    focusable = true,
+    border = {
+      style = settings.border,
+      text = {
+        top = title,
+      },
+    },
+  }
+end
+
 M.read_file = function(file_path, opts)
   local file = io.open(file_path, "r")
   if file == nil then
