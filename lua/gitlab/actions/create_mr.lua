@@ -97,6 +97,11 @@ end
 ---3. Pick template (if applicable). This is used as the description
 ---@param mr Mr
 M.pick_template = function(mr)
+  if mr.description ~= nil then
+    M.add_title(mr)
+    return
+  end
+
   local template_file = mr.template_file or state.settings.create_mr.template_file
   if template_file ~= nil then
     mr.description = u.read_file(make_template_path(template_file))
@@ -127,6 +132,11 @@ end
 ---4. Prompts the user for the title of the MR
 ---@param mr Mr
 M.add_title = function(mr)
+  if mr.title ~= nil then
+    M.open_confirmation_popup(mr)
+    return
+  end
+
   local input = Input({
     position = "50%",
     relative = "editor",
