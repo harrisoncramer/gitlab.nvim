@@ -13,9 +13,6 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 ---@field target? string
 ---@field title? string
 ---@field description? string
-
----@class Args
----@field target? string
 ---@field template_file? string
 
 local M = {
@@ -41,7 +38,7 @@ end
 
 ---1. If the user has already begun writing an MR, prompt them to
 --- continue working on it.
----@param args? Args
+---@param args? Mr
 M.start = function(args)
   if M.started then
     vim.ui.select({ "Yes", "No" }, { prompt = "Continue your previous MR?" }, function(choice)
@@ -59,18 +56,19 @@ M.start = function(args)
 end
 
 ---2. Pick the target branch
----@param args? Args
-M.pick_target = function(args)
-  if not args then
-    args = {}
+---@param mr? Mr
+M.pick_target = function(mr)
+  if not mr then
+    mr = {}
   end
-  if args.target ~= nil then
-    M.pick_template({ target = args.target }, args)
+  if mr.target ~= nil then
+    M.pick_template(mr)
     return
   end
 
   if state.settings.create_mr.target ~= nil then
-    M.pick_template({ target = state.settings.create_mr.target }, args)
+    mr.target = state.settings.create_mr.target
+    M.pick_template(mr)
     return
   end
 
@@ -79,7 +77,8 @@ M.pick_target = function(args)
     prompt = "Choose target branch for merge",
   }, function(choice)
     if choice then
-      M.pick_template({ target = choice }, args)
+      mr.target = choice
+      M.pick_template(mr)
     end
   end)
 end
@@ -97,22 +96,17 @@ end
 
 ---3. Pick template (if applicable). This is used as the description
 ---@param mr Mr
----@param args Args
-M.pick_template = function(mr, args)
-  if not args then
-    args = {}
-  end
-
-  local template_file = args.template_file or state.settings.create_mr.template_file
+M.pick_template = function(mr)
+  local template_file = mr.template_file or state.settings.create_mr.template_file
   if template_file ~= nil then
-    local description = u.read_file(make_template_path(template_file))
-    M.add_title({ target = mr.target, description = description })
+    mr.description = u.read_file(make_template_path(template_file))
+    M.add_title(mr)
     return
   end
 
   local all_templates = u.list_files_in_folder(".gitlab" .. state.settings.file_separator .. "merge_request_templates")
   if all_templates == nil then
-    M.add_title({ target = mr.target })
+    M.add_title(mr)
     return
   end
 
@@ -123,12 +117,10 @@ M.pick_template = function(mr, args)
   vim.ui.select(opts, {
     prompt = "Choose Template",
   }, function(choice)
-    if choice then
-      local description = u.read_file(make_template_path(choice))
-      M.add_title({ target = mr.target, description = description })
-    elseif choice == "Blank Template" then
-      M.add_title({ target = mr.target })
+    if choice and choice ~= "Blank Template" then
+      mr.description = u.read_file(make_template_path(choice))
     end
+    M.add_title(mr)
   end)
 end
 
