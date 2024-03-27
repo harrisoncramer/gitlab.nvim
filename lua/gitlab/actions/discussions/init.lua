@@ -398,11 +398,11 @@ local function get_new_line(node)
 
   ---@type GitlabLineRange|nil
   local range = node.range
-  if range == nil then
-    if node.new_line == nil then
+  if range ~= nil then
+    if range.start.new_line == nil then
       return nil
     end
-    return node.new_line
+    return range.start.new_line
   end
 
   local start_new_line, _ = common.parse_line_code(range.start.line_code)
