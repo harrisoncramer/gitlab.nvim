@@ -405,7 +405,7 @@ local function get_new_line(node)
     return range.start.new_line
   end
 
-  local start_new_line, _ = common.parse_line_code(range.start.line_code)
+  local _, start_new_line = common.parse_line_code(range.start.line_code)
   return start_new_line
 end
 
