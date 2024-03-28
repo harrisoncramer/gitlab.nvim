@@ -62,7 +62,7 @@ M.create_comment_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local range = end_line - start_line
   local backticks = "```"
-  local selected_lines = reviewer.get_lines(start_line, end_line)
+  local selected_lines = u.get_lines(start_line, end_line)
 
   for line in ipairs(selected_lines) do
     if string.match(line, "^```$") then
