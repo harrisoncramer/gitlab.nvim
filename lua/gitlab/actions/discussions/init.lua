@@ -398,14 +398,14 @@ local function get_new_line(node)
 
   ---@type GitlabLineRange|nil
   local range = node.range
-  if range == nil then
-    if node.new_line == nil then
+  if range ~= nil then
+    if range.start.new_line == nil then
       return nil
     end
-    return node.new_line
+    return range.start.new_line
   end
 
-  local start_new_line, _ = common.parse_line_code(range.start.line_code)
+  local _, start_new_line = common.parse_line_code(range.start.line_code)
   return start_new_line
 end
 
@@ -453,7 +453,7 @@ M.jump_to_file = function(tree)
   if line_number == nil then
     line_number = 1
   end
-  local bufnr = vim.fn.bufnr(root_node.filename)
+  local bufnr = vim.fn.bufnr(root_node.file_name)
   if bufnr ~= -1 then
     vim.cmd("buffer " .. bufnr)
     vim.api.nvim_win_set_cursor(0, { line_number, 0 })
@@ -461,7 +461,7 @@ M.jump_to_file = function(tree)
   end
 
   -- If buffer is not already open, open it
-  vim.cmd("edit " .. root_node.filename)
+  vim.cmd("edit " .. root_node.file_name)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
