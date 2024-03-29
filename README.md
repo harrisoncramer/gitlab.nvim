@@ -92,6 +92,8 @@ gitlab_url=https://my-personal-gitlab-instance.com/
 
 The plugin will look for the `.gitlab.nvim` file in the root of the current project by default. However, you may provide a custom path to the configuration file via the `config_path` option. This must be an absolute path to the directory that holds your `.gitlab.nvim` file.
 
+For more settings, please see `:h gitlab.nvim.connecting-to-gitlab`
+
 ## Configuring the Plugin
 
 Here is the default setup function. All of these values are optional, and if you call this function with no values the defaults will be used:
@@ -107,6 +109,9 @@ require("gitlab").setup({
     diffview = {
       imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
     },
+  },
+  connection_settings = {
+    insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
   },
   help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying

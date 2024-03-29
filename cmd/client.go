@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,10 @@ import (
 type DebugSettings struct {
 	GoRequest  bool `json:"go_request"`
 	GoResponse bool `json:"go_response"`
+}
+
+type ConnectionOptions struct {
+	Insecure bool `json:"insecure"`
 }
 
 type ProjectInfo struct {
@@ -40,8 +45,8 @@ type Client struct {
 /* initGitlabClient parses and validates the project settings and initializes the Gitlab client. */
 func initGitlabClient() (error, *Client) {
 
-	if len(os.Args) < 6 {
-		return errors.New("Must provide gitlab url, port, auth token, debug settings, and log path"), nil
+	if len(os.Args) < 7 {
+		return errors.New("Must provide gitlab url, port, auth token, debug settings, log path, and connection settings"), nil
 	}
 
 	gitlabInstance := os.Args[1]
@@ -62,6 +67,14 @@ func initGitlabClient() (error, *Client) {
 		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings), nil
 	}
 
+	/* Parse connection options */
+	connectionSettings := os.Args[6]
+	var connectionObject ConnectionOptions
+	err = json.Unmarshal([]byte(connectionSettings), &connectionObject)
+	if err != nil {
+		return fmt.Errorf("Could not parse connection settings: %w, %s", err, connectionSettings), nil
+	}
+
 	var apiCustUrl = fmt.Sprintf(gitlabInstance + "/api/v4")
 
 	gitlabOptions := []gitlab.ClientOptionFunc{
@@ -75,6 +88,16 @@ func initGitlabClient() (error, *Client) {
 	if debugObject.GoResponse {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
 	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: connectionObject.Insecure,
+		},
+	}
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.HTTPClient.Transport = tr
+	gitlabOptions = append(gitlabOptions, gitlab.WithHTTPClient(retryClient.HTTPClient))
 
 	client, err := gitlab.NewClient(authToken, gitlabOptions...)
 

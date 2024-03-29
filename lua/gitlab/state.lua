@@ -20,6 +20,9 @@ M.settings = {
       imply_local = false,
     },
   },
+  connection_settings = {
+    insecure = true,
+  },
   attachment_dir = "",
   help = "g?",
   popup = {
