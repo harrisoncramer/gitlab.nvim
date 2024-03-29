@@ -13,19 +13,16 @@ M.start = function(callback)
   local port = state.settings.port or empty_port
   local parsed_port = nil
   local callback_called = false
-  local command = state.settings.bin
-    .. " "
-    .. state.settings.gitlab_url
-    .. " "
-    .. port
-    .. " "
-    .. state.settings.auth_token
-    .. " "
-    .. "'"
-    .. vim.json.encode(state.settings.debug)
-    .. "'"
-    .. " "
-    .. state.settings.log_path
+  local command = string.format(
+    "%s %s %s %s '%s' %s '%s'",
+    state.settings.bin,
+    state.settings.gitlab_url,
+    port,
+    state.settings.auth_token,
+    vim.json.encode(state.settings.debug),
+    state.settings.log_path,
+    vim.json.encode(state.settings.connection_settings)
+  )
 
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(_, data)
@@ -90,7 +87,7 @@ M.build = function(override)
   end
 
   local cmd = u.is_windows() and "cd %s\\cmd && go build -o bin.exe && move bin.exe ..\\"
-    or "cd %s/cmd && go build -o bin && mv bin ../bin"
+      or "cd %s/cmd && go build -o bin && mv bin ../bin"
 
   local command = string.format(cmd, state.settings.bin_path)
   local null = u.is_windows() and " >NUL" or " > /dev/null"
