@@ -27,6 +27,8 @@ func TestCreateMr(t *testing.T) {
 			Title:        "Some title",
 			Description:  "Some description",
 			TargetBranch: "main",
+			DeleteBranch: false,
+			Squash:       false,
 		}
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
@@ -48,6 +50,8 @@ func TestCreateMr(t *testing.T) {
 			Title:        "Some title",
 			Description:  "Some description",
 			TargetBranch: "main",
+			DeleteBranch: false,
+			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
 		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFnErr})
@@ -60,6 +64,8 @@ func TestCreateMr(t *testing.T) {
 			Title:        "Some title",
 			Description:  "Some description",
 			TargetBranch: "main",
+			DeleteBranch: false,
+			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
 		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFnNon200})
@@ -72,6 +78,8 @@ func TestCreateMr(t *testing.T) {
 			Title:        "",
 			Description:  "Some description",
 			TargetBranch: "main",
+			DeleteBranch: false,
+			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
 		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFn})
@@ -86,6 +94,8 @@ func TestCreateMr(t *testing.T) {
 			Title:        "Some title",
 			Description:  "Some description",
 			TargetBranch: "",
+			DeleteBranch: false,
+			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
 		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFn})

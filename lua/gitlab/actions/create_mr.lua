@@ -14,6 +14,8 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 ---@field title? string
 ---@field description? string
 ---@field template_file? string
+---@field delete_branch boolean?
+---@field squash boolean?
 
 local M = {
   started = false,
@@ -162,8 +164,8 @@ M.add_title = function(mr)
 end
 
 ---5. Show the final popup.
----The function will render a popup containing the MR title and MR description, and
----target branch. The title and description are editable.
+---The function will render a popup containing the MR title and MR description,
+---target branch, and the "delete_branch" and "squash" options. All fields are editable.
 ---@param mr Mr
 M.open_confirmation_popup = function(mr)
   M.started = true
@@ -173,7 +175,7 @@ M.open_confirmation_popup = function(mr)
     return
   end
 
-  local layout, title_popup, description_popup, target_popup = M.create_layout()
+  local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup = M.create_layout()
 
   M.layout = layout
   M.layout_buf = layout.bufnr
@@ -182,11 +184,15 @@ M.open_confirmation_popup = function(mr)
   local function exit()
     local title = vim.fn.trim(u.get_buffer_text(M.title_bufnr))
     local description = u.get_buffer_text(M.description_bufnr)
-    local target = vim.fn.trim(u.get_buffer_text(target_popup.bufnr))
+    local target = vim.fn.trim(u.get_buffer_text(M.target_bufnr))
+    local delete_branch = u.string_to_bool(u.get_buffer_text(M.delete_branch_bufnr))
+    local squash = u.string_to_bool(u.get_buffer_text(M.squash_bufnr))
     M.mr = {
       title = title,
       description = description,
       target = target,
+      delete_branch = delete_branch,
+      squash = squash,
     }
     layout:unmount()
     M.layout_visible = false
@@ -194,10 +200,26 @@ M.open_confirmation_popup = function(mr)
 
   local description_lines = mr.description and M.build_description_lines(mr.description) or { "" }
 
+  local delete_branch
+  if mr.delete_branch ~= nil then
+    delete_branch = mr.delete_branch
+  else
+    delete_branch = state.settings.create_mr.delete_branch
+  end
+
+  local squash
+  if mr.squash ~= nil then
+    squash = mr.squash
+  else
+    squash = state.settings.create_mr.squash
+  end
+
   vim.schedule(function()
-    vim.api.nvim_buf_set_lines(description_popup.bufnr, 0, -1, false, description_lines)
-    vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { mr.title })
-    vim.api.nvim_buf_set_lines(target_popup.bufnr, 0, -1, false, { mr.target })
+    vim.api.nvim_buf_set_lines(M.description_bufnr, 0, -1, false, description_lines)
+    vim.api.nvim_buf_set_lines(M.title_bufnr, 0, -1, false, { mr.title })
+    vim.api.nvim_buf_set_lines(M.target_bufnr, 0, -1, false, { mr.target })
+    vim.api.nvim_buf_set_lines(M.delete_branch_bufnr, 0, -1, false, { u.bool_to_string(delete_branch) })
+    vim.api.nvim_buf_set_lines(M.squash_bufnr, 0, -1, false, { u.bool_to_string(squash) })
 
     local popup_opts = {
       cb = exit,
@@ -208,8 +230,10 @@ M.open_confirmation_popup = function(mr)
     state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
     state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
     state.set_popup_keymaps(target_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(delete_branch_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(squash_popup, M.create_mr, nil, popup_opts)
 
-    vim.api.nvim_set_current_buf(description_popup.bufnr)
+    vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
 end
 
@@ -230,11 +254,15 @@ M.create_mr = function()
   local description = u.get_buffer_text(M.description_bufnr)
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
   local target = u.get_buffer_text(M.target_bufnr):gsub("\n", " ")
+  local delete_branch = u.string_to_bool(u.get_buffer_text(M.delete_branch_bufnr))
+  local squash = u.string_to_bool(u.get_buffer_text(M.squash_bufnr))
 
   local body = {
     title = title,
     description = description,
     target_branch = target,
+    delete_branch = delete_branch,
+    squash = squash,
   }
 
   job.run_job("/create_mr", "POST", body, function(data)
@@ -252,12 +280,20 @@ M.create_layout = function()
   M.description_bufnr = description_popup.bufnr
   local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false))
   M.target_bufnr = target_branch_popup.bufnr
+  local delete_branch_popup = Popup(u.create_box_popup_state("Delete Source Branch", false))
+  M.delete_branch_bufnr = delete_branch_popup.bufnr
+  local squash_popup = Popup(u.create_box_popup_state("Squash Commits", false))
+  M.squash_bufnr = squash_popup.bufnr
 
   local internal_layout
   internal_layout = Layout.Box({
     Layout.Box({
       Layout.Box(title_popup, { grow = 1 }),
       Layout.Box(target_branch_popup, { grow = 1 }),
+    }, { size = 3 }),
+    Layout.Box({
+      Layout.Box(delete_branch_popup, { grow = 1 }),
+      Layout.Box(squash_popup, { grow = 1 }),
     }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
   }, { dir = "col" })
@@ -273,7 +309,7 @@ M.create_layout = function()
 
   layout:mount()
 
-  return layout, title_popup, description_popup, target_branch_popup
+  return layout, title_popup, description_popup, target_branch_popup, delete_branch_popup, squash_popup
 end
 
 return M

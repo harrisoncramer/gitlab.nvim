@@ -29,7 +29,7 @@ M.summary = function()
 
   local title = state.INFO.title
   local description_lines = M.build_description_lines()
-  local info_lines = state.settings.info.enabled and M.build_info_lines() or {""}
+  local info_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
 
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
 
@@ -223,8 +223,8 @@ M.color_details = function(bufnr)
       local line_content = u.get_line_content(bufnr, i)
       local start_idx, end_idx = line_content:find("%S-$")
       if start_idx ~= nil and end_idx ~= nil then
-        vim.api.nvim_set_hl(0, ("boolean"), { link = "Constant" })
-        vim.api.nvim_buf_add_highlight(bufnr, details_namespace, ("boolean"), i - 1, start_idx - 1, end_idx)
+        vim.api.nvim_set_hl(0, "boolean", { link = "Constant" })
+        vim.api.nvim_buf_add_highlight(bufnr, details_namespace, "boolean", i - 1, start_idx - 1, end_idx)
       end
     end
   end

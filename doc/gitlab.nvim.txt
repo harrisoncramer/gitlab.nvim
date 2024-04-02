@@ -235,6 +235,8 @@ you call this function with no values the defaults will be used:
       create_mr = {
         target = nil, -- Default branch to target when creating an MR
         template_file = nil, -- Default MR template in .gitlab/merge_request_templates
+        delete_branch = false, -- Whether the source branch will be marked for deletion
+        squash = false, -- Whether the commits will be marked for squashing
         title_input = { -- Default settings for MR title input window
           width = 40,
           border = "rounded",
@@ -656,6 +658,10 @@ Starts the process of creating an MR for the currently checked out branch.
 		  Takes precedence over the `template_file`, if both options
 		  are used.
 		• `title`: (string) MR title.
+		• `delete_branch`: (bool) If true, the source branch will be
+		  marked for deletion.
+		• `squash`: (bool) If true, the commits will be marked for
+		  squashing.
 
 gitlab.move_to_discussion_tree_from_diagnostic()		*gitlab.nvim.move_to_discussion_tree_from_diagnostic*
 

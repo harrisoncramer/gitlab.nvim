@@ -336,6 +336,30 @@ M.get_buffer_text = function(bufnr)
   return text
 end
 
+---Convert string to corresponding boolean
+---@param str string
+---@return boolean
+M.string_to_bool = function(str)
+  str = vim.fn.trim(str)
+  if str == "true" or str == "True" or str == "TRUE" then
+    return true
+  elseif str == "false" or str == "False" or str == "FALSE" then
+    return false
+  end
+  M.notify("Not a valid boolean value `" .. str .. "`. Defaulting to `false`", vim.log.levels.WARN)
+  return false
+end
+
+---Convert boolean to corresponding string
+---@param bool boolean
+---@return string
+M.bool_to_string = function(bool)
+  if bool == true then
+    return "true"
+  end
+  return "false"
+end
+
 M.string_starts = function(str, start)
   return str:sub(1, #start) == start
 end
