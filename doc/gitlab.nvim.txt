@@ -430,12 +430,12 @@ to merge the MR with your message.
 CREATING AN MR                                    *gitlab.nvim.creating-an-mr*
 
 To create an MR for the current branch, make sure you have the branch checked
-out. Then, use the `create_mr` action. See `:h gitlab.nvim.create_mr` for more
+out. Then, use the `create_mr` action. See |gitlab.nvim.create_mr| for more
 help on this function
 >lua
     require("gitlab").create_mr()
     require("gitlab").create_mr({ target = "main" })
-    require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
+    require("gitlab").create_mr({ template_file = "my-template.md", title = "Fix bug XYZ" })
 <
 PIPELINES                                              *gitlab.nvim.pipelines*
 
@@ -607,7 +607,7 @@ reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
 >lua
   require("gitlab").comment()
 
-After the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
+After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
 keybinding, by default `<leader>l`
 
 create_multiline_comment()					*gitlab.nvim.create_multiline_comment*
@@ -637,14 +637,23 @@ Starts the process of creating an MR for the currently checked out branch.
     require("gitlab").create_mr()
     require("gitlab").create_mr({ target = "main" })
     require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
-
-Parameters:
-  • {opts}         Lua table that can be used to skip certain steps in the MR
-  creation process. If `target` is provided, you will not be prompted for one.
-  If a template_file is provided, it will be used automatically. Must be
-  located in `.gitlab/merge_request_templates`
-
-  These values can also be configured via the `gitlab.setup` function
+    require("gitlab").create_mr({ title = "Fix bug XYZ", description = "Closes #123" })
+<
+    Parameters: ~
+      • {opts}  (table|nil) Keyword arguments that can be used to skip certain
+		steps in the MR creation process. `target` and `template_file`
+		can also be configured via the `gitlab.setup()` function in
+		the `settings.create_mr` field. If any field is missing, you
+		will be prompted to select a value interactively:
+		• `target`: (string) Name of the target branch.
+		• `template_file`: (string) Name of file (relative to
+		  `.gitlab/merge_request_templates`) that will be used for the
+		  MR description. See also
+		  <https://docs.gitlab.com/ee/user/project/description_templates.html>.
+		• `description`: (string) String used for the MR description.
+		  Takes precedence over the `template_file`, if both options
+		  are used.
+		• `title`: (string) MR title.
 
 gitlab.move_to_discussion_tree_from_diagnostic()		*gitlab.nvim.move_to_discussion_tree_from_diagnostic*
 
@@ -662,7 +671,7 @@ tied to specific changes in an MR.
 >lua
   require("gitlab").create_note()
 
-After the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
+After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
 keybinding, by default |<leader>l|
 
 gitlab.toggle_discussions()					*gitlab.nvim.toggle_discussions*
