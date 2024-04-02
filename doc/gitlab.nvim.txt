@@ -14,7 +14,7 @@ Table of Contents                              *gitlab.nvim.table-of-contents*
   - Discussions and Notes                  |gitlab.nvim.discussions-and-notes|
   - Labels                                                |gitlab.nvim.labels|
   - Signs and diagnostics                  |gitlab.nvim.signs-and-diagnostics|
-  - Emojis						  gitlab.nvim.emojis
+  - Emojis                                                |gitlab.nvim.emojis|
   - Uploading Files                              |gitlab.nvim.uploading-files|
   - MR Approvals                                    |gitlab.nvim.mr-approvals|
   - Merging an MR                                  |gitlab.nvim.merging-an-mr|
@@ -198,22 +198,24 @@ you call this function with no values the defaults will be used:
           "conflicts",
           "assignees",
           "reviewers",
+          "pipeline",
           "branch",
           "target_branch",
-          "pipeline",
+          "delete_branch",
+          "squash",
           "labels",
         },
       },
       discussion_signs = {
-	enabled = true, -- Show diagnostics for gitlab comments in the reviewer
-	skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
-	severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
-	virtual_text = false, -- Whether to show the comment text inline as floating virtual text
-	priority = 100, -- Higher will override LSP warnings, etc
-	icons = {
-	  comment = "→|",
-	  range = " |",
-	},
+        enabled = true, -- Show diagnostics for gitlab comments in the reviewer
+        skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
+        severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
+        virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+        priority = 100, -- Higher will override LSP warnings, etc
+        icons = {
+          comment = "→|",
+          range = " |",
+        },
       },
       pipeline = {
         created = "",

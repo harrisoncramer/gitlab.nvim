@@ -112,6 +112,8 @@ M.settings = {
       "pipeline",
       "branch",
       "target_branch",
+      "delete_branch",
+      "squash",
       "labels",
     },
   },

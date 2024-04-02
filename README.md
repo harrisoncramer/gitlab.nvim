@@ -169,8 +169,12 @@ require("gitlab").setup({
       "conflicts",
       "assignees",
       "reviewers",
-      "branch",
       "pipeline",
+      "branch",
+      "target_branch",
+      "delete_branch",
+      "squash",
+      "labels",
     },
   },
   discussion_signs = {
