@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -38,6 +37,14 @@ func (a *api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func reverseJobs(jobs []*gitlab.Job) []*gitlab.Job {
+	for i, j := 0, len(jobs)-1; i < j; i, j = i+1, j-1 {
+		jobs[i], jobs[j] = jobs[j], jobs[i]
+	}
+
+	return jobs
+}
+
 func (a *api) GetJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -52,7 +59,7 @@ func (a *api) GetJobs(w http.ResponseWriter, r *http.Request) {
 	jobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, idInt, &gitlab.ListJobsOptions{})
 
 	/* The jobs are by default in date ascending order, we want the opposite */
-	slices.Reverse(jobs)
+	reverseJobs(jobs)
 
 	if err != nil {
 		handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)

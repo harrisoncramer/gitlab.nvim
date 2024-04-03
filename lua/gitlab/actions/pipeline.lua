@@ -26,6 +26,7 @@ local set_recent_pipeline = function()
 end
 
 M.get_pipeline_status = function()
+  set_recent_pipeline()
   return string.format("%s (%s)", state.settings.pipeline[M.pipeline.status], M.pipeline.status)
 end
 
@@ -40,7 +41,7 @@ M.open = function()
   local height = 6 + #state.JOBS + 3
 
   local pipeline_popup =
-      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
@@ -97,6 +98,7 @@ M.open = function()
 end
 
 M.retrigger = function()
+  set_recent_pipeline()
   if not M.pipeline then
     return
   end
