@@ -39,6 +39,7 @@ M.settings = {
     help = nil,
     pipeline = nil,
     squash_message = nil,
+    temp_registers = {},
   },
   discussion_tree = {
     auto_open = true,
