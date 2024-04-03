@@ -72,10 +72,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
+          or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
+          or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -322,13 +322,13 @@ M.dependencies = {
     state = "PROJECT_MEMBERS",
     refresh = false,
   },
-  pipeline = {
+  jobs = {
     endpoint = "/pipeline/%s",
     args = {
       function()
         local pipeline = M.INFO.head_pipeline or M.INFO.pipeline
         if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
-          u.notify("Pipeline not found", vim.log.levels.WARN)
+          u.notify("Pipeline ID not found", vim.log.levels.WARN)
           return
         end
         return pipeline.id

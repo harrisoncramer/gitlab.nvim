@@ -777,8 +777,7 @@ Parameters: ~
       • `labels`: (bool) The labels available in the current project
       • `project_members`: (bool) The list of current project members
       • `revisions`: (bool) Revision information about the MR
-      • `reviewers`: (bool) All reviewers in the current project
-      • `assignees`: (bool) All assignees in the current project
+      • `jobs`: (bool) All jobs for the current MR
   • {cb} (function) The callback function that runs after all of the
       resources have been fetched. Will be passed a table with the data.
 
