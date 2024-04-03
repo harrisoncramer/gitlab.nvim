@@ -766,18 +766,16 @@ perform API calls for them. Once the data has been fetched, the callback will
 execute and passed the data as an argument.
 
 Parameters: ~
-  • {opts} (table) Keyword arguments that can be used to specify how the 
-      data API works. which
   • {opts.refresh} (bool) Whether to re-call Gitlab API every time, or to use
-      the data already cached in the plugin from the last API call
+      the data already cached in the plugin from the last API call.
   • {opts.resources} (table) Specify which resources to fetch. All resources are 
-      false by default, except for "info" which will always be fetched:
-      • `info`: (true) Information about the current MR, always present
-      • `user`: (bool) Information about the currently authenticated user
-      • `labels`: (bool) The labels available in the current project
-      • `project_members`: (bool) The list of current project members
-      • `revisions`: (bool) Revision information about the MR
-      • `jobs`: (bool) All jobs for the current MR
+      false by default, except for "info" which will always be fetched.
+      • {opts.resources.info}: (true) Information about the current MR, always present
+      • {opts.resources.user}: (bool) Information about the currently authenticated user
+      • {opts.resources.labels}: (bool) The labels available in the current project
+      • {opts.resources.project_members}: (bool) The list of current project members
+      • {opts.resources.revisions}: (bool) Revision information about the MR
+      • {opts.resources.jobs}: (bool) All jobs for the current MR
   • {cb} (function) The callback function that runs after all of the
       resources have been fetched. Will be passed a table with the data.
 
