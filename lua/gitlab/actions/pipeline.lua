@@ -25,7 +25,7 @@ local set_recent_pipeline = function()
   M.pipeline = state.JOBS[1]
 end
 
-local get_pipeline_status = function()
+M.get_pipeline_status = function()
   return string.format("%s (%s)", state.settings.pipeline[M.pipeline.status], M.pipeline.status)
 end
 
@@ -40,7 +40,7 @@ M.open = function()
   local height = 6 + #state.JOBS + 3
 
   local pipeline_popup =
-      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
@@ -50,7 +50,7 @@ M.open = function()
   local lines = {}
 
   u.switch_can_edit_buf(bufnr, true)
-  table.insert(lines, "Status: " .. get_pipeline_status())
+  table.insert(lines, "Status: " .. M.get_pipeline_status())
   table.insert(lines, "")
   table.insert(lines, string.format("Last Run: %s", u.time_since(M.pipeline.created_at)))
   table.insert(lines, string.format("Url: %s", M.pipeline.web_url))

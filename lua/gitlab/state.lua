@@ -72,10 +72,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-          or "Discussions"
+        or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-          or "Notes"
+        or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -316,7 +316,12 @@ M.dependencies = {
   info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
   labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
-  project_members = { endpoint = "/project/members", key = "ProjectMembers", state = "PROJECT_MEMBERS", refresh = false },
+  project_members = {
+    endpoint = "/project/members",
+    key = "ProjectMembers",
+    state = "PROJECT_MEMBERS",
+    refresh = false,
+  },
   pipeline = {
     endpoint = "/pipeline/%s",
     args = {
