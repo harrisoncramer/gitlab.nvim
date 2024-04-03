@@ -1,6 +1,7 @@
 -- This module is responsible for calling APIs in sequence. It provides
 -- an abstraction around the APIs that lets us ensure state.
 local server = require("gitlab.server")
+local u = require("gitlab.utils")
 local job = require("gitlab.job")
 local state = require("gitlab.state")
 
@@ -35,8 +36,21 @@ function async:fetch(dependencies, i, argTable)
     return
   end
 
+  -- If the dependency endpoint requires dynamic data, get it and format
+  -- it into the endpoint
+  local endpoint = dependency.endpoint
+  if dependency.args ~= nil then
+    for _, f in ipairs(dependency.args) do
+      local api_string_arg = f()
+      if api_string_arg == nil then
+        return
+      end
+      endpoint = string.format(dependency.endpoint, api_string_arg)
+    end
+  end
+
   -- Call the API, set the data, and then call the next API
-  job.run_job(dependency.endpoint, "GET", dependency.body, function(data)
+  job.run_job(endpoint, "GET", dependency.body, function(data)
     state[dependency.state] = data[dependency.key]
     self:fetch(dependencies, i + 1, argTable)
   end)

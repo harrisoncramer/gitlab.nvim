@@ -6,106 +6,102 @@ local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local M = {
-  pipeline_jobs = nil,
   pipeline_popup = nil,
+  pipeline = nil,
 }
 
-local function get_pipeline()
-  local pipeline = state.INFO.head_pipeline or state.INFO.pipeline
-
-  if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
+local function pipeline_exists()
+  if type(state.JOBS) ~= "table" or (type(state.JOBS) == "table" and u.table_size(state.JOBS) == 0) then
     u.notify("Pipeline not found", vim.log.levels.WARN)
     return
   end
-  return pipeline
+  return true
 end
 
-M.get_pipeline_status = function()
-  local pipeline = get_pipeline()
-  if pipeline == nil then
+local set_recent_pipeline = function()
+  if not pipeline_exists() then
     return nil
   end
-  return string.format("%s (%s)", state.settings.pipeline[pipeline.status], pipeline.status)
+  M.pipeline = state.JOBS[1]
+end
+
+local get_pipeline_status = function()
+  return string.format("%s (%s)", state.settings.pipeline[M.pipeline.status], M.pipeline.status)
 end
 
 -- The function will render the Pipeline state in a popup
 M.open = function()
-  local pipeline = get_pipeline()
-  if not pipeline then
+  set_recent_pipeline()
+  if not M.pipeline then
     return
   end
 
-  job.run_job("/pipeline/" .. pipeline.id, "GET", nil, function(data)
-    local pipeline_jobs = u.reverse(type(data.Jobs) == "table" and data.Jobs or {})
-    M.pipeline_jobs = pipeline_jobs
+  local width = string.len(M.pipeline.web_url) + 10
+  local height = 6 + #state.JOBS + 3
 
-    local width = string.len(pipeline.web_url) + 10
-    local height = 6 + #pipeline_jobs + 3
-
-    local pipeline_popup =
+  local pipeline_popup =
       Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
-    M.pipeline_popup = pipeline_popup
-    pipeline_popup:mount()
+  M.pipeline_popup = pipeline_popup
+  pipeline_popup:mount()
 
-    local bufnr = vim.api.nvim_get_current_buf()
-    vim.opt_local.wrap = false
+  local bufnr = vim.api.nvim_get_current_buf()
+  vim.opt_local.wrap = false
 
-    local lines = {}
+  local lines = {}
 
-    u.switch_can_edit_buf(bufnr, true)
-    table.insert(lines, "Status: " .. M.get_pipeline_status())
-    table.insert(lines, "")
-    table.insert(lines, string.format("Last Run: %s", u.time_since(pipeline.created_at)))
-    table.insert(lines, string.format("Url: %s", pipeline.web_url))
-    table.insert(lines, string.format("Triggered By: %s", pipeline.source))
+  u.switch_can_edit_buf(bufnr, true)
+  table.insert(lines, "Status: " .. get_pipeline_status())
+  table.insert(lines, "")
+  table.insert(lines, string.format("Last Run: %s", u.time_since(M.pipeline.created_at)))
+  table.insert(lines, string.format("Url: %s", M.pipeline.web_url))
+  table.insert(lines, string.format("Triggered By: %s", M.pipeline.source))
 
-    table.insert(lines, "")
-    table.insert(lines, "Jobs:")
+  table.insert(lines, "")
+  table.insert(lines, "Jobs:")
 
-    local longest_title = u.get_longest_string(u.map(pipeline_jobs, function(v)
-      return v.name
-    end))
+  local longest_title = u.get_longest_string(u.map(state.JOBS, function(v)
+    return v.name
+  end))
 
-    local function row_offset(name)
-      local offset = longest_title - string.len(name)
-      local res = string.rep(" ", offset + 5)
-      return res
+  local function row_offset(name)
+    local offset = longest_title - string.len(name)
+    local res = string.rep(" ", offset + 5)
+    return res
+  end
+
+  for _, pipeline_job in ipairs(state.JOBS) do
+    local offset = row_offset(pipeline_job.name)
+    local row = string.format(
+      "%s%s %s (%s)",
+      pipeline_job.name,
+      offset,
+      state.settings.pipeline[pipeline_job.status] or "*",
+      pipeline_job.status or ""
+    )
+
+    table.insert(lines, row)
+  end
+
+  vim.schedule(function()
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    M.color_status(M.pipeline.status, bufnr, lines[1], 1)
+
+    for i, pipeline_job in ipairs(state.JOBS) do
+      M.color_status(pipeline_job.status, bufnr, lines[7 + i], 7 + i)
     end
 
-    for _, pipeline_job in ipairs(pipeline_jobs) do
-      local offset = row_offset(pipeline_job.name)
-      local row = string.format(
-        "%s%s %s (%s)",
-        pipeline_job.name,
-        offset,
-        state.settings.pipeline[pipeline_job.status] or "*",
-        pipeline_job.status or ""
-      )
-
-      table.insert(lines, row)
-    end
-
-    vim.schedule(function()
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      M.color_status(pipeline.status, bufnr, lines[1], 1)
-
-      for i, pipeline_job in ipairs(pipeline_jobs) do
-        M.color_status(pipeline_job.status, bufnr, lines[7 + i], 7 + i)
-      end
-
-      pipeline_popup.border:set_text("top", "Pipeline Status", "center")
-      state.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
-      u.switch_can_edit_buf(bufnr, false)
-    end)
+    pipeline_popup.border:set_text("top", "Pipeline Status", "center")
+    state.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
+    u.switch_can_edit_buf(bufnr, false)
   end)
 end
 
 M.retrigger = function()
-  local pipeline = get_pipeline()
-  if not pipeline then
+  if not M.pipeline then
     return
   end
-  if pipeline.status ~= "failed" then
+
+  if M.pipeline.status ~= "failed" then
     u.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
     return
   end
@@ -128,7 +124,7 @@ M.see_logs = function()
   end
 
   local j = nil
-  for _, pipeline_job in ipairs(M.pipeline_jobs) do
+  for _, pipeline_job in ipairs(state.JOBS) do
     if pipeline_job.name == job_name then
       j = pipeline_job
     end

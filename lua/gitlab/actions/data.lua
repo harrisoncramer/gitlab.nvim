@@ -16,7 +16,6 @@ M.data = function(opts, cb)
   end
 
   local all_resources = {
-    info = info,
     user = user,
     labels = labels,
     project_members = project_members,
@@ -25,7 +24,7 @@ M.data = function(opts, cb)
 
   local api_calls = { info }
   for k, v in pairs(all_resources) do
-    if opts[k] then
+    if opts.resources[k] then
       table.insert(api_calls, v)
     end
   end
@@ -38,7 +37,7 @@ M.data = function(opts, cb)
       data[k] = state[v.state]
     end
     cb(data)
-  end)({ refresh = false })
+  end)({ refresh = opts.refresh })
 end
 
 return M
