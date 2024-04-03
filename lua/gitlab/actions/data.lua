@@ -17,6 +17,7 @@ M.data = function(opts, cb)
   end
 
   local all_resources = {
+    info = info,
     user = user,
     labels = labels,
     project_members = project_members,
@@ -24,9 +25,9 @@ M.data = function(opts, cb)
     jobs = jobs,
   }
 
-  local api_calls = { info }
+  local api_calls = {}
   for k, v in pairs(all_resources) do
-    if opts.resources[k] then
+    if opts.resources[k] or k == "info" then
       table.insert(api_calls, u.merge(v, { refresh = opts.refresh }))
     end
   end
