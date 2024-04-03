@@ -106,7 +106,7 @@ M.retrigger = function()
     return
   end
 
-  job.run_job("/pipeline/" .. pipeline.id, "POST", nil, function()
+  job.run_job("/pipeline/" .. M.pipeline.id, "POST", nil, function()
     u.notify("Pipeline re-triggered!", vim.log.levels.INFO)
   end)
 end
