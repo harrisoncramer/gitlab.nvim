@@ -124,6 +124,8 @@ project by default. However, you may provide a custom path to the configuration
 file via the `config_path` option. This must be an absolute path to the
 directory that holds your `.gitlab.nvim` file.
 
+The `connection_settings` block in the `state.lua` file will be used to
+configure your connection to Gitlab.
 
 CONFIGURING THE PLUGIN                    *gitlab.nvim.configuring-the-plugin*
 
