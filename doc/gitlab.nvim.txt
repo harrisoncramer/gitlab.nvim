@@ -751,4 +751,29 @@ Merges the merge request into the target branch
 >lua
   require("gitlab").merge()
 
+gitlab.data({ opts }, cb)					*gitlab.nvim.data*
+
+The data function can be used to integrate `gitlab.nvim` with other plugins and tooling, by fetching 
+raw data about the current MR, including the summary information (title, description, etc); 
+reviewers, assignees, pipeline status.
+>lua
+  require("gitlab").data({ pipeline = true }, function (data)
+      vim.print("The pipeline data is: ", data.pipeline)
+  end)
+
+If the resources have not yet been fetched from Gitlab, this function will
+perform API calls for them. Once the data has been fetched, the callback will
+execute and passed the data as an argument.
+
+Parameters: ~
+  • {opts}  (table) Keyword arguments that can be used to specify which
+	    resources to fetch. All resources are false by default.
+	    • `summary`: (bool) Whether to fetch the information normally
+	    contained in the summary popup, such as description, title, etc.
+	    • `reviewers`: (bool) Whether to fetch the reviewers
+	    • `assignees`: (bool) Whether to fetch the assignees
+	    • `pipeline`: (bool) Whether to fetch the pipeline data
+  • {cb}    (function) The callback function that runs after all of the
+	    resources have been fetched. Will be passed a table with the data.
+
 vim:tw=78:ts=8:noet:ft=help:norl:

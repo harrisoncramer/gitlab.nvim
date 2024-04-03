@@ -14,6 +14,7 @@ local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
 local labels = require("gitlab.actions.labels")
+local data = require("gitlab.actions.data")
 
 local user = state.dependencies.user
 local info = state.dependencies.info
@@ -26,12 +27,12 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    emoji.init() -- Read in emojis for lookup purposes
+    emoji.init()                         -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),
@@ -65,6 +66,7 @@ return {
   reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
   state = state,
+  data = data.data,
   print_settings = state.print_settings,
   open_in_browser = async.sequence({ info }, function()
     if state.INFO.web_url == nil then
