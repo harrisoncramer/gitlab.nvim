@@ -1,5 +1,4 @@
 local u = require("gitlab.utils")
-local summary = require("gitlab.actions.summary")
 local async = require("gitlab.async")
 local state = require("gitlab.state")
 local M = {}
@@ -36,7 +35,6 @@ M.data = function(opts, cb)
   return async.sequence(api_calls, function()
     local data = {}
     for k, v in pairs(all_resources) do
-      vim.print(state)
       data[k] = state[v.state]
     end
     cb(data)
