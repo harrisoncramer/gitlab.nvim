@@ -193,7 +193,7 @@ var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, 
 }
 
 func openLogFile() *os.File {
-	logFile := os.Args[len(os.Args)-1]
+	logFile := os.Args[5]
 	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if os.IsNotExist(err) {
