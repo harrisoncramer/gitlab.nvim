@@ -757,8 +757,8 @@ The data function can be used to integrate `gitlab.nvim` with other plugins and 
 raw data about the current MR, including the summary information (title, description, etc); 
 reviewers, assignees, pipeline status.
 >lua
-  require("gitlab").data({ refresh = false, resources = { revisions } }, function (data)
-      vim.print("The pipeline data is: ", data.pipeline)
+  require("gitlab").data({ refresh = false, resources = { jobs = true } }, function (data)
+      vim.print("The jobs data is: ", data.jobs)
   end)
 
 If the resources have not yet been fetched from Gitlab, this function will
