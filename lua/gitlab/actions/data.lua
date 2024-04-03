@@ -8,6 +8,7 @@ local info = state.dependencies.info
 local labels = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local revisions = state.dependencies.revisions
+local pipeline = state.dependencies.pipeline
 
 M.data = function(opts, cb)
   if type(opts) ~= "table" or type(cb) ~= "function" then
@@ -20,12 +21,13 @@ M.data = function(opts, cb)
     labels = labels,
     project_members = project_members,
     revisions = revisions,
+    pipeline = pipeline,
   }
 
   local api_calls = { info }
   for k, v in pairs(all_resources) do
     if opts.resources[k] then
-      table.insert(api_calls, v)
+      table.insert(api_calls, u.merge(v, { refresh = opts.refresh }))
     end
   end
 
@@ -37,7 +39,7 @@ M.data = function(opts, cb)
       data[k] = state[v.state]
     end
     cb(data)
-  end)({ refresh = opts.refresh })
+  end)()
 end
 
 return M
