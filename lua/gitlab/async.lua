@@ -42,7 +42,7 @@ function async:fetch(dependencies, i, argTable)
     for _, f in ipairs(dependency.args) do
       local api_string_arg = f()
       if api_string_arg == nil then
-        return
+        return self:fetch(dependencies, i + 1, argTable)
       end
       endpoint = string.format(dependency.endpoint, api_string_arg)
     end

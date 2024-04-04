@@ -12,7 +12,6 @@ local M = {
 
 local function pipeline_exists()
   if type(state.JOBS) ~= "table" or (type(state.JOBS) == "table" and u.table_size(state.JOBS) == 0) then
-    u.notify("Pipeline not found", vim.log.levels.WARN)
     return
   end
   return true
@@ -27,13 +26,14 @@ end
 
 M.get_pipeline_status = function()
   set_recent_pipeline()
-  return string.format("%s (%s)", state.settings.pipeline[M.pipeline.status], M.pipeline.status)
+  return M.pipeline and string.format("%s (%s)", state.settings.pipeline[M.pipeline.status], M.pipeline.status) or ""
 end
 
 -- The function will render the Pipeline state in a popup
 M.open = function()
   set_recent_pipeline()
   if not M.pipeline then
+    u.notify("Pipeline not found", vim.log.levels.WARN)
     return
   end
 
@@ -41,7 +41,7 @@ M.open = function()
   local height = 6 + #state.JOBS + 3
 
   local pipeline_popup =
-    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
