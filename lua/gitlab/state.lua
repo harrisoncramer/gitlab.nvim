@@ -301,7 +301,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   end
 
   vim.api.nvim_create_autocmd("BufUnload", {
-    buffer = vim.api.nvim_get_current_buf(),
+    buffer = popup.bufnr,
     callback = function()
       exit(popup, opts)
     end,
