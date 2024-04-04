@@ -26,7 +26,6 @@ M.settings = {
   attachment_dir = "",
   help = "g?",
   popup = {
-    exit = "<Esc>",
     perform_action = "<leader>s",
     perform_linewise_action = "<leader>l",
     width = "40%",
