@@ -10,9 +10,9 @@ local project_members = state.dependencies.project_members
 local revisions = state.dependencies.revisions
 local jobs = state.dependencies.jobs
 
-M.data = function(opts, cb)
-  if type(opts) ~= "table" or type(cb) ~= "function" then
-    u.notify("The data function must be passed an opts table and a callback function", vim.log.levels.ERROR)
+M.data = function(resources, cb)
+  if type(resources) ~= "table" or type(cb) ~= "function" then
+    u.notify("The data function must be passed a resources table and a callback function", vim.log.levels.ERROR)
     return
   end
 
@@ -25,19 +25,18 @@ M.data = function(opts, cb)
     jobs = jobs,
   }
 
-  local api_calls = {}
-  for k, v in pairs(all_resources) do
-    if opts.resources[k] or k == "info" then
-      table.insert(api_calls, u.merge(v, { refresh = opts.refresh }))
-    end
+  local api_calls = { info }
+  for _, resource in ipairs(resources) do
+    local api_call = all_resources[resource.type]
+    table.insert(api_calls, u.merge(api_call, { refresh = resource.refresh }))
   end
 
   -- TODO: Build an async "parallel" that fetches the resources
   -- in parallel where possible to speed up this API
   return async.sequence(api_calls, function()
     local data = {}
-    for k, v in pairs(all_resources) do
-      data[k] = state[v.state]
+    for _, v in ipairs(api_calls) do
+      data[v.key] = state[v.state]
     end
     cb(data)
   end)()
