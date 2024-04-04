@@ -757,8 +757,13 @@ The data function can be used to integrate `gitlab.nvim` with other plugins and 
 raw data about the current MR, including the summary information (title, description, etc); 
 reviewers, assignees, pipeline status.
 >lua
-  require("gitlab").data({ refresh = false, resources = { jobs = true } }, function (data)
+  require("gitlab").data({
+    { type = "info", refresh = false },
+    { type = "jobs", refresh = true },
+    { type = "user", refresh = false } }, function (data)
+      vim.print("The info data is: ", data.info)
       vim.print("The jobs data is: ", data.jobs)
+      vim.print("The user data is: ", data.user)
   end)
 
 If the resources have not yet been fetched from Gitlab, this function will
@@ -766,17 +771,19 @@ perform API calls for them. Once the data has been fetched, the callback will
 execute and passed the data as an argument.
 
 Parameters: ~
-  • {opts.refresh} (bool) Whether to re-call Gitlab API every time, or to use
-      the data already cached in the plugin from the last API call.
-  • {opts.resources} (table) Specify which resources to fetch. All resources are 
-      false by default, except for "info" which will always be fetched.
-      • {opts.resources.info}: (true) Information about the current MR, always present
-      • {opts.resources.user}: (bool) Information about the currently authenticated user
-      • {opts.resources.labels}: (bool) The labels available in the current project
-      • {opts.resources.project_members}: (bool) The list of current project members
-      • {opts.resources.revisions}: (bool) Revision information about the MR
-      • {opts.resources.jobs}: (bool) All jobs for the current MR
+  • {resources} (table) A list of resource blocks to fetch.
+  • {resource} (table) A resource to fetch, such as job information, etc.
+      • {resource.type}: (string) The type of resource, either: "user"
+      "labels", "project_members", "revisions", or "jobs." The types are:
+	• {user}: Information about the currently authenticated user
+	• {labels}: The labels available in the current project
+	• {project_members}: The list of current project members
+	• {revisions}: Revision information about the MR
+	• {jobs}: All jobs for the current MR
+      • {resource.refresh}: (bool) Whether to re-fetch the data from Gitlab
+      or use the cached data locally, if available.
   • {cb} (function) The callback function that runs after all of the
-      resources have been fetched. Will be passed a table with the data.
+      resources have been fetched. Will be passed a table with the data,
+      with each resource as a key-value pair, with the key being it's type.
 
 vim:tw=78:ts=8:noet:ft=help:norl:
