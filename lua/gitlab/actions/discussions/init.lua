@@ -398,7 +398,7 @@ local function get_new_line(node)
     return node.new_line
   end
 
-  if range.start.new_line == nil then
+  if range.start.new_line ~= nil then
     return range.start.new_line
   end
 
@@ -417,7 +417,7 @@ local function get_old_line(node)
     return node.old_line
   end
 
-  if range.start.old_line == nil then
+  if range.start.old_line ~= nil then
     return range.start.old_line
   end
 
