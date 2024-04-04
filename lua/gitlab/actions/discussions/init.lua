@@ -392,16 +392,13 @@ end
 ---@param node any
 ---@return number|nil
 local function get_new_line(node)
-  if node.new_line == nil then
-    return nil
-  end
-
   ---@type GitlabLineRange|nil
   local range = node.range
-  if range ~= nil then
-    if range.start.new_line == nil then
-      return nil
-    end
+  if range == nil then
+    return node.new_line
+  end
+
+  if range.start.new_line == nil then
     return range.start.new_line
   end
 
@@ -414,17 +411,17 @@ end
 ---@param node any
 ---@return number|nil
 local function get_old_line(node)
-  if node.old_line == nil then
-    return nil
-  end
-
   ---@type GitlabLineRange|nil
   local range = node.range
   if range == nil then
     return node.old_line
   end
 
-  local _, start_old_line = common.parse_line_code(range.start.line_code)
+  if range.start.old_line == nil then
+    return range.start.old_line
+  end
+
+  local start_old_line, _ = common.parse_line_code(range.start.line_code)
   return start_old_line
 end
 
