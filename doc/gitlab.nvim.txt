@@ -159,7 +159,6 @@ you call this function with no values the defaults will be used:
         pipeline = nil,
         reply = nil,
         squash_message = nil,
-        backup_register = nil,
       },
       discussion_tree = { -- The discussion tree that holds all comments
         auto_open = true, -- Automatically open when the reviewer is opened
@@ -304,22 +303,6 @@ window with Gitlab’s suggest changes
 code block with prefilled code from the visual selection.
 Just like the summary, all the different kinds of comments are saved via the
 `settings.popup.perform_action` keybinding.
-
-BACKUP REGISTER                                  *gitlab.nvim.backup-register*
-
-Sometimes, the action triggered by `settings.popup.perform_action` can fail.
-To prevent losing your carefully crafted note/comment/suggestion you can set
-`settings.popup.backup_register` to a writable register (see |registers|) to
-which the contents of the popup window will be saved just before the action is
-performed. A practical setting is `settings.popup.backup_register = "+"` which
-saves to the system clipboard (see |quoteplus|). This lets you easily apply
-the action on Gitlab in a browser, if it keeps failing in `gitlab.nvim`.
-
-If you experience such problems, please first read the
-|gitlab.nvim.troubleshooting| section. If it does not help, see if there are
-any relevant known <https://github.com/harrisoncramer/gitlab.nvim/issues>. If
-there are none, please open one and provide any error messages that
-`gitlab.nvim` may be showing.
 
 DISCUSSIONS AND NOTES                      *gitlab.nvim.discussions-and-notes*
 
