@@ -127,7 +127,7 @@ require("gitlab").setup({
     pipeline = nil,
     reply = nil,
     squash_message = nil,
-    temp_registers = {},
+    temp_registers = {}, -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
   },
   discussion_tree = { -- The discussion tree that holds all comments
     auto_open = true, -- Automatically open when the reviewer is opened
