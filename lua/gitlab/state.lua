@@ -26,7 +26,6 @@ M.settings = {
   attachment_dir = "",
   help = "g?",
   popup = {
-    exit = "<Esc>",
     perform_action = "<leader>s",
     perform_linewise_action = "<leader>l",
     width = "40%",
@@ -270,10 +269,6 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   if opts == nil then
     opts = {}
   end
-  vim.keymap.set("n", M.settings.popup.exit, function()
-    exit(popup, opts)
-  end, { buffer = popup.bufnr, desc = "Exit popup" })
-
   if action ~= "Help" then -- Don't show help on the help popup
     vim.keymap.set("n", M.settings.help, function()
       local help = require("gitlab.actions.help")
@@ -304,6 +299,13 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       linewise_action(text)
     end, { buffer = popup.bufnr, desc = "Perform linewise action" })
   end
+
+  vim.api.nvim_create_autocmd("BufUnload", {
+    buffer = popup.bufnr,
+    callback = function()
+      exit(popup, opts)
+    end,
+  })
 end
 
 -- Dependencies
