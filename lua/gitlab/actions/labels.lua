@@ -21,12 +21,7 @@ local refresh_label_state = function(labels)
 end
 
 local get_current_labels = function()
-  local label_string = state.INFO.labels
-  local current_labels = {}
-  for value in label_string:gmatch("[^,]+") do
-    table.insert(current_labels, value)
-  end
-  return current_labels
+  return state.INFO.labels
 end
 
 local get_all_labels = function()
