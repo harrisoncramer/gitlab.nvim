@@ -15,9 +15,7 @@ M.delete_label = function()
 end
 
 local refresh_label_state = function(labels)
-  state.INFO.labels = List.new(labels):reduce(function(agg, label)
-    return agg .. "," .. label
-  end, "")
+  state.INFO.labels = labels
 end
 
 local get_current_labels = function()
@@ -40,16 +38,11 @@ M.add_popup = function(type)
     if not choice then
       return
     end
-    local label_string = state.INFO.labels
-    local new_labels = {}
-    for value in label_string:gmatch("[^,]+") do
-      table.insert(new_labels, value)
-    end
-
-    table.insert(new_labels, choice)
-    local body = { labels = new_labels }
+    table.insert(current_labels, choice)
+    local body = { labels = current_labels }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
+
       refresh_label_state(data.labels)
     end)
   end)
