@@ -44,7 +44,7 @@ M.open = function()
   local height = 6 + #M.pipeline_jobs + 3
 
   local pipeline_popup =
-      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
