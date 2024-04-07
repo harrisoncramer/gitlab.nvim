@@ -26,7 +26,6 @@ M.settings = {
   attachment_dir = "",
   help = "g?",
   popup = {
-    exit = "<Esc>",
     perform_action = "<leader>s",
     perform_linewise_action = "<leader>l",
     width = "40%",
@@ -40,7 +39,6 @@ M.settings = {
     help = nil,
     pipeline = nil,
     squash_message = nil,
-    backup_register = nil,
   },
   discussion_tree = {
     auto_open = true,
@@ -72,10 +70,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
+          or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
+          or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -270,10 +268,6 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   if opts == nil then
     opts = {}
   end
-  vim.keymap.set("n", M.settings.popup.exit, function()
-    exit(popup, opts)
-  end, { buffer = popup.bufnr, desc = "Exit popup" })
-
   if action ~= "Help" then -- Don't show help on the help popup
     vim.keymap.set("n", M.settings.help, function()
       local help = require("gitlab.actions.help")
@@ -283,9 +277,6 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   if action ~= nil then
     vim.keymap.set("n", M.settings.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
-      if M.settings.popup.backup_register ~= nil then
-        vim.cmd("0,$yank " .. M.settings.popup.backup_register)
-      end
       if opts.action_before_close then
         action(text, popup.bufnr)
         exit(popup, opts)
@@ -304,6 +295,13 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       linewise_action(text)
     end, { buffer = popup.bufnr, desc = "Perform linewise action" })
   end
+
+  vim.api.nvim_create_autocmd("BufUnload", {
+    buffer = popup.bufnr,
+    callback = function()
+      exit(popup, opts)
+    end,
+  })
 end
 
 -- Dependencies
@@ -314,27 +312,13 @@ end
 M.dependencies = {
   user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
   info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
+  pipeline = { endpoint = "/pipeline", key = "latest_pipeline", state = "PIPELINE", refresh = true },
   labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
   project_members = {
     endpoint = "/project/members",
     key = "ProjectMembers",
     state = "PROJECT_MEMBERS",
-    refresh = false,
-  },
-  jobs = {
-    endpoint = "/pipeline/%s",
-    args = {
-      function()
-        local pipeline = M.INFO.head_pipeline or M.INFO.pipeline
-        if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
-          return
-        end
-        return pipeline.id
-      end,
-    },
-    key = "Jobs",
-    state = "JOBS",
     refresh = false,
   },
 }

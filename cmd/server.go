@@ -132,11 +132,12 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 	m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
 	m.HandleFunc("/mr/awardable/note/", a.withMr(a.emojiNoteHandler))
 
+	m.HandleFunc("/pipeline", a.pipelineHandler)
+	m.HandleFunc("/pipeline/trigger/", a.pipelineHandler)
 	m.HandleFunc("/users/me", a.meHandler)
 	m.HandleFunc("/attachment", a.attachmentHandler)
 	m.HandleFunc("/create_mr", a.createMr)
 	m.HandleFunc("/job", a.jobHandler)
-	m.HandleFunc("/pipeline/", a.pipelineHandler)
 	m.HandleFunc("/project/members", a.projectMembersHandler)
 	m.HandleFunc("/shutdown", a.shutdownHandler)
 

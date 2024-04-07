@@ -8,7 +8,7 @@ local info = state.dependencies.info
 local labels = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local revisions = state.dependencies.revisions
-local jobs = state.dependencies.jobs
+local pipeline = state.dependencies.pipeline
 
 M.data = function(resources, cb)
   if type(resources) ~= "table" or type(cb) ~= "function" then
@@ -22,7 +22,7 @@ M.data = function(resources, cb)
     labels = labels,
     project_members = project_members,
     revisions = revisions,
-    jobs = jobs,
+    pipeline = pipeline,
   }
 
   local api_calls = { info }

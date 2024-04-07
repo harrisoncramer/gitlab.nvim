@@ -8,37 +8,36 @@ local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
 local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
+local data = require("gitlab.actions.data")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
 local labels = require("gitlab.actions.labels")
-local data = require("gitlab.actions.data")
 
 local user = state.dependencies.user
 local info = state.dependencies.info
 local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
+local pipeline_dep = state.dependencies.pipeline
 local revisions = state.dependencies.revisions
-local jobs = state.dependencies.jobs
 
 return {
   setup = function(args)
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    emoji.init() -- Read in emojis for lookup purposes
+    emoji.init()                         -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({
     u.merge(info, { refresh = true }),
-    u.merge(jobs, { refresh = true }),
     labels_dep,
   }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
@@ -61,7 +60,7 @@ return {
   close_review = function()
     reviewer.close()
   end,
-  pipeline = async.sequence({ info, u.merge(jobs, { refresh = true }) }, pipeline.open),
+  pipeline = async.sequence({ pipeline_dep }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info, user }, discussions.toggle),

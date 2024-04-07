@@ -12,12 +12,17 @@ import (
 
 type RetriggerPipelineResponse struct {
 	SuccessResponse
-	Pipeline *gitlab.Pipeline
+	LatestPipeline *gitlab.Pipeline `json:"latest_pipeline"`
 }
 
-type GetJobsResponse struct {
+type PipelineWithJobs struct {
+	Jobs           []*gitlab.Job    `json:"jobs"`
+	LatestPipeline *gitlab.Pipeline `json:"latest_pipeline"`
+}
+
+type GetPipelineAndJobsResponse struct {
 	SuccessResponse
-	Jobs []*gitlab.Job
+	Pipeline PipelineWithJobs `json:"latest_pipeline"`
 }
 
 /*
@@ -27,7 +32,7 @@ about a given job in a pipeline, see the jobHandler function
 func (a *api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.GetJobs(w, r)
+		a.GetPipelineAndJobs(w, r)
 	case http.MethodPost:
 		a.RetriggerPipeline(w, r)
 	default:
@@ -37,29 +42,29 @@ func (a *api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func reverseJobs(jobs []*gitlab.Job) []*gitlab.Job {
-	for i, j := 0, len(jobs)-1; i < j; i, j = i+1, j-1 {
-		jobs[i], jobs[j] = jobs[j], jobs[i]
-	}
-
-	return jobs
-}
-
-func (a *api) GetJobs(w http.ResponseWriter, r *http.Request) {
+func (a *api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
-	idInt, err := strconv.Atoi(id)
+	pipeline, res, err := a.client.GetLatestPipeline(a.projectInfo.ProjectId, &gitlab.GetLatestPipelineOptions{
+		Ref: &a.gitInfo.BranchName,
+	})
 
 	if err != nil {
-		handleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
+		handleError(w, err, fmt.Sprintf("Gitlab failed to get latest pipeline for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
-	jobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, idInt, &gitlab.ListJobsOptions{})
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("Could not get latest pipeline for %s branch", a.gitInfo.BranchName), res.StatusCode)
+		return
+	}
 
-	/* The jobs are by default in date ascending order, we want the opposite */
-	reverseJobs(jobs)
+	if pipeline == nil {
+		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), res.StatusCode)
+		return
+	}
+
+	jobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, pipeline.ID, &gitlab.ListJobsOptions{})
 
 	if err != nil {
 		handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
@@ -72,12 +77,15 @@ func (a *api) GetJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := GetJobsResponse{
+	response := GetPipelineAndJobsResponse{
 		SuccessResponse: SuccessResponse{
 			Status:  http.StatusOK,
-			Message: "Pipeline jobs retrieved",
+			Message: "Pipeline retrieved",
 		},
-		Jobs: jobs,
+		Pipeline: PipelineWithJobs{
+			LatestPipeline: pipeline,
+			Jobs:           jobs,
+		},
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -89,7 +97,7 @@ func (a *api) GetJobs(w http.ResponseWriter, r *http.Request) {
 func (a *api) RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := strings.TrimPrefix(r.URL.Path, "/pipeline/")
+	id := strings.TrimPrefix(r.URL.Path, "/pipeline/trigger/")
 
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -115,7 +123,7 @@ func (a *api) RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 			Message: "Pipeline retriggered",
 			Status:  http.StatusOK,
 		},
-		Pipeline: pipeline,
+		LatestPipeline: pipeline,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

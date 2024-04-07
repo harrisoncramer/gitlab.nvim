@@ -86,10 +86,6 @@ func GetCurrentBranchNameFromNativeGitCmd() (res string, e error) {
 
 	branchName := strings.TrimSpace(string(output))
 
-	if branchName == "main" || branchName == "master" {
-		return "", fmt.Errorf("Cannot run on %s branch", branchName)
-	}
-
 	return branchName, nil
 }
 
