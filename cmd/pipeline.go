@@ -50,12 +50,17 @@ func (a *api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		handleError(w, err, "Could not get latest pipeline", http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Gitlab failed to get latest pipeline for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not get latest pipeline", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("Could not get latest pipeline for %s branch", a.gitInfo.BranchName), res.StatusCode)
+		return
+	}
+
+	if pipeline == nil {
+		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), res.StatusCode)
 		return
 	}
 
