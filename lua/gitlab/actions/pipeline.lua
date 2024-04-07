@@ -10,7 +10,7 @@ local M = {
   pipeline_popup = nil,
 }
 
-local function get_pipeline()
+local function get_latest_pipeline()
   local pipeline = state.INFO.head_pipeline or state.INFO.pipeline
 
   if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
@@ -21,7 +21,7 @@ local function get_pipeline()
 end
 
 M.get_pipeline_status = function()
-  local pipeline = get_pipeline()
+  local pipeline = get_latest_pipeline()
   if pipeline == nil then
     return nil
   end
@@ -30,7 +30,7 @@ end
 
 -- The function will render the Pipeline state in a popup
 M.open = function()
-  local pipeline = get_pipeline()
+  local pipeline = get_latest_pipeline()
   if not pipeline then
     return
   end
@@ -43,7 +43,7 @@ M.open = function()
     local height = 6 + #pipeline_jobs + 3
 
     local pipeline_popup =
-      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+        Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
     M.pipeline_popup = pipeline_popup
     pipeline_popup:mount()
 
@@ -101,7 +101,7 @@ M.open = function()
 end
 
 M.retrigger = function()
-  local pipeline = get_pipeline()
+  local pipeline = get_latest_pipeline()
   if not pipeline then
     return
   end
