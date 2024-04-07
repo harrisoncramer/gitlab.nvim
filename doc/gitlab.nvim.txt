@@ -228,10 +228,6 @@ you call this function with no values the defaults will be used:
         success = "✓",
         failed = "",
       },
-      merge = { -- The default behaviors when merging an MR, see "Merging an MR"
-        squash = false,
-        delete_branch = false,
-      },
       create_mr = {
         target = nil, -- Default branch to target when creating an MR
         template_file = nil, -- Default MR template in .gitlab/merge_request_templates
@@ -412,23 +408,15 @@ actions respectively.
     require("gitlab").revoke()
 <
 
-
 MERGING AN MR                                      *gitlab.nvim.merging-an-mr*
 
 The `merge` action will merge an MR. The MR must be in a "mergeable" state for
 this command to work.
-
 >lua
     require("gitlab").merge()
     require("gitlab").merge({ squash = false, delete_branch = false })
 <
-
-You can configure default behaviors via the setup function, values passed into
-the `merge` action will override the defaults.
-
-If you enable `squash` you will be prompted for a squash message. To use the
-default message, leave the popup empty. Use the `settings.popup.perform_action`
-to merge the MR with your message.
+See |gitlab.nvim.merge| for more help on this function.
 
 
 CREATING AN MR                                    *gitlab.nvim.creating-an-mr*
@@ -744,11 +732,27 @@ Opens the current MR in your default web browser.
 >lua
   require("gitlab").open_in_browser()
 
-gitlab.merge()							*gitlab.nvim.merge*
+gitlab.merge({opts})						*gitlab.nvim.merge*
 
-Merges the merge request into the target branch
+Merges the merge request into the target branch. When run without any
+arguments, the `merge` action will respect the "Squash commits" and "Delete
+source branch" settings set by `require("gitlab").create_mr()` or set in
+Gitlab online. You can see the current settings in the Summary view, see
+|gitlab.nvim.the-summary-view|.
 >lua
   require("gitlab").merge()
+  require("gitlab").merge({ squash = false, delete_branch = true })
+<
+    Parameters: ~
+      • {opts}  (table|nil) Keyword arguments that can be used to override
+		default behavior.
+		• `delete_branch`: (bool) If true, the source branch will be
+		  deleted.
+		• `squash`: (bool) If true, the commits will be squashed. If
+		  you enable `squash` you will be prompted for a squash
+		  message. To use the default message, leave the popup empty.
+		  Use the `settings.popup.perform_action` to merge the MR with
+		  your message.
 
 gitlab.data({ opts }, cb)					*gitlab.nvim.data*
 

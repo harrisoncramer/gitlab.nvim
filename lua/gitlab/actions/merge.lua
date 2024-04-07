@@ -17,7 +17,7 @@ end
 
 ---@param opts MergeOpts
 M.merge = function(opts)
-  local merge_body = { squash = state.settings.merge.squash, delete_branch = state.settings.merge.delete_branch }
+  local merge_body = { squash = state.INFO.squash, delete_branch = state.INFO.delete_branch }
   if opts then
     merge_body.squash = opts.squash ~= nil and opts.squash
     merge_body.delete_branch = opts.delete_branch ~= nil and opts.delete_branch

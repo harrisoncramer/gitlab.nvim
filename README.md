@@ -199,10 +199,6 @@ require("gitlab").setup({
     success = "✓",
     failed = "",
   },
-  merge = { -- The default behaviors when merging an MR, see "Merging an MR"
-    squash = false,
-    delete_branch = false,
-  },
   create_mr = {
     target = nil, -- Default branch to target when creating an MR
     template_file = nil, -- Default MR template in .gitlab/merge_request_templates

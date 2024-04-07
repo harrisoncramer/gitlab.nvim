@@ -85,10 +85,6 @@ M.settings = {
       return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
     end,
   },
-  merge = {
-    squash = false,
-    delete_branch = false,
-  },
   create_mr = {
     target = nil,
     template_file = nil,
