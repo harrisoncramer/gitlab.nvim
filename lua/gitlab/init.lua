@@ -35,7 +35,11 @@ return {
     emoji.init() -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
-  summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),
+  summary = async.sequence({
+    u.merge(info, { refresh = true }),
+    u.merge(labels_dep, { condition = u.contains(state.settings.info.fields, "labels") }),
+    u.merge(pipeline_dep, { condition = u.contains(state.settings.info.fields, "pipeline") }),
+  }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),

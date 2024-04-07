@@ -21,15 +21,19 @@ local function get_latest_pipeline()
 end
 
 local function get_pipeline_jobs()
+  M.latest_pipeline = get_latest_pipeline()
+  if not M.latest_pipeline then
+    return
+  end
   return u.reverse(type(state.PIPELINE.jobs) == "table" and state.PIPELINE.jobs or {})
 end
 
 M.get_pipeline_status = function()
-  local pipeline = get_latest_pipeline()
-  if pipeline == nil then
-    return nil
+  M.latest_pipeline = get_latest_pipeline()
+  if not M.latest_pipeline then
+    return
   end
-  return string.format("%s (%s)", state.settings.pipeline[pipeline.status], pipeline.status)
+  return string.format("%s (%s)", state.settings.pipeline[M.latest_pipeline.status], M.latest_pipeline.status)
 end
 
 -- The function will render the Pipeline state in a popup
