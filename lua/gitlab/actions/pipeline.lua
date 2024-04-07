@@ -12,7 +12,7 @@ local M = {
 }
 
 local function get_latest_pipeline()
-  local pipeline = state.PIPELINE.latest_pipeline
+  local pipeline = state.PIPELINE and state.PIPELINE.latest_pipeline
   if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
     u.notify("Pipeline not found", vim.log.levels.WARN)
     return
