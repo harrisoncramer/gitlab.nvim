@@ -759,7 +759,8 @@ Parameters: ~
 	• {labels}: The labels available in the current project
 	• {project_members}: The list of current project members
 	• {revisions}: Revision information about the MR
-	• {pipeline}: Information about the current branch's pipeline
+	• {pipeline}: Information about the current branch's pipeline. Returns
+	and object with `latest_pipeline` and `jobs` as fields.
       • {resource.refresh}: (bool) Whether to re-fetch the data from Gitlab
       or use the cached data locally, if available.
   • {cb} (function) The callback function that runs after all of the
