@@ -35,12 +35,6 @@ function async:fetch(dependencies, i, argTable)
     return
   end
 
-  -- If the dependency has a condition that is false, skip the API call
-  if dependency.condition == false then
-    self:fetch(dependencies, i + 1, argTable)
-    return
-  end
-
   -- Call the API, set the data, and then call the next API
   job.run_job(dependency.endpoint, "GET", dependency.body, function(data)
     state[dependency.state] = data[dependency.key]

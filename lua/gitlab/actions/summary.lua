@@ -8,7 +8,6 @@ local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
-local pipeline = require("gitlab.actions.pipeline")
 
 local M = {
   layout_visible = false,
@@ -139,7 +138,11 @@ M.build_info_lines = function()
     pipeline = {
       title = "Pipeline Status",
       content = function()
-        return pipeline.get_pipeline_status()
+        local pipeline = state.INFO.pipeline
+        if type(pipeline) ~= "table" or (type(pipeline) == "table" and u.table_size(pipeline) == 0) then
+          return ""
+        end
+        return pipeline.status
       end,
     },
   }

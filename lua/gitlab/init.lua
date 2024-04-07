@@ -37,8 +37,7 @@ return {
   -- Global Actions 🌎
   summary = async.sequence({
     u.merge(info, { refresh = true }),
-    u.merge(labels_dep, { condition = u.contains(state.settings.info.fields, "labels") }),
-    u.merge(pipeline_dep, { condition = u.contains(state.settings.info.fields, "pipeline") }),
+    labels_dep,
   }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
