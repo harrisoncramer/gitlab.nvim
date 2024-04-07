@@ -19,6 +19,7 @@ local user = state.dependencies.user
 local info = state.dependencies.info
 local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
+local pipeline_dep = state.dependencies.pipeline
 local revisions = state.dependencies.revisions
 
 return {
@@ -34,7 +35,10 @@ return {
     emoji.init() -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
-  summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),
+  summary = async.sequence({
+    u.merge(info, { refresh = true }),
+    labels_dep,
+  }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
@@ -55,7 +59,7 @@ return {
   close_review = function()
     reviewer.close()
   end,
-  pipeline = async.sequence({ info }, pipeline.open),
+  pipeline = async.sequence({ pipeline_dep }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info, user }, discussions.toggle),
