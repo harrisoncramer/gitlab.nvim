@@ -35,21 +35,8 @@ function async:fetch(dependencies, i, argTable)
     return
   end
 
-  -- If the dependency endpoint requires dynamic data, get it and format
-  -- it into the endpoint
-  local endpoint = dependency.endpoint
-  if dependency.args ~= nil then
-    for _, f in ipairs(dependency.args) do
-      local api_string_arg = f()
-      if api_string_arg == nil then
-        return self:fetch(dependencies, i + 1, argTable)
-      end
-      endpoint = string.format(dependency.endpoint, api_string_arg)
-    end
-  end
-
   -- Call the API, set the data, and then call the next API
-  job.run_job(endpoint, "GET", dependency.body, function(data)
+  job.run_job(dependency.endpoint, "GET", dependency.body, function(data)
     state[dependency.state] = data[dependency.key]
     self:fetch(dependencies, i + 1, argTable)
   end)
