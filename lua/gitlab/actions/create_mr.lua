@@ -199,8 +199,8 @@ M.open_confirmation_popup = function(mr)
   end
 
   local description_lines = mr.description and M.build_description_lines(mr.description) or { "" }
-  local delete_branch = u.get_first_non_nil_value({mr.delete_branch, state.settings.create_mr.delete_branch})
-  local squash = u.get_first_non_nil_value({mr.squash, state.settings.create_mr.squash})
+  local delete_branch = u.get_first_non_nil_value({ mr.delete_branch, state.settings.create_mr.delete_branch })
+  local squash = u.get_first_non_nil_value({ mr.squash, state.settings.create_mr.squash })
 
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(M.description_bufnr, 0, -1, false, description_lines)
@@ -282,8 +282,8 @@ M.create_layout = function()
     }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
     Layout.Box({
-      Layout.Box(delete_branch_popup, { size = {width = #delete_title + 4} }),
-      Layout.Box(squash_popup, { size = {width = #squash_title + 4} }),
+      Layout.Box(delete_branch_popup, { size = { width = #delete_title + 4 } }),
+      Layout.Box(squash_popup, { size = { width = #squash_title + 4 } }),
       Layout.Box(target_branch_popup, { grow = 1 }),
     }, { size = 3 }),
   }, { dir = "col" })
