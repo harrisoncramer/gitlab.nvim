@@ -733,4 +733,38 @@ Merges the merge request into the target branch
 >lua
   require("gitlab").merge()
 
+gitlab.data({ opts }, cb)					*gitlab.nvim.data*
+
+The data function can be used to integrate `gitlab.nvim` with other plugins and tooling, by fetching 
+raw data about the current MR, including the summary information (title, description, etc); 
+reviewers, assignees, pipeline status.
+>lua
+  require("gitlab").data({
+    { type = "info", refresh = false },
+    { type = "user", refresh = false } }, function (data)
+      vim.print("The info data is: ", data.info)
+      vim.print("The user data is: ", data.user)
+  end)
+
+If the resources have not yet been fetched from Gitlab, this function will
+perform API calls for them. Once the data has been fetched, the callback will
+execute and passed the data as an argument.
+
+Parameters: ~
+  • {resources} (table) A list of resource blocks to fetch.
+  • {resource} (table) A resource to fetch, such as job information, etc.
+      • {resource.type}: (string) The type of resource, either: "user"
+      "labels", "project_members", "pipeline," or "revisions"." The types are:
+	• {user}: Information about the currently authenticated user
+	• {labels}: The labels available in the current project
+	• {project_members}: The list of current project members
+	• {revisions}: Revision information about the MR
+	• {pipeline}: Information about the current branch's pipeline. Returns
+	and object with `latest_pipeline` and `jobs` as fields.
+      • {resource.refresh}: (bool) Whether to re-fetch the data from Gitlab
+      or use the cached data locally, if available.
+  • {cb} (function) The callback function that runs after all of the
+      resources have been fetched. Will be passed a table with the data,
+      with each resource as a key-value pair, with the key being it's type.
+
 vim:tw=78:ts=8:noet:ft=help:norl:

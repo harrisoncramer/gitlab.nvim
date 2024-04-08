@@ -312,7 +312,7 @@ end
 M.dependencies = {
   user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
   info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
-  pipeline = { endpoint = "/pipeline", key = "latest_pipeline", state = "PIPELINE", refresh = true },
+  latest_pipeline = { endpoint = "/pipeline", key = "latest_pipeline", state = "PIPELINE", refresh = true },
   labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
   revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
   project_members = {

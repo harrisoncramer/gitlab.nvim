@@ -28,14 +28,6 @@ local function get_pipeline_jobs()
   return u.reverse(type(state.PIPELINE.jobs) == "table" and state.PIPELINE.jobs or {})
 end
 
-M.get_pipeline_status = function()
-  M.latest_pipeline = get_latest_pipeline()
-  if not M.latest_pipeline then
-    return
-  end
-  return string.format("%s (%s)", state.settings.pipeline[M.latest_pipeline.status], M.latest_pipeline.status)
-end
-
 -- The function will render the Pipeline state in a popup
 M.open = function()
   M.pipeline_jobs = get_pipeline_jobs()
@@ -58,7 +50,7 @@ M.open = function()
   local lines = {}
 
   u.switch_can_edit_buf(bufnr, true)
-  table.insert(lines, "Status: " .. M.get_pipeline_status())
+  table.insert(lines, "Status: " .. M.get_pipeline_status(false))
   table.insert(lines, "")
   table.insert(lines, string.format("Last Run: %s", u.time_since(M.latest_pipeline.created_at)))
   table.insert(lines, string.format("Url: %s", M.latest_pipeline.web_url))
@@ -175,6 +167,42 @@ M.see_logs = function()
 
     vim.api.nvim_buf_set_name(0, job_name)
   end)
+end
+
+---Returns the user-defined symbol representing the status
+---of the current pipeline. Takes an optional argument to
+---colorize the pipeline icon.
+---@param wrap_with_color boolean
+---@return string
+M.get_pipeline_icon = function(wrap_with_color)
+  M.latest_pipeline = get_latest_pipeline()
+  if not M.latest_pipeline then
+    return ""
+  end
+  local symbol = state.settings.pipeline[M.latest_pipeline.status]
+  if not wrap_with_color then
+    return symbol
+  end
+  if M.latest_pipeline.status == "failed" then
+    return "%#DiagnosticError#" .. symbol
+  end
+  if M.latest_pipeline.status == "success" then
+    return "%#DiagnosticOk#" .. symbol
+  end
+  return "%#DiagnosticWarn#" .. symbol
+end
+
+---Returns the status of the latest pipeline and the symbol
+--representing the status of the current pipeline. Takes an optional argument to
+---colorize the pipeline icon.
+---@param wrap_with_color boolean
+---@return string
+M.get_pipeline_status = function(wrap_with_color)
+  M.latest_pipeline = get_latest_pipeline()
+  if not M.latest_pipeline then
+    return ""
+  end
+  return string.format("%s (%s)", M.get_pipeline_icon(wrap_with_color), M.latest_pipeline.status)
 end
 
 M.color_status = function(status, bufnr, status_line, linnr)
