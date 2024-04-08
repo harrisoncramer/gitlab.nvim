@@ -199,20 +199,8 @@ M.open_confirmation_popup = function(mr)
   end
 
   local description_lines = mr.description and M.build_description_lines(mr.description) or { "" }
-
-  local delete_branch
-  if mr.delete_branch ~= nil then
-    delete_branch = mr.delete_branch
-  else
-    delete_branch = state.settings.create_mr.delete_branch
-  end
-
-  local squash
-  if mr.squash ~= nil then
-    squash = mr.squash
-  else
-    squash = state.settings.create_mr.squash
-  end
+  local delete_branch = u.get_first_non_nil_value({mr.delete_branch, state.settings.create_mr.delete_branch})
+  local squash = u.get_first_non_nil_value({mr.squash, state.settings.create_mr.squash})
 
   vim.schedule(function()
     vim.api.nvim_buf_set_lines(M.description_bufnr, 0, -1, false, description_lines)

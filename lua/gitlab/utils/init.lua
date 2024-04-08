@@ -29,6 +29,17 @@ M.get_last_word = function(sentence, divider)
   return words[#words] or ""
 end
 
+---Return the first non-nil value in the input table, or nil
+---@param values table The list of input values
+---@return any
+M.get_first_non_nil_value = function(values)
+  for _, val in pairs(values) do
+    if val ~= nil then
+      return val
+    end
+  end
+end
+
 ---Returns whether a string ends with a substring
 ---@param str string
 ---@param ending string
