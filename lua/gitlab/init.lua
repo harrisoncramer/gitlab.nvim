@@ -8,6 +8,7 @@ local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
 local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
+local data = require("gitlab.actions.data")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
 local pipeline = require("gitlab.actions.pipeline")
@@ -19,6 +20,7 @@ local user = state.dependencies.user
 local info = state.dependencies.info
 local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
+local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
 
 return {
@@ -34,7 +36,10 @@ return {
     emoji.init() -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
-  summary = async.sequence({ u.merge(info, { refresh = true }), labels_dep }, summary.summary),
+  summary = async.sequence({
+    u.merge(info, { refresh = true }),
+    labels_dep,
+  }, summary.summary),
   approve = async.sequence({ info }, approvals.approve),
   revoke = async.sequence({ info }, approvals.revoke),
   add_reviewer = async.sequence({ info, project_members }, assignees_and_reviewers.add_reviewer),
@@ -55,7 +60,7 @@ return {
   close_review = function()
     reviewer.close()
   end,
-  pipeline = async.sequence({ info }, pipeline.open),
+  pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
   toggle_discussions = async.sequence({ info, user }, discussions.toggle),
@@ -65,6 +70,7 @@ return {
   reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
   state = state,
+  data = data.data,
   print_settings = state.print_settings,
   open_in_browser = async.sequence({ info }, function()
     if state.INFO.web_url == nil then

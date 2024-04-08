@@ -398,10 +398,6 @@ local function get_new_line(node)
     return node.new_line
   end
 
-  if range.start.new_line ~= nil then
-    return range.start.new_line
-  end
-
   local _, start_new_line = common.parse_line_code(range.start.line_code)
   return start_new_line
 end
@@ -415,10 +411,6 @@ local function get_old_line(node)
   local range = node.range
   if range == nil then
     return node.old_line
-  end
-
-  if range.start.old_line ~= nil then
-    return range.start.old_line
   end
 
   local start_old_line, _ = common.parse_line_code(range.start.line_code)
