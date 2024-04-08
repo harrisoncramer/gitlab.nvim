@@ -35,6 +35,7 @@ type fakeClient struct {
 	listAllProjectMembers              func(pid interface{}, opt *gitlab.ListProjectMembersOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.ProjectMember, *gitlab.Response, error)
 	retryPipelineBuild                 func(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
 	listPipelineJobs                   func(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
+	getLatestPipeline                  func(pid interface{}, opt *gitlab.GetLatestPipelineOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
 	getTraceFile                       func(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
 	listLabels                         func(pid interface{}, opt *gitlab.ListLabelsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Label, *gitlab.Response, error)
 	listMergeRequestAwardEmojiOnNote   func(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
@@ -118,6 +119,10 @@ func (f fakeClient) RetryPipelineBuild(pid interface{}, pipeline int, options ..
 
 func (f fakeClient) ListPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error) {
 	return f.listPipelineJobs(pid, pipelineID, opts, options...)
+}
+
+func (f fakeClient) GetLatestPipeline(pid interface{}, opts *gitlab.GetLatestPipelineOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
+	return f.getLatestPipeline(pid, opts, options...)
 }
 
 func (f fakeClient) GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error) {

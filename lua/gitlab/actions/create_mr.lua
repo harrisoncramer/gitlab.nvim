@@ -196,10 +196,6 @@ M.add_title = function(mr)
       mr.title = value
     end,
   })
-  input:map("n", "<Esc>", function()
-    input:unmount()
-  end, { noremap = true })
-
   input:mount()
 end
 

@@ -115,7 +115,6 @@ require("gitlab").setup({
   },
   help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
-    exit = "<Esc>",
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
     perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
     width = "40%",
@@ -128,7 +127,6 @@ require("gitlab").setup({
     pipeline = nil,
     reply = nil,
     squash_message = nil,
-    backup_register = nil,
   },
   discussion_tree = { -- The discussion tree that holds all comments
     auto_open = true, -- Automatically open when the reviewer is opened

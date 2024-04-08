@@ -99,7 +99,7 @@ func (a *api) updateLabels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var labels = gitlab.Labels(labelUpdateRequest.Labels)
+	var labels = gitlab.LabelOptions(labelUpdateRequest.Labels)
 	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
 		Labels: &labels,
 	})
