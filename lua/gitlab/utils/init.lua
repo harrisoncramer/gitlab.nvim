@@ -29,6 +29,17 @@ M.get_last_word = function(sentence, divider)
   return words[#words] or ""
 end
 
+---Return the first non-nil value in the input table, or nil
+---@param values table The list of input values
+---@return any
+M.get_first_non_nil_value = function(values)
+  for _, val in pairs(values) do
+    if val ~= nil then
+      return val
+    end
+  end
+end
+
 ---Returns whether a string ends with a substring
 ---@param str string
 ---@param ending string
@@ -336,6 +347,30 @@ M.get_buffer_text = function(bufnr)
   return text
 end
 
+---Convert string to corresponding boolean
+---@param str string
+---@return boolean
+M.string_to_bool = function(str)
+  str = vim.fn.trim(str)
+  if str == "true" or str == "True" or str == "TRUE" then
+    return true
+  elseif str == "false" or str == "False" or str == "FALSE" then
+    return false
+  end
+  M.notify("Not a valid boolean value `" .. str .. "`. Defaulting to `false`", vim.log.levels.WARN)
+  return false
+end
+
+---Convert boolean to corresponding string
+---@param bool boolean
+---@return string
+M.bool_to_string = function(bool)
+  if bool == true then
+    return "true"
+  end
+  return "false"
+end
+
 M.string_starts = function(str, start)
   return str:sub(1, #start) == start
 end
@@ -429,6 +464,27 @@ M.create_popup_state = function(title, settings, width, height, zindex)
   }
 
   return view_opts
+end
+
+---Create view_opts for Box popups used inside popup Layouts
+---@param title string The string to appear on top of the popup
+---@param enter boolean Whether the pop should be focused after creation
+---@return table
+M.create_box_popup_state = function(title, enter)
+  local settings = require("gitlab.state").settings.popup
+  return {
+    buf_options = {
+      filetype = "markdown",
+    },
+    enter = enter or false,
+    focusable = true,
+    border = {
+      style = settings.border,
+      text = {
+        top = title,
+      },
+    },
+  }
 end
 
 M.read_file = function(file_path, opts)

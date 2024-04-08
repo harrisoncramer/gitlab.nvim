@@ -85,13 +85,11 @@ M.settings = {
       return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
     end,
   },
-  merge = {
-    squash = false,
-    delete_branch = false,
-  },
   create_mr = {
     target = nil,
     template_file = nil,
+    delete_branch = false,
+    squash = false,
     title_input = {
       width = 40,
       border = "rounded",
@@ -112,6 +110,8 @@ M.settings = {
       "pipeline",
       "branch",
       "target_branch",
+      "delete_branch",
+      "squash",
       "labels",
     },
   },

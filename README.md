@@ -169,8 +169,12 @@ require("gitlab").setup({
       "conflicts",
       "assignees",
       "reviewers",
-      "branch",
       "pipeline",
+      "branch",
+      "target_branch",
+      "delete_branch",
+      "squash",
+      "labels",
     },
   },
   discussion_signs = {
@@ -195,13 +199,11 @@ require("gitlab").setup({
     success = "✓",
     failed = "",
   },
-  merge = { -- The default behaviors when merging an MR, see "Merging an MR"
-    squash = false,
-    delete_branch = false,
-  },
   create_mr = {
     target = nil, -- Default branch to target when creating an MR
     template_file = nil, -- Default MR template in .gitlab/merge_request_templates
+    delete_branch = false, -- Whether the source branch will be marked for deletion
+    squash = false, -- Whether the commits will be marked for squashing
     title_input = { -- Default settings for MR title input window
       width = 40,
       border = "rounded",

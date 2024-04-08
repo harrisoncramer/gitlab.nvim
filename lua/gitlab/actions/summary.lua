@@ -17,43 +17,6 @@ local M = {
   description_bufnr = nil,
 }
 
-local title_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-  },
-}
-
-local details_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Details",
-    },
-  },
-}
-
-local description_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  enter = true,
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Description",
-    },
-  },
-}
-
 -- The function will render a popup containing the MR title and MR description, and optionally,
 -- any additional metadata that the user wants. The title and description are editable and
 -- can be changed via the local action keybinding, which also closes the popup
@@ -66,7 +29,7 @@ M.summary = function()
 
   local title = state.INFO.title
   local description_lines = M.build_description_lines()
-  local info_lines = state.settings.info.enabled and M.build_info_lines() or nil
+  local info_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
 
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
 
@@ -89,7 +52,7 @@ M.summary = function()
       vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
     end
 
-    M.color_labels(info_popup.bufnr) -- Color labels in details popup
+    M.color_details(info_popup.bufnr) -- Color values in details popup
 
     state.set_popup_keymaps(
       description_popup,
@@ -133,8 +96,10 @@ M.build_info_lines = function()
     assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
     reviewers = { title = "Reviewers", content = u.make_readable_list(info.reviewers, "name") },
     branch = { title = "Branch", content = info.source_branch },
-    labels = { title = "Labels", content = table.concat(info.labels, ", ") },
-    target_branch = { title = "Target Branch", content = state.INFO.target_branch },
+    labels = { title = "Labels", content = u.make_comma_separated_readable(info.labels) },
+    target_branch = { title = "Target Branch", content = info.target_branch },
+    delete_branch = { title = "Delete Source Branch", content = (info.force_remove_source_branch and "Yes" or "No") },
+    squash = { title = "Squash Commits", content = (info.squash and "Yes" or "No") },
     pipeline = {
       title = "Pipeline Status",
       content = function()
@@ -196,15 +161,15 @@ M.edit_summary = function()
 end
 
 M.create_layout = function(info_lines)
-  local title_popup = Popup(title_popup_settings)
+  local title_popup = Popup(u.create_box_popup_state(nil, false))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(description_popup_settings)
+  local description_popup = Popup(u.create_box_popup_state("Description", true))
   M.description_bufnr = description_popup.bufnr
   local details_popup
 
   local internal_layout
   if state.settings.info.enabled then
-    details_popup = Popup(details_popup_settings)
+    details_popup = Popup(u.create_box_popup_state("Details", false))
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({
@@ -241,8 +206,8 @@ M.create_layout = function(info_lines)
   return layout, title_popup, description_popup, details_popup
 end
 
-M.color_labels = function(bufnr)
-  local label_namespace = vim.api.nvim_create_namespace("Labels")
+M.color_details = function(bufnr)
+  local details_namespace = vim.api.nvim_create_namespace("Details")
   for i, v in ipairs(state.settings.info.fields) do
     if v == "labels" then
       local line_content = u.get_line_content(bufnr, i)
@@ -251,8 +216,15 @@ M.color_labels = function(bufnr)
         if start_idx ~= nil and end_idx ~= nil then
           vim.cmd("highlight " .. "label" .. j .. " guifg=white")
           vim.api.nvim_set_hl(0, ("label" .. j), { fg = label.Color })
-          vim.api.nvim_buf_add_highlight(bufnr, label_namespace, ("label" .. j), i - 1, start_idx - 1, end_idx)
+          vim.api.nvim_buf_add_highlight(bufnr, details_namespace, ("label" .. j), i - 1, start_idx - 1, end_idx)
         end
+      end
+    elseif v == "delete_branch" or v == "squash" or v == "draft" or v == "conflicts" then
+      local line_content = u.get_line_content(bufnr, i)
+      local start_idx, end_idx = line_content:find("%S-$")
+      if start_idx ~= nil and end_idx ~= nil then
+        vim.api.nvim_set_hl(0, "boolean", { link = "Constant" })
+        vim.api.nvim_buf_add_highlight(bufnr, details_namespace, "boolean", i - 1, start_idx - 1, end_idx)
       end
     end
   end
