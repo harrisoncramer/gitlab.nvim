@@ -96,7 +96,7 @@ M.build_info_lines = function()
     assignees = { title = "Assignees", content = u.make_readable_list(info.assignees, "name") },
     reviewers = { title = "Reviewers", content = u.make_readable_list(info.reviewers, "name") },
     branch = { title = "Branch", content = info.source_branch },
-    labels = { title = "Labels", content = u.make_comma_separated_readable(info.labels) },
+    labels = { title = "Labels", content = table.concat(info.labels, ", ") },
     target_branch = { title = "Target Branch", content = info.target_branch },
     delete_branch = { title = "Delete Source Branch", content = (info.force_remove_source_branch and "Yes" or "No") },
     squash = { title = "Squash Commits", content = (info.squash and "Yes" or "No") },
