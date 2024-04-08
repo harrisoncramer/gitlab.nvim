@@ -268,22 +268,24 @@ M.create_layout = function()
   M.description_bufnr = description_popup.bufnr
   local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false))
   M.target_bufnr = target_branch_popup.bufnr
-  local delete_branch_popup = Popup(u.create_box_popup_state("Delete Source Branch", false))
+  local delete_title = vim.o.columns > 110 and "Delete source branch" or "Delete source"
+  local delete_branch_popup = Popup(u.create_box_popup_state(delete_title, false))
   M.delete_branch_bufnr = delete_branch_popup.bufnr
-  local squash_popup = Popup(u.create_box_popup_state("Squash Commits", false))
+  local squash_title = vim.o.columns > 110 and "Squash commits" or "Squash"
+  local squash_popup = Popup(u.create_box_popup_state(squash_title, false))
   M.squash_bufnr = squash_popup.bufnr
 
   local internal_layout
   internal_layout = Layout.Box({
     Layout.Box({
       Layout.Box(title_popup, { grow = 1 }),
-      Layout.Box(target_branch_popup, { grow = 1 }),
-    }, { size = 3 }),
-    Layout.Box({
-      Layout.Box(delete_branch_popup, { grow = 1 }),
-      Layout.Box(squash_popup, { grow = 1 }),
     }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
+    Layout.Box({
+      Layout.Box(delete_branch_popup, { size = {width = #delete_title + 4} }),
+      Layout.Box(squash_popup, { size = {width = #squash_title + 4} }),
+      Layout.Box(target_branch_popup, { grow = 1 }),
+    }, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
