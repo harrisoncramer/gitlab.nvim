@@ -28,14 +28,12 @@ it to the client for initialization. The current directory must be a valid
 Gitlab project and the branch must be a feature branch
 */
 func extractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (string, error), getCurrentBranchName func() (string, error)) (GitProjectInfo, error) {
-
 	err := refreshGitInfo()
 	if err != nil {
 		return GitProjectInfo{}, fmt.Errorf("Could not get latest information from remote: %v", err)
 	}
 
 	url, err := getProjectRemoteUrl()
-
 	if err != nil {
 		return GitProjectInfo{}, fmt.Errorf("Could not get project Url: %v", err)
 	}
@@ -52,7 +50,7 @@ func extractGitInfo(refreshGitInfo func() error, getProjectRemoteUrl func() (str
 	           https://git@gitlab.com/namespace/subnamespace/dummy-test-repo.git
 	           git@git@gitlab.com:namespace/subnamespace/dummy-test-repo.git
 	*/
-	re := regexp.MustCompile(`(?:^https?:\/\/|^ssh:\/\/|^git@)(?:[^\/:]+)[\/:](.*)\/([^\/]+?)(?:\.git)?$`)
+	re := regexp.MustCompile(`(?:^https?:\/\/|^ssh:\/\/|^git@)(?:[^\/:]+)(?::\d+)?[\/:](.*)\/([^\/]+?)(?:\.git)?$`)
 	matches := re.FindStringSubmatch(url)
 	if len(matches) != 3 {
 		return GitProjectInfo{}, fmt.Errorf("Invalid Git URL format: %s", url)

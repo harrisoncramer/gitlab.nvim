@@ -103,6 +103,18 @@ func TestExtractGitInfo_Success(t *testing.T) {
 			},
 		},
 		{
+			desc: "Project configured in SSH:// and have a custom port",
+			getProjectRemoteUrl: func() (string, error) {
+				return "ssh://custom-gitlab.com:2222/namespace-1/project-name", nil
+			},
+			expected: GitProjectInfo{
+				RemoteUrl:   "ssh://custom-gitlab.com:2222/namespace-1/project-name",
+				BranchName:  "feature/abc",
+				ProjectName: "project-name",
+				Namespace:   "namespace-1",
+			},
+		},
+		{
 			desc: "Project configured in HTTP and under a single folder without .git extension",
 			getProjectRemoteUrl: func() (string, error) {
 				return "http://custom-gitlab.com/namespace-1/project-name", nil
