@@ -40,7 +40,7 @@ M.open = function()
   local height = 6 + #M.pipeline_jobs + 3
 
   local pipeline_popup =
-      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
@@ -183,10 +183,10 @@ M.get_pipeline_icon = function(wrap_with_color)
   if not wrap_with_color then
     return symbol
   end
-  if M.latest_pipeline.status == 'failed' then
+  if M.latest_pipeline.status == "failed" then
     return "%#DiagnosticError#" .. symbol
   end
-  if M.latest_pipeline.status == 'success' then
+  if M.latest_pipeline.status == "success" then
     return "%#DiagnosticOk#" .. symbol
   end
   return "%#DiagnosticWarn#" .. symbol
