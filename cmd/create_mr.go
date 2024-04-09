@@ -14,6 +14,8 @@ type CreateMrRequest struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	TargetBranch string `json:"target_branch"`
+	DeleteBranch bool   `json:"delete_branch"`
+	Squash       bool   `json:"squash"`
 }
 
 /* createMr creates a merge request */
@@ -49,10 +51,12 @@ func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := gitlab.CreateMergeRequestOptions{
-		Title:        &createMrRequest.Title,
-		Description:  &createMrRequest.Description,
-		TargetBranch: &createMrRequest.TargetBranch,
-		SourceBranch: &a.gitInfo.BranchName,
+		Title:              &createMrRequest.Title,
+		Description:        &createMrRequest.Description,
+		TargetBranch:       &createMrRequest.TargetBranch,
+		SourceBranch:       &a.gitInfo.BranchName,
+		RemoveSourceBranch: &createMrRequest.DeleteBranch,
+		Squash:             &createMrRequest.Squash,
 	}
 
 	_, res, err := a.client.CreateMergeRequest(a.projectInfo.ProjectId, &opts)

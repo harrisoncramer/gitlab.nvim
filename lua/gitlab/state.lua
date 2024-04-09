@@ -39,6 +39,7 @@ M.settings = {
     help = nil,
     pipeline = nil,
     squash_message = nil,
+    temp_registers = {},
   },
   discussion_tree = {
     auto_open = true,
@@ -85,13 +86,11 @@ M.settings = {
       return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
     end,
   },
-  merge = {
-    squash = false,
-    delete_branch = false,
-  },
   create_mr = {
     target = nil,
     template_file = nil,
+    delete_branch = false,
+    squash = false,
     title_input = {
       width = 40,
       border = "rounded",
@@ -112,6 +111,8 @@ M.settings = {
       "pipeline",
       "branch",
       "target_branch",
+      "delete_branch",
+      "squash",
       "labels",
     },
   },
@@ -296,9 +297,15 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
     end, { buffer = popup.bufnr, desc = "Perform linewise action" })
   end
 
-  vim.api.nvim_create_autocmd("BufUnload", {
+  vim.api.nvim_create_autocmd("BufWinLeave", {
     buffer = popup.bufnr,
     callback = function()
+      if opts.save_to_temp_register then
+        local text = u.get_buffer_text(popup.bufnr)
+        for _, register in ipairs(M.settings.popup.temp_registers) do
+          vim.fn.setreg(register, text)
+        end
+      end
       exit(popup, opts)
     end,
   })

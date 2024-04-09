@@ -11,10 +11,11 @@ Table of Contents                              *gitlab.nvim.table-of-contents*
   - Usage                                                  |gitlab.nvim.usage|
   - The Summary view                            |gitlab.nvim.the-summary-view|
   - Reviewing an MR                              |gitlab.nvim.reviewing-an-mr|
+  - Temporary registers                           |gitlab.nvim.temp-registers|
   - Discussions and Notes                  |gitlab.nvim.discussions-and-notes|
   - Labels                                                |gitlab.nvim.labels|
   - Signs and diagnostics                  |gitlab.nvim.signs-and-diagnostics|
-  - Emojis						  gitlab.nvim.emojis
+  - Emojis                                                |gitlab.nvim.emojis|
   - Uploading Files                              |gitlab.nvim.uploading-files|
   - MR Approvals                                    |gitlab.nvim.mr-approvals|
   - Merging an MR                                  |gitlab.nvim.merging-an-mr|
@@ -25,6 +26,7 @@ Table of Contents                              *gitlab.nvim.table-of-contents*
   - Keybindings                                      |gitlab.nvim.keybindings|
   - Troubleshooting                              |gitlab.nvim.troubleshooting|
   - Api                                                      |gitlab.nvim.api|
+
 
 OVERVIEW                                                *gitlab.nvim.overview*
 
@@ -38,6 +40,7 @@ the editor. This means you can do things like:
 - Create, edit, delete, and reply to comments
 - View and manage pipeline Jobs
 - Upload files, jump to the browser, and a lot more!
+
 
 REQUIREMENTS                                        *gitlab.nvim.requirements*
 
@@ -56,7 +59,6 @@ QUICK START                                          *gitlab.nvim.quick-start*
 INSTALLATION                                        *gitlab.nvim.installation*
 
 With Lazy:
-
 >lua
     return {
       "harrisoncramer/gitlab.nvim",
@@ -74,9 +76,7 @@ With Lazy:
       end,
     }
 <
-
 And with Packer:
-
 >lua
     use {
       'harrisoncramer/gitlab.nvim',
@@ -94,7 +94,6 @@ And with Packer:
     }
 <
 
-
 CONNECTING TO GITLAB                        *gitlab.nvim.connecting-to-gitlab*
 
 This plugin requires an auth token to connect to Gitlab. The token can be set
@@ -106,19 +105,15 @@ Optionally provide a GITLAB_URL environment variable (or gitlab_url value in
 the `.gitlab.nvim` file) to connect to a self-hosted Gitlab instance. This is
 optional, use ONLY for self-hosted instances. Here’s what they’d look like
 as environment variables:
-
 >bash
     export GITLAB_TOKEN="your_gitlab_token"
     export GITLAB_URL="https://my-personal-gitlab-instance.com/"
 <
-
 And as a `.gitlab.nvim` file:
-
 >
     auth_token=your_gitlab_token
     gitlab_url=https://my-personal-gitlab-instance.com/
 <
-
 The plugin will look for the `.gitlab.nvim` file in the root of the current
 project by default. However, you may provide a custom path to the configuration
 file via the `config_path` option. This must be an absolute path to the
@@ -127,11 +122,11 @@ directory that holds your `.gitlab.nvim` file.
 The `connection_settings` block in the `state.lua` file will be used to
 configure your connection to Gitlab.
 
+
 CONFIGURING THE PLUGIN                    *gitlab.nvim.configuring-the-plugin*
 
 Here is the default setup function. All of these values are optional, and if
 you call this function with no values the defaults will be used:
-
 >lua
     require("gitlab").setup({
       port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
@@ -158,6 +153,7 @@ you call this function with no values the defaults will be used:
         pipeline = nil,
         reply = nil,
         squash_message = nil,
+        temp_registers = {}, -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
       },
       discussion_tree = { -- The discussion tree that holds all comments
         auto_open = true, -- Automatically open when the reviewer is opened
@@ -198,22 +194,24 @@ you call this function with no values the defaults will be used:
           "conflicts",
           "assignees",
           "reviewers",
+          "pipeline",
           "branch",
           "target_branch",
-          "pipeline",
+          "delete_branch",
+          "squash",
           "labels",
         },
       },
       discussion_signs = {
-	enabled = true, -- Show diagnostics for gitlab comments in the reviewer
-	skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
-	severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
-	virtual_text = false, -- Whether to show the comment text inline as floating virtual text
-	priority = 100, -- Higher will override LSP warnings, etc
-	icons = {
-	  comment = "→|",
-	  range = " |",
-	},
+        enabled = true, -- Show diagnostics for gitlab comments in the reviewer
+        skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
+        severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
+        virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+        priority = 100, -- Higher will override LSP warnings, etc
+        icons = {
+          comment = "→|",
+          range = " |",
+        },
       },
       pipeline = {
         created = "",
@@ -226,13 +224,11 @@ you call this function with no values the defaults will be used:
         success = "✓",
         failed = "",
       },
-      merge = { -- The default behaviors when merging an MR, see "Merging an MR"
-        squash = false,
-        delete_branch = false,
-      },
       create_mr = {
         target = nil, -- Default branch to target when creating an MR
         template_file = nil, -- Default MR template in .gitlab/merge_request_templates
+        delete_branch = false, -- Whether the source branch will be marked for deletion
+        squash = false, -- Whether the commits will be marked for squashing
         title_input = { -- Default settings for MR title input window
           width = 40,
           border = "rounded",
@@ -251,27 +247,22 @@ you call this function with no values the defaults will be used:
     })
 <
 
-
 USAGE                                                      *gitlab.nvim.usage*
 
-First, check out the branch that you want to review locally.
-
+First, check out the branch that you want to review locally:
 >
     git checkout feature-branch
 <
-
 Then open Neovim. To begin, try running the `summary` command or the `review`
 command.
 
 
 THE SUMMARY VIEW                                *gitlab.nvim.the-summary-view*
 
-The `summary` action will open the MR title and description.
-
+The `summary` action will open the MR title and description:
 >lua
     require("gitlab").summary()
 <
-
 After editing the description or title, you may save your changes via the
 `settings.popup.perform_action` keybinding.
 
@@ -286,15 +277,13 @@ REVIEWING AN MR                                  *gitlab.nvim.reviewing-an-mr*
 The `review` action will open a diff of the changes. You can leave comments
 using the `create_comment` action. In visual mode, add multiline comments with
 the `create_multiline_comment` command, and add suggested changes with the
-`create_comment_suggestion` command.
-
+`create_comment_suggestion` command:
 >lua
     require("gitlab").review()
     require("gitlab").create_comment()
     require("gitlab").create_multiline_comment()
     require("gitlab").create_comment_suggestion()
 <
-
 For suggesting changes you can use `create_comment_suggestion` in visual mode
 which works similar to `create_multiline_comment` but prefills the comment
 window with Gitlab’s suggest changes
@@ -303,13 +292,32 @@ code block with prefilled code from the visual selection.
 Just like the summary, all the different kinds of comments are saved via the
 `settings.popup.perform_action` keybinding.
 
+TEMPORARY REGISTERS                               *gitlab.nvim.temp-registers*
+
+While writing a note/comment/suggestion/reply, you may need to interrupt the
+work, do something else (e.g., read something in another file, etc.), and then
+get back to your work on the comment. For occasions like this, you can set
+`settings.popup.temp_registers` to a list of writable registers (see |registers|)
+to which the contents of the popup window will be saved just before quitting.
+
+A possible setting is, e.g., `settings.popup.backup_register = {'"', "+", "g"}`
+which saves to the so called unnamed register (see |quotequote|), the system
+clipboard register (see |quoteplus|), as well as to the "g" register. This lets
+you easily paste the text back in with |p| or |P| (from the unnamed register),
+or with `"gp` or `"gP` if the unnamed register gets overwritten with something
+else. Using the clipboard register lets you easily use the text outside of
+nvim.
+
+NOTE: The `temp_registers` are also filled with the contents of the popup when
+pressing the `settings.popup.perform_action` keybinding, even if the action
+that was supposed to be performed fails.
+
 DISCUSSIONS AND NOTES                      *gitlab.nvim.discussions-and-notes*
 
 Gitlab groups threads of comments together into "discussions."
 
 To display all discussions for the current MR, use the `toggle_discussions`
-action, which will show the discussions in a split window.
-
+action, which will show the discussions in a split window:
 >lua
     require("gitlab").toggle_discussions()
 <
@@ -324,7 +332,6 @@ Within the discussion tree, you can delete/edit/reply to comments with the
 If you’d like to create a note in an MR (like a comment, but not linked to a
 specific line) use the `create_note` action. The same keybindings for
 delete/edit/reply are available on the note tree.
-
 >lua
     require("gitlab").create_note()
 <
@@ -339,7 +346,7 @@ $XDG_CONFIG_HOME/nvim/after/ftplugin/gitlab.lua with the following contents:
     vim.o.breakindent = true
 <
 
-LABELS                                       *gitlab.nvim.labels*
+LABELS                                                    *gitlab.nvim.labels*
 
 You can add or remove labels from the current MR.
 >lua
@@ -348,6 +355,7 @@ You can add or remove labels from the current MR.
 
 These labels will be visible in the summary panel, as long as you provide the
 "fields" string in your setup function under the `setting.info.fields` block.
+
 
 SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 
@@ -376,7 +384,8 @@ You may skip resolved discussions by toggling `discussion_signs.skip_resolved_di
 in your setup function to true. By default, discussions from this plugin
 are shown at the INFO severity level (see :h vim.diagnostic.severity).
 
-EMOJIS                                       *gitlab.nvim.emojis*
+
+EMOJIS                                                    *gitlab.nvim.emojis*
 
 You can add or remove emojis from a note or comment in the discussion tree.
 
@@ -401,42 +410,34 @@ Use the `settings.popup.perform_action` to send the changes to Gitlab.
 MR APPROVALS                                        *gitlab.nvim.mr-approvals*
 
 You can approve or revoke approval for an MR with the `approve` and `revoke`
-actions respectively.
-
+actions respectively:
 >lua
     require("gitlab").approve()
     require("gitlab").revoke()
 <
 
-
 MERGING AN MR                                      *gitlab.nvim.merging-an-mr*
 
 The `merge` action will merge an MR. The MR must be in a "mergeable" state for
 this command to work.
-
 >lua
     require("gitlab").merge()
     require("gitlab").merge({ squash = false, delete_branch = false })
 <
-
-You can configure default behaviors via the setup function, values passed into
-the `merge` action will override the defaults.
-
-If you enable `squash` you will be prompted for a squash message. To use the
-default message, leave the popup empty. Use the `settings.popup.perform_action`
-to merge the MR with your message.
+See |gitlab.nvim.merge| for more help on this function.
 
 
 CREATING AN MR                                    *gitlab.nvim.creating-an-mr*
 
 To create an MR for the current branch, make sure you have the branch checked
-out. Then, use the `create_mr` action. See `:h gitlab.nvim.create_mr` for more
+out. Then, use the `create_mr` action. See |gitlab.nvim.create_mr| for more
 help on this function
 >lua
     require("gitlab").create_mr()
     require("gitlab").create_mr({ target = "main" })
-    require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
+    require("gitlab").create_mr({ template_file = "my-template.md", title = "Fix bug XYZ" })
 <
+
 PIPELINES                                              *gitlab.nvim.pipelines*
 
 You can view the status of the pipeline for the current MR with the `pipeline`
@@ -449,22 +450,20 @@ To re-trigger failed jobs in the pipeline manually, use the
 new Neovim buffer, use your `settings.popup.perform_linewise_action`
 keybinding.
 
+
 REVIEWERS AND ASSIGNEES                  *gitlab.nvim.reviewers-and-assignees*
 
 The `add_reviewer` and `delete_reviewer` actions, as well as the `add_assignee`
 and `delete_assignee` functions, will let you choose from a list of users who
 are available in the current project:
-
 >lua
     require("gitlab").add_reviewer()
     require("gitlab").delete_reviewer()
     require("gitlab").add_assignee()
     require("gitlab").delete_assignee()
 <
-
 These actions use Neovim’s built in picker, which is much nicer if you
-install dressing. If you use Dressing, please enable it:
-
+install `dressing.nvim`. If you use Dressing, please enable it:
 >lua
     require("dressing").setup({
         input = {
@@ -473,21 +472,18 @@ install dressing. If you use Dressing, please enable it:
     })
 <
 
-
 RESTARTING OR SHUTTING DOWN          *gitlab.nvim.restarting-or-shutting-down*
 
 The `gitlab.nvim` server will shut down automatically when you exit Neovim.
 However, if you would like to manage this yourself (for instance, restart the
 server when you check out a new branch) you may do so via the `restart`
-command, or `shutdown` commands, which both accept callbacks.
-
+command, or `shutdown` commands, which both accept callbacks:
 >lua
     require("gitlab.server").restart()
+    require("gitlab.server").shutdown()
 <
-
 For instance you could set up the following keybinding to close and reopen the
 reviewer when checking out a new branch:
-
 >lua
     local gitlab = require("gitlab")
     vim.keymap.set("n", "glB", function ()
@@ -498,14 +494,12 @@ reviewer when checking out a new branch:
     end)
 <
 
-
 KEYBINDINGS                                          *gitlab.nvim.keybindings*
 
 The plugin does not set up any keybindings outside of the special buffers it
 creates, you need to set them up yourself. Here’s what I’m using (note that
 the `<leader>` prefix is not necessary, as `gl` does not have a special meaning
 in normal mode):
-
 >lua
     local gitlab = require("gitlab")
     local gitlab_server = require("gitlab.server")
@@ -529,35 +523,35 @@ in normal mode):
     vim.keymap.set("n", "glM", gitlab.merge)
 <
 
-
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
 
-**To check that the current settings of the plugin are configured correctly,
-please run: :lua require("gitlab").print_settings()**
-
+To check that the current settings of the plugin are configured correctly,~
+please run:~
+>lua
+    require("gitlab").print_settings()
+<
 This plugin uses a Go server to reach out to Gitlab. It’s possible that
 something is going wrong when starting that server or connecting with Gitlab.
 The Go server runs outside of Neovim, and can be interacted with directly in
 order to troubleshoot. To start the server, check out your feature branch and
 run these commands:
-
 >lua
-    :lua require("gitlab.server").build(true)
-    :lua require("gitlab.server").start(function() print("Server started") end)
+    require("gitlab.server").build(true)
+    require("gitlab.server").start(function() print("Server started") end)
 <
 
 The easiest way to debug what’s going wrong is to turn on the `debug` options
 in your setup function. This will allow you to see requests leaving the Go
 server, and the responses coming back from Gitlab. Once the server is running,
 you can also interact with the Go server like any other process:
-
 >
     curl --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" localhost:21036/mr/info
 <
 ==============================================================================
-Lua API							 	*gitlab.nvim.api*
+LUA API                                                         *gitlab.nvim.api*
 
-setup()								*gitlab.nvim.setup*
+                                                                *gitlab.nvim.setup*
+setup() ~
 
 Call this first to initialize the plugin. With no arguments, it will use the
 default arguments outlined under "Configuring the Plugin".
@@ -567,15 +561,17 @@ default arguments outlined under "Configuring the Plugin".
   require("gitlab").setup({ port = 8392 })
 
   require("gitlab").setup({ discussion_tree = { blacklist = { "some_bot"} } })
-
-review()							*gitlab.nvim.review*
+<
+                                                                *gitlab.nvim.review*
+review() ~
 
 Opens the reviewer pane. Can be used from anywhere within Neovim after the
 plugin is loaded. If run twice, will open a second reviewer pane.
 >lua
   require("gitlab").review()
-
-summary()							*gitlab.nvim.summary*
+<
+                                                                *gitlab.nvim.summary*
+summary() ~
 
 Opens the summary window with information about the current MR, such as the
 description, the author, and the title. Can be configured via the `info` field
@@ -586,31 +582,35 @@ in the setup call.
 The summary can be edited. Once you have made changes, send them to Gitlab via
 the `settings.popup.perform_action` keybinding.
 
-approve()							*gitlab.nvim.approve*
+                                                                *gitlab.nvim.approve*
+approve() ~
 
 Approves the current MR. Will error if the current user does not have
 permission.
 >lua
   require("gitlab").approve()
-
-gitlab.revoke()							*gitlab.nvim.revoke*
+<
+                                                                *gitlab.nvim.revoke*
+gitlab.revoke() ~
 
 Revokes approval for the current MR. Will error if the current user does not
 have permission or has not previously approved the MR.
 >lua
   require("gitlab").approve()
-
-gitlab.create_comment()						*gitlab.nvim.create_comment*
+<
+                                                                *gitlab.nvim.create_comment*
+gitlab.create_comment() ~
 
 Opens a popup to create a comment on the current line. Must be called when focused on the
 reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
 >lua
   require("gitlab").comment()
 
-After the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
-keybinding, by default `<leader>l`
+After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
+keybinding, by default `<leader>l`.
 
-create_multiline_comment()					*gitlab.nvim.create_multiline_comment*
+                                                                *gitlab.nvim.create_multiline_comment*
+create_multiline_comment() ~
 
 Opens a popup to create a multi-line comment. May only be called in visual
 mode, and will use the currently selected lines.
@@ -620,7 +620,8 @@ mode, and will use the currently selected lines.
 After the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
 keybinding, by default `<leader>l`.
 
-create_comment_suggestion()					*gitlab.nvim.create_comment_suggestion*
+                                                                *gitlab.nvim.create_comment_suggestion*
+create_comment_suggestion() ~
 
 Opens a popup to create a comment suggestion (aka a comment that makes a committable
 change suggestion to the currently selected lines).
@@ -630,23 +631,38 @@ change suggestion to the currently selected lines).
 After the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
 keybinding, by default |<leader>l|
 
-create_mr({opts})						*gitlab.nvim.create_mr*
+                                                                *gitlab.nvim.create_mr*
+create_mr({opts}) ~
 
 Starts the process of creating an MR for the currently checked out branch.
 >lua
-    require("gitlab").create_mr()
-    require("gitlab").create_mr({ target = "main" })
-    require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
+  require("gitlab").create_mr()
+  require("gitlab").create_mr({ target = "main" })
+  require("gitlab").create_mr({ target = "main", template_file = "my-template.md" })
+  require("gitlab").create_mr({ title = "Fix bug XYZ", description = "Closes #123" })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments that can be used to skip
+          certain steps in the MR creation process. `target` and
+          `template_file` can also be configured via the `gitlab.setup()`
+          function in the `settings.create_mr` field. If any field is missing,
+          you will be prompted to select a value interactively:
+            • {target}: (string) Name of the target branch.
+            • {template_file}: (string) Name of file (relative to
+              `.gitlab/merge_request_templates`) that will be used for the MR
+              description. See also
+              <https://docs.gitlab.com/ee/user/project/description_templates.html>.
+            • {description}: (string) String used for the MR description.
+              Takes precedence over the {template_file}, if both options are
+              used.
+            • {title}: (string) MR title.
+            • {delete_branch}: (bool) If true, the source branch will be
+              marked for deletion.
+            • {squash}: (bool) If true, the commits will be marked for
+              squashing.
 
-Parameters:
-  • {opts}         Lua table that can be used to skip certain steps in the MR
-  creation process. If `target` is provided, you will not be prompted for one.
-  If a template_file is provided, it will be used automatically. Must be
-  located in `.gitlab/merge_request_templates`
-
-  These values can also be configured via the `gitlab.setup` function
-
-gitlab.move_to_discussion_tree_from_diagnostic()		*gitlab.nvim.move_to_discussion_tree_from_diagnostic*
+                                                                *gitlab.nvim.move_to_discussion_tree_from_diagnostic*
+gitlab.move_to_discussion_tree_from_diagnostic() ~
 
 When hovering over a diagnostic in the reviewer pane, jumps to the relevant
 node in the discussion tree.
@@ -655,17 +671,19 @@ node in the discussion tree.
 
 If there are no diagnostics for the current line, shows a warning message.
 
-gitlab.create_note()						*gitlab.nvim.create_note*
+                                                                *gitlab.nvim.create_note*
+gitlab.create_note() ~
 
 Opens a popup to create a note. Notes are like comments except they are not
 tied to specific changes in an MR.
 >lua
   require("gitlab").create_note()
 
-After the comment is typed, submit it to Gitlab via the |settings.popup.perform_action|
+After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
 keybinding, by default |<leader>l|
 
-gitlab.toggle_discussions()					*gitlab.nvim.toggle_discussions*
+                                                                *gitlab.nvim.toggle_discussions*
+gitlab.toggle_discussions() ~
 
 Toggles visibility of the discussion tree.
 >lua
@@ -675,69 +693,95 @@ Once the discussion tree is open, a number of different keybindings are availabl
 for interacting with different discussions. Please see the `settings.discussion_tree`
 section of the setup call for more information about different keybindings.
 
-gitlab.add_assignee()						*gitlab.nvim.add_assignee*
+                                                                *gitlab.nvim.add_assignee*
+gitlab.add_assignee() ~
 
 Opens up a select menu for choosing an assignee for the current merge request.
 >lua
   require("gitlab").add_assignee()
-
-gitlab.delete_assignee()					*gitlab.nvim.delete_assignee*
+<
+                                                                *gitlab.nvim.delete_assignee*
+gitlab.delete_assignee() ~
 
 Opens up a select menu for removing an existing assignee for the current merge request.
 >lua
   require("gitlab").delete_assignee()
-
-gitlab.add_reviewer()						*gitlab.nvim.add_reviewer*
+<
+                                                                *gitlab.nvim.add_reviewer*
+gitlab.add_reviewer() ~
 
 Opens up a select menu for adding a reviewer for the current merge request.
 >lua
   require("gitlab").add_reviewer()
-
-gitlab.add_label()						*gitlab.nvim.add_label*
+<
+                                                                *gitlab.nvim.add_label*
+gitlab.add_label() ~
 
 Opens up a select menu for adding a label to the current merge request.
 >lua
   require("gitlab").add_label()
-
-gitlab.delete_label()						*gitlab.nvim.delete_label*
+<
+                                                                *gitlab.nvim.delete_label*
+gitlab.delete_label() ~
 
 Opens up a select menu for removing an existing label from the current merge request.
 >lua
   require("gitlab").delete_label()
-
-gitlab.delete_reviewer()					*gitlab.nvim.delete_reviewer*
+<
+                                                                *gitlab.nvim.delete_reviewer*
+gitlab.delete_reviewer() ~
 
 Opens up a select menu for removing an existing reviewer for the current merge request.
 >lua
   require("gitlab").delete_reviewer()
-
-gitlab.pipeline()						*gitlab.nvim.pipeline*
+<
+                                                                *gitlab.nvim.pipeline*
+gitlab.pipeline() ~
 
 Opens up a popup with information about the pipeline for the current merge request.
 >lua
   require("gitlab").pipeline()
-
+<
 To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding.
 To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action`
 keybinding.
 
-gitlab.open_in_browser()					*gitlab.nvim.open_in_browser*
+                                                                *gitlab.nvim.open_in_browser*
+gitlab.open_in_browser() ~
 
 Opens the current MR in your default web browser.
 >lua
   require("gitlab").open_in_browser()
+<
+                                                                *gitlab.nvim.merge*
+gitlab.merge({opts}) ~
 
-gitlab.merge()							*gitlab.nvim.merge*
-
-Merges the merge request into the target branch
+Merges the merge request into the target branch. When run without any
+arguments, the `merge` action will respect the "Squash commits" and "Delete
+source branch" settings set by `require("gitlab").create_mr()` or set in
+Gitlab online. You can see the current settings in the Summary view, see
+|gitlab.nvim.the-summary-view|.
 >lua
   require("gitlab").merge()
+  require("gitlab").merge({ squash = false, delete_branch = true })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments that can be used to override
+          default behavior.
+            • {delete_branch}: (bool) If true, the source branch will be
+              deleted.
+            • {squash}: (bool) If true, the commits will be squashed. If
+              you enable {squash} you will be prompted for a squash
+              message. To use the default message, leave the popup empty.
+              Use the `settings.popup.perform_action` to merge the MR with
+              your message.
 
-gitlab.data({ opts }, cb)					*gitlab.nvim.data*
+                                                                *gitlab.nvim.data*
+gitlab.data({resources}, {cb}) ~
 
-The data function can be used to integrate `gitlab.nvim` with other plugins and tooling, by fetching 
-raw data about the current MR, including the summary information (title, description, etc); 
-reviewers, assignees, pipeline status.
+The data function can be used to integrate `gitlab.nvim` with other plugins
+and tooling, by fetching raw data about the current MR, including the summary
+information (title, description, etc); reviewers, assignees, pipeline status.
 >lua
   require("gitlab").data({
     { type = "info", refresh = false },
@@ -750,21 +794,24 @@ If the resources have not yet been fetched from Gitlab, this function will
 perform API calls for them. Once the data has been fetched, the callback will
 execute and passed the data as an argument.
 
-Parameters: ~
-  • {resources} (table) A list of resource blocks to fetch.
-  • {resource} (table) A resource to fetch, such as job information, etc.
-      • {resource.type}: (string) The type of resource, either: "user"
-      "labels", "project_members", "pipeline," or "revisions"." The types are:
-	• {user}: Information about the currently authenticated user
-	• {labels}: The labels available in the current project
-	• {project_members}: The list of current project members
-	• {revisions}: Revision information about the MR
-	• {pipeline}: Information about the current branch's pipeline. Returns
-	and object with `latest_pipeline` and `jobs` as fields.
-      • {resource.refresh}: (bool) Whether to re-fetch the data from Gitlab
-      or use the cached data locally, if available.
-  • {cb} (function) The callback function that runs after all of the
-      resources have been fetched. Will be passed a table with the data,
-      with each resource as a key-value pair, with the key being it's type.
+    Parameters: ~
+        • {resources}: (table) A list of {resource} blocks to fetch.
+            • {resource}: (table) A resource to fetch, such as job
+              information, etc. The resource is defined by its {type}:
+                • {type}: (string) The type of resource, either:
+                    • "user": Information about the currently authenticated
+                      user.
+                    • "labels": The labels available in the current project.
+                    • "project_members": The list of current project members.
+                    • "revisions": Revision information about the MR.
+                    • "pipeline": Information about the current branch's
+                      pipeline. Returns and object with `latest_pipeline` and
+                      `jobs` as fields.
+                • {refresh}: (bool) Whether to re-fetch the data from Gitlab
+                  or use the cached data locally, if available.
+        • {cb}: (function) The callback function that runs after all of the
+          resources have been fetched. Will be passed a table with the data,
+          with each resource as a key-value pair, with the key being it's
+          type.
 
-vim:tw=78:ts=8:noet:ft=help:norl:
+vim:tw=78:ts=4:sw=4:expandtab:ft=help:norl:

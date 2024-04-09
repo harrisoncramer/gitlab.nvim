@@ -13,10 +13,9 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 ---@field target? string
 ---@field title? string
 ---@field description? string
-
----@class Args
----@field target? string
 ---@field template_file? string
+---@field delete_branch boolean?
+---@field squash boolean?
 
 local M = {
   started = false,
@@ -39,49 +38,9 @@ M.reset_state = function()
   M.mr.description = ""
 end
 
-local title_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Title",
-    },
-  },
-}
-
-local target_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Target branch",
-    },
-  },
-}
-
-local description_popup_settings = {
-  buf_options = {
-    filetype = "markdown",
-  },
-  enter = true,
-  focusable = true,
-  border = {
-    style = "rounded",
-    text = {
-      top = "Description",
-    },
-  },
-}
-
 ---1. If the user has already begun writing an MR, prompt them to
 --- continue working on it.
----@param args? Args
+---@param args? Mr
 M.start = function(args)
   if M.started then
     vim.ui.select({ "Yes", "No" }, { prompt = "Continue your previous MR?" }, function(choice)
@@ -99,18 +58,19 @@ M.start = function(args)
 end
 
 ---2. Pick the target branch
----@param args? Args
-M.pick_target = function(args)
-  if not args then
-    args = {}
+---@param mr? Mr
+M.pick_target = function(mr)
+  if not mr then
+    mr = {}
   end
-  if args.target ~= nil then
-    M.pick_template({ target = args.target }, args)
+  if mr.target ~= nil then
+    M.pick_template(mr)
     return
   end
 
   if state.settings.create_mr.target ~= nil then
-    M.pick_template({ target = state.settings.create_mr.target }, args)
+    mr.target = state.settings.create_mr.target
+    M.pick_template(mr)
     return
   end
 
@@ -119,7 +79,8 @@ M.pick_target = function(args)
     prompt = "Choose target branch for merge",
   }, function(choice)
     if choice then
-      M.pick_template({ target = choice }, args)
+      mr.target = choice
+      M.pick_template(mr)
     end
   end)
 end
@@ -137,22 +98,22 @@ end
 
 ---3. Pick template (if applicable). This is used as the description
 ---@param mr Mr
----@param args Args
-M.pick_template = function(mr, args)
-  if not args then
-    args = {}
+M.pick_template = function(mr)
+  if mr.description ~= nil then
+    M.add_title(mr)
+    return
   end
 
-  local template_file = args.template_file or state.settings.create_mr.template_file
+  local template_file = mr.template_file or state.settings.create_mr.template_file
   if template_file ~= nil then
-    local description = u.read_file(make_template_path(template_file))
-    M.add_title({ target = mr.target, description = description })
+    mr.description = u.read_file(make_template_path(template_file))
+    M.add_title(mr)
     return
   end
 
   local all_templates = u.list_files_in_folder(".gitlab" .. state.settings.file_separator .. "merge_request_templates")
   if all_templates == nil then
-    M.add_title({ target = mr.target })
+    M.add_title(mr)
     return
   end
 
@@ -163,18 +124,21 @@ M.pick_template = function(mr, args)
   vim.ui.select(opts, {
     prompt = "Choose Template",
   }, function(choice)
-    if choice then
-      local description = u.read_file(make_template_path(choice))
-      M.add_title({ target = mr.target, description = description })
-    elseif choice == "Blank Template" then
-      M.add_title({ target = mr.target })
+    if choice and choice ~= "Blank Template" then
+      mr.description = u.read_file(make_template_path(choice))
     end
+    M.add_title(mr)
   end)
 end
 
 ---4. Prompts the user for the title of the MR
 ---@param mr Mr
 M.add_title = function(mr)
+  if mr.title ~= nil then
+    M.open_confirmation_popup(mr)
+    return
+  end
+
   local input = Input({
     position = "50%",
     relative = "editor",
@@ -200,8 +164,8 @@ M.add_title = function(mr)
 end
 
 ---5. Show the final popup.
----The function will render a popup containing the MR title and MR description, and
----target branch. The title and description are editable.
+---The function will render a popup containing the MR title and MR description,
+---target branch, and the "delete_branch" and "squash" options. All fields are editable.
 ---@param mr Mr
 M.open_confirmation_popup = function(mr)
   M.started = true
@@ -211,7 +175,7 @@ M.open_confirmation_popup = function(mr)
     return
   end
 
-  local layout, title_popup, description_popup, target_popup = M.create_layout()
+  local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup = M.create_layout()
 
   M.layout = layout
   M.layout_buf = layout.bufnr
@@ -220,22 +184,30 @@ M.open_confirmation_popup = function(mr)
   local function exit()
     local title = vim.fn.trim(u.get_buffer_text(M.title_bufnr))
     local description = u.get_buffer_text(M.description_bufnr)
-    local target = vim.fn.trim(u.get_buffer_text(target_popup.bufnr))
+    local target = vim.fn.trim(u.get_buffer_text(M.target_bufnr))
+    local delete_branch = u.string_to_bool(u.get_buffer_text(M.delete_branch_bufnr))
+    local squash = u.string_to_bool(u.get_buffer_text(M.squash_bufnr))
     M.mr = {
       title = title,
       description = description,
       target = target,
+      delete_branch = delete_branch,
+      squash = squash,
     }
     layout:unmount()
     M.layout_visible = false
   end
 
   local description_lines = mr.description and M.build_description_lines(mr.description) or { "" }
+  local delete_branch = u.get_first_non_nil_value({ mr.delete_branch, state.settings.create_mr.delete_branch })
+  local squash = u.get_first_non_nil_value({ mr.squash, state.settings.create_mr.squash })
 
   vim.schedule(function()
-    vim.api.nvim_buf_set_lines(description_popup.bufnr, 0, -1, false, description_lines)
-    vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { mr.title })
-    vim.api.nvim_buf_set_lines(target_popup.bufnr, 0, -1, false, { mr.target })
+    vim.api.nvim_buf_set_lines(M.description_bufnr, 0, -1, false, description_lines)
+    vim.api.nvim_buf_set_lines(M.title_bufnr, 0, -1, false, { mr.title })
+    vim.api.nvim_buf_set_lines(M.target_bufnr, 0, -1, false, { mr.target })
+    vim.api.nvim_buf_set_lines(M.delete_branch_bufnr, 0, -1, false, { u.bool_to_string(delete_branch) })
+    vim.api.nvim_buf_set_lines(M.squash_bufnr, 0, -1, false, { u.bool_to_string(squash) })
 
     local popup_opts = {
       cb = exit,
@@ -246,8 +218,10 @@ M.open_confirmation_popup = function(mr)
     state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
     state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
     state.set_popup_keymaps(target_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(delete_branch_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(squash_popup, M.create_mr, nil, popup_opts)
 
-    vim.api.nvim_set_current_buf(description_popup.bufnr)
+    vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
 end
 
@@ -268,11 +242,15 @@ M.create_mr = function()
   local description = u.get_buffer_text(M.description_bufnr)
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
   local target = u.get_buffer_text(M.target_bufnr):gsub("\n", " ")
+  local delete_branch = u.string_to_bool(u.get_buffer_text(M.delete_branch_bufnr))
+  local squash = u.string_to_bool(u.get_buffer_text(M.squash_bufnr))
 
   local body = {
     title = title,
     description = description,
     target_branch = target,
+    delete_branch = delete_branch,
+    squash = squash,
   }
 
   job.run_job("/create_mr", "POST", body, function(data)
@@ -284,20 +262,30 @@ M.create_mr = function()
 end
 
 M.create_layout = function()
-  local title_popup = Popup(title_popup_settings)
+  local title_popup = Popup(u.create_box_popup_state("Title", false))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(description_popup_settings)
+  local description_popup = Popup(u.create_box_popup_state("Description", true))
   M.description_bufnr = description_popup.bufnr
-  local target_branch_popup = Popup(target_popup_settings)
+  local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false))
   M.target_bufnr = target_branch_popup.bufnr
+  local delete_title = vim.o.columns > 110 and "Delete source branch" or "Delete source"
+  local delete_branch_popup = Popup(u.create_box_popup_state(delete_title, false))
+  M.delete_branch_bufnr = delete_branch_popup.bufnr
+  local squash_title = vim.o.columns > 110 and "Squash commits" or "Squash"
+  local squash_popup = Popup(u.create_box_popup_state(squash_title, false))
+  M.squash_bufnr = squash_popup.bufnr
 
   local internal_layout
   internal_layout = Layout.Box({
     Layout.Box({
       Layout.Box(title_popup, { grow = 1 }),
-      Layout.Box(target_branch_popup, { grow = 1 }),
     }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
+    Layout.Box({
+      Layout.Box(delete_branch_popup, { size = { width = #delete_title + 4 } }),
+      Layout.Box(squash_popup, { size = { width = #squash_title + 4 } }),
+      Layout.Box(target_branch_popup, { grow = 1 }),
+    }, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
@@ -311,7 +299,7 @@ M.create_layout = function()
 
   layout:mount()
 
-  return layout, title_popup, description_popup, target_branch_popup
+  return layout, title_popup, description_popup, target_branch_popup, delete_branch_popup, squash_popup
 end
 
 return M
