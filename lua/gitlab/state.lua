@@ -297,7 +297,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
     end, { buffer = popup.bufnr, desc = "Perform linewise action" })
   end
 
-  vim.api.nvim_create_autocmd("BufUnload", {
+  vim.api.nvim_create_autocmd("BufWinLeave", {
     buffer = popup.bufnr,
     callback = function()
       if opts.save_to_temp_register then
