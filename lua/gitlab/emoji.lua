@@ -85,9 +85,14 @@ M.init_popup = function(tree, bufnr)
       end
 
       local cursor_pos = vim.api.nvim_win_get_cursor(0)
+      -- "zyiw on the next line erases the unnamed register. This may interfere with the
+      -- `temp_registers` used for backing up editable popup contents, so let's backup the unnamed
+      -- register.
+      local unnamed_register_contents = vim.fn.getreg('"')
       vim.api.nvim_command('normal! "zyiw')
       vim.api.nvim_win_set_cursor(0, cursor_pos)
       local word = vim.fn.getreg("z")
+      vim.fn.setreg('"', unnamed_register_contents) -- restore the unnamed register
 
       for k, v in pairs(M.emoji_map) do
         if v.moji == word then

@@ -256,7 +256,12 @@ M.reply = function(tree)
   local discussion_node = M.get_root_node(tree, node)
   local id = tostring(discussion_node.id)
   reply_popup:mount()
-  state.set_popup_keymaps(reply_popup, M.send_reply(tree, id), miscellaneous.attach_file)
+  state.set_popup_keymaps(
+    reply_popup,
+    M.send_reply(tree, id),
+    miscellaneous.attach_file,
+    miscellaneous.editable_popup_opts
+  )
 end
 
 -- This function will send the reply to the Go API
@@ -331,7 +336,9 @@ M.edit_comment = function(tree, unlinked)
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
   state.set_popup_keymaps(
     edit_popup,
-    M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked)
+    M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
+    nil,
+    miscellaneous.editable_popup_opts
   )
 end
 

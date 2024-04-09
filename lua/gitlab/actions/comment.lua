@@ -35,7 +35,7 @@ M.create_comment = function()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text)
-  end, miscellaneous.attach_file)
+  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
 end
 
 ---Create multiline comment for the last selection.
@@ -48,7 +48,7 @@ M.create_multiline_comment = function()
   comment_popup:mount()
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })
-  end, miscellaneous.attach_file)
+  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
 end
 
 ---Create comment prepopulated with gitlab suggestion
@@ -95,7 +95,7 @@ M.create_comment_suggestion = function()
     else
       M.confirm_create_comment(text, nil)
     end
-  end, miscellaneous.attach_file)
+  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
 end
 
 M.create_note = function()
@@ -103,7 +103,7 @@ M.create_note = function()
   note_popup:mount()
   state.set_popup_keymaps(note_popup, function(text)
     M.confirm_create_comment(text, nil, true)
-  end, miscellaneous.attach_file)
+  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
 end
 
 ---This function (settings.popup.perform_action) will send the comment to the Go server

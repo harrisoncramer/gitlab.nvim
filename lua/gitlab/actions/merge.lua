@@ -3,6 +3,7 @@ local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local reviewer = require("gitlab.reviewer")
+local miscellaneous = require("gitlab.actions.miscellaneous")
 
 local M = {}
 
@@ -33,7 +34,7 @@ M.merge = function(opts)
     squash_message_popup:mount()
     state.set_popup_keymaps(squash_message_popup, function(text)
       M.confirm_merge(merge_body, text)
-    end)
+    end, nil, miscellaneous.editable_popup_opts)
   else
     M.confirm_merge(merge_body)
   end

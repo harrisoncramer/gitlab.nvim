@@ -34,4 +34,8 @@ M.attach_file = function()
   end)
 end
 
+M.editable_popup_opts = {
+  save_to_temp_register = true,
+}
+
 return M
