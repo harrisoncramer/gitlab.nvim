@@ -2,6 +2,7 @@
 -- in the reviewer's buffer. The reviewer will pass back
 -- to this module the data required to make the API calls
 local Popup = require("nui.popup")
+local Layout = require("nui.layout")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
@@ -31,11 +32,37 @@ M.create_comment = function()
     )
     return
   end
+
   local comment_popup = create_comment_popup()
-  comment_popup:mount()
+  local is_draft_popup = Popup(u.create_box_popup_state("Draft", false))
+
+  M.comment_popup = comment_popup
+  M.is_draft_popup = is_draft_popup
+
+  local internal_layout = Layout.Box({
+    Layout.Box(comment_popup, { grow = 1 }),
+    Layout.Box(is_draft_popup, { size = 3 }),
+  }, { dir = "col" })
+
+  local layout = Layout({
+    position = "50%",
+    relative = "editor",
+    size = {
+      width = "50%",
+      height = "55%",
+    },
+  }, internal_layout)
+
   state.set_popup_keymaps(comment_popup, function(text)
     M.confirm_create_comment(text)
   end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+
+  layout:mount()
+
+  vim.schedule(function()
+    local default_to_draft = state.settings.create_comment.default_to_draft
+    vim.api.nvim_buf_set_lines(M.is_draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
+  end)
 end
 
 ---Create multiline comment for the last selection.
@@ -116,48 +143,51 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     return
   end
 
-  if unlinked then
-    local body = { comment = text }
-    job.run_job("/mr/comment", "POST", body, function(data)
-      u.notify("Note created!", vim.log.levels.INFO)
-      discussions.add_discussion({ data = data, unlinked = true })
-      discussions.refresh()
-    end)
-    return
-  end
+  local is_draft = u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
+  print(is_draft)
 
-  local reviewer_data = reviewer.get_reviewer_data()
-  if reviewer_data == nil then
-    u.notify("Error getting reviewer data", vim.log.levels.ERROR)
-    return
-  end
-
-  local location = Location.new(reviewer_data, visual_range)
-  location:build_location_data()
-  local location_data = location.location_data
-  if location_data == nil then
-    u.notify("Error getting location information", vim.log.levels.ERROR)
-    return
-  end
-
-  local revision = state.MR_REVISIONS[1]
-  local body = {
-    type = "text",
-    comment = text,
-    file_name = reviewer_data.file_name,
-    base_commit_sha = revision.base_commit_sha,
-    start_commit_sha = revision.start_commit_sha,
-    head_commit_sha = revision.head_commit_sha,
-    old_line = location_data.old_line,
-    new_line = location_data.new_line,
-    line_range = location_data.line_range,
-  }
-
-  job.run_job("/mr/comment", "POST", body, function(data)
-    u.notify("Comment created!", vim.log.levels.INFO)
-    discussions.add_discussion({ data = data, unlinked = false })
-    discussions.refresh()
-  end)
+  -- if unlinked then
+  --   local body = { comment = text }
+  --   job.run_job("/mr/comment", "POST", body, function(data)
+  --     u.notify("Note created!", vim.log.levels.INFO)
+  --     discussions.add_discussion({ data = data, unlinked = true })
+  --     discussions.refresh()
+  --   end)
+  --   return
+  -- end
+  --
+  -- local reviewer_data = reviewer.get_reviewer_data()
+  -- if reviewer_data == nil then
+  --   u.notify("Error getting reviewer data", vim.log.levels.ERROR)
+  --   return
+  -- end
+  --
+  -- local location = Location.new(reviewer_data, visual_range)
+  -- location:build_location_data()
+  -- local location_data = location.location_data
+  -- if location_data == nil then
+  --   u.notify("Error getting location information", vim.log.levels.ERROR)
+  --   return
+  -- end
+  --
+  -- local revision = state.MR_REVISIONS[1]
+  -- local body = {
+  --   type = "text",
+  --   comment = text,
+  --   file_name = reviewer_data.file_name,
+  --   base_commit_sha = revision.base_commit_sha,
+  --   start_commit_sha = revision.start_commit_sha,
+  --   head_commit_sha = revision.head_commit_sha,
+  --   old_line = location_data.old_line,
+  --   new_line = location_data.new_line,
+  --   line_range = location_data.line_range,
+  -- }
+  --
+  -- job.run_job("/mr/comment", "POST", body, function(data)
+  --   u.notify("Comment created!", vim.log.levels.INFO)
+  --   discussions.add_discussion({ data = data, unlinked = false })
+  --   discussions.refresh()
+  -- end)
 end
 
 return M

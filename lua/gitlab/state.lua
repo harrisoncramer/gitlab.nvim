@@ -87,6 +87,9 @@ M.settings = {
       return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
     end,
   },
+  create_comment = {
+    default_to_draft = false,
+  },
   create_mr = {
     target = nil,
     template_file = nil,

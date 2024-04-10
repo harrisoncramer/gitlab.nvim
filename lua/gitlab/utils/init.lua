@@ -467,7 +467,7 @@ M.create_popup_state = function(title, settings, width, height, zindex)
 end
 
 ---Create view_opts for Box popups used inside popup Layouts
----@param title string The string to appear on top of the popup
+---@param title string|nil The string to appear on top of the popup
 ---@param enter boolean Whether the pop should be focused after creation
 ---@return table
 M.create_box_popup_state = function(title, enter)
