@@ -173,6 +173,7 @@ you call this function with no values the defaults will be used:
         toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
         position = "left", -- "top", "right", "bottom" or "left"
         open_in_browser = "b" -- Jump to the URL of the current note/discussion
+        copy_node_url = "u", -- Copy the URL of the current node to clipboard
         size = "20%", -- Size of split
         relative = "editor", -- Position of tree split relative to "editor" or "window"
         resolved = '✓', -- Symbol to show next to resolved discussions
@@ -551,7 +552,7 @@ you can also interact with the Go server like any other process:
 LUA API                                                         *gitlab.nvim.api*
 
                                                                 *gitlab.nvim.setup*
-setup() ~
+gitlab.setup() ~
 
 Call this first to initialize the plugin. With no arguments, it will use the
 default arguments outlined under "Configuring the Plugin".
@@ -563,7 +564,7 @@ default arguments outlined under "Configuring the Plugin".
   require("gitlab").setup({ discussion_tree = { blacklist = { "some_bot"} } })
 <
                                                                 *gitlab.nvim.review*
-review() ~
+gitlab.review() ~
 
 Opens the reviewer pane. Can be used from anywhere within Neovim after the
 plugin is loaded. If run twice, will open a second reviewer pane.
@@ -571,7 +572,7 @@ plugin is loaded. If run twice, will open a second reviewer pane.
   require("gitlab").review()
 <
                                                                 *gitlab.nvim.summary*
-summary() ~
+gitlab.summary() ~
 
 Opens the summary window with information about the current MR, such as the
 description, the author, and the title. Can be configured via the `info` field
@@ -583,7 +584,7 @@ The summary can be edited. Once you have made changes, send them to Gitlab via
 the `settings.popup.perform_action` keybinding.
 
                                                                 *gitlab.nvim.approve*
-approve() ~
+gitlab.approve() ~
 
 Approves the current MR. Will error if the current user does not have
 permission.
@@ -604,13 +605,13 @@ gitlab.create_comment() ~
 Opens a popup to create a comment on the current line. Must be called when focused on the
 reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
 >lua
-  require("gitlab").comment()
+  require("gitlab").create_comment()
 
 After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
 keybinding, by default `<leader>l`.
 
                                                                 *gitlab.nvim.create_multiline_comment*
-create_multiline_comment() ~
+gitlab.create_multiline_comment() ~
 
 Opens a popup to create a multi-line comment. May only be called in visual
 mode, and will use the currently selected lines.
@@ -621,7 +622,7 @@ After the comment is typed, submit it to Gitlab via the |settings.popup.perform_
 keybinding, by default `<leader>l`.
 
                                                                 *gitlab.nvim.create_comment_suggestion*
-create_comment_suggestion() ~
+gitlab.create_comment_suggestion() ~
 
 Opens a popup to create a comment suggestion (aka a comment that makes a committable
 change suggestion to the currently selected lines).
