@@ -60,7 +60,7 @@ M.create_comment = function()
   layout:mount()
 
   vim.schedule(function()
-    local default_to_draft = state.settings.create_comment.default_to_draft
+    local default_to_draft = state.settings.comments.default_to_draft
     vim.api.nvim_buf_set_lines(M.is_draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
   end)
 end
@@ -145,18 +145,13 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
   local is_draft = u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
 
-  -- Draft comments are handled quite differently, we need to
-  -- create them separately.
-  if is_draft then
-    M.handle_create_draft_comment(text, visual_range, unlinked)
-    return
-  end
-
   if unlinked then
     local body = { comment = text }
-    job.run_job("/mr/comment", "POST", body, function(data)
-      u.notify("Note created!", vim.log.levels.INFO)
-      discussions.add_discussion({ data = data, unlinked = true, is_draft = is_draft })
+    local endpoint = is_draft and "/mr/draft_comment" or "/mr/comment"
+    job.run_job(endpoint, "POST", body, function(data)
+      local notice = is_draft and "Draft note created!" or "Note created!"
+      u.notify(notice, vim.log.levels.INFO)
+      discussions.add_discussion({ data = data, unlinked = true })
       discussions.refresh()
     end)
     return
@@ -178,7 +173,6 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
   local revision = state.MR_REVISIONS[1]
   local body = {
-    is_draft = is_draft,
     type = "text",
     comment = text,
     file_name = reviewer_data.file_name,
@@ -190,18 +184,13 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     line_range = location_data.line_range,
   }
 
-  job.run_job("/mr/comment", "POST", body, function(data)
-    u.notify("Comment created!", vim.log.levels.INFO)
+  local endpoint = is_draft and "/mr/draft_comment" or "/mr/comment"
+  job.run_job(endpoint, "POST", body, function(data)
+    local notice = is_draft and "Draft comment created!" or "Comment created!"
+    u.notify(notice, vim.log.levels.INFO)
     discussions.add_discussion({ data = data, unlinked = false })
     discussions.refresh()
   end)
-end
-
----@param text string comment text
----@param visual_range LineRange | nil range of visual selection or nil
----@param unlinked boolean | nil if true, the comment is not linked to a line
-M.create_draft_comment = function(text, visual_range, unlinked)
-  print("Hello")
 end
 
 return M

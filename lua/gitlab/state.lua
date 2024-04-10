@@ -72,10 +72,10 @@ M.settings = {
     winbar = function(t)
       local discussions_content = t.resolvable_discussions ~= 0
           and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
+          or "Discussions"
       local notes_content = t.resolvable_notes ~= 0
           and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
+          or "Notes"
       if t.name == "Discussions" then
         notes_content = "%#Comment#" .. notes_content
         discussions_content = "%#Text#" .. discussions_content
@@ -87,7 +87,7 @@ M.settings = {
       return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
     end,
   },
-  create_comment = {
+  comments = {
     default_to_draft = false,
   },
   create_mr = {
