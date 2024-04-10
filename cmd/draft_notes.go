@@ -9,8 +9,9 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-/* The data coming from the client is the same,
-but the Gitlab endpoints + resources we handle are different */
+/* The data coming from the client when creating a draft note is the same,
+as when they are creating a normal comment, but the Gitlab
+endpoints + resources we handle are different */
 
 type PostDraftNoteRequest struct {
 	Comment string `json:"comment"`
@@ -68,8 +69,7 @@ func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opt := gitlab.CreateDraftNoteOptions{
-		Note:     &postDraftNoteRequest.Comment,
-		CommitID: &postDraftNoteRequest.StartCommitSHA,
+		Note: &postDraftNoteRequest.Comment,
 		// InReplyToDiscussionID *string          `url:"in_reply_to_discussion_id,omitempty" json:"in_reply_to_discussion_id,omitempty"`
 	}
 

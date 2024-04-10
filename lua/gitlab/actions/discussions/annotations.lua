@@ -122,4 +122,12 @@
 ---@field line_range ReviewerRangeInfo|nil
 
 ---@class DraftNote
----@field
+---@field note string
+---@field id integer
+---@field author_id integer
+---@field merge_request_id integer
+---@field resolve_discussion boolean
+---@field discussion_id string -- This will always be ""
+---@field commit_id string  -- This will always be ""
+---@field line_code string
+---@field position NotePosition
