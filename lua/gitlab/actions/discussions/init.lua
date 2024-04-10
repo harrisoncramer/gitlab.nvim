@@ -268,6 +268,10 @@ end
 M.send_reply = function(tree, discussion_id)
   return function(text)
     local body = { discussion_id = discussion_id, reply = text }
+
+    -- TODO: If dealing with a draft comment, handle this
+    -- with a different endpoint!
+
     job.run_job("/mr/reply", "POST", body, function(data)
       u.notify("Sent reply!", vim.log.levels.INFO)
       M.add_reply_to_tree(tree, data.note, discussion_id)
@@ -291,6 +295,9 @@ end
 -- when you make a selection, and re-render the tree
 M.send_deletion = function(tree)
   local current_node = tree:get_node()
+
+  -- TODO: If dealing with a draft comment, handle this
+  -- with a different endpoint!
 
   local note_node = M.get_note_node(tree, current_node)
   local root_node = M.get_root_node(tree, current_node)
@@ -348,6 +355,9 @@ end
 ---@param unlinked boolean
 M.send_edits = function(discussion_id, note_id, unlinked)
   return function(text)
+    -- TODO: If dealing with a draft comment, handle this
+    -- with a different endpoint!
+
     local body = {
       discussion_id = discussion_id,
       note_id = note_id,

@@ -145,6 +145,13 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
   local is_draft = u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
 
+  -- Draft comments are handled quite differently, we need to
+  -- create them separately.
+  if is_draft then
+    M.handle_create_draft_comment(text, visual_range, unlinked)
+    return
+  end
+
   if unlinked then
     local body = { comment = text }
     job.run_job("/mr/comment", "POST", body, function(data)
@@ -188,6 +195,13 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     discussions.add_discussion({ data = data, unlinked = false })
     discussions.refresh()
   end)
+end
+
+---@param text string comment text
+---@param visual_range LineRange | nil range of visual selection or nil
+---@param unlinked boolean | nil if true, the comment is not linked to a line
+M.create_draft_comment = function(text, visual_range, unlinked)
+  print("Hello")
 end
 
 return M
