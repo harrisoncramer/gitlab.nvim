@@ -120,3 +120,6 @@
 ---@field old_line integer | nil
 ---@field new_line integer | nil
 ---@field line_range ReviewerRangeInfo|nil
+
+---@class DraftNote
+---@field

@@ -8,6 +8,7 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
+local draft_notes = require("gitlab.actions.draft_notes")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
 local Location = require("gitlab.reviewer.location")
@@ -147,12 +148,15 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
 
   if unlinked then
     local body = { comment = text }
-    local endpoint = is_draft and "/mr/draft_comment" or "/mr/comment"
+    local endpoint = is_draft and "/mr/draft_note" or "/mr/comment"
     job.run_job(endpoint, "POST", body, function(data)
-      local notice = is_draft and "Draft note created!" or "Note created!"
-      u.notify(notice, vim.log.levels.INFO)
-      discussions.add_discussion({ data = data, unlinked = true })
-      discussions.refresh()
+      u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
+      if is_draft then
+        draft_notes.add_draft_note(data.draft_note)
+      else
+        discussions.add_discussion({ data = data, unlinked = true })
+        discussions.refresh()
+      end
     end)
     return
   end
@@ -184,12 +188,15 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     line_range = location_data.line_range,
   }
 
-  local endpoint = is_draft and "/mr/draft_comment" or "/mr/comment"
+  local endpoint = is_draft and "/mr/draft_note" or "/mr/comment"
   job.run_job(endpoint, "POST", body, function(data)
-    local notice = is_draft and "Draft comment created!" or "Comment created!"
-    u.notify(notice, vim.log.levels.INFO)
-    discussions.add_discussion({ data = data, unlinked = false })
-    discussions.refresh()
+    u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
+    if is_draft then
+      draft_notes.add_draft_note(data.draft_note)
+    else
+      discussions.add_discussion({ data = data, unlinked = false })
+      discussions.refresh()
+    end
   end)
 end
 

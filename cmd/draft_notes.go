@@ -12,38 +12,38 @@ import (
 /* The data coming from the client is the same,
 but the Gitlab endpoints + resources we handle are different */
 
-type PostDraftCommentRequest struct {
+type PostDraftNoteRequest struct {
 	Comment string `json:"comment"`
 	PositionData
 }
 
-type DeleteDraftCommentRequest struct{}
-type EditDraftCommentRequest struct{}
+type DeleteDraftNoteRequest struct{}
+type EditDraftNoteRequest struct{}
 
 type DraftNoteResponse struct {
 	SuccessResponse
-	DraftNote *gitlab.DraftNote
+	DraftNote *gitlab.DraftNote `json:"draft_note"`
 }
 
-/* DraftCommentWithPosition is a draft comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based draft comments. */
-type DraftCommentWithPosition struct {
+/* DraftNoteWithPosition is a draft comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based draft comments. */
+type DraftNoteWithPosition struct {
 	PositionData PositionData
 }
 
-func (draftComment DraftCommentWithPosition) GetPositionData() PositionData {
-	return draftComment.PositionData
+func (draftNote DraftNoteWithPosition) GetPositionData() PositionData {
+	return draftNote.PositionData
 }
 
 /* commentHandler creates, edits, and deletes draft discussions (comments, multi-line comments) */
-func (a *api) draftCommentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
-		a.postDraftComment(w, r)
+		a.postDraftNote(w, r)
 	case http.MethodPatch:
-		a.editDraftComment(w, r)
+		a.editDraftNote(w, r)
 	case http.MethodDelete:
-		a.deleteDraftComment(w, r)
+		a.deleteDraftNote(w, r)
 	default:
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
 		handleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
@@ -51,7 +51,7 @@ func (a *api) draftCommentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* postComment creates a draft comment */
-func (a *api) postDraftComment(w http.ResponseWriter, r *http.Request) {
+func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -60,22 +60,22 @@ func (a *api) postDraftComment(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	var postDraftCommentRequest PostDraftCommentRequest
-	err = json.Unmarshal(body, &postDraftCommentRequest)
+	var postDraftNoteRequest PostDraftNoteRequest
+	err = json.Unmarshal(body, &postDraftNoteRequest)
 	if err != nil {
 		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
 		return
 	}
 
 	opt := gitlab.CreateDraftNoteOptions{
-		Note:     &postDraftCommentRequest.Comment,
-		CommitID: &postDraftCommentRequest.StartCommitSHA,
+		Note:     &postDraftNoteRequest.Comment,
+		CommitID: &postDraftNoteRequest.StartCommitSHA,
 		// InReplyToDiscussionID *string          `url:"in_reply_to_discussion_id,omitempty" json:"in_reply_to_discussion_id,omitempty"`
 	}
 
-	if postDraftCommentRequest.FileName != "" {
-		draftCommentWithPosition := DraftCommentWithPosition{postDraftCommentRequest.PositionData}
-		opt.Position = buildCommentPosition(draftCommentWithPosition)
+	if postDraftNoteRequest.FileName != "" {
+		draftNoteWithPosition := DraftNoteWithPosition{postDraftNoteRequest.PositionData}
+		opt.Position = buildCommentPosition(draftNoteWithPosition)
 	}
 
 	draftNote, res, err := a.client.CreateDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
@@ -107,7 +107,7 @@ func (a *api) postDraftComment(w http.ResponseWriter, r *http.Request) {
 }
 
 /* deleteComment deletes a draft comment */
-func (a *api) deleteDraftComment(w http.ResponseWriter, r *http.Request) {}
+func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {}
 
 /* deleteComment edits a draft comment */
-func (a *api) editDraftComment(w http.ResponseWriter, r *http.Request) {}
+func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {}

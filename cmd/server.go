@@ -119,7 +119,7 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 
 	m.HandleFunc("/mr/approve", a.withMr(a.approveHandler))
 	m.HandleFunc("/mr/comment", a.withMr(a.commentHandler))
-	m.HandleFunc("/mr/draft_comment", a.withMr(a.draftCommentHandler))
+	m.HandleFunc("/mr/draft_note", a.withMr(a.draftNoteHandler))
 	m.HandleFunc("/mr/merge", a.withMr(a.acceptAndMergeHandler))
 	m.HandleFunc("/mr/discussions/list", a.withMr(a.listDiscussionsHandler))
 	m.HandleFunc("/mr/discussions/resolve", a.withMr(a.discussionsResolveHandler))
