@@ -837,6 +837,9 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
     M.open_in_browser(tree)
   end, { buffer = bufnr, desc = "Open the note in your browser" })
+  vim.keymap.set("n", state.settings.discussion_tree.copy_node_url, function()
+    M.copy_node_url(tree)
+  end, { buffer = bufnr, desc = "Copy the URL of the current node to clipboard" })
   vim.keymap.set("n", "<leader>p", function()
     M.print_node(tree)
   end, { buffer = bufnr, desc = "Print current node (for debugging)" })
@@ -953,7 +956,7 @@ M.add_reply_to_tree = function(tree, note, discussion_id)
 end
 
 ---@param tree NuiTree
-M.open_in_browser = function(tree)
+M.get_url = function(tree)
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
   if note_node == nil then
@@ -964,8 +967,26 @@ M.open_in_browser = function(tree)
     u.notify("Could not get URL of note", vim.log.levels.ERROR)
     return
   end
+  return url
+end
 
+---@param tree NuiTree
+M.open_in_browser = function(tree)
+  local url = M.get_url(tree)
+  if url == nil then
+    return
+  end
   u.open_in_browser(url)
+end
+
+---@param tree NuiTree
+M.copy_node_url = function(tree)
+  local url = M.get_url(tree)
+  if url == nil then
+    return
+  end
+  u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
+  vim.fn.setreg("+", url)
 end
 
 M.add_emoji_to_note = function(tree, unlinked)
