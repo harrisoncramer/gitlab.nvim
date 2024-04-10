@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,28 +10,8 @@ import (
 )
 
 type PostCommentRequest struct {
-	Comment        string     `json:"comment"`
-	FileName       string     `json:"file_name"`
-	NewLine        *int       `json:"new_line,omitempty"`
-	OldLine        *int       `json:"old_line,omitempty"`
-	HeadCommitSHA  string     `json:"head_commit_sha"`
-	BaseCommitSHA  string     `json:"base_commit_sha"`
-	StartCommitSHA string     `json:"start_commit_sha"`
-	Type           string     `json:"type"`
-	LineRange      *LineRange `json:"line_range,omitempty"`
-}
-
-/* LineRange represents the range of a note. */
-type LineRange struct {
-	StartRange *LinePosition `json:"start"`
-	EndRange   *LinePosition `json:"end"`
-}
-
-/* LinePosition represents a position in a line range. Unlike the Gitlab struct, this does not contain LineCode with a sha1 of the filename */
-type LinePosition struct {
-	Type    string `json:"type"`
-	OldLine int    `json:"old_line"`
-	NewLine int    `json:"new_line"`
+	Comment string `json:"comment"`
+	PositionData
 }
 
 type DeleteCommentRequest struct {
@@ -51,6 +30,15 @@ type CommentResponse struct {
 	SuccessResponse
 	Comment    *gitlab.Note       `json:"note"`
 	Discussion *gitlab.Discussion `json:"discussion"`
+}
+
+/* CommentWithPosition is a comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based comments. */
+type CommentWithPosition struct {
+	PositionData PositionData
+}
+
+func (comment CommentWithPosition) GetPositionData() PositionData {
+	return comment.PositionData
 }
 
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
@@ -133,46 +121,10 @@ func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 
 	/* If we are leaving a comment on a line, leave position. Otherwise,
 	we are leaving a note (unlinked comment) */
-	var friendlyName = "Note"
-	if postCommentRequest.FileName != "" {
-		friendlyName = "Comment"
-		opt.Position = &gitlab.PositionOptions{
-			PositionType: &postCommentRequest.Type,
-			StartSHA:     &postCommentRequest.StartCommitSHA,
-			HeadSHA:      &postCommentRequest.HeadCommitSHA,
-			BaseSHA:      &postCommentRequest.BaseCommitSHA,
-			NewPath:      &postCommentRequest.FileName,
-			OldPath:      &postCommentRequest.FileName,
-			NewLine:      postCommentRequest.NewLine,
-			OldLine:      postCommentRequest.OldLine,
-		}
 
-		if postCommentRequest.LineRange != nil {
-			friendlyName = "Multiline Comment"
-			shaFormat := "%x_%d_%d"
-			startFilenameSha := fmt.Sprintf(
-				shaFormat,
-				sha1.Sum([]byte(postCommentRequest.FileName)),
-				postCommentRequest.LineRange.StartRange.OldLine,
-				postCommentRequest.LineRange.StartRange.NewLine,
-			)
-			endFilenameSha := fmt.Sprintf(
-				shaFormat,
-				sha1.Sum([]byte(postCommentRequest.FileName)),
-				postCommentRequest.LineRange.EndRange.OldLine,
-				postCommentRequest.LineRange.EndRange.NewLine,
-			)
-			opt.Position.LineRange = &gitlab.LineRangeOptions{
-				Start: &gitlab.LinePositionOptions{
-					Type:     &postCommentRequest.LineRange.StartRange.Type,
-					LineCode: &startFilenameSha,
-				},
-				End: &gitlab.LinePositionOptions{
-					Type:     &postCommentRequest.LineRange.EndRange.Type,
-					LineCode: &endFilenameSha,
-				},
-			}
-		}
+	if postCommentRequest.FileName != "" {
+		commentWithPositionData := CommentWithPosition{postCommentRequest.PositionData}
+		opt.Position = buildCommentPosition(commentWithPositionData)
 	}
 
 	discussion, res, err := a.client.CreateMergeRequestDiscussion(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
@@ -190,7 +142,7 @@ func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
 		SuccessResponse: SuccessResponse{
-			Message: fmt.Sprintf("%s created successfully", friendlyName),
+			Message: "Comment created successfully",
 			Status:  http.StatusOK,
 		},
 		Comment:    discussion.Notes[0],
