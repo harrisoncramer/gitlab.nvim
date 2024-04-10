@@ -144,50 +144,50 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
   end
 
   local is_draft = u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
-  print(is_draft)
 
-  -- if unlinked then
-  --   local body = { comment = text }
-  --   job.run_job("/mr/comment", "POST", body, function(data)
-  --     u.notify("Note created!", vim.log.levels.INFO)
-  --     discussions.add_discussion({ data = data, unlinked = true })
-  --     discussions.refresh()
-  --   end)
-  --   return
-  -- end
-  --
-  -- local reviewer_data = reviewer.get_reviewer_data()
-  -- if reviewer_data == nil then
-  --   u.notify("Error getting reviewer data", vim.log.levels.ERROR)
-  --   return
-  -- end
-  --
-  -- local location = Location.new(reviewer_data, visual_range)
-  -- location:build_location_data()
-  -- local location_data = location.location_data
-  -- if location_data == nil then
-  --   u.notify("Error getting location information", vim.log.levels.ERROR)
-  --   return
-  -- end
-  --
-  -- local revision = state.MR_REVISIONS[1]
-  -- local body = {
-  --   type = "text",
-  --   comment = text,
-  --   file_name = reviewer_data.file_name,
-  --   base_commit_sha = revision.base_commit_sha,
-  --   start_commit_sha = revision.start_commit_sha,
-  --   head_commit_sha = revision.head_commit_sha,
-  --   old_line = location_data.old_line,
-  --   new_line = location_data.new_line,
-  --   line_range = location_data.line_range,
-  -- }
-  --
-  -- job.run_job("/mr/comment", "POST", body, function(data)
-  --   u.notify("Comment created!", vim.log.levels.INFO)
-  --   discussions.add_discussion({ data = data, unlinked = false })
-  --   discussions.refresh()
-  -- end)
+  if unlinked then
+    local body = { comment = text }
+    job.run_job("/mr/comment", "POST", body, function(data)
+      u.notify("Note created!", vim.log.levels.INFO)
+      discussions.add_discussion({ data = data, unlinked = true, is_draft = is_draft })
+      discussions.refresh()
+    end)
+    return
+  end
+
+  local reviewer_data = reviewer.get_reviewer_data()
+  if reviewer_data == nil then
+    u.notify("Error getting reviewer data", vim.log.levels.ERROR)
+    return
+  end
+
+  local location = Location.new(reviewer_data, visual_range)
+  location:build_location_data()
+  local location_data = location.location_data
+  if location_data == nil then
+    u.notify("Error getting location information", vim.log.levels.ERROR)
+    return
+  end
+
+  local revision = state.MR_REVISIONS[1]
+  local body = {
+    is_draft = is_draft,
+    type = "text",
+    comment = text,
+    file_name = reviewer_data.file_name,
+    base_commit_sha = revision.base_commit_sha,
+    start_commit_sha = revision.start_commit_sha,
+    head_commit_sha = revision.head_commit_sha,
+    old_line = location_data.old_line,
+    new_line = location_data.new_line,
+    line_range = location_data.line_range,
+  }
+
+  job.run_job("/mr/comment", "POST", body, function(data)
+    u.notify("Comment created!", vim.log.levels.INFO)
+    discussions.add_discussion({ data = data, unlinked = false })
+    discussions.refresh()
+  end)
 end
 
 return M
