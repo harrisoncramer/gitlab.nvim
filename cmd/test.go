@@ -41,6 +41,7 @@ type fakeClient struct {
 	listMergeRequestAwardEmojiOnNote   func(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
 	deleteMergeRequestAwardEmojiOnNote func(pid interface{}, mergeRequestIID, noteID, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	currentUser                        func(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error)
+	createDraftNote                    func(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
 }
 
 type Author struct {
@@ -139,6 +140,10 @@ func (f fakeClient) ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeReque
 
 func (f fakeClient) DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.deleteMergeRequestAwardEmojiOnNote(pid, mergeRequestIID, noteID, awardID)
+}
+
+func (f fakeClient) CreateDraftNote(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+	return f.createDraftNote(pid, mergeRequestIID, opt)
 }
 
 func (f fakeClient) CurrentUser(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error) {
