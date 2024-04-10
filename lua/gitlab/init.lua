@@ -73,10 +73,16 @@ return {
   data = data.data,
   print_settings = state.print_settings,
   open_in_browser = async.sequence({ info }, function()
-    if state.INFO.web_url == nil then
-      u.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
-      return
+    local web_url = u.get_web_url()
+    if web_url ~= nil then
+      u.open_in_browser(web_url)
     end
-    u.open_in_browser(state.INFO.web_url)
+  end),
+  copy_web_url = async.sequence({ info }, function()
+    local web_url = u.get_web_url()
+    if web_url ~= nil then
+      vim.fn.setreg("+", web_url)
+      u.notify("Copied '" .. web_url .. "' to clipboard", vim.log.levels.INFO)
+    end
   end),
 }
