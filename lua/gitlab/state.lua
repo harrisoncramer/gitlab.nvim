@@ -280,9 +280,9 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
-        exit(popup, opts)
+        vim.api.nvim_buf_delete(popup.bufnr, {})
       else
-        exit(popup, opts)
+        vim.api.nvim_buf_delete(popup.bufnr, {})
         action(text, popup.bufnr)
       end
     end, { buffer = popup.bufnr, desc = "Perform action" })
