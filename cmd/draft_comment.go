@@ -13,19 +13,25 @@ import (
 but the Gitlab endpoints + resources we handle are different */
 
 type PostDraftCommentRequest struct {
-	Note           string     `json:"note"`
-	StartCommitSHA string     `json:"start_commit_sha"`
-	NewLine        *int       `json:"new_line,omitempty"`
-	OldLine        *int       `json:"old_line,omitempty"`
-	LineRange      *LineRange `json:"line_range,omitempty"`
-	FileName       string     `json:"file_name"`
+	Comment string `json:"comment"`
+	PositionData
 }
+
 type DeleteDraftCommentRequest struct{}
 type EditDraftCommentRequest struct{}
 
 type DraftNoteResponse struct {
 	SuccessResponse
 	DraftNote *gitlab.DraftNote
+}
+
+/* DraftCommentWithPosition is a draft comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based draft comments. */
+type DraftCommentWithPosition struct {
+	PositionData PositionData
+}
+
+func (draftComment DraftCommentWithPosition) GetPositionData() PositionData {
+	return draftComment.PositionData
 }
 
 /* commentHandler creates, edits, and deletes draft discussions (comments, multi-line comments) */
@@ -62,10 +68,14 @@ func (a *api) postDraftComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opt := gitlab.CreateDraftNoteOptions{
-		Note:     &postDraftCommentRequest.Note,
+		Note:     &postDraftCommentRequest.Comment,
 		CommitID: &postDraftCommentRequest.StartCommitSHA,
 		// InReplyToDiscussionID *string          `url:"in_reply_to_discussion_id,omitempty" json:"in_reply_to_discussion_id,omitempty"`
-		// Position              *PositionOptions `url:"position,omitempty" json:"position,omitempty"`
+	}
+
+	if postDraftCommentRequest.FileName != "" {
+		draftCommentWithPosition := DraftCommentWithPosition{postDraftCommentRequest.PositionData}
+		opt.Position = buildCommentPosition(draftCommentWithPosition)
 	}
 
 	draftNote, res, err := a.client.CreateDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
