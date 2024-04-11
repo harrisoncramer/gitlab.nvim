@@ -39,16 +39,15 @@ local M = {
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
-  job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist },
-    function(data)
-      state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
-      state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or
-          {}
-      M.emojis = data.emojis or {}
-      if type(callback) == "function" then
-        callback()
-      end
-    end)
+  job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
+    state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
+    state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions
+      or {}
+    M.emojis = data.emojis or {}
+    if type(callback) == "function" then
+      callback()
+    end
+  end)
 end
 
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
@@ -124,7 +123,11 @@ M.toggle = function(callback)
     return
   end
 
-  if type(state.DISCUSSION_DATA.discussions) ~= "table" and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table" and type(M.draft_notes) ~= "table" then
+  if
+    type(state.DISCUSSION_DATA.discussions) ~= "table"
+    and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
+    and type(M.draft_notes) ~= "table"
+  then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
     vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
     return
@@ -146,10 +149,7 @@ M.toggle = function(callback)
   split:mount()
 
   -- Initialize winbar module with data from buffers
-  winbar.set_buffers(
-    M.linked_bufnr,
-    M.unlinked_bufnr,
-    M.draft_notes_bufnr)
+  winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr, M.draft_notes_bufnr)
   draft_notes.set_bufnr(M.draft_notes_bufnr)
   winbar.update_winbar()
 
@@ -161,9 +161,9 @@ M.toggle = function(callback)
   draft_notes.rebuild_draft_notes_view()
 
   M.add_empty_titles({
-    { M.linked_bufnr,      state.DISCUSSION_DATA.discussions,          "No Discussions for this MR" },
-    { M.unlinked_bufnr,    state.DISCUSSION_DATA.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-    { M.draft_notes_bufnr, M.draft_notes,                              "No Draft Notes for this MR" },
+    { M.linked_bufnr, state.DISCUSSION_DATA.discussions, "No Discussions for this MR" },
+    { M.unlinked_bufnr, state.DISCUSSION_DATA.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+    { M.draft_notes_bufnr, M.draft_notes, "No Draft Notes for this MR" },
   })
 
   -- Set default buffer
@@ -518,8 +518,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-          or (not unlinked and state.discussion_tree.resolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+        or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -528,8 +528,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-          or (not unlinked and state.discussion_tree.unresolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+        or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -661,7 +661,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
   local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -677,8 +677,8 @@ M.rebuild_unlinked_discussion_tree = function()
   end
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
-  local unlinked_discussion_tree_nodes = discussions_tree.add_discussions_to_table(
-    state.DISCUSSION_DATA.unlinked_discussions, true)
+  local unlinked_discussion_tree_nodes =
+    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,

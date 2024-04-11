@@ -24,7 +24,7 @@ M.data = function(resources, cb)
     project_members = project_members,
     revisions = revisions,
     pipeline = latest_pipeline,
-    draft_notes = draft_notes
+    draft_notes = draft_notes,
   }
 
   local api_calls = {}
