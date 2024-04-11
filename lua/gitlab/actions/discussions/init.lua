@@ -153,7 +153,7 @@ M.toggle = function(callback)
   au.switch_can_edit_bufs(true, M.linked_bufnr, M.unliked_bufnr)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
-  draft_notes.rebuild_draft_notes_view()
+  draft_notes.rebuild_draft_notes_tree()
 
   au.add_empty_titles({
     {

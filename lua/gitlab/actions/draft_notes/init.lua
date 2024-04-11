@@ -26,9 +26,15 @@ M.set_bufnr = function(bufnr)
   M.bufnr = bufnr
 end
 
-M.rebuild_draft_notes_view = function()
+M.rebuild_draft_notes_tree = function()
+  if M.bufnr == nil then
+    return
+  end
+
   u.switch_can_edit_buf(M.bufnr, true)
+  vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, false, {})
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
+
   local draft_notes = List.new(state.DRAFT_NOTES)
 
   au.add_empty_titles({
@@ -63,9 +69,8 @@ end
 
 M.refresh_view = function()
   -- diagnostics.refresh_diagnostics(state.DRAFT_NOTES)
-  winbar.update_winbar()
   local discussions = require("gitlab.actions.discussions")
-  if discussions.split_visible then
+  if discussions.split_visible and state.DRAFT_NOTES then
     winbar.update_winbar()
   end
 end

@@ -164,6 +164,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
       if is_draft then
         draft_notes.add_draft_note(data.draft_note)
+        draft_notes.rebuild_draft_notes_tree()
       else
         discussions.add_discussion({ data = data, unlinked = true })
         discussions.refresh()
@@ -204,6 +205,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
       draft_notes.add_draft_note(data.draft_note)
+      draft_notes.rebuild_draft_notes_tree()
     else
       discussions.add_discussion({ data = data, unlinked = false })
       discussions.refresh()
