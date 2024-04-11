@@ -46,15 +46,12 @@ local M = {
 M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist },
     function(data)
-      job.run_job("/mr/draft_note", "GET", nil, function(draft_notes_data)
-        M.discussions = data.discussions ~= vim.NIL and data.discussions or {}
-        draft_notes.set_data(draft_notes_data.draft_notes ~= vim.NIL and draft_notes_data.draft_notes or {})
-        M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
-        M.emojis = data.emojis or {}
-        if type(callback) == "function" then
-          callback()
-        end
-      end)
+      M.discussions = data.discussions ~= vim.NIL and data.discussions or {}
+      M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
+      M.emojis = data.emojis or {}
+      if type(callback) == "function" then
+        callback()
+      end
     end)
 end
 
@@ -172,7 +169,7 @@ M.toggle = function(callback)
 
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
-    draft_notes.rebuild_draft_notes_view(M.draft_notes)
+    draft_notes.rebuild_draft_notes_view()
 
     M.add_empty_titles({
       { M.linked_bufnr,      M.discussions,          "No Discussions for this MR" },

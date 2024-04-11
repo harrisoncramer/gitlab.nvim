@@ -22,18 +22,19 @@ local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
+local draft_notes = state.dependencies.draft_notes
 
 return {
   setup = function(args)
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    emoji.init() -- Read in emojis for lookup purposes
+    emoji.init()                         -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({
@@ -63,7 +64,7 @@ return {
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
-  toggle_discussions = async.sequence({ info, user }, discussions.toggle),
+  toggle_discussions = async.sequence({ info, user, draft_notes }, discussions.toggle),
   edit_comment = async.sequence({ info }, discussions.edit_comment),
   delete_comment = async.sequence({ info }, discussions.delete_comment),
   toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),

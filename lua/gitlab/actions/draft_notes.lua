@@ -12,14 +12,9 @@ local M = {
 --- Adds a draft note to the draft notes state, then rebuilds the view
 --- @param draft_note DraftNote
 M.add_draft_note = function(draft_note)
-  local new_draft_notes = table.insert(state.DRAFT_NOTES, draft_note)
+  local new_draft_notes = state.DRAFT_NOTES
+  table.insert(new_draft_notes, draft_note)
   state.DRAFT_NOTES = new_draft_notes
-end
-
---- Sets all draft note data in the state of the plugin
----@param notes DraftNote[]
-M.set_data = function(notes)
-  state.DRAFT_NOTES = notes
 end
 
 --- @param bufnr integer

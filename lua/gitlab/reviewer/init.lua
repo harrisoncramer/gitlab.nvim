@@ -80,7 +80,7 @@ M.open = function()
   if state.settings.discussion_tree.auto_open then
     local discussions = require("gitlab.actions.discussions")
     discussions.close()
-    discussions.toggle()
+    require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
 end
 

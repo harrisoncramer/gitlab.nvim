@@ -321,12 +321,42 @@ end
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
-  user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
-  info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
-  latest_pipeline = { endpoint = "/pipeline", key = "latest_pipeline", state = "PIPELINE", refresh = true },
-  labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
-  revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
-  draft_notes = { endpoint = "/mr/draft_note", key = "draft_notes", state = "DRAFT_NOTES", refresh = false },
+  user = {
+    endpoint = "/users/me",
+    key = "user",
+    state = "USER",
+    refresh = false,
+  },
+  info = {
+    endpoint = "/mr/info",
+    key = "info",
+    state = "INFO",
+    refresh = false,
+  },
+  latest_pipeline = {
+    endpoint = "/pipeline",
+    key = "latest_pipeline",
+    state = "PIPELINE",
+    refresh = true,
+  },
+  labels = {
+    endpoint = "/mr/label",
+    key = "labels",
+    state = "LABELS",
+    refresh = false,
+  },
+  revisions = {
+    endpoint = "/mr/revisions",
+    key = "Revisions",
+    state = "MR_REVISIONS",
+    refresh = false,
+  },
+  draft_notes = {
+    endpoint = "/mr/draft_notes",
+    key = "draft_notes",
+    state = "DRAFT_NOTES",
+    refresh = false,
+  },
   project_members = {
     endpoint = "/project/members",
     key = "ProjectMembers",
