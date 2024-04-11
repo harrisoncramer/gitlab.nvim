@@ -301,7 +301,7 @@ get back to your work on the comment. For occasions like this, you can set
 `settings.popup.temp_registers` to a list of writable registers (see |registers|)
 to which the contents of the popup window will be saved just before quitting.
 
-A possible setting is, e.g., `settings.popup.backup_register = {'"', "+", "g"}`
+A possible setting is, e.g., `settings.popup.temp_registers = {'"', "+", "g"}`
 which saves to the so called unnamed register (see |quotequote|), the system
 clipboard register (see |quoteplus|), as well as to the "g" register. This lets
 you easily paste the text back in with |p| or |P| (from the unnamed register),
