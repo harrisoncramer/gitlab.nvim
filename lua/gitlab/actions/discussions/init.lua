@@ -161,9 +161,17 @@ M.toggle = function(callback)
   M.rebuild_unlinked_discussion_tree()
   draft_notes.rebuild_draft_notes_view()
 
-  M.add_empty_titles({
-    { M.linked_bufnr,   state.DISCUSSION_DATA.discussions,          "No Discussions for this MR" },
-    { M.unlinked_bufnr, state.DISCUSSION_DATA.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+  au.add_empty_titles({
+    {
+      bufnr = M.linked_bufnr,
+      data = state.DISCUSSION_DATA.discussions,
+      title = "No Discussions for this MR",
+    },
+    {
+      bufnr = M.unlinked_bufnr,
+      data = state.DISCUSSION_DATA.unlinked_discussions,
+      title = "No Notes (Unlinked Discussions) for this MR",
+    },
   })
 
   -- Set default buffer
@@ -725,26 +733,6 @@ M.create_split_and_bufs = function()
   local draft_notes_bufnr = vim.api.nvim_create_buf(true, false)
 
   return split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr
-end
-
-M.add_empty_titles = function(args)
-  au.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
-  local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
-  vim.cmd("highlight default TitleHighlight guifg=#787878")
-  for _, section in ipairs(args) do
-    local bufnr, data, title = section[1], section[2], section[3]
-    if type(data) ~= "table" or #data == 0 then
-      vim.api.nvim_buf_set_lines(bufnr, 0, 1, false, { title })
-      local linnr = 1
-      vim.api.nvim_buf_set_extmark(
-        bufnr,
-        ns_id,
-        linnr - 1,
-        0,
-        { end_row = linnr - 1, end_col = string.len(title), hl_group = "TitleHighlight" }
-      )
-    end
-  end
 end
 
 ---Check if type of node is note or note body
