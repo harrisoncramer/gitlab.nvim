@@ -42,7 +42,7 @@ local function build_note_body(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-        or state.settings.discussion_tree.unresolved
+      or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
@@ -117,7 +117,6 @@ M.is_node_note = function(node)
     return false
   end
 end
-
 
 -- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
 M.toggle_node = function(tree)

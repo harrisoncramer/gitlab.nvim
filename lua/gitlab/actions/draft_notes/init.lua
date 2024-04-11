@@ -32,7 +32,7 @@ M.rebuild_draft_notes_view = function()
   local draft_notes = List.new(state.DRAFT_NOTES)
 
   au.add_empty_titles({
-    { bufnr = M.bufnr, data = state.DRAFT_NOTES, title = "No Draft Notes for this MR" }
+    { bufnr = M.bufnr, data = state.DRAFT_NOTES, title = "No Draft Notes for this MR" },
   })
 
   local draft_note_nodes = draft_notes:map(function(note)

@@ -87,9 +87,9 @@ end
 M.make_winbar = function(t)
   local discussions_content = t.resolvable_discussions ~= 0
       and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-      or "Discussions"
+    or "Discussions"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-      or "Notes"
+    or "Notes"
   local draft_notes_content = t.draft_notes ~= 0 and string.format("Draft Notes (%d)", t.draft_notes) or "Draft Notes"
 
   -- Colorize the active tab
