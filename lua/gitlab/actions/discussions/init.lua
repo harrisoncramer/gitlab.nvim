@@ -121,7 +121,6 @@ M.toggle = function(callback)
   if
       type(state.DISCUSSION_DATA.discussions) ~= "table"
       and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
-      and type(M.draft_notes) ~= "table"
   then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
     vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
@@ -173,12 +172,15 @@ M.toggle = function(callback)
   local default_buffer = winbar.bufnr_map[state.settings.discussion_tree.default_view]
   vim.api.nvim_set_current_buf(default_buffer)
   au.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
-  M.refresh_view()
 
   vim.api.nvim_set_current_win(current_window)
   if type(callback) == "function" then
     callback()
   end
+
+  vim.schedule(function()
+    M.refresh_view()
+  end)
 end
 
 -- Clears the discussion state and unmounts the split
