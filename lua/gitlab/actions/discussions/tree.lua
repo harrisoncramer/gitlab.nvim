@@ -144,9 +144,24 @@ M.add_discussions_to_table = function(items, unlinked)
   end
 
   -- Create all the folder and file name nodes.
+  local discussion_by_file_name = M.create_disscussions_by_file_name(t)
+
+  -- Flatten empty folders
+  for _, node in ipairs(discussion_by_file_name) do
+    flatten_nodes(node)
+  end
+
+  sort_nodes(discussion_by_file_name)
+
+  return discussion_by_file_name
+end
+
+M.create_disscussions_by_file_name = function(node_list)
+  -- Create all the folder and file name nodes.
   local discussion_by_file_name = {}
   local top_level_path_to_node = {}
-  for _, node in ipairs(t) do
+
+  for _, node in ipairs(node_list) do
     local path = ""
     local parent_node = nil
     local path_parts = u.split_path(node.file_name)
@@ -210,12 +225,6 @@ M.add_discussions_to_table = function(items, unlinked)
       end
     end
   end
-
-  -- Flatten empty folders
-  for _, node in ipairs(discussion_by_file_name) do
-    flatten_nodes(node)
-  end
-  sort_nodes(discussion_by_file_name)
 
   return discussion_by_file_name
 end
