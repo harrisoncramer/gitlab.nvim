@@ -68,24 +68,6 @@ M.settings = {
     unresolved = "-",
     tree_type = "simple",
     toggle_tree_type = "i",
-    ---@param t WinbarTable
-    winbar = function(t)
-      local discussions_content = t.resolvable_discussions ~= 0
-          and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
-      local notes_content = t.resolvable_notes ~= 0
-          and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
-      if t.name == "Discussions" then
-        notes_content = "%#Comment#" .. notes_content
-        discussions_content = "%#Text#" .. discussions_content
-      else
-        discussions_content = "%#Comment#" .. discussions_content
-        notes_content = "%#Text#" .. notes_content
-      end
-      local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
-      return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
-    end,
   },
   comments = {
     default_to_draft = false,
