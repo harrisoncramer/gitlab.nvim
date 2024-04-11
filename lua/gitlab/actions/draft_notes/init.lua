@@ -63,7 +63,8 @@ end
 M.refresh_view = function()
   -- diagnostics.refresh_diagnostics(state.DRAFT_NOTES)
   winbar.update_winbar()
-  if require("gitlab.actions.discussions").split_visible then
+  local discussions = require("gitlab.actions.discussions")
+  if discussions.split_visible then
     winbar.update_winbar()
   end
 end
@@ -99,6 +100,14 @@ M.set_keymaps = function()
   vim.keymap.set("n", "<leader>p", function()
     au.print_node()
   end, { buffer = M.bufnr, desc = "Print current node (for debugging)" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
+    local discussions = require("gitlab.actions.discussions")
+    au.toggle_nodes(discussions.split.winid, M.tree, false, {
+      toggle_resolved = true,
+      toggle_unresolved = true,
+      keep_current_open = state.settings.discussion_tree.keep_current_open,
+    })
+  end, { buffer = M.bufnr, desc = "Toggle all nodes" })
 end
 
 M.edit_comment = function()
