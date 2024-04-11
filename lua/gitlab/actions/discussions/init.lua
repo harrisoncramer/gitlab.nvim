@@ -12,6 +12,7 @@ local reviewer = require("gitlab.reviewer")
 local List = require("gitlab.utils.list")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
+local draft_notes = require("gitlab.actions.draft_notes")
 local diffview_lib = require("diffview.lib")
 local common = require("gitlab.indicators.common")
 local signs = require("gitlab.indicators.signs")
@@ -36,7 +37,6 @@ local M = {
   ---@type number
   unlinked_bufnr = nil,
   ---@type number
-  focused_bufnr = nil,
   discussion_tree = nil,
 }
 
@@ -99,8 +99,7 @@ M.refresh_view = function()
     diagnostics.refresh_diagnostics(M.discussions)
   end
   if M.split_visible then
-    local linked_is_focused = M.linked_bufnr == M.focused_bufnr
-    winbar.update_winbar(M.discussions, M.unlinked_discussions, linked_is_focused and "Discussions" or "Notes")
+    winbar.update_winbar(M.discussions, M.unlinked_discussions)
   end
 end
 
@@ -128,9 +127,10 @@ M.toggle = function(callback)
     return
   end
 
-  local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
+  local split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr = M.create_split_and_bufs()
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
+  M.draft_notes_bufnr = draft_notes_bufnr
 
   M.split = split
   M.split_visible = true
@@ -142,13 +142,21 @@ M.toggle = function(callback)
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
 
-  local default_discussions = state.settings.discussion_tree.default_view == "discussions"
-  winbar.update_winbar({}, {}, default_discussions and "Discussions" or "Notes")
+  local default_view = state.settings.discussion_tree.default_view
+
+  -- Used as a lookup later by winbar, during window switching
+  winbar.set_buffers(
+    M.linked_bufnr,
+    M.unlinked_bufnr,
+    M.draft_notes_bufnr)
+  draft_notes.set_bufnr(M.draft_notes_bufnr)
+  winbar.update_winbar()
 
   M.load_discussions(function()
-    if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" then
-      u.notify("No discussions or notes for this MR", vim.log.levels.WARN)
+    if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" and type(M.draft_notes) ~= "table" then
+      u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
       vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
       return
     end
@@ -158,14 +166,16 @@ M.toggle = function(callback)
 
     M.rebuild_discussion_tree()
     M.rebuild_unlinked_discussion_tree()
+    draft_notes.rebuild_draft_notes_view()
+
     M.add_empty_titles({
-      { M.linked_bufnr, M.discussions, "No Discussions for this MR" },
-      { M.unlinked_bufnr, M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+      { M.linked_bufnr,      M.discussions,          "No Discussions for this MR" },
+      { M.unlinked_bufnr,    M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+      { M.draft_notes_bufnr, M.draft_notes,          "No Draft Notes for this MR" },
     })
 
-    local default_buffer = default_discussions and M.linked_bufnr or M.unlinked_bufnr
+    local default_buffer = winbar.bufnr_map[default_view]
     vim.api.nvim_set_current_buf(default_buffer)
-    M.focused_bufnr = default_buffer
 
     M.switch_can_edit_bufs(false)
     M.refresh_view()
@@ -175,15 +185,6 @@ M.toggle = function(callback)
       callback()
     end
   end)
-end
-
--- Change between views in the discussion panel, either notes or discussions
-local switch_view_type = function()
-  local change_to_unlinked = M.linked_bufnr == M.focused_bufnr
-  local new_bufnr = change_to_unlinked and M.unlinked_bufnr or M.linked_bufnr
-  vim.api.nvim_set_current_buf(new_bufnr)
-  winbar.update_winbar(M.discussions, M.unlinked_discussions, change_to_unlinked and "Notes" or "Discussions")
-  M.focused_bufnr = new_bufnr
 end
 
 -- Clears the discussion state and unmounts the split
@@ -526,8 +527,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-        or (not unlinked and state.discussion_tree.resolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+          or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -536,8 +537,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-        or (not unlinked and state.discussion_tree.unresolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+          or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -669,7 +670,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -700,8 +701,10 @@ M.rebuild_unlinked_discussion_tree = function()
 end
 
 M.switch_can_edit_bufs = function(bool)
+  u.switch_can_edit_buf(M.draft_notes_bufnr, bool)
   u.switch_can_edit_buf(M.unlinked_bufnr, bool)
   u.switch_can_edit_buf(M.linked_bufnr, bool)
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
 end
@@ -736,8 +739,9 @@ M.create_split_and_bufs = function()
 
   local linked_bufnr = vim.api.nvim_create_buf(true, false)
   local unlinked_bufnr = vim.api.nvim_create_buf(true, false)
+  local draft_notes_bufnr = vim.api.nvim_create_buf(true, false)
 
-  return split, linked_bufnr, unlinked_bufnr
+  return split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr
 end
 
 M.add_empty_titles = function(args)
@@ -827,7 +831,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
   end, { buffer = bufnr, desc = "Reply" })
   vim.keymap.set("n", state.settings.discussion_tree.switch_view, function()
-    switch_view_type()
+    winbar.switch_view_type()
   end, { buffer = bufnr, desc = "Switch view type" })
   vim.keymap.set("n", state.settings.help, function()
     help.open()
