@@ -522,7 +522,7 @@ in normal mode):
     vim.keymap.set("n", "glp", gitlab.pipeline)
     vim.keymap.set("n", "glo", gitlab.open_in_browser)
     vim.keymap.set("n", "glM", gitlab.merge)
-    vim.keymap.set("n", "glu", gitlab.copy_web_url)
+    vim.keymap.set("n", "glu", gitlab.copy_mr_url)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
@@ -755,12 +755,12 @@ Opens the current MR in your default web browser.
 >lua
   require("gitlab").open_in_browser()
 <
-                                                                *gitlab.nvim.copy_web_url*
-gitlab.copy_web_url() ~
+                                                                *gitlab.nvim.copy_mr_url*
+gitlab.copy_mr_url() ~
 
 Copies the URL of the current MR to system clipboard.
 >lua
-  require("gitlab").copy_web_url()
+  require("gitlab").copy_mr_url()
 <
                                                                 *gitlab.nvim.merge*
 gitlab.merge({opts}) ~

@@ -78,7 +78,7 @@ return {
       u.open_in_browser(web_url)
     end
   end),
-  copy_web_url = async.sequence({ info }, function()
+  copy_mr_url = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then
       vim.fn.setreg("+", web_url)
