@@ -42,9 +42,6 @@ M.rebuild_draft_notes_view = function()
     return agg
   end, {})
 
-  -- local draft_note_nodes = draft_notes_tree.add_draft_notes_to_tree(state.DRAFT_NOTES)
-  -- local discussion_tree = NuiTree({ nodes = draft_note_nodes, bufnr = M.bufnr, prepare_node = nui_tree_prepare_node })
-
   u.switch_can_edit_buf(M.bufnr, true)
   vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, true, { "" })
   vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, true, draft_note_lines)
