@@ -28,13 +28,16 @@ M.rebuild_draft_notes_view = function()
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
   local draft_notes = List.new(state.DRAFT_NOTES)
 
+  au.add_empty_titles({
+    { bufnr = M.bufnr, data = state.DRAFT_NOTES, title = "No Draft Notes for this MR" }
+  })
+
   --- The draft note "tree" is non-collapsible, and has many fewer
   --- actions than the normal tree
   --- @param draft_note DraftNote
   local draft_note_lines = draft_notes:reduce(function(agg, draft_note)
     local header = au.build_draft_note_header()
     table.insert(agg, header)
-    table.insert(agg, "")
     table.insert(agg, string.format("    %s", draft_note.note))
     return agg
   end, {})
