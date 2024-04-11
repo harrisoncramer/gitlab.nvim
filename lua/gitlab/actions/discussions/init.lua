@@ -40,13 +40,12 @@ local M = {
   discussion_tree = nil,
 }
 
----Makes API call to get the discussion data, store it in M.discussions and M.unlinked_discussions and call
----callback with data
+---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist },
     function(data)
-      M.discussions = data.discussions ~= vim.NIL and data.discussions or {}
+      state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
       M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
       M.emojis = data.emojis or {}
       if type(callback) == "function" then
@@ -97,10 +96,10 @@ end
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
   if state.settings.discussion_signs.enabled then
-    diagnostics.refresh_diagnostics(M.discussions)
+    diagnostics.refresh_diagnostics(state.DISCUSSION_DATA.discussions)
   end
   if M.split_visible then
-    winbar.update_winbar(M.discussions, M.unlinked_discussions)
+    winbar.update_winbar(state.DISCUSSION_DATA.discussions, M.unlinked_discussions)
   end
 end
 
@@ -158,7 +157,7 @@ M.toggle = function(callback)
   winbar.update_winbar()
 
   M.load_discussions(function()
-    if type(M.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" and type(M.draft_notes) ~= "table" then
+    if type(state.DISCUSSION_DATA.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" and type(M.draft_notes) ~= "table" then
       u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
       vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
       return
@@ -172,9 +171,9 @@ M.toggle = function(callback)
     draft_notes.rebuild_draft_notes_view()
 
     M.add_empty_titles({
-      { M.linked_bufnr,      M.discussions,          "No Discussions for this MR" },
-      { M.unlinked_bufnr,    M.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
-      { M.draft_notes_bufnr, M.draft_notes,          "No Draft Notes for this MR" },
+      { M.linked_bufnr,      state.DISCUSSION_DATA.discussions, "No Discussions for this MR" },
+      { M.unlinked_bufnr,    M.unlinked_discussions,            "No Notes (Unlinked Discussions) for this MR" },
+      { M.draft_notes_bufnr, M.draft_notes,                     "No Draft Notes for this MR" },
     })
 
     local default_buffer = winbar.bufnr_map[default_view]
@@ -374,7 +373,7 @@ M.send_edits = function(discussion_id, note_id, unlinked)
         M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
       else
-        M.replace_text(M.discussions, discussion_id, note_id, text)
+        M.replace_text(state.DISCUSSION_DATA.discussions, discussion_id, note_id, text)
         M.rebuild_discussion_tree()
       end
     end)
@@ -671,7 +670,7 @@ M.rebuild_discussion_tree = function()
   end
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
-  local discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.discussions, false)
+  local discussion_tree_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
   local discussion_tree =
       NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
   discussion_tree:render()
@@ -722,10 +721,10 @@ M.add_discussion = function(arg)
     M.rebuild_unlinked_discussion_tree()
     return
   end
-  if type(M.discussions) ~= "table" then
-    M.discussions = {}
+  if type(state.DISCUSSION_DATA.discussions) ~= "table" then
+    state.DISCUSSION_DATA.discussions = {}
   end
-  table.insert(M.discussions, 1, discussion)
+  table.insert(state.DISCUSSION_DATA.discussions, 1, discussion)
   M.rebuild_discussion_tree()
 end
 
