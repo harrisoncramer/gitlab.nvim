@@ -156,10 +156,9 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
   end
 
   local is_draft = M.is_draft_popup and u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
-
   if unlinked then
     local body = { comment = text }
-    local endpoint = is_draft and "/mr/draft_notes" or "/mr/comment"
+    local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
     job.run_job(endpoint, "POST", body, function(data)
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
       if is_draft then
@@ -200,7 +199,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     line_range = location_data.line_range,
   }
 
-  local endpoint = is_draft and "/mr/draft_notes" or "/mr/comment"
+  local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
   job.run_job(endpoint, "POST", body, function(data)
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then

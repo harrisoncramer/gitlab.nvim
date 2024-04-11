@@ -334,7 +334,7 @@ M.dependencies = {
     refresh = false,
   },
   draft_notes = {
-    endpoint = "/mr/draft_notes",
+    endpoint = "/mr/draft_notes/",
     key = "draft_notes",
     state = "DRAFT_NOTES",
     refresh = false,

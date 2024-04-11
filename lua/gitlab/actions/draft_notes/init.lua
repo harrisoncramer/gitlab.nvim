@@ -1,4 +1,5 @@
 local au = require("gitlab.actions.utils")
+local job = require("gitlab.job")
 local NuiTree = require("nui.tree")
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
@@ -19,6 +20,7 @@ M.add_draft_note = function(draft_note)
   local new_draft_notes = state.DRAFT_NOTES
   table.insert(new_draft_notes, draft_note)
   state.DRAFT_NOTES = new_draft_notes
+  M.rebuild_draft_notes_tree()
 end
 
 --- @param bufnr integer
@@ -72,19 +74,14 @@ M.rebuild_draft_notes_tree = function()
 end
 
 M.refresh_view = function()
-  -- diagnostics.refresh_diagnostics(state.DRAFT_NOTES)
-  local discussions = require("gitlab.actions.discussions")
-  if discussions.split_visible and state.DRAFT_NOTES then
-    winbar.update_winbar()
-  end
 end
 
 M.set_keymaps = function()
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
-    M.edit_comment()
+    M.edit_draft_note()
   end, { buffer = M.bufnr, desc = "Edit comment" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
-    M.delete_comment()
+    M.delete_draft_note(M.tree)
   end, { buffer = M.bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.switch_view, function()
     winbar.switch_view_type()
@@ -123,12 +120,44 @@ M.set_keymaps = function()
   end, { buffer = M.bufnr, desc = "Toggle all nodes" })
 end
 
-M.edit_comment = function()
-  u.notify("Not implemented yet")
+M.edit_draft_note = function()
 end
 
-M.delete_comment = function()
-  u.notify("Not implemented yet")
+-- This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree
+M.send_deletion = function(tree)
+  local current_node = tree:get_node()
+  local note_node = au.get_note_node(tree, current_node)
+  local root_node = au.get_root_node(tree, current_node)
+
+  if note_node == nil or root_node == nil then
+    u.notify("Could not get note or root node", vim.log.levels.ERROR)
+    return
+  end
+
+  ---@type integer
+  local note_id = note_node.is_root and root_node.id or note_node.id
+
+  job.run_job(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    local new_notes = List.new(state.DRAFT_NOTES)
+        :filter(function(node)
+          return node.id ~= note_id
+        end)
+
+    state.DRAFT_NOTES = new_notes
+    M.rebuild_draft_notes_tree()
+    M.refresh_view()
+  end)
+end
+
+M.delete_draft_note = function(tree)
+  vim.ui.select({ "Confirm", "Cancel" }, {
+    prompt = "Delete comment?",
+  }, function(choice)
+    if choice == "Confirm" then
+      M.send_deletion(tree)
+    end
+  end)
 end
 
 return M

@@ -118,13 +118,14 @@ M.toggle = function(callback)
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
   M.draft_notes_bufnr = draft_notes_bufnr
+  draft_notes.set_bufnr(M.draft_notes_bufnr)
+
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split.bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
 
   M.split = split
   M.split_visible = true
-  draft_notes.set_bufnr(M.draft_notes_bufnr)
   split:mount()
 
   -- Initialize winbar module with data from buffers

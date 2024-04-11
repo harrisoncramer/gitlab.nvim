@@ -43,6 +43,7 @@ type fakeClient struct {
 	currentUser                        func(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error)
 	createDraftNote                    func(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
 	listDraftNotes                     func(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error)
+	deleteDraftNote                    func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 }
 
 type Author struct {
@@ -162,6 +163,10 @@ func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListPr
 
 func (f fakeClient) CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error) {
 	return &gitlab.AwardEmoji{}, &gitlab.Response{}, nil
+}
+
+func (f fakeClient) DeleteDraftNote(pid interface{}, mergeRequestIID int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return f.deleteDraftNote(pid, mergeRequestIID, note)
 }
 
 /* The assert function is a helper function used to check two comparables */

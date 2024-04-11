@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/xanzy/go-gitlab"
 )
@@ -40,7 +42,7 @@ func (draftNote DraftNoteWithPosition) GetPositionData() PositionData {
 	return draftNote.PositionData
 }
 
-/* commentHandler creates, edits, and deletes draft discussions (comments, multi-line comments) */
+/* draftNoteHandler creates, edits, and deletes draft notes */
 func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
@@ -58,7 +60,7 @@ func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/* postComment creates a draft comment */
+/* postDraftNote creates a draft note */
 func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -93,7 +95,7 @@ func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft/comment"}, "Could not create draft note", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not create draft note", res.StatusCode)
 		return
 	}
 
@@ -110,15 +112,45 @@ func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
-
 }
 
-/* deleteComment deletes a draft comment */
-func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {}
+/* deleteDraftNote deletes a draft note */
+func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
+	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
+	id, err := strconv.Atoi(suffix)
+	if err != nil {
+		handleError(w, err, "Could not parse draft note ID", http.StatusBadRequest)
+		return
+	}
 
-/* deleteComment edits a draft comment */
+	res, err := a.client.DeleteDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, id)
+
+	if err != nil {
+		handleError(w, err, "Could not delete draft note", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not delete draft note", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := SuccessResponse{
+		Message: "Draft note deleted",
+		Status:  http.StatusOK,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
+}
+
+/* editDraftNot edits the text of a draft comment */
 func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {}
 
+/* listDraftNotes lists all draft notes for the currently authenticated user */
 func (a *api) listDraftNotes(w http.ResponseWriter, r *http.Request) {
 
 	opt := gitlab.ListDraftNotesOptions{}
