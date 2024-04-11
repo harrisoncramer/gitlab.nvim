@@ -1,6 +1,6 @@
+local au = require("gitlab.actions.utils")
 local u = require("gitlab.utils")
 local diffview_lib = require("diffview.lib")
-local discussion_tree = require("gitlab.actions.discussions.tree")
 local common = require("gitlab.indicators.common")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
@@ -29,14 +29,14 @@ local display_opts = {
 local function create_diagnostic(range_info, discussion)
   local message = ""
   for _, note in ipairs(discussion.notes) do
-    message = message .. discussion_tree.build_note_header(note) .. "\n" .. note.body .. "\n"
+    message = message .. au.build_note_header(note) .. "\n" .. note.body .. "\n"
   end
 
   local diagnostic = {
     message = message,
     col = 0,
     severity = state.settings.discussion_signs.severity,
-    user_data = { discussion_id = discussion.id, header = discussion_tree.build_note_header(discussion.notes[1]) },
+    user_data = { discussion_id = discussion.id, header = au.build_note_header(discussion.notes[1]) },
     source = "gitlab",
     code = "gitlab.nvim",
   }

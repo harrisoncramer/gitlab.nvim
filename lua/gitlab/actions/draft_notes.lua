@@ -1,3 +1,5 @@
+local au = require("gitlab.actions.utils")
+local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local help = require("gitlab.actions.help")
@@ -23,6 +25,24 @@ M.set_bufnr = function(bufnr)
 end
 
 M.rebuild_draft_notes_view = function()
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
+  local draft_notes = List.new(state.DRAFT_NOTES)
+
+  --- The draft note "tree" is non-collapsible, and has many fewer
+  --- actions than the normal tree
+  --- @param draft_note DraftNote
+  local draft_note_lines = draft_notes:reduce(function(agg, draft_note)
+    local header = au.build_draft_note_header()
+    table.insert(agg, header)
+    table.insert(agg, "")
+    table.insert(agg, string.format("    %s", draft_note.note))
+    return agg
+  end, {})
+
+  u.switch_can_edit_buf(M.bufnr, true)
+  vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, true, { "" })
+  vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, true, draft_note_lines)
+  u.switch_can_edit_buf(M.bufnr, false)
   M.set_keymaps(true)
 end
 

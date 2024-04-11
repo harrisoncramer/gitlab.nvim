@@ -1,5 +1,6 @@
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
+local au = require("gitlab.actions.utils")
 local NuiTree = require("nui.tree")
 
 local M = {}
@@ -78,13 +79,6 @@ local function flatten_nodes(node)
   sort_nodes(node.__children)
 end
 
----Build note header from note.
----@param note Note
----@return string
-M.build_note_header = function(note)
-  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
-end
-
 ---Build note node body
 ---@param note Note
 ---@param resolve_info table?
@@ -109,10 +103,10 @@ local function build_note_body(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-      or state.settings.discussion_tree.unresolved
+        or state.settings.discussion_tree.unresolved
   end
 
-  local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
+  local noteHeader = au.build_note_header(note) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end
