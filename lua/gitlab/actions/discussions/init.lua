@@ -14,7 +14,6 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
 local diffview_lib = require("diffview.lib")
-local common = require("gitlab.indicators.common")
 local signs = require("gitlab.indicators.signs")
 local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
@@ -26,8 +25,6 @@ local M = {
   split = nil,
   ---@type number
   split_bufnr = nil,
-  ---@type EmojiMap
-  emojis = {},
   ---@type number
   linked_bufnr = nil,
   ---@type number
@@ -42,7 +39,7 @@ M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
     state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions
-      or {}
+        or {}
     state.DISCUSSION_DATA.emojis = data.emojis ~= vim.NIL and data.emojis or {}
     if type(callback) == "function" then
       callback()
@@ -95,7 +92,7 @@ M.refresh_view = function()
     diagnostics.refresh_diagnostics(state.DISCUSSION_DATA.discussions)
   end
   if M.split_visible and state.DISCUSSION_DATA then
-    winbar.update_winbar(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions)
+    winbar.update_winbar()
   end
 end
 
@@ -124,12 +121,12 @@ M.toggle = function(callback)
   end
 
   if
-    type(state.DISCUSSION_DATA.discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
-    and type(M.draft_notes) ~= "table"
+      type(state.DISCUSSION_DATA.discussions) ~= "table"
+      and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
+      and type(M.draft_notes) ~= "table"
   then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
-    vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
+    vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
     return
   end
 
@@ -252,7 +249,7 @@ end
 M.reply = function(tree)
   local reply_popup = Popup(u.create_popup_state("Reply", state.settings.popup.reply))
   local node = tree:get_node()
-  local discussion_node = M.get_root_node(tree, node)
+  local discussion_node = au.get_root_node(tree, node)
   local id = tostring(discussion_node.id)
   reply_popup:mount()
   state.set_popup_keymaps(
@@ -298,8 +295,8 @@ M.send_deletion = function(tree)
   -- TODO: If dealing with a draft comment, handle this
   -- with a different endpoint!
 
-  local note_node = M.get_note_node(tree, current_node)
-  local root_node = M.get_root_node(tree, current_node)
+  local note_node = au.get_note_node(tree, current_node)
+  local root_node = au.get_root_node(tree, current_node)
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
   local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
   job.run_job("/mr/comment", "DELETE", body, function(data)
@@ -319,8 +316,8 @@ end
 M.edit_comment = function(tree, unlinked)
   local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
-  local note_node = M.get_note_node(tree, current_node)
-  local root_node = M.get_root_node(tree, current_node)
+  local note_node = au.get_note_node(tree, current_node)
+  local root_node = au.get_root_node(tree, current_node)
   if note_node == nil or root_node == nil then
     u.notify("Could not get root or note node", vim.log.levels.ERROR)
     return
@@ -385,7 +382,7 @@ M.toggle_discussion_resolved = function(tree)
 
   -- Switch to the root node to enable toggling from child nodes and note bodies
   if not note.resolvable and au.is_node_note(note) then
-    note = M.get_root_node(tree, note)
+    note = au.get_root_node(tree, note)
   end
   if note == nil then
     return
@@ -403,73 +400,6 @@ M.toggle_discussion_resolved = function(tree)
   end)
 end
 
----Takes a node and returns the line where the note is positioned in the new SHA. If
----the line is not in the new SHA, returns nil
----@param node any
----@return number|nil
-local function get_new_line(node)
-  ---@type GitlabLineRange|nil
-  local range = node.range
-  if range == nil then
-    return node.new_line
-  end
-
-  local _, start_new_line = common.parse_line_code(range.start.line_code)
-  return start_new_line
-end
-
----Takes a node and returns the line where the note is positioned in the old SHA. If
----the line is not in the old SHA, returns nil
----@param node any
----@return number|nil
-local function get_old_line(node)
-  ---@type GitlabLineRange|nil
-  local range = node.range
-  if range == nil then
-    return node.old_line
-  end
-
-  local start_old_line, _ = common.parse_line_code(range.start.line_code)
-  return start_old_line
-end
-
--- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
-M.jump_to_reviewer = function(tree)
-  local node = tree:get_node()
-  local root_node = M.get_root_node(tree, node)
-  if root_node == nil then
-    u.notify("Could not get discussion node", vim.log.levels.ERROR)
-    return
-  end
-  reviewer.jump(root_node.file_name, get_new_line(root_node), get_old_line(root_node))
-  M.refresh_view()
-end
-
--- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
-M.jump_to_file = function(tree)
-  local node = tree:get_node()
-  local root_node = M.get_root_node(tree, node)
-  if root_node == nil then
-    u.notify("Could not get discussion node", vim.log.levels.ERROR)
-    return
-  end
-  vim.cmd.tabnew()
-  local line_number = get_new_line(root_node) or get_old_line(root_node)
-  if line_number == nil then
-    line_number = 1
-  end
-  local bufnr = vim.fn.bufnr(root_node.file_name)
-  if bufnr ~= -1 then
-    vim.cmd("buffer " .. bufnr)
-    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
-    return
-  end
-
-  -- If buffer is not already open, open it
-  vim.cmd("edit " .. root_node.file_name)
-  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
-end
-
 ---@class ToggleNodesOptions
 ---@field toggle_resolved boolean Whether to toggle resolved discussions.
 ---@field toggle_unresolved boolean Whether to toggle unresolved discussions.
@@ -483,12 +413,12 @@ M.toggle_nodes = function(tree, unlinked, opts)
   if current_node == nil then
     return
   end
-  local root_node = M.get_root_node(tree, current_node)
+  local root_node = au.get_root_node(tree, current_node)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-        or (not unlinked and state.discussion_tree.resolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+          or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -497,8 +427,8 @@ M.toggle_nodes = function(tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-        or (not unlinked and state.discussion_tree.unresolved_expanded)
+          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+          or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else
@@ -536,7 +466,7 @@ M.collapse_recursively = function(tree, node, current_root_node, keep_current_op
   if node == nil then
     return
   end
-  local root_node = M.get_root_node(tree, node)
+  local root_node = au.get_root_node(tree, node)
   if au.is_node_note(node) and root_node.resolved == is_resolved then
     if keep_current_open and root_node == current_root_node then
       return
@@ -557,7 +487,7 @@ M.expand_recursively = function(tree, node, is_resolved)
   if node == nil then
     return
   end
-  if au.is_node_note(node) and M.get_root_node(tree, node).resolved == is_resolved then
+  if au.is_node_note(node) and au.get_root_node(tree, node).resolved == is_resolved then
     node:expand()
   end
   local children = node:get_child_ids()
@@ -577,7 +507,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
   local discussion_tree =
-    NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = M.nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = M.nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -594,7 +524,7 @@ M.rebuild_unlinked_discussion_tree = function()
   au.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes =
-    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,
@@ -707,23 +637,23 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
       if M.is_current_node_note(tree) then
-        M.jump_to_file(tree)
+        au.jump_to_file(tree)
       end
     end, { buffer = bufnr, desc = "Jump to file" })
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
       if M.is_current_node_note(tree) then
-        M.jump_to_reviewer(tree)
+        au.jump_to_reviewer(tree, M.refresh_view)
       end
     end, { buffer = bufnr, desc = "Jump to reviewer" })
   end
   vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
-    M.open_in_browser(tree)
+    au.open_in_browser(tree)
   end, { buffer = bufnr, desc = "Open the note in your browser" })
   vim.keymap.set("n", state.settings.discussion_tree.copy_node_url, function()
-    M.copy_node_url(tree)
+    au.copy_node_url(tree)
   end, { buffer = bufnr, desc = "Copy the URL of the current node to clipboard" })
   vim.keymap.set("n", "<leader>p", function()
-    M.print_node(tree)
+    au.print_node(tree)
   end, { buffer = bufnr, desc = "Print current node (for debugging)" })
   vim.keymap.set("n", state.settings.discussion_tree.add_emoji, function()
     M.add_emoji_to_note(tree, unlinked)
@@ -794,42 +724,6 @@ M.replace_text = function(data, discussion_id, note_id, text)
   end
 end
 
----Get root node
----@param tree NuiTree
----@param node NuiTree.Node?
----@return NuiTree.Node?
-M.get_root_node = function(tree, node)
-  if not node then
-    return nil
-  end
-  if node.type == "note_body" or node.type == "note" and not node.is_root then
-    local parent_id = node:get_parent_id()
-    return M.get_root_node(tree, tree:get_node(parent_id))
-  elseif node.is_root then
-    return node
-  end
-end
-
----Get note node
----@param tree NuiTree
----@param node NuiTree.Node?
----@return NuiTree.Node?
-M.get_note_node = function(tree, node)
-  if not node then
-    return nil
-  end
-
-  if node.type == "note_body" then
-    local parent_id = node:get_parent_id()
-    if parent_id == nil then
-      return node
-    end
-    return M.get_note_node(tree, tree:get_node(parent_id))
-  elseif node.type == "note" then
-    return node
-  end
-end
-
 M.add_reply_to_tree = function(tree, note, discussion_id)
   local note_node = discussions_tree.build_note(note)
   note_node:expand()
@@ -837,44 +731,10 @@ M.add_reply_to_tree = function(tree, note, discussion_id)
   tree:render()
 end
 
----@param tree NuiTree
-M.get_url = function(tree)
-  local current_node = tree:get_node()
-  local note_node = M.get_note_node(tree, current_node)
-  if note_node == nil then
-    return
-  end
-  local url = note_node.url
-  if url == nil then
-    u.notify("Could not get URL of note", vim.log.levels.ERROR)
-    return
-  end
-  return url
-end
-
----@param tree NuiTree
-M.open_in_browser = function(tree)
-  local url = M.get_url(tree)
-  if url == nil then
-    return
-  end
-  u.open_in_browser(url)
-end
-
----@param tree NuiTree
-M.copy_node_url = function(tree)
-  local url = M.get_url(tree)
-  if url == nil then
-    return
-  end
-  u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
-  vim.fn.setreg("+", url)
-end
-
 M.add_emoji_to_note = function(tree, unlinked)
   local node = tree:get_node()
-  local note_node = M.get_note_node(tree, node)
-  local root_node = M.get_root_node(tree, node)
+  local note_node = au.get_note_node(tree, node)
+  local root_node = au.get_root_node(tree, node)
   local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
   local note_id_str = tostring(note_id)
   local emojis = require("gitlab.emoji").emoji_list
@@ -899,8 +759,8 @@ end
 
 M.delete_emoji_from_note = function(tree, unlinked)
   local node = tree:get_node()
-  local note_node = M.get_note_node(tree, node)
-  local root_node = M.get_root_node(tree, node)
+  local note_node = au.get_note_node(tree, node)
+  local root_node = au.get_root_node(tree, node)
   local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
   local note_id_str = tostring(note_id)
 
@@ -939,12 +799,6 @@ M.delete_emoji_from_note = function(tree, unlinked)
       u.notify("Emoji removed", vim.log.levels.INFO)
     end)
   end)
-end
-
--- For developers!
-M.print_node = function(tree)
-  local current_node = tree:get_node()
-  vim.print(current_node)
 end
 
 return M

@@ -72,12 +72,10 @@ end
 --@param view_type string|"discussions"|"notes"
 
 ---This function updates the winbar
----@param discussions Discussion[]|nil
----@param unlinked_discussions UnlinkedDiscussion[]|nil
-M.update_winbar = function(discussions, unlinked_discussions)
+M.update_winbar = function()
   local d = require("gitlab.actions.discussions")
   local winId = d.split.winid
-  local c = content(discussions, unlinked_discussions)
+  local c = content(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions)
   if vim.wo[winId] then
     vim.wo[winId].winbar = c
   end
@@ -87,9 +85,9 @@ end
 M.make_winbar = function(t)
   local discussions_content = t.resolvable_discussions ~= 0
       and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-    or "Discussions"
+      or "Discussions"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-    or "Notes"
+      or "Notes"
   local draft_notes_content = t.draft_notes ~= 0 and string.format("Draft Notes (%d)", t.draft_notes) or "Draft Notes"
 
   -- Colorize the active tab
@@ -131,7 +129,7 @@ M.switch_view_type = function()
   end
 
   vim.api.nvim_set_current_buf(M.bufnr_map[M.current_view_type])
-  M.update_winbar(M.discussions, M.unlinked_discussions)
+  M.update_winbar()
 end
 
 return M

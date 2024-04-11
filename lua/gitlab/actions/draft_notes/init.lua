@@ -57,16 +57,24 @@ M.rebuild_draft_notes_view = function()
   M.tree = tree
 
   tree:render()
-  M.set_keymaps(true)
+  M.set_keymaps()
 end
 
-M.set_keymaps = function(unlinked)
-  -- vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
-  --   M.edit_comment()
-  -- end, { buffer = M.bufnr, desc = "Edit comment" })
-  -- vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
-  --   M.delete_comment()
-  -- end, { buffer = M.bufnr, desc = "Delete comment" })
+M.refresh_view = function()
+  -- diagnostics.refresh_diagnostics(state.DRAFT_NOTES)
+  winbar.update_winbar()
+  if require("gitlab.actions.discussions").split_visible then
+    winbar.update_winbar()
+  end
+end
+
+M.set_keymaps = function()
+  vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
+    M.edit_comment()
+  end, { buffer = M.bufnr, desc = "Edit comment" })
+  vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
+    M.delete_comment()
+  end, { buffer = M.bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.switch_view, function()
     winbar.switch_view_type()
   end, { buffer = M.bufnr, desc = "Switch view type" })
@@ -75,24 +83,30 @@ M.set_keymaps = function(unlinked)
   end, { buffer = M.bufnr, desc = "Open help popup" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
     au.toggle_node(M.tree)
-  end, { buffer = bufnr, desc = "Toggle node" })
-  -- if not unlinked then
-  --   vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
-  --     M.jump_to_file()
-  --   end, { buffer = M.bufnr, desc = "Jump to file" })
-  --   vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
-  --     M.jump_to_reviewer()
-  --   end, { buffer = M.bufnr, desc = "Jump to reviewer" })
-  -- end
-  -- vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
-  --   M.open_in_browser()
-  -- end, { buffer = M.bufnr, desc = "Open the note in your browser" })
-  -- vim.keymap.set("n", state.settings.discussion_tree.copy_node_url, function()
-  --   M.copy_node_url()
-  -- end, { buffer = M.bufnr, desc = "Copy the URL of the current node to clipboard" })
-  -- vim.keymap.set("n", "<leader>p", function()
-  --   M.print_node()
-  -- end, { buffer = M.bufnr, desc = "Print current node (for debugging)" })
+  end, { buffer = M.bufnr, desc = "Toggle node" })
+  vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
+    au.jump_to_file(M.tree)
+  end, { buffer = M.bufnr, desc = "Jump to file" })
+  vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
+    au.jump_to_reviewer(M.tree, M.refresh_view)
+  end, { buffer = M.bufnr, desc = "Jump to reviewer" })
+  vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
+    au.open_in_browser(M.tree) -- For some reason, I cannot see my own draft notes in Gitlab's UI
+  end, { buffer = M.bufnr, desc = "Open the note in your browser" })
+  vim.keymap.set("n", state.settings.discussion_tree.copy_node_url, function()
+    au.copy_node_url(M.tree)
+  end, { buffer = M.bufnr, desc = "Copy the URL of the current node to clipboard" })
+  vim.keymap.set("n", "<leader>p", function()
+    au.print_node()
+  end, { buffer = M.bufnr, desc = "Print current node (for debugging)" })
+end
+
+M.edit_comment = function()
+  u.notify("Not implemented yet")
+end
+
+M.delete_comment = function()
+  u.notify("Not implemented yet")
 end
 
 return M

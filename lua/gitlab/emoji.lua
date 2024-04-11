@@ -1,4 +1,5 @@
 local u = require("gitlab.utils")
+local au = require("gitlab.actions.utils")
 local state = require("gitlab.state")
 
 local M = {
@@ -11,10 +12,10 @@ local M = {
 M.init = function()
   local bin_path = state.settings.bin_path
   local emoji_path = bin_path
-    .. state.settings.file_separator
-    .. "config"
-    .. state.settings.file_separator
-    .. "emojis.json"
+      .. state.settings.file_separator
+      .. "config"
+      .. state.settings.file_separator
+      .. "emojis.json"
   local emojis = u.read_file(emoji_path)
   if emojis == nil then
     u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
@@ -70,15 +71,15 @@ M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
     callback = function()
       local node = tree:get_node()
-      if node == nil or not require("gitlab.actions.utils").is_node_note(node) then
+      if node == nil or not au.is_node_note(node) then
         return
       end
 
-      local note_node = require("gitlab.actions.discussions").get_note_node(tree, node)
-      local root_node = require("gitlab.actions.discussions").get_root_node(tree, node)
+      local note_node = au.get_note_node(tree, node)
+      local root_node = au.get_root_node(tree, node)
       local note_id_str = tostring(note_node.is_root and root_node.root_note_id or note_node.id)
+      local emojis = state.DISCUSSION_DATA.emojis
 
-      local emojis = require("gitlab.actions.discussions").emojis
       local note_emojis = emojis[note_id_str]
       if note_emojis == nil then
         return
