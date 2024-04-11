@@ -1,3 +1,4 @@
+local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local help = require("gitlab.actions.help")
 local winbar = require("gitlab.actions.discussions.winbar")
@@ -8,16 +9,17 @@ local M = {
   draft_notes = nil,
 }
 
---- Adds a draft note to the draft notes view in the review panel
+--- Adds a draft note to the draft notes state, then rebuilds the view
 --- @param draft_note DraftNote
 M.add_draft_note = function(draft_note)
-  vim.print(draft_note)
+  local new_draft_notes = table.insert(state.DRAFT_NOTES, draft_note)
+  state.DRAFT_NOTES = new_draft_notes
 end
 
---- Sets draft note data in the module
+--- Sets all draft note data in the state of the plugin
 ---@param notes DraftNote[]
 M.set_data = function(notes)
-  M.draft_notes = notes
+  state.DRAFT_NOTES = notes
 end
 
 --- @param bufnr integer
