@@ -59,6 +59,10 @@ M.rebuild_draft_notes_tree = function()
     }, root_text_nodes)
   end)
 
+  if state.settings.discussion_tree.tree_type ~= "simple" then
+    draft_note_nodes = au.create_node_list_by_file_name(draft_note_nodes)
+  end
+
   local tree = NuiTree({ nodes = draft_note_nodes, bufnr = M.bufnr, prepare_node = au.nui_tree_prepare_node })
   M.tree = tree
 
@@ -106,6 +110,9 @@ M.set_keymaps = function()
   vim.keymap.set("n", "<leader>p", function()
     au.print_node()
   end, { buffer = M.bufnr, desc = "Print current node (for debugging)" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
+    au.toggle_tree_type(false, M.rebuild_draft_notes_tree)
+  end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
     local discussions = require("gitlab.actions.discussions")
     au.toggle_nodes(discussions.split.winid, M.tree, false, {

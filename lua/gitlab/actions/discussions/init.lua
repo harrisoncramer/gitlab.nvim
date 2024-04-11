@@ -94,21 +94,6 @@ M.refresh_view = function()
   end
 end
 
----Toggle Discussions tree type between "simple" and "by_file_name"
----@param unlinked boolean True if selected view type is Notes (unlinked discussions)
-M.toggle_tree_type = function(unlinked)
-  if unlinked then
-    u.notify("Toggling tree type is only possible in Discussions", vim.log.levels.INFO)
-    return
-  end
-  if state.settings.discussion_tree.tree_type == "simple" then
-    state.settings.discussion_tree.tree_type = "by_file_name"
-  else
-    state.settings.discussion_tree.tree_type = "simple"
-  end
-  M.rebuild_discussion_tree()
-end
-
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
@@ -487,7 +472,7 @@ end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
-    M.toggle_tree_type(unlinked)
+    M.toggle_tree_type(unlinked, M.rebuild_discussion_tree)
   end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     if M.is_current_node_note(tree) then
