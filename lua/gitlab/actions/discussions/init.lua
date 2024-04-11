@@ -24,8 +24,6 @@ local M = {
   split_visible = false,
   split = nil,
   ---@type number
-  split_bufnr = nil,
-  ---@type number
   linked_bufnr = nil,
   ---@type number
   unlinked_bufnr = nil,
@@ -132,15 +130,16 @@ M.toggle = function(callback)
 
   -- Make buffers, get and set buffer numbers, set filetypes
   local split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr = M.create_split_and_bufs()
+  M.split = split
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
   M.draft_notes_bufnr = draft_notes_bufnr
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split_bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split.bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
+
   M.split = split
   M.split_visible = true
-  M.split_bufnr = split.bufnr
   draft_notes.set_bufnr(M.draft_notes_bufnr)
   split:mount()
 
