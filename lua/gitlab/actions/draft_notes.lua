@@ -36,9 +36,9 @@ M.rebuild_draft_notes_view = function()
   --- actions than the normal tree
   --- @param draft_note DraftNote
   local draft_note_lines = draft_notes:reduce(function(agg, draft_note)
-    local header = au.build_draft_note_header()
-    table.insert(agg, header)
-    table.insert(agg, string.format("    %s", draft_note.note))
+    -- local header = au.build_draft_note_header()
+    -- table.insert(agg, header)
+    -- table.insert(agg, string.format("    %s", draft_note.note))
     return agg
   end, {})
 
