@@ -363,6 +363,15 @@ M.dependencies = {
     state = "PROJECT_MEMBERS",
     refresh = false,
   },
+  discussion_data = {
+    endpoint = "/mr/discussions/list",
+    state = "DISCUSSION_DATA",
+    refresh = false,
+    method = "POST",
+    body = {
+      blacklist = M.settings.discussion_tree.blacklist
+    }
+  }
 }
 
 -- This function clears out all of the previously fetched data. It's used

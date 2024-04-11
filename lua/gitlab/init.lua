@@ -23,6 +23,7 @@ local project_members = state.dependencies.project_members
 local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
 local draft_notes = state.dependencies.draft_notes
+local discussion_data = state.dependencies.discussion_data
 
 return {
   setup = function(args)
@@ -64,7 +65,12 @@ return {
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
-  toggle_discussions = async.sequence({ info, user, draft_notes }, discussions.toggle),
+  toggle_discussions = async.sequence({
+    info,
+    user,
+    draft_notes,
+    discussion_data,
+  }, discussions.toggle),
   edit_comment = async.sequence({ info }, discussions.edit_comment),
   delete_comment = async.sequence({ info }, discussions.delete_comment),
   toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),

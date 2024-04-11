@@ -26,10 +26,6 @@ local M = {
   split = nil,
   ---@type number
   split_bufnr = nil,
-  ---@type Discussion[]
-  discussions = {},
-  ---@type UnlinkedDiscussion[]
-  unlinked_discussions = {},
   ---@type EmojiMap
   emojis = {},
   ---@type number
@@ -46,7 +42,8 @@ M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist },
     function(data)
       state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
-      M.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
+      state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or
+          {}
       M.emojis = data.emojis or {}
       if type(callback) == "function" then
         callback()
@@ -95,11 +92,11 @@ end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
-  if state.settings.discussion_signs.enabled then
+  if state.settings.discussion_signs.enabled and state.DISCUSSION_DATA then
     diagnostics.refresh_diagnostics(state.DISCUSSION_DATA.discussions)
   end
-  if M.split_visible then
-    winbar.update_winbar(state.DISCUSSION_DATA.discussions, M.unlinked_discussions)
+  if M.split_visible and state.DISCUSSION_DATA then
+    winbar.update_winbar(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions)
   end
 end
 
@@ -127,28 +124,28 @@ M.toggle = function(callback)
     return
   end
 
+  if type(state.DISCUSSION_DATA.discussions) ~= "table" and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table" and type(M.draft_notes) ~= "table" then
+    u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
+    vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
+    return
+  end
+
+  -- Make buffers, get and set buffer numbers, set filetypes
   local split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr = M.create_split_and_bufs()
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
-
   M.draft_notes_bufnr = draft_notes_bufnr
-  draft_notes.set_bufnr(M.draft_notes_bufnr)
-
-  M.split = split
-  M.split_visible = true
-  M.split_bufnr = split.bufnr
-  split:mount()
-  M.switch_can_edit_bufs(true)
-
-  vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "Loading data..." })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
+  M.split = split
+  M.split_visible = true
+  M.split_bufnr = split.bufnr
+  draft_notes.set_bufnr(M.draft_notes_bufnr)
+  split:mount()
 
-  local default_view = state.settings.discussion_tree.default_view
-
-  -- Used as a lookup later by winbar, during window switching
+  -- Initialize winbar module with data from buffers
   winbar.set_buffers(
     M.linked_bufnr,
     M.unlinked_bufnr,
@@ -156,37 +153,29 @@ M.toggle = function(callback)
   draft_notes.set_bufnr(M.draft_notes_bufnr)
   winbar.update_winbar()
 
-  M.load_discussions(function()
-    if type(state.DISCUSSION_DATA.discussions) ~= "table" and type(M.unlinked_discussions) ~= "table" and type(M.draft_notes) ~= "table" then
-      u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
-      vim.api.nvim_buf_set_lines(split.bufnr, 0, -1, false, { "" })
-      return
-    end
+  local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
+  vim.api.nvim_set_current_win(M.split.winid)
 
-    local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
-    vim.api.nvim_set_current_win(M.split.winid)
+  M.rebuild_discussion_tree()
+  M.rebuild_unlinked_discussion_tree()
+  draft_notes.rebuild_draft_notes_view()
 
-    M.rebuild_discussion_tree()
-    M.rebuild_unlinked_discussion_tree()
-    draft_notes.rebuild_draft_notes_view()
+  M.add_empty_titles({
+    { M.linked_bufnr,      state.DISCUSSION_DATA.discussions,          "No Discussions for this MR" },
+    { M.unlinked_bufnr,    state.DISCUSSION_DATA.unlinked_discussions, "No Notes (Unlinked Discussions) for this MR" },
+    { M.draft_notes_bufnr, M.draft_notes,                              "No Draft Notes for this MR" },
+  })
 
-    M.add_empty_titles({
-      { M.linked_bufnr,      state.DISCUSSION_DATA.discussions, "No Discussions for this MR" },
-      { M.unlinked_bufnr,    M.unlinked_discussions,            "No Notes (Unlinked Discussions) for this MR" },
-      { M.draft_notes_bufnr, M.draft_notes,                     "No Draft Notes for this MR" },
-    })
+  -- Set default buffer
+  local default_buffer = winbar.bufnr_map[state.settings.discussion_tree.default_view]
+  vim.api.nvim_set_current_buf(default_buffer)
+  M.switch_can_edit_bufs(false)
+  M.refresh_view()
 
-    local default_buffer = winbar.bufnr_map[default_view]
-    vim.api.nvim_set_current_buf(default_buffer)
-
-    M.switch_can_edit_bufs(false)
-    M.refresh_view()
-
-    vim.api.nvim_set_current_win(current_window)
-    if type(callback) == "function" then
-      callback()
-    end
-  end)
+  vim.api.nvim_set_current_win(current_window)
+  if type(callback) == "function" then
+    callback()
+  end
 end
 
 -- Clears the discussion state and unmounts the split
@@ -370,7 +359,7 @@ M.send_edits = function(discussion_id, note_id, unlinked)
       u.notify(data.message, vim.log.levels.INFO)
       M.rebuild_discussion_tree()
       if unlinked then
-        M.replace_text(M.unlinked_discussions, discussion_id, note_id, text)
+        M.replace_text(state.DISCUSSION_DATA.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
       else
         M.replace_text(state.DISCUSSION_DATA.discussions, discussion_id, note_id, text)
@@ -688,7 +677,8 @@ M.rebuild_unlinked_discussion_tree = function()
   end
   M.switch_can_edit_bufs(true)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
-  local unlinked_discussion_tree_nodes = discussions_tree.add_discussions_to_table(M.unlinked_discussions, true)
+  local unlinked_discussion_tree_nodes = discussions_tree.add_discussions_to_table(
+    state.DISCUSSION_DATA.unlinked_discussions, true)
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,
@@ -714,10 +704,10 @@ end
 M.add_discussion = function(arg)
   local discussion = arg.data.discussion
   if arg.unlinked then
-    if type(M.unlinked_discussions) ~= "table" then
-      M.unlinked_discussions = {}
+    if type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table" then
+      state.DISCUSSION_DATA.unlinked_discussions = {}
     end
-    table.insert(M.unlinked_discussions, 1, discussion)
+    table.insert(state.DISCUSSION_DATA.unlinked_discussions, 1, discussion)
     M.rebuild_unlinked_discussion_tree()
     return
   end
