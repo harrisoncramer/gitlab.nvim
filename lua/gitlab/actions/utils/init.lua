@@ -1,6 +1,7 @@
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local NuiTree = require("nui.tree")
+local NuiLine = require("nui.line")
 local M = {}
 
 ---Build note header from note
@@ -44,7 +45,7 @@ local function build_note_body(note, resolve_info)
         or state.settings.discussion_tree.unresolved
   end
 
-  local noteHeader = (note.note and M.build_draft_note_header() or M.build_note_header(note)) .. " " .. resolve_symbol
+  local noteHeader = M.build_note_header(note) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end
@@ -91,8 +92,6 @@ M.add_empty_titles = function(title_args)
     local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
     vim.cmd("highlight default TitleHighlight guifg=#787878")
 
-    vim.print(v)
-
     -- Set empty title if applicable
     if type(v.data) ~= "table" or #v.data == 0 then
       vim.api.nvim_buf_set_lines(v.bufnr, 0, 1, false, { v.title })
@@ -106,6 +105,109 @@ M.add_empty_titles = function(title_args)
       )
     end
   end
+end
+
+---Check if type of node is note or note body
+---@param node NuiTree.Node?
+---@return boolean
+M.is_node_note = function(node)
+  if node and (node.type == "note_body" or node.type == "note") then
+    return true
+  else
+    return false
+  end
+end
+
+
+-- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
+M.toggle_node = function(tree)
+  local node = tree:get_node()
+  if node == nil then
+    return
+  end
+
+  -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
+  if node.type == "note_body" then
+    node = tree:get_node(node:get_parent_id())
+  end
+  if node == nil then
+    return
+  end
+
+  local children = node:get_child_ids()
+  if node == nil then
+    return
+  end
+  if node:is_expanded() then
+    node:collapse()
+    if M.is_node_note(node) then
+      for _, child in ipairs(children) do
+        tree:get_node(child):collapse()
+      end
+    end
+  else
+    if M.is_node_note(node) then
+      for _, child in ipairs(children) do
+        tree:get_node(child):expand()
+      end
+    end
+    node:expand()
+  end
+
+  tree:render()
+end
+
+---Inspired by default func https://github.com/MunifTanjim/nui.nvim/blob/main/lua/nui/tree/util.lua#L38
+M.nui_tree_prepare_node = function(node)
+  if not node.text then
+    error("missing node.text")
+  end
+
+  local texts = node.text
+  if type(node.text) ~= "table" or node.text.content then
+    texts = { node.text }
+  end
+
+  local lines = {}
+
+  for i, text in ipairs(texts) do
+    local line = NuiLine()
+
+    line:append(string.rep("  ", node._depth - 1))
+
+    if i == 1 and node:has_children() then
+      line:append(node:is_expanded() and " " or " ")
+      if node.icon then
+        line:append(node.icon .. " ", node.icon_hl)
+      end
+    else
+      line:append("  ")
+    end
+
+    line:append(text, node.text_hl)
+
+    local note_id = tostring(node.is_root and node.root_note_id or node.id)
+
+    local e = require("gitlab.emoji")
+
+    ---@type Emoji[]
+    local emojis = state.DISCUSSION_DATA.emojis[note_id]
+    local placed_emojis = {}
+    if emojis ~= nil then
+      for _, v in ipairs(emojis) do
+        local icon = e.emoji_map[v.name]
+        if icon ~= nil and not u.contains(placed_emojis, icon.moji) then
+          line:append(" ")
+          line:append(icon.moji)
+          table.insert(placed_emojis, icon.moji)
+        end
+      end
+    end
+
+    table.insert(lines, line)
+  end
+
+  return lines
 end
 
 return M

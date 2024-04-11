@@ -202,7 +202,6 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
   local endpoint = is_draft and "/mr/draft_notes" or "/mr/comment"
   job.run_job(endpoint, "POST", body, function(data)
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
-    vim.print(data)
     if is_draft then
       draft_notes.add_draft_note(data.draft_note)
     else

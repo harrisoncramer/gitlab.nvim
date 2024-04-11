@@ -4,7 +4,6 @@
 local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
-local NuiLine = require("nui.line")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
@@ -42,9 +41,8 @@ local M = {
 M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
-    state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions
-        or {}
-    M.emojis = data.emojis or {}
+    state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions or {}
+    state.DISCUSSION_DATA.emojis = data.emojis ~= vim.NIL and data.emojis or {}
     if type(callback) == "function" then
       callback()
     end
@@ -385,7 +383,7 @@ M.toggle_discussion_resolved = function(tree)
   end
 
   -- Switch to the root node to enable toggling from child nodes and note bodies
-  if not note.resolvable and M.is_node_note(note) then
+  if not note.resolvable and au.is_node_note(note) then
     note = M.get_root_node(tree, note)
   end
   if note == nil then
@@ -471,44 +469,6 @@ M.jump_to_file = function(tree)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
--- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
-M.toggle_node = function(tree)
-  local node = tree:get_node()
-  if node == nil then
-    return
-  end
-
-  -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
-  if node.type == "note_body" then
-    node = tree:get_node(node:get_parent_id())
-  end
-  if node == nil then
-    return
-  end
-
-  local children = node:get_child_ids()
-  if node == nil then
-    return
-  end
-  if node:is_expanded() then
-    node:collapse()
-    if M.is_node_note(node) then
-      for _, child in ipairs(children) do
-        tree:get_node(child):collapse()
-      end
-    end
-  else
-    if M.is_node_note(node) then
-      for _, child in ipairs(children) do
-        tree:get_node(child):expand()
-      end
-    end
-    node:expand()
-  end
-
-  tree:render()
-end
-
 ---@class ToggleNodesOptions
 ---@field toggle_resolved boolean Whether to toggle resolved discussions.
 ---@field toggle_unresolved boolean Whether to toggle unresolved discussions.
@@ -576,7 +536,7 @@ M.collapse_recursively = function(tree, node, current_root_node, keep_current_op
     return
   end
   local root_node = M.get_root_node(tree, node)
-  if M.is_node_note(node) and root_node.resolved == is_resolved then
+  if au.is_node_note(node) and root_node.resolved == is_resolved then
     if keep_current_open and root_node == current_root_node then
       return
     end
@@ -596,7 +556,7 @@ M.expand_recursively = function(tree, node, is_resolved)
   if node == nil then
     return
   end
-  if M.is_node_note(node) and M.get_root_node(tree, node).resolved == is_resolved then
+  if au.is_node_note(node) and M.get_root_node(tree, node).resolved == is_resolved then
     node:expand()
   end
   local children = node:get_child_ids()
@@ -608,59 +568,6 @@ end
 --
 -- 🌲 Helper Functions
 --
----Inspired by default func https://github.com/MunifTanjim/nui.nvim/blob/main/lua/nui/tree/util.lua#L38
-local function nui_tree_prepare_node(node)
-  if not node.text then
-    error("missing node.text")
-  end
-
-  local texts = node.text
-  if type(node.text) ~= "table" or node.text.content then
-    texts = { node.text }
-  end
-
-  local lines = {}
-
-  for i, text in ipairs(texts) do
-    local line = NuiLine()
-
-    line:append(string.rep("  ", node._depth - 1))
-
-    if i == 1 and node:has_children() then
-      line:append(node:is_expanded() and " " or " ")
-      if node.icon then
-        line:append(node.icon .. " ", node.icon_hl)
-      end
-    else
-      line:append("  ")
-    end
-
-    line:append(text, node.text_hl)
-
-    local note_id = tostring(node.is_root and node.root_note_id or node.id)
-
-    local e = require("gitlab.emoji")
-
-    ---@type Emoji[]
-    local emojis = M.emojis[note_id]
-    local placed_emojis = {}
-    if emojis ~= nil then
-      for _, v in ipairs(emojis) do
-        local icon = e.emoji_map[v.name]
-        if icon ~= nil and not u.contains(placed_emojis, icon.moji) then
-          line:append(" ")
-          line:append(icon.moji)
-          table.insert(placed_emojis, icon.moji)
-        end
-      end
-    end
-
-    table.insert(lines, line)
-  end
-
-  return lines
-end
-
 M.rebuild_discussion_tree = function()
   if M.linked_bufnr == nil then
     return
@@ -669,7 +576,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
   local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = M.nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -690,7 +597,7 @@ M.rebuild_unlinked_discussion_tree = function()
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,
-    prepare_node = nui_tree_prepare_node,
+    prepare_node = M.nui_tree_prepare_node,
   })
   unlinked_discussion_tree:render()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
@@ -735,22 +642,11 @@ M.create_split_and_bufs = function()
   return split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr
 end
 
----Check if type of node is note or note body
----@param node NuiTree.Node?
----@return boolean
-M.is_node_note = function(node)
-  if node and (node.type == "note_body" or node.type == "note") then
-    return true
-  else
-    return false
-  end
-end
-
 ---Check if type of current node is note or note body
 ---@param tree NuiTree
 ---@return boolean
 M.is_current_node_note = function(tree)
-  return M.is_node_note(tree:get_node())
+  return au.is_node_note(tree:get_node())
 end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
@@ -773,7 +669,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
   end, { buffer = bufnr, desc = "Toggle resolved" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
-    M.toggle_node(tree)
+    au.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
     M.toggle_nodes(tree, unlinked, {
@@ -984,11 +880,11 @@ M.add_emoji_to_note = function(tree, unlinked)
   emoji.pick_emoji(emojis, function(name)
     local body = { emoji = name, note_id = note_id }
     job.run_job("/mr/awardable/note/", "POST", body, function(data)
-      if M.emojis[note_id_str] == nil then
-        M.emojis[note_id_str] = {}
-        table.insert(M.emojis[note_id_str], data.Emoji)
+      if state.DISCUSSION_DATA.emojis[note_id_str] == nil then
+        state.DISCUSSION_DATA.emojis[note_id_str] = {}
+        table.insert(state.DISCUSSION_DATA.emojis[note_id_str], data.Emoji)
       else
-        table.insert(M.emojis[note_id_str], data.Emoji)
+        table.insert(state.DISCUSSION_DATA.emojis[note_id_str], data.Emoji)
       end
       if unlinked then
         M.rebuild_unlinked_discussion_tree()
@@ -1010,7 +906,7 @@ M.delete_emoji_from_note = function(tree, unlinked)
   local e = require("gitlab.emoji")
 
   local emojis = {}
-  local current_emojis = M.emojis[note_id_str]
+  local current_emojis = state.DISCUSSION_DATA.emojis[note_id_str]
   for _, current_emoji in ipairs(current_emojis) do
     if state.USER.id == current_emoji.user.id then
       table.insert(emojis, e.emoji_map[current_emoji.name])
@@ -1027,12 +923,12 @@ M.delete_emoji_from_note = function(tree, unlinked)
     end
     job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function(_)
       local keep = {} -- Emojis to keep after deletion in the UI
-      for _, saved in ipairs(M.emojis[note_id_str]) do
+      for _, saved in ipairs(state.DISCUSSION_DATA.emojis[note_id_str]) do
         if saved.name ~= name or saved.user.id ~= state.USER.id then
           table.insert(keep, saved)
         end
       end
-      M.emojis[note_id_str] = keep
+      state.DISCUSSION_DATA.emojis[note_id_str] = keep
       if unlinked then
         M.rebuild_unlinked_discussion_tree()
       else

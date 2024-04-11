@@ -11,10 +11,10 @@ local M = {
 M.init = function()
   local bin_path = state.settings.bin_path
   local emoji_path = bin_path
-    .. state.settings.file_separator
-    .. "config"
-    .. state.settings.file_separator
-    .. "emojis.json"
+      .. state.settings.file_separator
+      .. "config"
+      .. state.settings.file_separator
+      .. "emojis.json"
   local emojis = u.read_file(emoji_path)
   if emojis == nil then
     u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
@@ -70,7 +70,7 @@ M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
     callback = function()
       local node = tree:get_node()
-      if node == nil or not require("gitlab.actions.discussions").is_node_note(node) then
+      if node == nil or not require("gitlab.actions.utils").is_node_note(node) then
         return
       end
 
