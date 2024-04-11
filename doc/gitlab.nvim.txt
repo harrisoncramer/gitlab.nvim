@@ -808,6 +808,7 @@ execute and passed the data as an argument.
                     • "pipeline": Information about the current branch's
                       pipeline. Returns and object with `latest_pipeline` and
                       `jobs` as fields.
+                    • "draft_notes": The current user's unpublished notes
                 • {refresh}: (bool) Whether to re-fetch the data from Gitlab
                   or use the cached data locally, if available.
         • {cb}: (function) The callback function that runs after all of the

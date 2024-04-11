@@ -26,6 +26,11 @@ type DraftNoteResponse struct {
 	DraftNote *gitlab.DraftNote `json:"draft_note"`
 }
 
+type ListDraftNotesResponse struct {
+	SuccessResponse
+	DraftNotes []*gitlab.DraftNote `json:"draft_notes"`
+}
+
 /* DraftNoteWithPosition is a draft comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based draft comments. */
 type DraftNoteWithPosition struct {
 	PositionData PositionData
@@ -39,6 +44,8 @@ func (draftNote DraftNoteWithPosition) GetPositionData() PositionData {
 func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
+	case http.MethodGet:
+		a.listDraftNotes(w, r)
 	case http.MethodPost:
 		a.postDraftNote(w, r)
 	case http.MethodPatch:
@@ -111,3 +118,33 @@ func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {}
 
 /* deleteComment edits a draft comment */
 func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {}
+
+func (a *api) listDraftNotes(w http.ResponseWriter, r *http.Request) {
+
+	opt := gitlab.ListDraftNotesOptions{}
+	draftNotes, res, err := a.client.ListDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
+
+	if err != nil {
+		handleError(w, err, "Could not get draft notes", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/draft/comment"}, "Could not get draft notes", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := ListDraftNotesResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Draft notes fetched successfully",
+			Status:  http.StatusOK,
+		},
+		DraftNotes: draftNotes,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
+}

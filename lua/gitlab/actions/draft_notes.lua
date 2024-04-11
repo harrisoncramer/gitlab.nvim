@@ -3,13 +3,21 @@ local help = require("gitlab.actions.help")
 local winbar = require("gitlab.actions.discussions.winbar")
 
 local M = {
-  bufnr = nil
+  bufnr = nil,
+  ---@type DraftNote[]
+  draft_notes = nil,
 }
 
 --- Adds a draft note to the draft notes view in the review panel
 --- @param draft_note DraftNote
 M.add_draft_note = function(draft_note)
   vim.print(draft_note)
+end
+
+--- Sets draft note data in the module
+---@param notes DraftNote[]
+M.set_data = function(notes)
+  M.draft_notes = notes
 end
 
 --- @param bufnr integer
