@@ -54,9 +54,15 @@ M.create_comment = function()
     },
   }, internal_layout)
 
-  state.set_popup_keymaps(comment_popup, function(text)
-    M.confirm_create_comment(text)
-  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+  local popup_opts = {
+    action_before_close = true,
+    action_before_exit = false,
+  }
+
+  state.set_popup_keymaps(comment_popup, M.get_text_and_create_comment, miscellaneous.attach_file, popup_opts)
+  if M.is_draft_popup then
+    state.set_popup_keymaps(is_draft_popup, M.get_text_and_create_comment, miscellaneous.attach_file, popup_opts)
+  end
 
   layout:mount()
 
@@ -64,6 +70,11 @@ M.create_comment = function()
     local default_to_draft = state.settings.comments.default_to_draft
     vim.api.nvim_buf_set_lines(M.is_draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
   end)
+end
+
+M.get_text_and_create_comment = function()
+  local text = u.get_buffer_text(M.comment_popup.bufnr)
+  M.confirm_create_comment(text)
 end
 
 ---Create multiline comment for the last selection.
@@ -144,7 +155,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     return
   end
 
-  local is_draft = u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
+  local is_draft = M.is_draft_popup and u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
 
   if unlinked then
     local body = { comment = text }

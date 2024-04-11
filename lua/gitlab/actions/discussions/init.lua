@@ -130,7 +130,9 @@ M.toggle = function(callback)
   local split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr = M.create_split_and_bufs()
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
+
   M.draft_notes_bufnr = draft_notes_bufnr
+  draft_notes.set_bufnr(M.draft_notes_bufnr)
 
   M.split = split
   M.split_visible = true
