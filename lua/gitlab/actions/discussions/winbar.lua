@@ -50,32 +50,28 @@ end
 
 ---@param discussions Discussion[]|nil
 ---@param unlinked_discussions UnlinkedDiscussion[]|nil
-local function content(discussions, unlinked_discussions)
+---@param draft_notes DraftNote[]|nil
+local function content(discussions, unlinked_discussions, draft_notes)
   local resolvable_discussions, resolved_discussions = get_data(discussions)
   local resolvable_notes, resolved_notes = get_data(unlinked_discussions)
-
-  -- TODO: Real data
-  local draft_notes = 1
 
   local t = {
     resolvable_discussions = resolvable_discussions,
     resolved_discussions = resolved_discussions,
     resolvable_notes = resolvable_notes,
+    draft_notes = #draft_notes,
     resolved_notes = resolved_notes,
     help_keymap = state.settings.help,
-    draft_notes = draft_notes,
   }
 
   return M.make_winbar(t)
 end
 
---@param view_type string|"discussions"|"notes"
-
 ---This function updates the winbar
 M.update_winbar = function()
   local d = require("gitlab.actions.discussions")
   local winId = d.split.winid
-  local c = content(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions)
+  local c = content(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions, state.DRAFT_NOTES)
   if vim.wo[winId] then
     vim.wo[winId].winbar = c
   end

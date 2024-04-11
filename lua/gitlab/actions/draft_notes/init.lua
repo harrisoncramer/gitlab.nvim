@@ -57,6 +57,7 @@ M.rebuild_draft_notes_view = function()
   M.tree = tree
 
   tree:render()
+  winbar.update_winbar()
   M.set_keymaps()
 end
 
