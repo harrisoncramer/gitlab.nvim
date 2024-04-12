@@ -432,8 +432,12 @@ M.jump_to_reviewer = function(tree)
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
-  local line_number = (node.new_line or node.old_line or 1)
-  reviewer.jump(root_node.file_name, line_number, node.old_line == nil)
+  local line_number = (root_node.new_line or root_node.old_line or 1)
+  if root_node.range then
+    local start_old_line, start_new_line = common.parse_line_code(root_node.range.start.line_code)
+    line_number = root_node.old_line and start_old_line or start_new_line
+  end
+  reviewer.jump(root_node.file_name, line_number, root_node.old_line == nil)
   M.refresh_view()
 end
 
