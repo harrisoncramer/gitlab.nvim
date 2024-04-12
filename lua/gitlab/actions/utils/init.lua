@@ -623,13 +623,8 @@ M.create_disscussions_by_file_name = function(node_list)
   return discussion_by_file_name
 end
 
----Toggle Discussions tree type between "simple" and "by_file_name"
----@param unlinked boolean True if selected view type is Notes (unlinked discussions)
-M.toggle_tree_type = function(unlinked, callback)
-  if unlinked then
-    u.notify("Toggling tree type is only possible in Discussions", vim.log.levels.INFO)
-    return
-  end
+---Toggle comments tree type between "simple" and "by_file_name"
+M.toggle_tree_type = function(callback)
   if state.settings.discussion_tree.tree_type == "simple" then
     state.settings.discussion_tree.tree_type = "by_file_name"
   else

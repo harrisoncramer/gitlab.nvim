@@ -131,7 +131,7 @@ M.toggle = function(callback)
   -- Initialize winbar module with data from buffers
   winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr, M.draft_notes_bufnr)
   draft_notes.set_bufnr(M.draft_notes_bufnr)
-  winbar.update_winbar()
+  winbar.switch_view_type(state.settings.discussion_tree.default_view)
 
   local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
   vim.api.nvim_set_current_win(M.split.winid)
@@ -475,9 +475,22 @@ M.is_current_node_note = function(tree)
 end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
-    M.toggle_tree_type(unlinked, M.rebuild_discussion_tree)
-  end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
+  if not unlinked then
+    vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
+      if M.is_current_node_note(tree) then
+        au.jump_to_file(tree)
+      end
+    end, { buffer = bufnr, desc = "Jump to file" })
+    vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
+      if M.is_current_node_note(tree) then
+        au.jump_to_reviewer(tree, M.refresh_view)
+      end
+    end, { buffer = bufnr, desc = "Jump to reviewer" })
+    vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
+      au.toggle_tree_type(M.rebuild_discussion_tree)
+    end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
+  end
+
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     if M.is_current_node_note(tree) then
       M.edit_comment(tree, unlinked)
@@ -528,18 +541,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   vim.keymap.set("n", state.settings.help, function()
     help.open()
   end, { buffer = bufnr, desc = "Open help popup" })
-  if not unlinked then
-    vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
-      if M.is_current_node_note(tree) then
-        au.jump_to_file(tree)
-      end
-    end, { buffer = bufnr, desc = "Jump to file" })
-    vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
-      if M.is_current_node_note(tree) then
-        au.jump_to_reviewer(tree, M.refresh_view)
-      end
-    end, { buffer = bufnr, desc = "Jump to reviewer" })
-  end
   vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
     au.open_in_browser(tree)
   end, { buffer = bufnr, desc = "Open the note in your browser" })

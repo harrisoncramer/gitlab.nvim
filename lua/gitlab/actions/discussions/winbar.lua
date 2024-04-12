@@ -115,13 +115,20 @@ M.make_winbar = function(t)
   )
 end
 
-M.switch_view_type = function()
-  if M.current_view_type == "discussions" then
-    M.current_view_type = "notes"
-  elseif M.current_view_type == "notes" then
-    M.current_view_type = "draft_notes"
+---Sets the current view type (if provided an argument)
+---and then updates the view
+---@param override any
+M.switch_view_type = function(override)
+  if override then
+    M.current_view_type = override
   else
-    M.current_view_type = "discussions"
+    if M.current_view_type == "discussions" then
+      M.current_view_type = "notes"
+    elseif M.current_view_type == "notes" then
+      M.current_view_type = "draft_notes"
+    else
+      M.current_view_type = "discussions"
+    end
   end
 
   vim.api.nvim_set_current_buf(M.bufnr_map[M.current_view_type])
