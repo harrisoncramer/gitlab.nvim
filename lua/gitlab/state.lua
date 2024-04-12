@@ -67,7 +67,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
-    toggle_tree_type = "i",
+    toggle_tree_type = "n",
   },
   comments = {
     default_to_draft = false,
