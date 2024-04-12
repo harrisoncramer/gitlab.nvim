@@ -88,7 +88,7 @@ M.set_keymaps = function()
     help.open()
   end, { buffer = M.bufnr, desc = "Open help popup" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
-    au.toggle_node(M.tree)
+    trees.toggle_node(M.tree)
   end, { buffer = M.bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
     au.jump_to_file(M.tree)
@@ -107,7 +107,7 @@ M.set_keymaps = function()
   end, { buffer = M.bufnr, desc = "Print current node (for debugging)" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
     local discussions = require("gitlab.actions.discussions")
-    au.toggle_nodes(discussions.split.winid, M.tree, false, {
+    trees.toggle_nodes(discussions.split.winid, M.tree, false, {
       toggle_resolved = true,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,

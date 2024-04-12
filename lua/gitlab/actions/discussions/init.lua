@@ -488,7 +488,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       end
     end, { buffer = bufnr, desc = "Jump to reviewer" })
     vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
-      au.toggle_tree_type(M.rebuild_discussion_tree)
+      M.toggle_tree_type()
     end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   end
 
@@ -508,24 +508,24 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
   end, { buffer = bufnr, desc = "Toggle resolved" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
-    au.toggle_node(tree)
+    trees.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
-    au.toggle_nodes(M.split.winid, tree, unlinked, {
+    trees.toggle_nodes(M.split.winid, tree, unlinked, {
       toggle_resolved = true,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
     })
   end, { buffer = bufnr, desc = "Toggle all nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved_discussions, function()
-    au.toggle_nodes(M.split.winid, tree, unlinked, {
+    trees.toggle_nodes(M.split.winid, tree, unlinked, {
       toggle_resolved = true,
       toggle_unresolved = false,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
     })
   end, { buffer = bufnr, desc = "Toggle resolved nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_unresolved_discussions, function()
-    au.toggle_nodes(M.split.winid, tree, unlinked, {
+    trees.toggle_nodes(M.split.winid, tree, unlinked, {
       toggle_resolved = false,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
@@ -640,6 +640,17 @@ M.add_emoji_to_note = function(tree, unlinked)
     end)
   end)
 end
+
+---Toggle comments tree type between "simple" and "by_file_name"
+M.toggle_tree_type = function()
+  if state.settings.discussion_tree.tree_type == "simple" then
+    state.settings.discussion_tree.tree_type = "by_file_name"
+  else
+    state.settings.discussion_tree.tree_type = "simple"
+  end
+  M.rebuild_discussion_tree()
+end
+
 
 M.delete_emoji_from_note = function(tree, unlinked)
   local node = tree:get_node()
