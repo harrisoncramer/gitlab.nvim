@@ -978,20 +978,18 @@ end
 ---@param tree NuiTree
 M.open_in_browser = function(tree)
   local url = M.get_url(tree)
-  if url == nil then
-    return
+  if url ~= nil then
+    u.open_in_browser(url)
   end
-  u.open_in_browser(url)
 end
 
 ---@param tree NuiTree
 M.copy_node_url = function(tree)
   local url = M.get_url(tree)
-  if url == nil then
-    return
+  if url ~= nil then
+    vim.fn.setreg("+", url)
+    u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
   end
-  u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
-  vim.fn.setreg("+", url)
 end
 
 M.add_emoji_to_note = function(tree, unlinked)

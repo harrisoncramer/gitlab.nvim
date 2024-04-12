@@ -522,6 +522,7 @@ in normal mode):
     vim.keymap.set("n", "glp", gitlab.pipeline)
     vim.keymap.set("n", "glo", gitlab.open_in_browser)
     vim.keymap.set("n", "glM", gitlab.merge)
+    vim.keymap.set("n", "glu", gitlab.copy_mr_url)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
@@ -633,7 +634,7 @@ After the comment is typed, submit it to Gitlab via the |settings.popup.perform_
 keybinding, by default |<leader>l|
 
                                                                 *gitlab.nvim.create_mr*
-create_mr({opts}) ~
+gitlab.create_mr({opts}) ~
 
 Starts the process of creating an MR for the currently checked out branch.
 >lua
@@ -753,6 +754,13 @@ gitlab.open_in_browser() ~
 Opens the current MR in your default web browser.
 >lua
   require("gitlab").open_in_browser()
+<
+                                                                *gitlab.nvim.copy_mr_url*
+gitlab.copy_mr_url() ~
+
+Copies the URL of the current MR to system clipboard.
+>lua
+  require("gitlab").copy_mr_url()
 <
                                                                 *gitlab.nvim.merge*
 gitlab.merge({opts}) ~

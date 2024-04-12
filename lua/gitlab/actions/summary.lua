@@ -50,9 +50,8 @@ M.summary = function()
       vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
       vim.api.nvim_set_option_value("modifiable", false, { buf = info_popup.bufnr })
       vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
+      M.color_details(info_popup.bufnr) -- Color values in details popup
     end
-
-    M.color_details(info_popup.bufnr) -- Color values in details popup
 
     state.set_popup_keymaps(
       description_popup,
