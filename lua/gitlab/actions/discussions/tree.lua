@@ -1,4 +1,5 @@
 local state = require("gitlab.state")
+local trees = require("gitlab.actions.trees")
 local u = require("gitlab.utils")
 local au = require("gitlab.actions.utils")
 local NuiTree = require("nui.tree")
@@ -34,7 +35,7 @@ M.add_discussions_to_table = function(items, unlinked)
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        _, root_text, root_text_nodes = au.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
+        _, root_text, root_text_nodes = trees.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
         root_old_line = (type(note.position) == "table" and note.position.old_line or nil)
@@ -45,7 +46,7 @@ M.add_discussions_to_table = function(items, unlinked)
         root_url = state.INFO.web_url .. "#note_" .. note.id
         range = (type(note.position) == "table" and note.position.line_range or nil)
       else -- Otherwise insert it as a child node...
-        local note_node = au.build_note(note)
+        local note_node = trees.build_note(note)
         table.insert(discussion_children, note_node)
       end
     end

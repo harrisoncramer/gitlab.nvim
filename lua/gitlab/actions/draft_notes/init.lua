@@ -1,4 +1,5 @@
 local au = require("gitlab.actions.utils")
+local trees = require("gitlab.actions.trees")
 local job = require("gitlab.job")
 local NuiTree = require("nui.tree")
 local List = require("gitlab.utils.list")
@@ -44,7 +45,7 @@ M.rebuild_draft_notes_tree = function()
   })
 
   local draft_note_nodes = draft_notes:map(function(note)
-    local _, root_text, root_text_nodes = au.build_note(note)
+    local _, root_text, root_text_nodes = trees.build_note(note)
     return NuiTree.Node({
       range = (type(note.position) == "table" and note.position.line_range or nil),
       text = root_text,
