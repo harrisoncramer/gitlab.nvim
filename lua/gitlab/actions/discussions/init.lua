@@ -1,6 +1,7 @@
--- This module is responsible for the discussion tree. That includes things like
--- editing existing notes in the tree, replying to notes in the tree,
--- and marking discussions as resolved/unresolved.
+-- This module is responsible for the notes and comments discussion tree.
+-- That includes things like editing existing notes in the tree,
+-- replying to notes in the tree, and marking discussions as resolved/unresolved.
+-- Draft notes are managed separately, under lua/gitlab/actions/draft_notes/init.lua
 local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")

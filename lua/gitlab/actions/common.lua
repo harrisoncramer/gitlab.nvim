@@ -1,6 +1,6 @@
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
-local common = require("gitlab.indicators.common")
+local common_indicators = require("gitlab.indicators.common")
 local state = require("gitlab.state")
 local M = {}
 
@@ -150,7 +150,7 @@ local function get_new_line(node)
     return node.new_line
   end
 
-  local _, start_new_line = common.parse_line_code(range.start.line_code)
+  local _, start_new_line = common_indicators.parse_line_code(range.start.line_code)
   return start_new_line
 end
 
@@ -165,7 +165,7 @@ local function get_old_line(node)
     return node.old_line
   end
 
-  local start_old_line, _ = common.parse_line_code(range.start.line_code)
+  local start_old_line, _ = common_indicators.parse_line_code(range.start.line_code)
   return start_old_line
 end
 

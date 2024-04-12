@@ -1,3 +1,7 @@
+-- This module is responsible for the draft notes discussion tree.
+-- That includes things like editing existing draft notes in the tree, and
+-- and deleting them. Normal notes and comments are managed separately,
+-- under lua/gitlab/actions/discussions/init.lua
 local common = require("gitlab.actions.common")
 local trees = require("gitlab.actions.trees")
 local job = require("gitlab.job")
