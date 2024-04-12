@@ -44,6 +44,7 @@ type fakeClient struct {
 	createDraftNote                    func(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
 	listDraftNotes                     func(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error)
 	deleteDraftNote                    func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	updateDraftNote                    func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
 }
 
 type Author struct {

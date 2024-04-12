@@ -120,7 +120,29 @@ M.set_keymaps = function()
   end, { buffer = M.bufnr, desc = "Toggle all nodes" })
 end
 
+---The edit_draft_note function lets the discussions module do the heavy lifting
+---in order to handle the popup and keybindings.
 M.edit_draft_note = function()
+  require("gitlab.actions.discussions").edit_comment(M.tree, false)
+end
+
+---Send edits will actually send the edits to Gitlab and refresh the draft_notes tree
+M.send_edits = function(note_id)
+  return function(text)
+    local body = { note = text }
+    job.run_job(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
+      u.notify(data.message, vim.log.levels.INFO)
+      local new_draft_notes = List.new(state.DRAFT_NOTES)
+          :map(function(note)
+            if note.id == note_id then
+              note.note = text
+            end
+            return note
+          end)
+      state.DRAFT_NOTES = new_draft_notes
+      M.rebuild_draft_notes_tree()
+    end)
+  end
 end
 
 -- This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree

@@ -20,8 +20,9 @@ type PostDraftNoteRequest struct {
 	PositionData
 }
 
-type DeleteDraftNoteRequest struct{}
-type EditDraftNoteRequest struct{}
+type UpdateDraftNoteRequest struct {
+	Note string `json:"note"`
+}
 
 type DraftNoteResponse struct {
 	SuccessResponse
@@ -148,7 +149,59 @@ func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* editDraftNot edits the text of a draft comment */
-func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {}
+func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {
+	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
+	id, err := strconv.Atoi(suffix)
+	if err != nil {
+		handleError(w, err, "Could not parse draft note ID", http.StatusBadRequest)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var updateDraftNoteRequest UpdateDraftNoteRequest
+	err = json.Unmarshal(body, &updateDraftNoteRequest)
+	if err != nil {
+		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		return
+	}
+
+	opt := gitlab.UpdateDraftNoteOptions{
+		Note: &updateDraftNoteRequest.Note,
+	}
+
+	draftNote, res, err := a.client.UpdateDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, id, &opt)
+
+	if err != nil {
+		handleError(w, err, "Could not update draft note", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not update draft note", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := DraftNoteResponse{
+		SuccessResponse: SuccessResponse{
+			Message: "Draft note updated",
+			Status:  http.StatusOK,
+		},
+		DraftNote: draftNote,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+	}
+}
 
 /* listDraftNotes lists all draft notes for the currently authenticated user */
 func (a *api) listDraftNotes(w http.ResponseWriter, r *http.Request) {

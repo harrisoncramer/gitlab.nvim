@@ -252,9 +252,6 @@ M.send_reply = function(tree, discussion_id)
   return function(text)
     local body = { discussion_id = discussion_id, reply = text }
 
-    -- TODO: If dealing with a draft comment, handle this
-    -- with a different endpoint!
-
     job.run_job("/mr/reply", "POST", body, function(data)
       u.notify("Sent reply!", vim.log.levels.INFO)
       M.add_reply_to_tree(tree, data.note, discussion_id)
@@ -279,12 +276,10 @@ end
 M.send_deletion = function(tree)
   local current_node = tree:get_node()
 
-  -- TODO: If dealing with a draft comment, handle this
-  -- with a different endpoint!
-
   local note_node = au.get_note_node(tree, current_node)
   local root_node = au.get_root_node(tree, current_node)
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
+
   local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
   job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
@@ -324,12 +319,23 @@ M.edit_comment = function(tree, unlinked)
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
-  state.set_popup_keymaps(
-    edit_popup,
-    M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
-    nil,
-    miscellaneous.editable_popup_opts
-  )
+
+  -- Draft notes module handles edits for draft notes
+  if (tree.bufnr == draft_notes.bufnr) then
+    state.set_popup_keymaps(
+      edit_popup,
+      draft_notes.send_edits(root_node.id),
+      nil,
+      miscellaneous.editable_popup_opts
+    )
+  else
+    state.set_popup_keymaps(
+      edit_popup,
+      M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
+      nil,
+      miscellaneous.editable_popup_opts
+    )
+  end
 end
 
 ---This function sends the edited comment to the Go server
@@ -338,9 +344,6 @@ end
 ---@param unlinked boolean
 M.send_edits = function(discussion_id, note_id, unlinked)
   return function(text)
-    -- TODO: If dealing with a draft comment, handle this
-    -- with a different endpoint!
-
     local body = {
       discussion_id = discussion_id,
       note_id = note_id,
