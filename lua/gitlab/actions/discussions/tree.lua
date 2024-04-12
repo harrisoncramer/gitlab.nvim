@@ -1,3 +1,5 @@
+-- This module contains tree code specific to the discussion tree, that
+-- is not used in the draft notes tree
 local state = require("gitlab.state")
 local trees = require("gitlab.actions.trees")
 local u = require("gitlab.utils")

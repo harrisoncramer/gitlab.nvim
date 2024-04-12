@@ -1,3 +1,6 @@
+-- This module contains code shared between the draft notes tree and regular
+-- discussion tree, such as code for building the tree and toggling nodes open
+-- and closed.
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
 local state = require("gitlab.state")

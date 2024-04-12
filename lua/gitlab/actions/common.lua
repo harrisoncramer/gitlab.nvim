@@ -1,3 +1,6 @@
+-- This module contains code shared between at least two modules. This includes
+-- actions common to multiple tree types, as well as general utility functions
+-- that are specific to actions (like jumping to a file or opening a URL)
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local common_indicators = require("gitlab.indicators.common")
