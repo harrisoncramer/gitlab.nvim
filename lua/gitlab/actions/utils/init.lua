@@ -11,7 +11,8 @@ local M = {}
 ---@return string
 M.build_note_header = function(note)
   if note.note then
-    return "@" .. state.USER.username
+    local file = note.position and (note.position.old_path or note.position.new_path) and "" or ""
+    return "@" .. state.USER.username .. " " .. file
   end
   return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
@@ -273,6 +274,10 @@ M.jump_to_reviewer = function(tree, refresh_view)
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
+  if root_node.file_name == nil then
+    u.notify("This comment was not left on a particular location", vim.log.levels.WARN)
+    return
+  end
   reviewer.jump(root_node.file_name, get_new_line(root_node), get_old_line(root_node))
   refresh_view()
 end
@@ -283,6 +288,10 @@ M.jump_to_file = function(tree)
   local root_node = M.get_root_node(tree, node)
   if root_node == nil then
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
+    return
+  end
+  if root_node.file_name == nil then
+    u.notify("This comment was not left on a particular location", vim.log.levels.WARN)
     return
   end
   vim.cmd.tabnew()

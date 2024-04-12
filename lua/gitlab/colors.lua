@@ -12,3 +12,4 @@ vim.api.nvim_set_hl(0, "GitlabDirectoryIcon", u.get_colors_for_group(discussion.
 vim.api.nvim_set_hl(0, "GitlabFileName", u.get_colors_for_group(discussion.file_name))
 vim.api.nvim_set_hl(0, "GitlabResolved", u.get_colors_for_group(discussion.resolved))
 vim.api.nvim_set_hl(0, "GitlabUnresolved", u.get_colors_for_group(discussion.unresolved))
+vim.api.nvim_set_hl(0, "GitlabLink", u.get_colors_for_group(discussion.link))

@@ -69,6 +69,10 @@ M.rebuild_draft_notes_tree = function()
   M.set_keymaps()
 end
 
+M.refresh_view = function()
+  -- TODO: Implement diagnostics
+end
+
 M.set_keymaps = function()
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     M.edit_draft_note()

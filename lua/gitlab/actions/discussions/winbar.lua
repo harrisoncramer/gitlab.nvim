@@ -80,11 +80,12 @@ end
 ---@param t WinbarTable
 M.make_winbar = function(t)
   local discussions_content = t.resolvable_discussions ~= 0
-      and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-      or "Discussions"
+      and string.format("Inline Comments (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
+      or "Inline Comments"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
       or "Notes"
-  local draft_notes_content = t.draft_notes ~= 0 and string.format("Draft Notes (%d)", t.draft_notes) or "Draft Notes"
+  local draft_notes_content = t.draft_notes ~= 0 and string.format("Drafts (%d)", t.draft_notes) or
+      "Drafts"
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then
