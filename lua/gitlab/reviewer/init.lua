@@ -115,13 +115,19 @@ M.jump = function(file_name, line_number, new_buffer)
   async.await(view:set_file(file))
 
   local layout = view.cur_layout
+  local number_of_lines
   if new_buffer then
     layout.b:focus()
-    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+    number_of_lines = u.get_buffer_length(layout.b.file.bufnr)
   else
     layout.a:focus()
-    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+    number_of_lines = u.get_buffer_length(layout.a.file.bufnr)
   end
+  if line_number > number_of_lines then
+    u.notify("Diagnostic position outside buffer. Jumping to last line instead.", vim.log.levels.WARN)
+    line_number = number_of_lines
+  end
+  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
 ---Get the data from diffview, such as line information and file name. May be used by
