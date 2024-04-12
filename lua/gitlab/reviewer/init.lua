@@ -115,7 +115,7 @@ M.jump = function(file_name, new_line, old_line)
   async.await(view:set_file(file))
 
   local layout = view.cur_layout
-  if old_line == nil then
+  if old_line == nil or old_line == 0 then
     layout.b:focus()
     vim.api.nvim_win_set_cursor(0, { new_line, 0 })
   else
