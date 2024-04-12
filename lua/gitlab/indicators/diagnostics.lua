@@ -1,7 +1,7 @@
-local au = require("gitlab.actions.utils")
 local u = require("gitlab.utils")
 local diffview_lib = require("diffview.lib")
-local common = require("gitlab.indicators.common")
+local indicators_common = require("gitlab.indicators.common")
+local actions_common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local discussion_sign_name = "gitlab_discussion"
@@ -29,14 +29,14 @@ local display_opts = {
 local function create_diagnostic(range_info, discussion)
   local message = ""
   for _, note in ipairs(discussion.notes) do
-    message = message .. au.build_note_header(note) .. "\n" .. note.body .. "\n"
+    message = message .. actions_common.build_note_header(note) .. "\n" .. note.body .. "\n"
   end
 
   local diagnostic = {
     message = message,
     col = 0,
     severity = state.settings.discussion_signs.severity,
-    user_data = { discussion_id = discussion.id, header = au.build_note_header(discussion.notes[1]) },
+    user_data = { discussion_id = discussion.id, header = actions_common.build_note_header(discussion.notes[1]) },
     source = "gitlab",
     code = "gitlab.nvim",
   }
@@ -63,9 +63,9 @@ local create_multiline_diagnostic = function(discussion)
     error("Parsing multi-line comment but note does not contain line range")
   end
 
-  local start_old_line, start_new_line = common.parse_line_code(line_range.start.line_code)
+  local start_old_line, start_new_line = indicators_common.parse_line_code(line_range.start.line_code)
 
-  if common.is_new_sha(discussion) then
+  if indicators_common.is_new_sha(discussion) then
     return create_diagnostic({
       lnum = start_new_line - 1,
       end_lnum = first_note.position.new_line - 1,
@@ -110,7 +110,7 @@ M.refresh_diagnostics = function(discussions)
   local ok, err = pcall(function()
     require("gitlab.indicators.signs").clear_signs()
     M.clear_diagnostics()
-    local filtered_discussions = common.filter_placeable_discussions(discussions)
+    local filtered_discussions = indicators_common.filter_placeable_discussions(discussions)
     if filtered_discussions == nil then
       return
     end
@@ -132,9 +132,9 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_new_diagnostics = function(discussions)
-  local new_diagnostics = List.new(discussions):filter(common.is_new_sha)
-  local single_line = new_diagnostics:filter(common.is_single_line):map(create_single_line_diagnostic)
-  local multi_line = new_diagnostics:filter(common.is_multi_line):map(create_multiline_diagnostic)
+  local new_diagnostics = List.new(discussions):filter(indicators_common.is_new_sha)
+  local single_line = new_diagnostics:filter(indicators_common.is_single_line):map(create_single_line_diagnostic)
+  local multi_line = new_diagnostics:filter(indicators_common.is_multi_line):map(create_multiline_diagnostic)
   return u.combine(single_line, multi_line)
 end
 
@@ -143,9 +143,9 @@ end
 ---@param discussions Discussion[]
 ---@return DiagnosticTable[]
 M.parse_old_diagnostics = function(discussions)
-  local old_diagnostics = List.new(discussions):filter(common.is_old_sha)
-  local single_line = old_diagnostics:filter(common.is_single_line):map(create_single_line_diagnostic)
-  local multi_line = old_diagnostics:filter(common.is_multi_line):map(create_multiline_diagnostic)
+  local old_diagnostics = List.new(discussions):filter(indicators_common.is_old_sha)
+  local single_line = old_diagnostics:filter(indicators_common.is_single_line):map(create_single_line_diagnostic)
+  local multi_line = old_diagnostics:filter(indicators_common.is_multi_line):map(create_multiline_diagnostic)
   return u.combine(single_line, multi_line)
 end
 

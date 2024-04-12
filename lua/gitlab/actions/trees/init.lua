@@ -1,5 +1,5 @@
 local u = require("gitlab.utils")
-local au = require("gitlab.actions.utils")
+local common = require("gitlab.actions.common")
 local state = require("gitlab.state")
 local NuiTree = require("nui.tree")
 local NuiLine = require("nui.line")
@@ -36,7 +36,7 @@ local function build_note_body(note, resolve_info)
         or state.settings.discussion_tree.unresolved
   end
 
-  local noteHeader = au.build_note_header(note) .. " " .. resolve_symbol
+  local noteHeader = common.build_note_header(note) .. " " .. resolve_symbol
 
   return noteHeader, text_nodes
 end
@@ -130,7 +130,7 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
   if current_node == nil then
     return
   end
-  local root_node = au.get_root_node(tree, current_node)
+  local root_node = common.get_root_node(tree, current_node)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
@@ -193,7 +193,7 @@ M.expand_recursively = function(tree, node, is_resolved)
   if node == nil then
     return
   end
-  if au.is_node_note(node) and au.get_root_node(tree, node).resolved == is_resolved then
+  if common.is_node_note(node) and common.get_root_node(tree, node).resolved == is_resolved then
     node:expand()
   end
   local children = node:get_child_ids()
@@ -212,8 +212,8 @@ M.collapse_recursively = function(tree, node, current_root_node, keep_current_op
   if node == nil then
     return
   end
-  local root_node = au.get_root_node(tree, node)
-  if au.is_node_note(node) and root_node.resolved == is_resolved then
+  local root_node = common.get_root_node(tree, node)
+  if common.is_node_note(node) and root_node.resolved == is_resolved then
     if keep_current_open and root_node == current_root_node then
       return
     end
@@ -246,13 +246,13 @@ M.toggle_node = function(tree)
   end
   if node:is_expanded() then
     node:collapse()
-    if au.is_node_note(node) then
+    if common.is_node_note(node) then
       for _, child in ipairs(children) do
         tree:get_node(child):collapse()
       end
     end
   else
-    if au.is_node_note(node) then
+    if common.is_node_note(node) then
       for _, child in ipairs(children) do
         tree:get_node(child):expand()
       end

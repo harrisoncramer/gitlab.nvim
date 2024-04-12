@@ -1,4 +1,4 @@
-local au = require("gitlab.actions.utils")
+local common = require("gitlab.actions.common")
 local trees = require("gitlab.actions.trees")
 local job = require("gitlab.job")
 local NuiTree = require("nui.tree")
@@ -40,7 +40,7 @@ M.rebuild_draft_notes_tree = function()
 
   local draft_notes = List.new(state.DRAFT_NOTES)
 
-  au.add_empty_titles({
+  common.add_empty_titles({
     { bufnr = M.bufnr, data = state.DRAFT_NOTES, title = "No Draft Notes for this MR" },
   })
 
@@ -91,19 +91,19 @@ M.set_keymaps = function()
     trees.toggle_node(M.tree)
   end, { buffer = M.bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
-    au.jump_to_file(M.tree)
+    common.jump_to_file(M.tree)
   end, { buffer = M.bufnr, desc = "Jump to file" })
   vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
-    au.jump_to_reviewer(M.tree, M.refresh_view)
+    common.jump_to_reviewer(M.tree, M.refresh_view)
   end, { buffer = M.bufnr, desc = "Jump to reviewer" })
   vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
-    au.open_in_browser(M.tree) -- For some reason, I cannot see my own draft notes in Gitlab's UI
+    common.open_in_browser(M.tree) -- For some reason, I cannot see my own draft notes in Gitlab's UI
   end, { buffer = M.bufnr, desc = "Open the note in your browser" })
   vim.keymap.set("n", state.settings.discussion_tree.copy_node_url, function()
-    au.copy_node_url(M.tree)
+    common.copy_node_url(M.tree)
   end, { buffer = M.bufnr, desc = "Copy the URL of the current node to clipboard" })
   vim.keymap.set("n", "<leader>p", function()
-    au.print_node()
+    common.print_node()
   end, { buffer = M.bufnr, desc = "Print current node (for debugging)" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
     local discussions = require("gitlab.actions.discussions")
@@ -143,8 +143,8 @@ end
 -- This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree
 M.send_deletion = function(tree)
   local current_node = tree:get_node()
-  local note_node = au.get_note_node(tree, current_node)
-  local root_node = au.get_root_node(tree, current_node)
+  local note_node = common.get_note_node(tree, current_node)
+  local root_node = common.get_root_node(tree, current_node)
 
   if note_node == nil or root_node == nil then
     u.notify("Could not get note or root node", vim.log.levels.ERROR)
