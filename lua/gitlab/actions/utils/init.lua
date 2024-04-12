@@ -2,7 +2,6 @@ local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.indicators.common")
 local state = require("gitlab.state")
-local NuiLine = require("nui.line")
 local M = {}
 
 ---Build note header from note

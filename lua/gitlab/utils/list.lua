@@ -55,15 +55,6 @@ function List:find(func)
   return nil
 end
 
-function List:index_of(val)
-  for i, v in ipairs(self) do
-    if v == val then
-      return i
-    end
-    return -1
-  end
-end
-
 function List:slice(first, last, step)
   local sliced = List.new()
   for i = first or 1, last or #self, step or 1 do
