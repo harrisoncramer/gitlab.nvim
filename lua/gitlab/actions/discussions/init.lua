@@ -402,7 +402,7 @@ M.rebuild_discussion_tree = function()
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local discussion_tree_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
   local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = M.nui_tree_prepare_node })
+      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = trees.nui_tree_prepare_node })
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -423,7 +423,7 @@ M.rebuild_unlinked_discussion_tree = function()
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,
-    prepare_node = M.nui_tree_prepare_node,
+    prepare_node = trees.nui_tree_prepare_node,
   })
   unlinked_discussion_tree:render()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)

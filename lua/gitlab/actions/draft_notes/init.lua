@@ -62,7 +62,7 @@ M.rebuild_draft_notes_tree = function()
     }, root_text_nodes)
   end)
 
-  local tree = NuiTree({ nodes = draft_note_nodes, bufnr = M.bufnr, prepare_node = au.nui_tree_prepare_node })
+  local tree = NuiTree({ nodes = draft_note_nodes, bufnr = M.bufnr, prepare_node = trees.nui_tree_prepare_node })
   M.tree = tree
 
   tree:render()
