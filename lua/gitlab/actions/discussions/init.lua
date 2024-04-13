@@ -513,10 +513,14 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.toggle_tree_type()
     end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   end
-
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     if M.is_current_node_note(tree) then
       M.edit_comment(tree, unlinked)
+    end
+  end, { buffer = bufnr, desc = "Edit comment" })
+  vim.keymap.set("n", state.settings.discussion_tree.publish_draft, function()
+    if M.is_draft_note(tree) then
+      draft_notes.publish_draft(tree)
     end
   end, { buffer = bufnr, desc = "Edit comment" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()

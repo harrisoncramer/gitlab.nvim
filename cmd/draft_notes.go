@@ -24,6 +24,11 @@ type UpdateDraftNoteRequest struct {
 	Note string `json:"note"`
 }
 
+type DraftNotePublishRequest struct {
+	Note       int  `json:"note"`
+	PublishAll bool `json:"publish_all"`
+}
+
 type DraftNoteResponse struct {
 	SuccessResponse
 	DraftNote *gitlab.DraftNote `json:"draft_note"`
@@ -58,6 +63,53 @@ func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch, http.MethodGet))
 		handleError(w, InvalidRequestError{}, "Expected DELETE, GET, POST or PATCH", http.StatusMethodNotAllowed)
+	}
+}
+
+func (a *api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+	var draftNotePublishRequest DraftNotePublishRequest
+	err = json.Unmarshal(body, &draftNotePublishRequest)
+
+	var res *gitlab.Response
+	if !draftNotePublishRequest.PublishAll {
+		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, draftNotePublishRequest.Note)
+	} else {
+		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
+	}
+
+	if err != nil {
+		handleError(w, err, "Could not publish draft note(s)", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/mr/draft_notes/publish"}, "Could not publish dfaft note", res.StatusCode)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	response := SuccessResponse{
+		Message: "Draft note(s) published",
+		Status:  http.StatusOK,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
 }
 

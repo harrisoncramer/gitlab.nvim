@@ -52,6 +52,7 @@ M.settings = {
     delete_comment = "dd",
     open_in_browser = "b",
     copy_node_url = "u",
+    publish_draft = "P",
     reply = "r",
     toggle_node = "t",
     add_emoji = "Ea",

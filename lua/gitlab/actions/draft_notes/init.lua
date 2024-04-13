@@ -115,4 +115,43 @@ M.send_deletion = function(tree)
   end)
 end
 
+-- This function will trigger a popup prompting you to publish the current draft comment
+M.publish_draft = function(tree)
+  vim.ui.select({ "Confirm", "Cancel" }, {
+    prompt = "Publish current draft comment?",
+  }, function(choice)
+    if choice == "Confirm" then
+      M.confirm_publish_draft(tree)
+    end
+  end)
+end
+
+M.confirm_publish_draft = function(tree)
+  local current_node = tree:get_node()
+  local note_node = common.get_note_node(tree, current_node)
+  local root_node = common.get_root_node(tree, current_node)
+
+  if note_node == nil or root_node == nil then
+    u.notify("Could not get note or root node", vim.log.levels.ERROR)
+    return
+  end
+
+  ---@type integer
+  local note_id = note_node.is_root and root_node.id or note_node.id
+  local body = { note = note_id, publish_all = false }
+  job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(node)
+      return node.id ~= note_id
+    end)
+
+    state.DRAFT_NOTES = new_draft_notes
+
+    -- TODO: Fetch all discussions again and rebuild the tree
+    -- local discussions = require("gitlab.actions.discussions")
+    -- discussions.rebuild_discussion_tree()
+    -- winbar.update_winbar()
+  end)
+end
+
 return M
