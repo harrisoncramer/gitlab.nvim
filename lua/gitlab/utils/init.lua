@@ -661,6 +661,14 @@ M.basename = function(str)
   return name
 end
 
+M.get_web_url = function()
+  local web_url = require("gitlab.state").INFO.web_url
+  if web_url ~= nil then
+    return web_url
+  end
+  M.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
+end
+
 ---@param url string?
 M.open_in_browser = function(url)
   if vim.fn.has("mac") == 1 then

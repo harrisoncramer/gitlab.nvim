@@ -39,7 +39,7 @@ M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
     state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
     state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions
-      or {}
+        or {}
     state.DISCUSSION_DATA.emojis = data.emojis ~= vim.NIL and data.emojis or {}
     if type(callback) == "function" then
       callback()
@@ -106,9 +106,9 @@ M.toggle = function(callback)
   end
 
   if
-    type(state.DISCUSSION_DATA.discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.draft_notes) ~= "table"
+      type(state.DISCUSSION_DATA.discussions) ~= "table"
+      and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
+      and type(state.DISCUSSION_DATA.draft_notes) ~= "table"
   then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
     vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
@@ -437,7 +437,7 @@ M.rebuild_unlinked_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local unlinked_discussion_tree_nodes =
-    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,

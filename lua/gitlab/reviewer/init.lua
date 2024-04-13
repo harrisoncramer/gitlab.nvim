@@ -93,9 +93,9 @@ end
 
 --- Jumps to the location provided in the reviewer window
 ---@param file_name string
----@param new_line number|nil
----@param old_line number|nil
-M.jump = function(file_name, new_line, old_line)
+---@param line_number number
+---@param new_buffer boolean
+M.jump = function(file_name, line_number, new_buffer)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
@@ -115,12 +115,12 @@ M.jump = function(file_name, new_line, old_line)
   async.await(view:set_file(file))
 
   local layout = view.cur_layout
-  if old_line == nil then
+  if new_buffer then
     layout.b:focus()
-    vim.api.nvim_win_set_cursor(0, { new_line, 0 })
+    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
   else
     layout.a:focus()
-    vim.api.nvim_win_set_cursor(0, { old_line, 0 })
+    vim.api.nvim_win_set_cursor(0, { line_number, 0 })
   end
 end
 

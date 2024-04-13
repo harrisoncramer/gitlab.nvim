@@ -71,20 +71,18 @@ end
 ---@param tree NuiTree
 M.open_in_browser = function(tree)
   local url = M.get_url(tree)
-  if url == nil then
-    return
+  if url ~= nil then
+    u.open_in_browser(url)
   end
-  u.open_in_browser(url)
 end
 
 ---@param tree NuiTree
 M.copy_node_url = function(tree)
   local url = M.get_url(tree)
   if url == nil then
-    return
+    vim.fn.setreg("+", url)
+    u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
   end
-  u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
-  vim.fn.setreg("+", url)
 end
 
 -- For developers!
@@ -171,19 +169,20 @@ local function get_old_line(node)
 end
 
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
-M.jump_to_reviewer = function(tree, refresh_view)
+M.jump_to_reviewer = function(tree, callback)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)
   if root_node == nil then
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
-  if root_node.file_name == nil then
-    u.notify("This comment was not left on a particular location", vim.log.levels.WARN)
-    return
+  local line_number = (root_node.new_line or root_node.old_line or 1)
+  if root_node.range then
+    local start_old_line, start_new_line = common_indicators.parse_line_code(root_node.range.start.line_code)
+    line_number = root_node.old_line and start_old_line or start_new_line
   end
-  reviewer.jump(root_node.file_name, get_new_line(root_node), get_old_line(root_node))
-  refresh_view()
+  reviewer.jump(root_node.file_name, line_number, root_node.old_line == nil)
+  callback()
 end
 
 -- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
