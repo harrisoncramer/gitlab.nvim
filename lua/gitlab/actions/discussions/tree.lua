@@ -160,29 +160,35 @@ local create_disscussions_by_file_name = function(node_list)
     local path_parts = u.split_path(node.file_name)
     local file_name = table.remove(path_parts, #path_parts)
 
-    -- Create folders
-    for i, path_part in ipairs(path_parts) do
-      path = path ~= nil and path .. u.path_separator .. path_part or path_part
-      if i ~= 1 and parent_node then
-        local child_node = List.new(parent_node.__children):find(function(child)
-          return child.path == path
-        end)
+    local other_path_parts = List.new(path_parts):filter(function(_, i)
+      return i > 1
+    end)
 
-        if child_node == nil then
-          child_node = create_path_node(path_part, path)
-          table.insert(parent_node.__children, child_node)
-          parent_node:expand()
-          parent_node = child_node
-        else
-          parent_node = child_node
-        end
-      elseif i == 1 then
+    -- Create folders
+    for _, path_part in ipairs(other_path_parts) do
+      path = path ~= nil and path .. u.path_separator .. path_part or path_part
+      if parent_node then
         if top_level_path_to_node[path] == nil then
           parent_node = create_path_node(path_part, path)
           top_level_path_to_node[path] = parent_node
           table.insert(agg, parent_node)
         end
         parent_node = top_level_path_to_node[path]
+      elseif parent_node then
+        path = path ~= nil and path .. u.path_separator .. path_part or path_part
+        local children = List.new(parent_node.__children)
+        local child_node = children:find(function(child)
+          return child.path == path
+        end)
+
+        if child_node == nil then
+          child_node = create_path_node(path_part, path)
+          table.insert(parent_node.__children, create_path_node(path_part, path))
+          parent_node:expand()
+          parent_node = child_node
+        else
+          parent_node = child_node
+        end
       end
     end
 
