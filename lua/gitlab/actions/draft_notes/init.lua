@@ -146,11 +146,9 @@ M.confirm_publish_draft = function(tree)
     end)
 
     state.DRAFT_NOTES = new_draft_notes
-
-    -- TODO: Fetch all discussions again and rebuild the tree
-    -- local discussions = require("gitlab.actions.discussions")
-    -- discussions.rebuild_discussion_tree()
-    -- winbar.update_winbar()
+    local discussions = require("gitlab.actions.discussions")
+    discussions.rebuild_discussion_tree()
+    winbar.update_winbar()
   end)
 end
 
