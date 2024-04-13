@@ -73,9 +73,9 @@ end
 M.make_winbar = function(t)
   local discussions_content = t.resolvable_discussions ~= 0
       and string.format("Inline Comments (%d/%d resolved", t.resolved_discussions, t.resolvable_discussions)
-      or "Inline Comments"
+    or "Inline Comments"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-      or "Notes"
+    or "Notes"
 
   if #state.DRAFT_NOTES > 0 then
     discussions_content = discussions_content .. string.format("; %d drafts)", #state.DRAFT_NOTES)

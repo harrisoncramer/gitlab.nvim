@@ -14,6 +14,9 @@ local M = {}
 ---@return NuiTree.Node[]
 M.add_discussions_to_table = function(items, unlinked)
   local t = {}
+  if items == vim.NIL then
+    items = {}
+  end
   for _, discussion in ipairs(items) do
     local discussion_children = {}
 
