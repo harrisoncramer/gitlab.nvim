@@ -661,13 +661,16 @@ M.get_all_git_branches = function(remote)
     for line in handle:lines() do
       local branch
       if remote then
-        for res in line:gmatch("origin/([^\n]+)") do
-          branch = res -- Trim /origin
-        end
+        branch = line:match("origin/(%S+)") -- Trim "origin/"
       else
         branch = line:gsub("^%s*%*?%s*", "") -- Trim leading whitespace and the "* " marker for the current branch
       end
-      table.insert(branches, branch)
+      if branch:match("^HEAD$") then -- Don't include the HEAD pointer
+        branch = nil
+      end
+      if branch then
+        table.insert(branches, branch)
+      end
     end
     handle:close()
   else
