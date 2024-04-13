@@ -162,12 +162,12 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     job.run_job(endpoint, "POST", body, function(data)
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
       if is_draft then
-        draft_notes.add_draft_note(data.draft_note)
-        draft_notes.rebuild_draft_notes_tree()
+        draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = true })
       else
         discussions.add_discussion({ data = data, unlinked = true })
-        discussions.refresh()
       end
+
+      discussions.refresh()
     end)
     return
   end
@@ -203,7 +203,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
   job.run_job(endpoint, "POST", body, function(data)
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
-      draft_notes.add_draft_note(data.draft_note)
+      draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = false })
       draft_notes.rebuild_draft_notes_tree()
     else
       discussions.add_discussion({ data = data, unlinked = false })

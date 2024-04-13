@@ -54,6 +54,7 @@ M.build_note = function(note, resolve_info)
   local text, text_nodes = build_note_body(note, resolve_info)
   local note_node = NuiTree.Node({
     text = text,
+    is_draft = note.note ~= nil,
     id = note.id,
     file_name = (type(note.position) == "table" and note.position.new_path),
     new_line = (type(note.position) == "table" and note.position.new_line),

@@ -94,7 +94,7 @@ M.make_winbar = function(t)
   local separator = "%#Comment#|"
   local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
   return string.format(
-    " %s %s %s %s %s",
+    " %s %s %s %s",
     discussions_content,
     separator,
     notes_content,

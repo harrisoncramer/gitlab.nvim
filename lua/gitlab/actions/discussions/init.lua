@@ -260,12 +260,12 @@ M.send_reply = function(tree, discussion_id)
 end
 
 -- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
-M.delete_comment = function(tree, unlinked)
+M.delete_comment = function(tree)
   vim.ui.select({ "Confirm", "Cancel" }, {
     prompt = "Delete comment?",
   }, function(choice)
     if choice == "Confirm" then
-      M.send_deletion(tree, unlinked)
+      M.send_deletion(tree)
     end
   end)
 end
@@ -277,20 +277,30 @@ M.send_deletion = function(tree)
 
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
+  if note_node == nil or root_node == nil then
+    u.notify("Could not get note or root node", vim.log.levels.ERROR)
+    return
+  end
+
+  ---@type integer
   local note_id = note_node.is_root and root_node.root_note_id or note_node.id
 
-  local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
-  job.run_job("/mr/comment", "DELETE", body, function(data)
-    u.notify(data.message, vim.log.levels.INFO)
-    if note_node.is_root then
-      -- Replace root node w/ current node's contents...
-      tree:remove_node("-" .. root_node.id)
-    else
-      tree:remove_node("-" .. note_id)
-    end
-    tree:render()
-    M.refresh()
-  end)
+  if root_node.is_draft then
+    draft_notes.send_deletion(tree)
+  else
+    local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
+    job.run_job("/mr/comment", "DELETE", body, function(data)
+      u.notify(data.message, vim.log.levels.INFO)
+      if note_node.is_root then
+        -- Replace root node w/ current node's contents...
+        tree:remove_node("-" .. root_node.id)
+      else
+        tree:remove_node("-" .. note_id)
+      end
+      tree:render()
+      M.refresh()
+    end)
+  end
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
@@ -320,7 +330,7 @@ M.edit_comment = function(tree, unlinked)
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
 
   -- Draft notes module handles edits for draft notes
-  if (tree.bufnr == draft_notes.bufnr) then
+  if (root_node.is_draft) then
     state.set_popup_keymaps(
       edit_popup,
       draft_notes.send_edits(root_node.id),
@@ -398,9 +408,24 @@ M.rebuild_discussion_tree = function()
   end
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
-  local discussion_tree_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
-  local discussion_tree =
-      NuiTree({ nodes = discussion_tree_nodes, bufnr = M.linked_bufnr, prepare_node = trees.nui_tree_prepare_node })
+  local existing_comment_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
+  local draft_comment_nodes = draft_notes.add_draft_notes_to_table()
+
+  -- Combine draft notes with regular ones
+  local all_nodes = {}
+  for _, draft_node in ipairs(draft_comment_nodes) do
+    table.insert(all_nodes, draft_node)
+  end
+  for _, node in ipairs(existing_comment_nodes) do
+    table.insert(all_nodes, node)
+  end
+
+  local discussion_tree = NuiTree({
+    nodes = all_nodes,
+    bufnr = M.linked_bufnr,
+    prepare_node = trees.nui_tree_prepare_node
+  })
+
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -496,7 +521,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   end, { buffer = bufnr, desc = "Edit comment" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
     if M.is_current_node_note(tree) then
-      M.delete_comment(tree, unlinked)
+      M.delete_comment(tree)
     end
   end, { buffer = bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
@@ -610,6 +635,12 @@ M.add_reply_to_tree = function(tree, note, discussion_id)
   note_node:expand()
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
+end
+
+M.is_draft_note = function(tree)
+  local current_node = tree:get_node()
+  local root_node = common.get_root_node(tree, current_node)
+  return root_node ~= nil and root_node.is_draft
 end
 
 M.add_emoji_to_note = function(tree, unlinked)
