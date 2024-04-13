@@ -126,6 +126,28 @@ M.publish_draft = function(tree)
   end)
 end
 
+-- This function will trigger a popup prompting you to publish all draft notes
+M.publish_all_drafts = function()
+  vim.ui.select({ "Confirm", "Cancel" }, {
+    prompt = "Publish all drafts?",
+  }, function(choice)
+    if choice == "Confirm" then
+      M.confirm_publish_all_drafts()
+    end
+  end)
+end
+
+M.confirm_publish_all_drafts = function()
+  local body = { publish_all = true }
+  job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    state.DRAFT_NOTES = {}
+    local discussions = require("gitlab.actions.discussions")
+    discussions.rebuild_discussion_tree()
+    winbar.update_winbar()
+  end)
+end
+
 M.confirm_publish_draft = function(tree)
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
