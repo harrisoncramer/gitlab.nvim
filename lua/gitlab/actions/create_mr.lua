@@ -177,6 +177,14 @@ M.open_confirmation_popup = function(mr)
 
   local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup = M.create_layout()
 
+  local popups = {
+    title_popup,
+    description_popup,
+    delete_branch_popup,
+    squash_popup,
+    target_popup,
+  }
+
   M.layout = layout
   M.layout_buf = layout.bufnr
   M.layout_visible = true
@@ -220,6 +228,7 @@ M.open_confirmation_popup = function(mr)
     state.set_popup_keymaps(target_popup, M.create_mr, nil, popup_opts)
     state.set_popup_keymaps(delete_branch_popup, M.create_mr, nil, popup_opts)
     state.set_popup_keymaps(squash_popup, M.create_mr, nil, popup_opts)
+    miscellaneous.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
