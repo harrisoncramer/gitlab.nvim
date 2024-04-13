@@ -523,6 +523,7 @@ in normal mode):
     vim.keymap.set("n", "glo", gitlab.open_in_browser)
     vim.keymap.set("n", "glM", gitlab.merge)
     vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+    vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
