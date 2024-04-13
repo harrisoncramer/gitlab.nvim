@@ -3,6 +3,7 @@
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
 local NuiTree = require("nui.tree")
 local NuiLine = require("nui.line")
 
@@ -151,32 +152,21 @@ end
 
 local create_disscussions_by_file_name = function(node_list)
   -- Create all the folder and file name nodes.
-  local discussion_by_file_name = {}
-  local top_level_path_to_node = {}
 
-  for _, node in ipairs(node_list) do
+  return List.new(node_list):reduce(function(agg, node)
+    local top_level_path_to_node = {}
     local path = ""
     local parent_node = nil
     local path_parts = u.split_path(node.file_name)
     local file_name = table.remove(path_parts, #path_parts)
+
     -- Create folders
     for i, path_part in ipairs(path_parts) do
       path = path ~= nil and path .. u.path_separator .. path_part or path_part
-      if i == 1 then
-        if top_level_path_to_node[path] == nil then
-          parent_node = create_path_node(path_part, path)
-          top_level_path_to_node[path] = parent_node
-          table.insert(discussion_by_file_name, parent_node)
-        end
-        parent_node = top_level_path_to_node[path]
-      elseif parent_node then
-        local child_node = nil
-        for _, child in ipairs(parent_node.__children) do
-          if child.path == path then
-            child_node = child
-            break
-          end
-        end
+      if i ~= 1 and parent_node then
+        local child_node = List.new(parent_node.__children):find(function(child)
+          return child.path == path
+        end)
 
         if child_node == nil then
           child_node = create_path_node(path_part, path)
@@ -186,6 +176,13 @@ local create_disscussions_by_file_name = function(node_list)
         else
           parent_node = child_node
         end
+      elseif i == 1 then
+        if top_level_path_to_node[path] == nil then
+          parent_node = create_path_node(path_part, path)
+          top_level_path_to_node[path] = parent_node
+          table.insert(agg, parent_node)
+        end
+        parent_node = top_level_path_to_node[path]
       end
     end
 
@@ -198,14 +195,14 @@ local create_disscussions_by_file_name = function(node_list)
         local file_node = create_file_name_node(file_name, node.file_name, { node })
         file_node:expand()
         top_level_path_to_node[node.file_name] = file_node
-        table.insert(discussion_by_file_name, file_node)
+        table.insert(agg, file_node)
       end
     else
       local child_node = nil
       for _, child in ipairs(parent_node.__children) do
         if child.file_name == node.file_name then
           child_node = child
-          break
+          return agg
         end
       end
       if child_node == nil then
@@ -217,9 +214,9 @@ local create_disscussions_by_file_name = function(node_list)
         table.insert(child_node.__children, node)
       end
     end
-  end
 
-  return discussion_by_file_name
+    return agg
+  end, {})
 end
 
 M.create_node_list_by_file_name = function(node_list)
