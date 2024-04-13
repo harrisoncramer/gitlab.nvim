@@ -91,7 +91,7 @@ M.close = function()
   discussions.close()
 end
 
-- Jumps to the location provided in the reviewer window
+--- Jumps to the location provided in the reviewer window
 ---@param file_name string
 ---@param new_line number|nil
 ---@param old_line number|nil
