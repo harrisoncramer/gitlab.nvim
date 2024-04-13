@@ -3,7 +3,7 @@
 -- and deleting them. Normal notes and comments are managed separately,
 -- under lua/gitlab/actions/discussions/init.lua
 local common = require("gitlab.actions.common")
-local trees = require("gitlab.actions.trees")
+local discussion_tree = require("gitlab.actions.discussions.tree")
 local job = require("gitlab.job")
 local NuiTree = require("nui.tree")
 local List = require("gitlab.utils.list")
@@ -36,7 +36,7 @@ M.add_draft_notes_to_table = function()
 
   ---@param note DraftNote
   local draft_note_nodes = draft_notes:map(function(note)
-    local _, root_text, root_text_nodes = trees.build_note(note)
+    local _, root_text, root_text_nodes = discussion_tree.build_note(note)
     return NuiTree.Node({
       range = (type(note.position) == "table" and note.position.line_range or nil),
       text = root_text,

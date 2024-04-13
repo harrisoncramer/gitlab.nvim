@@ -11,7 +11,7 @@ local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
-local trees = require("gitlab.actions.trees")
+local tree_utils = require("gitlab.actions.discussions.tree")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -423,7 +423,7 @@ M.rebuild_discussion_tree = function()
   local discussion_tree = NuiTree({
     nodes = all_nodes,
     bufnr = M.linked_bufnr,
-    prepare_node = trees.nui_tree_prepare_node
+    prepare_node = tree_utils.nui_tree_prepare_node
   })
 
   discussion_tree:render()
@@ -446,7 +446,7 @@ M.rebuild_unlinked_discussion_tree = function()
   local unlinked_discussion_tree = NuiTree({
     nodes = unlinked_discussion_tree_nodes,
     bufnr = M.unlinked_bufnr,
-    prepare_node = trees.nui_tree_prepare_node,
+    prepare_node = tree_utils.nui_tree_prepare_node,
   })
   unlinked_discussion_tree:render()
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
@@ -530,24 +530,24 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
   end, { buffer = bufnr, desc = "Toggle resolved" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
-    trees.toggle_node(tree)
+    tree_utils.toggle_node(tree)
   end, { buffer = bufnr, desc = "Toggle node" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
-    trees.toggle_nodes(M.split.winid, tree, unlinked, {
+    tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
       toggle_resolved = true,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
     })
   end, { buffer = bufnr, desc = "Toggle all nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved_discussions, function()
-    trees.toggle_nodes(M.split.winid, tree, unlinked, {
+    tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
       toggle_resolved = true,
       toggle_unresolved = false,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
     })
   end, { buffer = bufnr, desc = "Toggle resolved nodes" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_unresolved_discussions, function()
-    trees.toggle_nodes(M.split.winid, tree, unlinked, {
+    tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
       toggle_resolved = false,
       toggle_unresolved = true,
       keep_current_open = state.settings.discussion_tree.keep_current_open,
@@ -631,7 +631,7 @@ M.replace_text = function(data, discussion_id, note_id, text)
 end
 
 M.add_reply_to_tree = function(tree, note, discussion_id)
-  local note_node = trees.build_note(note)
+  local note_node = tree_utils.build_note(note)
   note_node:expand()
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
