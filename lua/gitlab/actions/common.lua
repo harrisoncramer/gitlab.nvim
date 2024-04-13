@@ -12,8 +12,7 @@ local M = {}
 ---@return string
 M.build_note_header = function(note)
   if note.note then
-    local file = note.position and (note.position.old_path or note.position.new_path) and "" or ""
-    return "@" .. state.USER.username .. " " .. file
+    return "@" .. state.USER.username .. " " .. ""
   end
   return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
@@ -93,7 +92,6 @@ M.print_node = function(tree)
   local current_node = tree:get_node()
   vim.print(current_node)
 end
-
 
 ---Check if type of node is note or note body
 ---@param node NuiTree.Node?

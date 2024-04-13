@@ -55,6 +55,15 @@ M.add_draft_notes_to_table = function()
   end)
 
   return draft_note_nodes
+
+  -- TODO: Combine draft_notes and normal discussion nodes in the complex discussion
+  -- tree. The code for that feature is a clusterfuck so this is difficult
+  -- if state.settings.discussion_tree.tree_type == "simple" then
+  --   return draft_note_nodes
+  -- end
+  --
+  -- local discussion_module = require("gitlab.actions.discussions.tree")
+  -- return discussion_module.create_node_list_by_file_name(draft_note_nodes)
 end
 
 ---Send edits will actually send the edits to Gitlab and refresh the draft_notes tree
@@ -63,13 +72,12 @@ M.send_edits = function(note_id)
     local body = { note = text }
     job.run_job(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
-      local new_draft_notes = List.new(state.DRAFT_NOTES)
-          :map(function(note)
-            if note.id == note_id then
-              note.note = text
-            end
-            return note
-          end)
+      local new_draft_notes = List.new(state.DRAFT_NOTES):map(function(note)
+        if note.id == note_id then
+          note.note = text
+        end
+        return note
+      end)
       state.DRAFT_NOTES = new_draft_notes
       local discussions = require("gitlab.actions.discussions")
       discussions.rebuild_discussion_tree()
@@ -93,10 +101,9 @@ M.send_deletion = function(tree)
 
   job.run_job(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    local new_draft_notes = List.new(state.DRAFT_NOTES)
-        :filter(function(node)
-          return node.id ~= note_id
-        end)
+    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(node)
+      return node.id ~= note_id
+    end)
 
     state.DRAFT_NOTES = new_draft_notes
     local discussions = require("gitlab.actions.discussions")

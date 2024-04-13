@@ -137,7 +137,7 @@ M.settings = {
       file_name = "Normal",
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
-      link = "DiffviewNonText",
+      draft = "DiffviewNonText",
     },
   },
 }

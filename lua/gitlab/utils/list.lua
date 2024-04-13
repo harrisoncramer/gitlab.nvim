@@ -63,6 +63,19 @@ function List:slice(first, last, step)
   return sliced
 end
 
+---Returns true if any of the elements can satisfy the callback
+---@generic T
+---@param func fun(v: T, i: integer):boolean
+---@return List<T> @Returns a boolean
+function List:includes(func)
+  for i, v in ipairs(self) do
+    if func(v, i) == true then
+      return true
+    end
+  end
+  return false
+end
+
 function List:values()
   local result = {}
   for _, v in ipairs(self) do

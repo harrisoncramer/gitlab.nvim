@@ -77,9 +77,9 @@ end
 M.make_winbar = function(t)
   local discussions_content = t.resolvable_discussions ~= 0
       and string.format("Inline Comments (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-      or "Inline Comments"
+    or "Inline Comments"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-      or "Notes"
+    or "Notes"
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then
@@ -93,13 +93,7 @@ M.make_winbar = function(t)
   -- Join everything together and return it
   local separator = "%#Comment#|"
   local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
-  return string.format(
-    " %s %s %s %s",
-    discussions_content,
-    separator,
-    notes_content,
-    help
-  )
+  return string.format(" %s %s %s %s", discussions_content, separator, notes_content, help)
 end
 
 ---Sets the current view type (if provided an argument)
