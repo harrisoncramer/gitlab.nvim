@@ -74,7 +74,7 @@ M.pick_target = function(mr)
     return
   end
 
-  local all_branch_names = u.get_all_git_branches(true)
+  local all_branch_names = u.get_all_git_branches(true, true)
   vim.ui.select(all_branch_names, {
     prompt = "Choose target branch for merge",
   }, function(choice)

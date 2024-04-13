@@ -651,8 +651,20 @@ M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
 
----@param remote? boolean
-M.get_all_git_branches = function(remote)
+---Return the name of the current branch
+---@return string|nil
+M.get_current_branch = function()
+  local handle = io.popen("git branch --show-current 2>&1")
+  if handle then
+    return handle:read()
+  else
+    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
+  end
+end
+
+---@param remote? boolean Whether remote-tracking branches should be listed
+---@param exclude_current? boolean Whether the current branch should be excluded from the list
+M.get_all_git_branches = function(remote, exclude_current)
   local branches = {}
 
   local handle = remote == true and io.popen("git branch -r 2>&1") or io.popen("git branch 2>&1")
@@ -666,6 +678,9 @@ M.get_all_git_branches = function(remote)
         branch = line:gsub("^%s*%*?%s*", "") -- Trim leading whitespace and the "* " marker for the current branch
       end
       if branch:match("^HEAD$") then -- Don't include the HEAD pointer
+        branch = nil
+      end
+      if exclude_current and branch == M.get_current_branch() then
         branch = nil
       end
       if branch then
