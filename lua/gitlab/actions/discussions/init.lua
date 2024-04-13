@@ -108,6 +108,7 @@ M.toggle = function(callback)
   if
       type(state.DISCUSSION_DATA.discussions) ~= "table"
       and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
+      and type(state.DISCUSSION_DATA.draft_notes) ~= "table"
   then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
     vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
@@ -115,12 +116,10 @@ M.toggle = function(callback)
   end
 
   -- Make buffers, get and set buffer numbers, set filetypes
-  local split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr = M.create_split_and_bufs()
+  local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
   M.split = split
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
-  M.draft_notes_bufnr = draft_notes_bufnr
-  draft_notes.set_bufnr(M.draft_notes_bufnr)
 
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.split.bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
@@ -131,8 +130,7 @@ M.toggle = function(callback)
   split:mount()
 
   -- Initialize winbar module with data from buffers
-  winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr, M.draft_notes_bufnr)
-  draft_notes.set_bufnr(M.draft_notes_bufnr)
+  winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr)
   winbar.switch_view_type(state.settings.discussion_tree.default_view)
 
   local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
@@ -141,7 +139,6 @@ M.toggle = function(callback)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unliked_bufnr)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
-  draft_notes.rebuild_draft_notes_tree()
 
   common.add_empty_titles({
     {
@@ -464,9 +461,8 @@ M.create_split_and_bufs = function()
 
   local linked_bufnr = vim.api.nvim_create_buf(true, false)
   local unlinked_bufnr = vim.api.nvim_create_buf(true, false)
-  local draft_notes_bufnr = vim.api.nvim_create_buf(true, false)
 
-  return split, linked_bufnr, unlinked_bufnr, draft_notes_bufnr
+  return split, linked_bufnr, unlinked_bufnr
 end
 
 ---Check if type of current node is note or note body

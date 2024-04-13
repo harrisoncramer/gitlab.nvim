@@ -33,21 +33,8 @@ M.set_bufnr = function(bufnr)
   M.bufnr = bufnr
 end
 
-M.rebuild_draft_notes_tree = function()
-  if M.bufnr == nil then
-    return
-  end
-
-  u.switch_can_edit_buf(M.bufnr, true)
-  vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, false, {})
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
-
+M.add_draft_notes_to_table = function()
   local draft_notes = List.new(state.DRAFT_NOTES)
-
-  common.add_empty_titles({
-    { bufnr = M.bufnr, data = state.DRAFT_NOTES, title = "No Draft Notes for this MR" },
-  })
-
   local draft_note_nodes = draft_notes:map(function(note)
     local _, root_text, root_text_nodes = trees.build_note(note)
     return NuiTree.Node({
@@ -65,8 +52,25 @@ M.rebuild_draft_notes_tree = function()
       url = state.INFO.web_url .. "#note_" .. note.id,
     }, root_text_nodes)
   end)
+  return draft_note_nodes
+end
 
-  local tree = NuiTree({ nodes = draft_note_nodes, bufnr = M.bufnr, prepare_node = trees.nui_tree_prepare_node })
+M.rebuild_draft_notes_tree = function()
+  if M.bufnr == nil then
+    return
+  end
+
+  u.switch_can_edit_buf(M.bufnr, true)
+  vim.api.nvim_buf_set_lines(M.bufnr, 0, -1, false, {})
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.draft_notes_bufnr })
+
+  common.add_empty_titles({
+    { bufnr = M.bufnr, data = state.DRAFT_NOTES, title = "No Draft Notes for this MR" },
+  })
+
+  local nodes = M.add_draft_notes_to_table()
+
+  local tree = NuiTree({ nodes = nodes, bufnr = M.bufnr, prepare_node = trees.nui_tree_prepare_node })
   M.tree = tree
 
   tree:render()

@@ -5,16 +5,14 @@ local M = {
   bufnr_map = {
     discussions = nil,
     notes = nil,
-    draft_notes = nil,
   },
   current_view_type = state.settings.discussion_tree.default_view,
 }
 
-M.set_buffers = function(linked_bufnr, unlinked_bufnr, draft_notes_bufnr)
+M.set_buffers = function(linked_bufnr, unlinked_bufnr)
   M.bufnr_map = {
     discussions = linked_bufnr,
     notes = unlinked_bufnr,
-    draft_notes = draft_notes_bufnr,
   }
 end
 
@@ -50,8 +48,7 @@ end
 
 ---@param discussions Discussion[]|nil
 ---@param unlinked_discussions UnlinkedDiscussion[]|nil
----@param draft_notes DraftNote[]|nil
-local function content(discussions, unlinked_discussions, draft_notes)
+local function content(discussions, unlinked_discussions)
   local resolvable_discussions, resolved_discussions = get_data(discussions)
   local resolvable_notes, resolved_notes = get_data(unlinked_discussions)
 
@@ -59,7 +56,6 @@ local function content(discussions, unlinked_discussions, draft_notes)
     resolvable_discussions = resolvable_discussions,
     resolved_discussions = resolved_discussions,
     resolvable_notes = resolvable_notes,
-    draft_notes = #draft_notes,
     resolved_notes = resolved_notes,
     help_keymap = state.settings.help,
   }
@@ -71,7 +67,7 @@ end
 M.update_winbar = function()
   local d = require("gitlab.actions.discussions")
   local winId = d.split.winid
-  local c = content(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions, state.DRAFT_NOTES)
+  local c = content(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions)
   if vim.wo[winId] then
     vim.wo[winId].winbar = c
   end
@@ -84,34 +80,24 @@ M.make_winbar = function(t)
       or "Inline Comments"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
       or "Notes"
-  local draft_notes_content = t.draft_notes ~= 0 and string.format("Drafts (%d)", t.draft_notes) or
-      "Drafts"
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then
     discussions_content = "%#Text#" .. discussions_content
     notes_content = "%#Comment#" .. notes_content
-    draft_notes_content = "%#Comment#" .. draft_notes_content
   elseif M.current_view_type == "notes" then
     discussions_content = "%#Comment#" .. discussions_content
     notes_content = "%#Text#" .. notes_content
-    draft_notes_content = "%#Comment#" .. draft_notes_content
-  elseif M.current_view_type == "draft_notes" then
-    discussions_content = "%#Comment#" .. discussions_content
-    notes_content = "%#Comment#" .. notes_content
-    draft_notes_content = "%#Text#" .. draft_notes_content
   end
 
   -- Join everything together and return it
   local separator = "%#Comment#|"
   local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
   return string.format(
-    " %s %s %s %s %s %s",
+    " %s %s %s %s %s",
     discussions_content,
     separator,
     notes_content,
-    separator,
-    draft_notes_content,
     help
   )
 end
@@ -126,8 +112,6 @@ M.switch_view_type = function(override)
     if M.current_view_type == "discussions" then
       M.current_view_type = "notes"
     elseif M.current_view_type == "notes" then
-      M.current_view_type = "draft_notes"
-    else
       M.current_view_type = "discussions"
     end
   end
