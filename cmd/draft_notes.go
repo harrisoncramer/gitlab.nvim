@@ -25,7 +25,7 @@ type UpdateDraftNoteRequest struct {
 }
 
 type DraftNotePublishRequest struct {
-	Note       int  `json:"note"`
+	Note       int  `json:"note,omitempty"`
 	PublishAll bool `json:"publish_all"`
 }
 
@@ -86,6 +86,10 @@ func (a *api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
 
 	var res *gitlab.Response
 	if !draftNotePublishRequest.PublishAll {
+		if draftNotePublishRequest.Note == 0 {
+			handleError(w, err, "Must provide Note ID", http.StatusBadRequest)
+			return
+		}
 		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, draftNotePublishRequest.Note)
 	} else {
 		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)

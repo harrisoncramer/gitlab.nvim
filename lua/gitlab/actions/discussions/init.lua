@@ -523,11 +523,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       draft_notes.publish_draft(tree)
     end
   end, { buffer = bufnr, desc = "Publish draft" })
-  vim.keymap.set("n", state.settings.discussion_tree.publish_all_drafts, function()
-    if M.is_draft_note(tree) then
-      draft_notes.publish_all_drafts(tree)
-    end
-  end, { buffer = bufnr, desc = "Publish all drafts" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
     if M.is_current_node_note(tree) then
       M.delete_comment(tree)
