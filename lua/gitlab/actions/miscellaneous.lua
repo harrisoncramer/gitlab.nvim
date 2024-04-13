@@ -81,4 +81,13 @@ M.set_cycle_popups_keymaps = function(popups)
   end
 end
 
+---Toggle the value in a "Boolean buffer"
+M.toggle_bool = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local current_val = u.get_buffer_text(bufnr)
+  vim.schedule(function()
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {u.toggle_string_bool(current_val)})
+  end)
+end
+
 return M

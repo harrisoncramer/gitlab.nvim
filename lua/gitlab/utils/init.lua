@@ -371,6 +371,27 @@ M.bool_to_string = function(bool)
   return "false"
 end
 
+---Toggle boolean value
+---@param bool string
+---@return string
+M.toggle_string_bool = function(bool)
+  local string_bools = {
+    ["true"] = "false",
+    ["True"] = "False",
+    ["TRUE"] = "FALSE",
+    ["false"] = "true",
+    ["False"] = "True",
+    ["FALSE"] = "TRUE",
+  }
+  bool = bool:gsub("^%s+", ""):gsub("%s+$", "")
+  local toggled = string_bools[bool]
+  if toggled == nil then
+    M.notify(("Cannot toggle value '%s'"):format(bool), vim.log.levels.ERROR)
+    return bool
+  end
+  return toggled
+end
+
 M.string_starts = function(str, start)
   return str:sub(1, #start) == start
 end
