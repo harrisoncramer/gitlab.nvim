@@ -262,6 +262,8 @@ vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
 vim.keymap.set("n", "glp", gitlab.pipeline)
 vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
+vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`
