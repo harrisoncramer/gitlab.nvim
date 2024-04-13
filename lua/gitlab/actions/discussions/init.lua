@@ -80,9 +80,12 @@ end
 
 ---Refresh discussion data, signs, diagnostics, and winbar with new data from API
 --- and rebuild the entire view
-M.refresh = function()
+M.refresh = function(cb)
   M.load_discussions(function()
     M.refresh_view()
+    if cb ~= nil then
+      cb()
+    end
   end)
 end
 
@@ -524,7 +527,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
   end, { buffer = bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
-    if M.is_current_node_note(tree) then
+    if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
       M.toggle_discussion_resolved(tree)
     end
   end, { buffer = bufnr, desc = "Toggle resolved" })

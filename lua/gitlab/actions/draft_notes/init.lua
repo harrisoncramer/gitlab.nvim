@@ -143,8 +143,10 @@ M.confirm_publish_all_drafts = function()
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
     local discussions = require("gitlab.actions.discussions")
-    discussions.rebuild_discussion_tree()
-    winbar.update_winbar()
+    discussions.refresh(function()
+      discussions.rebuild_discussion_tree()
+      winbar.update_winbar()
+    end)
   end)
 end
 
@@ -169,8 +171,10 @@ M.confirm_publish_draft = function(tree)
 
     state.DRAFT_NOTES = new_draft_notes
     local discussions = require("gitlab.actions.discussions")
-    discussions.rebuild_discussion_tree()
-    winbar.update_winbar()
+    discussions.refresh(function()
+      discussions.rebuild_discussion_tree()
+      winbar.update_winbar()
+    end)
   end)
 end
 
