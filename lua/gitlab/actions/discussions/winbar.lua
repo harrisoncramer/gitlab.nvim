@@ -44,13 +44,9 @@ local get_data = function(nodes)
   return total_resolvable, total_resolved
 end
 
---@param view_type string|"discussions"|"notes"
-
----@param discussions Discussion[]|nil
----@param unlinked_discussions UnlinkedDiscussion[]|nil
-local function content(discussions, unlinked_discussions)
-  local resolvable_discussions, resolved_discussions = get_data(discussions)
-  local resolvable_notes, resolved_notes = get_data(unlinked_discussions)
+local function content()
+  local resolvable_discussions, resolved_discussions = get_data(state.DISCUSSION_DATA.discussions)
+  local resolvable_notes, resolved_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
   local t = {
     resolvable_discussions = resolvable_discussions,
@@ -67,7 +63,7 @@ end
 M.update_winbar = function()
   local d = require("gitlab.actions.discussions")
   local winId = d.split.winid
-  local c = content(state.DISCUSSION_DATA.discussions, state.DISCUSSION_DATA.unlinked_discussions)
+  local c = content()
   if vim.wo[winId] then
     vim.wo[winId].winbar = c
   end
@@ -76,10 +72,16 @@ end
 ---@param t WinbarTable
 M.make_winbar = function(t)
   local discussions_content = t.resolvable_discussions ~= 0
-      and string.format("Inline Comments (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-    or "Inline Comments"
+      and string.format("Inline Comments (%d/%d resolved", t.resolved_discussions, t.resolvable_discussions)
+      or "Inline Comments"
   local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-    or "Notes"
+      or "Notes"
+
+  if #state.DRAFT_NOTES > 0 then
+    discussions_content = discussions_content .. string.format("; %d drafts)", #state.DRAFT_NOTES)
+  else
+    discussions_content = discussions_content .. ")"
+  end
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then

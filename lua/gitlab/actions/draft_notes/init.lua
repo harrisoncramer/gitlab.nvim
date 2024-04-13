@@ -2,6 +2,7 @@
 -- That includes things like editing existing draft notes in the tree, and
 -- and deleting them. Normal notes and comments are managed separately,
 -- under lua/gitlab/actions/discussions/init.lua
+local winbar = require("gitlab.actions.discussions.winbar")
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local job = require("gitlab.job")
@@ -24,6 +25,7 @@ M.add_draft_note = function(opts)
   state.DRAFT_NOTES = new_draft_notes
   local discussions = require("gitlab.actions.discussions")
   discussions.rebuild_discussion_tree()
+  winbar.update_winbar()
 end
 
 --- @param bufnr integer
@@ -81,6 +83,7 @@ M.send_edits = function(note_id)
       state.DRAFT_NOTES = new_draft_notes
       local discussions = require("gitlab.actions.discussions")
       discussions.rebuild_discussion_tree()
+      winbar.update_winbar()
     end)
   end
 end
@@ -108,6 +111,7 @@ M.send_deletion = function(tree)
     state.DRAFT_NOTES = new_draft_notes
     local discussions = require("gitlab.actions.discussions")
     discussions.rebuild_discussion_tree()
+    winbar.update_winbar()
   end)
 end
 
