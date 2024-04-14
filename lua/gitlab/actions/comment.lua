@@ -35,14 +35,14 @@ M.create_comment = function()
   end
 
   local comment_popup = create_comment_popup()
-  local is_draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  local draft_popup = Popup(u.create_box_popup_state("Draft", false))
 
   M.comment_popup = comment_popup
-  M.is_draft_popup = is_draft_popup
+  M.draft_popup = draft_popup
 
   local internal_layout = Layout.Box({
     Layout.Box(comment_popup, { grow = 1 }),
-    Layout.Box(is_draft_popup, { size = 3 }),
+    Layout.Box(draft_popup, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
@@ -59,16 +59,16 @@ M.create_comment = function()
     action_before_exit = false,
   }
 
-  state.set_popup_keymaps(comment_popup, M.get_text_and_create_comment, miscellaneous.attach_file, popup_opts)
-  if M.is_draft_popup then
-    state.set_popup_keymaps(is_draft_popup, M.get_text_and_create_comment, miscellaneous.attach_file, popup_opts)
-  end
+  state.set_popup_keymaps(M.draft_popup, function() M.get_text_and_create_comment(false) end, miscellaneous.attach_file,
+    popup_opts)
+  state.set_popup_keymaps(M.comment_popup, function() M.get_text_and_create_comment(false) end, miscellaneous
+    .attach_file, popup_opts)
 
   layout:mount()
 
   vim.schedule(function()
     local default_to_draft = state.settings.comments.default_to_draft
-    vim.api.nvim_buf_set_lines(M.is_draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
+    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
   end)
 end
 
@@ -132,23 +132,23 @@ M.create_comment_suggestion = function()
   vim.api.nvim_buf_set_lines(comment_popup.bufnr, 0, -1, false, suggestion_lines)
   state.set_popup_keymaps(comment_popup, function(text)
     if range > 0 then
-      M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })
+      M.confirm_create_comment(text, { start_line = start_line, end_line = end_line }, false)
     else
-      M.confirm_create_comment(text, nil)
+      M.confirm_create_comment(text, nil, false)
     end
   end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
 end
 
 M.create_note = function()
   local note_popup = create_comment_popup()
-  local is_draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  local draft_popup = Popup(u.create_box_popup_state("Draft", false))
 
   M.comment_popup = note_popup
-  M.is_draft_popup = is_draft_popup
+  M.draft_popup = draft_popup
 
   local internal_layout = Layout.Box({
     Layout.Box(note_popup, { grow = 1 }),
-    Layout.Box(is_draft_popup, { size = 3 }),
+    Layout.Box(draft_popup, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
@@ -165,20 +165,16 @@ M.create_note = function()
     action_before_exit = false,
   }
 
-  state.set_popup_keymaps(note_popup, function()
-    M.get_text_and_create_comment(true)
-  end, miscellaneous.attach_file, popup_opts)
-  if M.is_draft_popup then
-    state.set_popup_keymaps(is_draft_popup, function()
-      M.get_text_and_create_comment(true)
-    end, miscellaneous.attach_file, popup_opts)
-  end
+  state.set_popup_keymaps(M.draft_popup, function() M.get_text_and_create_comment(true) end, miscellaneous.attach_file,
+    popup_opts)
+  state.set_popup_keymaps(M.comment_popup, function() M.get_text_and_create_comment(true) end, miscellaneous.attach_file,
+    popup_opts)
 
   layout:mount()
 
   vim.schedule(function()
     local default_to_draft = state.settings.comments.default_to_draft
-    vim.api.nvim_buf_set_lines(M.is_draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
+    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
   end)
 end
 
@@ -192,7 +188,7 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
     return
   end
 
-  local is_draft = M.is_draft_popup and u.string_to_bool(u.get_buffer_text(M.is_draft_popup.bufnr))
+  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
   if unlinked then
     local body = { comment = text }
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
