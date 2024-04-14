@@ -45,6 +45,8 @@ type fakeClient struct {
 	listDraftNotes                     func(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error)
 	deleteDraftNote                    func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	updateDraftNote                    func(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
+	publishAllDraftNotes               func(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	publishDraftNote                   func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 }
 
 type Author struct {
@@ -172,6 +174,14 @@ func (f fakeClient) UpdateDraftNote(pid interface{}, mergeRequest int, note int,
 
 func (f fakeClient) DeleteDraftNote(pid interface{}, mergeRequestIID int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.deleteDraftNote(pid, mergeRequestIID, note)
+}
+
+func (f fakeClient) PublishDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return f.publishDraftNote(pid, mergeRequest, note)
+}
+
+func (f fakeClient) PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return f.publishAllDraftNotes(pid, mergeRequest)
 }
 
 /* The assert function is a helper function used to check two comparables */
