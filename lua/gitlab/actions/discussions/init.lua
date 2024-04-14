@@ -92,7 +92,7 @@ end
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
   if state.settings.discussion_signs.enabled and state.DISCUSSION_DATA then
-    diagnostics.refresh_diagnostics(state.DISCUSSION_DATA.discussions)
+    diagnostics.refresh_diagnostics()
   end
   if M.split_visible and state.DISCUSSION_DATA then
     winbar.update_winbar()
