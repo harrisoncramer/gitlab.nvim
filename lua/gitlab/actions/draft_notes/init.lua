@@ -29,7 +29,7 @@ M.add_draft_note = function(opts)
 end
 
 ---Tells whether a draft note was left on a particular diff or is an unlinked note
----@param note any
+---@param note DraftNote
 M.has_position = function(note)
   return note.position.new_path ~= nil or note.position.old_path ~= nil
 end
@@ -121,13 +121,25 @@ M.send_deletion = function(tree)
 
   job.run_job(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(node)
-      return node.id ~= note_id
+
+    local has_position = false
+    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
+      if note.id ~= note_id then
+        return true
+      else
+        has_position = M.has_position(note)
+        return false
+      end
     end)
 
     state.DRAFT_NOTES = new_draft_notes
     local discussions = require("gitlab.actions.discussions")
-    discussions.rebuild_discussion_tree()
+    if has_position then
+      discussions.rebuild_discussion_tree()
+    else
+      discussions.rebuild_unlinked_discussion_tree()
+    end
+
     winbar.update_winbar()
   end)
 end
