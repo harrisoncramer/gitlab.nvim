@@ -358,7 +358,6 @@ M.send_edits = function(discussion_id, note_id, unlinked)
     }
     job.run_job("/mr/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
-      M.rebuild_discussion_tree()
       if unlinked then
         M.replace_text(state.DISCUSSION_DATA.unlinked_discussions, discussion_id, note_id, text)
         M.rebuild_unlinked_discussion_tree()
@@ -473,13 +472,13 @@ M.add_discussion = function(arg)
     end
     table.insert(state.DISCUSSION_DATA.unlinked_discussions, 1, discussion)
     M.rebuild_unlinked_discussion_tree()
-    return
+  else
+    if type(state.DISCUSSION_DATA.discussions) ~= "table" then
+      state.DISCUSSION_DATA.discussions = {}
+    end
+    table.insert(state.DISCUSSION_DATA.discussions, 1, discussion)
+    M.rebuild_discussion_tree()
   end
-  if type(state.DISCUSSION_DATA.discussions) ~= "table" then
-    state.DISCUSSION_DATA.discussions = {}
-  end
-  table.insert(state.DISCUSSION_DATA.discussions, 1, discussion)
-  M.rebuild_discussion_tree()
 end
 
 M.create_split_and_bufs = function()

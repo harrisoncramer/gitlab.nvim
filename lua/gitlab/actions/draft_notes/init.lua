@@ -16,7 +16,7 @@ local M = {}
 
 ---@class AddDraftNoteOpts table
 ---@field draft_note DraftNote
----@field has_position boolean
+---@field unlinked boolean
 
 ---Adds a draft note to the draft notes state, then rebuilds the view
 ---@param opts AddDraftNoteOpts
@@ -25,10 +25,10 @@ M.add_draft_note = function(opts)
   table.insert(new_draft_notes, opts.draft_note)
   state.DRAFT_NOTES = new_draft_notes
   local discussions = require("gitlab.actions.discussions")
-  if opts.has_position then
-    discussions.rebuild_discussion_tree()
-  else
+  if opts.unlinked then
     discussions.rebuild_unlinked_discussion_tree()
+  else
+    discussions.rebuild_discussion_tree()
   end
   winbar.update_winbar()
 end
