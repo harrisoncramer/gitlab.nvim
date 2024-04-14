@@ -36,3 +36,20 @@ func TestListDraftNotes(t *testing.T) {
 		assert(t, data.Details, "Some error")
 	})
 }
+
+func createDraftNote(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+	return &gitlab.DraftNote{}, makeResponse(http.StatusOK), nil
+}
+
+func TestPostDraftNote(t *testing.T) {
+	t.Run("Posts new draft note", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
+		server, _ := createRouterAndApi(fakeClient{createDraftNote: createDraftNote})
+
+		data := serveRequest(t, server, request, DraftNoteResponse{})
+
+		assert(t, data.SuccessResponse.Message, "Draft note created successfully")
+		assert(t, data.SuccessResponse.Status, http.StatusOK)
+
+	})
+}

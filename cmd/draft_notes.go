@@ -136,6 +136,8 @@ func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 
 	opt := gitlab.CreateDraftNoteOptions{
 		Note: &postDraftNoteRequest.Comment,
+		// TODO: Support posting replies as drafts and rendering draft replies in the discussion tree
+		// instead of the notes tree
 		// InReplyToDiscussionID *string          `url:"in_reply_to_discussion_id,omitempty" json:"in_reply_to_discussion_id,omitempty"`
 	}
 
