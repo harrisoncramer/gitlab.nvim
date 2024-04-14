@@ -15,7 +15,7 @@ local M = {}
 
 ---@class AddDraftNoteOpts table
 ---@field draft_note DraftNote
----@field unlinked boolean
+---@field has_position boolean
 
 ---Adds a draft note to the draft notes state, then rebuilds the view
 ---@param opts AddDraftNoteOpts
@@ -24,7 +24,11 @@ M.add_draft_note = function(opts)
   table.insert(new_draft_notes, opts.draft_note)
   state.DRAFT_NOTES = new_draft_notes
   local discussions = require("gitlab.actions.discussions")
-  discussions.rebuild_discussion_tree()
+  if opts.has_position then
+    discussions.rebuild_discussion_tree()
+  else
+    discussions.rebuild_unlinked_discussion_tree()
+  end
   winbar.update_winbar()
 end
 
@@ -91,15 +95,21 @@ M.send_edits = function(note_id)
     local body = { note = text }
     job.run_job(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
+      local has_position = false
       local new_draft_notes = List.new(state.DRAFT_NOTES):map(function(note)
         if note.id == note_id then
+          has_position = M.has_position(note)
           note.note = text
         end
         return note
       end)
       state.DRAFT_NOTES = new_draft_notes
       local discussions = require("gitlab.actions.discussions")
-      discussions.rebuild_discussion_tree()
+      if has_position then
+        discussions.rebuild_discussion_tree()
+      else
+        discussions.rebuild_unlinked_discussion_tree()
+      end
       winbar.update_winbar()
     end)
   end
@@ -174,6 +184,7 @@ M.confirm_publish_all_drafts = function()
     local discussions = require("gitlab.actions.discussions")
     discussions.refresh(function()
       discussions.rebuild_discussion_tree()
+      discussions.rebuild_unlinked_discussion_tree()
       winbar.update_winbar()
     end)
   end)
@@ -194,14 +205,25 @@ M.confirm_publish_draft = function(tree)
   local body = { note = note_id, publish_all = false }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(node)
-      return node.id ~= note_id
+
+    local has_position = false
+    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
+      if note.id ~= note_id then
+        return true
+      else
+        has_position = M.has_position(note)
+        return false
+      end
     end)
 
     state.DRAFT_NOTES = new_draft_notes
     local discussions = require("gitlab.actions.discussions")
     discussions.refresh(function()
-      discussions.rebuild_discussion_tree()
+      if has_position then
+        discussions.rebuild_discussion_tree()
+      else
+        discussions.rebuild_unlinked_discussion_tree()
+      end
       winbar.update_winbar()
     end)
   end)
