@@ -45,7 +45,7 @@ func (a *api) replyHandler(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	options := gitlab.AddMergeRequestDiscussionNoteOptions{
-		Body:      gitlab.String(replyRequest.Reply),
+		Body:      gitlab.Ptr(replyRequest.Reply),
 		CreatedAt: &now,
 	}
 

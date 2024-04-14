@@ -174,7 +174,7 @@ func (a *api) editComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
-	options.Body = gitlab.String(editCommentRequest.Comment)
+	options.Body = gitlab.Ptr(editCommentRequest.Comment)
 
 	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
 

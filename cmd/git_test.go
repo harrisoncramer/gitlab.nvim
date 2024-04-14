@@ -169,8 +169,17 @@ func TestExtractGitInfo_Success(t *testing.T) {
 			if err != nil {
 				t.Errorf("No error was expected, got %s", err)
 			}
-			if actual != tC.expected {
-				t.Errorf("\nExpected: %s\nActual:   %s", tC.expected, actual)
+			if actual.RemoteUrl != tC.expected.RemoteUrl {
+				t.Errorf("\nExpected Remote URL: %s\nActual:   %s", tC.expected.RemoteUrl, actual.RemoteUrl)
+			}
+			if actual.BranchName != tC.expected.BranchName {
+				t.Errorf("\nExpected Branch Name: %s\nActual:   %s", tC.expected.BranchName, actual.BranchName)
+			}
+			if actual.ProjectName != tC.expected.ProjectName {
+				t.Errorf("\nExpected Project Name: %s\nActual:   %s", tC.expected.ProjectName, actual.ProjectName)
+			}
+			if actual.Namespace != tC.expected.Namespace {
+				t.Errorf("\nExpected Namespace: %s\nActual:   %s", tC.expected.Namespace, actual.Namespace)
 			}
 		})
 	}

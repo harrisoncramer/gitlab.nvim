@@ -347,6 +347,11 @@ M.get_buffer_text = function(bufnr)
   return text
 end
 
+---Returns the number of lines in the buffer. Returns 1 even for empty buffers.
+M.get_buffer_length = function(bufnr)
+  return #vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+end
+
 ---Convert string to corresponding boolean
 ---@param str string
 ---@return boolean
@@ -659,6 +664,14 @@ end
 M.basename = function(str)
   local name = string.gsub(str, "(.*/)(.*)", "%2")
   return name
+end
+
+M.get_web_url = function()
+  local web_url = require("gitlab.state").INFO.web_url
+  if web_url ~= nil then
+    return web_url
+  end
+  M.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
 end
 
 ---@param url string?
