@@ -356,7 +356,7 @@ M.dependencies = {
       return {
         blacklist = M.settings.discussion_tree.blacklist,
       }
-    end
+    end,
   },
 }
 

@@ -209,6 +209,11 @@ M.is_current_sha_focused = function()
   local current_win = vim.fn.win_getid()
 
   -- Handle cases where user navigates tabs in the middle of making a comment
+  -- TODO
+  -- TODO: Fix this, it's not working with the popup layout, it's causing the
+  -- reviewer data to be calculated incorrectly
+  -- TODO
+  -- TODO
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil

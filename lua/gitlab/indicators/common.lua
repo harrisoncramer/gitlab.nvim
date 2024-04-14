@@ -16,16 +16,16 @@ local M = {}
 ---@return boolean
 local filter_discussions_and_notes = function(note, file)
   return
-  --Do not include unlinked notes
-      note.position ~= nil and
-      (note.position.new_path == file or note.position.old_path == file)
+    --Do not include unlinked notes
+    note.position ~= nil
+      and (note.position.new_path == file or note.position.old_path == file)
       --Skip resolved discussions if user wants to
       and not (state.settings.discussion_signs.skip_resolved_discussion and note.resolvable and note.resolved)
       --Skip discussions from old revisions
       and not (
         state.settings.discussion_signs.skip_old_revision_discussion
         and u.from_iso_format_date_to_timestamp(note.created_at)
-        <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
+          <= u.from_iso_format_date_to_timestamp(state.MR_REVISIONS[1].created_at)
       )
 end
 

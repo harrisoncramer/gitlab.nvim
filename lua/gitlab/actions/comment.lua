@@ -59,10 +59,12 @@ M.create_comment = function()
     action_before_exit = false,
   }
 
-  state.set_popup_keymaps(M.draft_popup, function() M.get_text_and_create_comment(false) end, miscellaneous.attach_file,
-    popup_opts)
-  state.set_popup_keymaps(M.comment_popup, function() M.get_text_and_create_comment(false) end, miscellaneous
-    .attach_file, popup_opts)
+  state.set_popup_keymaps(M.draft_popup, function()
+    M.get_text_and_create_comment(false)
+  end, miscellaneous.attach_file, popup_opts)
+  state.set_popup_keymaps(M.comment_popup, function()
+    M.get_text_and_create_comment(false)
+  end, miscellaneous.attach_file, popup_opts)
 
   layout:mount()
 
@@ -165,10 +167,12 @@ M.create_note = function()
     action_before_exit = false,
   }
 
-  state.set_popup_keymaps(M.draft_popup, function() M.get_text_and_create_comment(true) end, miscellaneous.attach_file,
-    popup_opts)
-  state.set_popup_keymaps(M.comment_popup, function() M.get_text_and_create_comment(true) end, miscellaneous.attach_file,
-    popup_opts)
+  state.set_popup_keymaps(M.draft_popup, function()
+    M.get_text_and_create_comment(true)
+  end, miscellaneous.attach_file, popup_opts)
+  state.set_popup_keymaps(M.comment_popup, function()
+    M.get_text_and_create_comment(true)
+  end, miscellaneous.attach_file, popup_opts)
 
   layout:mount()
 

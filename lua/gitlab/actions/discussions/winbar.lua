@@ -85,8 +85,7 @@ end
 ---@return string
 local add_drafts_and_resolvable = function(base_title, resolvable_count, resolved_count, drafts_count)
   if resolvable_count ~= 0 then
-    base_title = base_title ..
-        string.format(" (%d/%d resolved", resolvable_count, resolved_count)
+    base_title = base_title .. string.format(" (%d/%d resolved", resolvable_count, resolved_count)
   end
   if drafts_count ~= 0 then
     if resolvable_count ~= 0 then
@@ -103,8 +102,8 @@ end
 
 ---@param t WinbarTable
 M.make_winbar = function(t)
-  local discussion_title = add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions,
-    t.resolved_discussions, t.inline_draft_notes)
+  local discussion_title =
+    add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions, t.resolved_discussions, t.inline_draft_notes)
   local notes_title = add_drafts_and_resolvable("Notes", t.resolvable_notes, t.resolved_notes, t.unlinked_draft_notes)
 
   -- Colorize the active tab
@@ -121,7 +120,6 @@ M.make_winbar = function(t)
   local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
   return string.format(" %s %s %s %s", discussion_title, separator, notes_title, help)
 end
-
 
 ---Sets the current view type (if provided an argument)
 ---and then updates the view

@@ -51,32 +51,32 @@ M.add_draft_notes_to_table = function(unlinked)
   local draft_notes = List.new(state.DRAFT_NOTES)
 
   local draft_note_nodes = draft_notes
-      ---@param note DraftNote
-      :filter(function(note)
-        if (unlinked) then
-          return not M.has_position(note)
-        end
-        return M.has_position(note)
-      end)
-      ---@param note DraftNote
-      :map(function(note)
-        local _, root_text, root_text_nodes = discussion_tree.build_note(note)
-        return NuiTree.Node({
-          range = (type(note.position) == "table" and note.position.line_range or nil),
-          text = root_text,
-          type = "note",
-          is_root = true,
-          is_draft = true,
-          id = note.id,
-          root_note_id = note.id,
-          file_name = (type(note.position) == "table" and note.position.new_path or nil),
-          new_line = (type(note.position) == "table" and note.position.new_line or nil),
-          old_line = (type(note.position) == "table" and note.position.old_line or nil),
-          resolvable = false,
-          resolved = false,
-          url = state.INFO.web_url .. "#note_" .. note.id,
-        }, root_text_nodes)
-      end)
+    ---@param note DraftNote
+    :filter(function(note)
+      if unlinked then
+        return not M.has_position(note)
+      end
+      return M.has_position(note)
+    end)
+    ---@param note DraftNote
+    :map(function(note)
+      local _, root_text, root_text_nodes = discussion_tree.build_note(note)
+      return NuiTree.Node({
+        range = (type(note.position) == "table" and note.position.line_range or nil),
+        text = root_text,
+        type = "note",
+        is_root = true,
+        is_draft = true,
+        id = note.id,
+        root_note_id = note.id,
+        file_name = (type(note.position) == "table" and note.position.new_path or nil),
+        new_line = (type(note.position) == "table" and note.position.new_line or nil),
+        old_line = (type(note.position) == "table" and note.position.old_line or nil),
+        resolvable = false,
+        resolved = false,
+        url = state.INFO.web_url .. "#note_" .. note.id,
+      }, root_text_nodes)
+    end)
 
   return draft_note_nodes
 
