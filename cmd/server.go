@@ -35,8 +35,11 @@ func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInf
 		func(a *api) error {
 			err := attachEmojisToApi(a)
 			return err
+		},
+		func(a *api) error {
+			a.gitInfo.GetLatestCommitOnRemote = GetLatestCommitOnRemote
+			return nil
 		})
-
 	l := createListener()
 	server := &http.Server{Handler: m}
 
