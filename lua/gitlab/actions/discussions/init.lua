@@ -399,6 +399,9 @@ end
 --
 -- 🌲 Helper Functions
 --
+
+---Rebuilds the discussion tree, which contains all comments and draft comments
+---linked to specific places in the code.
 M.rebuild_discussion_tree = function()
   if M.linked_bufnr == nil then
     return
@@ -432,6 +435,7 @@ M.rebuild_discussion_tree = function()
   state.discussion_tree.unresolved_expanded = false
 end
 
+---Rebuilds the unlinked discussion tree, which contains all notes and draft notes.
 M.rebuild_unlinked_discussion_tree = function()
   if M.unlinked_bufnr == nil then
     return
@@ -464,6 +468,7 @@ M.rebuild_unlinked_discussion_tree = function()
   state.unlinked_discussion_tree.unresolved_expanded = false
 end
 
+---Adds a discussion to the global state. Works for both notes (unlinked) and diff-linked comments,
 M.add_discussion = function(arg)
   local discussion = arg.data.discussion
   if arg.unlinked then
@@ -481,6 +486,10 @@ M.add_discussion = function(arg)
   end
 end
 
+---Creates the split for the discussion tree and returns it, with both buffer numbers
+---@return NuiSplit
+---@return integer
+---@return integer
 M.create_split_and_bufs = function()
   local position = state.settings.discussion_tree.position
   local size = state.settings.discussion_tree.size
@@ -595,6 +604,10 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   emoji.init_popup(tree, bufnr)
 end
 
+---Redraws the header of a node in a tree when it's been toggled to resolved/unresolved
+---@param tree NuiTree
+---@param note NuiTree.Node
+---@param mark_resolved boolean
 M.redraw_resolved_status = function(tree, note, mark_resolved)
   local current_text = tree.nodes.by_id["-" .. note.id].text
   local target = mark_resolved and "resolved" or "unresolved"
@@ -642,6 +655,10 @@ M.replace_text = function(data, discussion_id, note_id, text)
   end
 end
 
+---Given some note data, adds it to the tree and re-renders the tree
+---@param tree any
+---@param note any
+---@param discussion_id any
 M.add_reply_to_tree = function(tree, note, discussion_id)
   local note_node = tree_utils.build_note(note)
   note_node:expand()
@@ -649,12 +666,28 @@ M.add_reply_to_tree = function(tree, note, discussion_id)
   tree:render()
 end
 
+---Toggle comments tree type between "simple" and "by_file_name"
+M.toggle_tree_type = function()
+  if state.settings.discussion_tree.tree_type == "simple" then
+    state.settings.discussion_tree.tree_type = "by_file_name"
+  else
+    state.settings.discussion_tree.tree_type = "simple"
+  end
+  M.rebuild_discussion_tree()
+end
+
+---Indicates whether the node under the cursor is a draft note or not
+---@param tree NuiTree
+---@return boolean
 M.is_draft_note = function(tree)
   local current_node = tree:get_node()
   local root_node = common.get_root_node(tree, current_node)
   return root_node ~= nil and root_node.is_draft
 end
 
+---Opens a popup prompting the user to choose an emoji to attach to the current node
+---@param tree any
+---@param unlinked boolean
 M.add_emoji_to_note = function(tree, unlinked)
   local node = tree:get_node()
   local note_node = common.get_note_node(tree, node)
@@ -681,16 +714,9 @@ M.add_emoji_to_note = function(tree, unlinked)
   end)
 end
 
----Toggle comments tree type between "simple" and "by_file_name"
-M.toggle_tree_type = function()
-  if state.settings.discussion_tree.tree_type == "simple" then
-    state.settings.discussion_tree.tree_type = "by_file_name"
-  else
-    state.settings.discussion_tree.tree_type = "simple"
-  end
-  M.rebuild_discussion_tree()
-end
-
+---Opens a popup prompting the user to choose an emoji to remove from the current node
+---@param tree any
+---@param unlinked boolean
 M.delete_emoji_from_note = function(tree, unlinked)
   local node = tree:get_node()
   local note_node = common.get_note_node(tree, node)

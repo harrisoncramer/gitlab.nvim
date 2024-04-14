@@ -178,6 +178,7 @@ M.publish_all_drafts = function()
   end)
 end
 
+---Publishes all draft notes and comments. Re-renders all discussion views.
 M.confirm_publish_all_drafts = function()
   local body = { publish_all = true }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
@@ -192,6 +193,10 @@ M.confirm_publish_all_drafts = function()
   end)
 end
 
+---Publishes the current draft note that is being hovered over in the tree,
+---and then makes an API call to refresh the relevant data for that tree
+---and re-render it.
+---@param tree NuiTree
 M.confirm_publish_draft = function(tree)
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
