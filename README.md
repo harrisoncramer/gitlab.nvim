@@ -116,8 +116,8 @@ require("gitlab").setup({
   help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
   popup = { -- The popup for comment creation, editing, and replying
     keymaps = {
-      next_popup = "<Tab>", -- Cycle to the next popup. Accepts count, i.g., 2<Tab> goes to the 2nd next popup
-      prev_popup = "<S-Tab>", -- Cycle to the previous popup. Accepts count.
+      next_field = "<Tab>", -- Cycle to the next field. Accepts count.
+      prev_field = "<S-Tab>", -- Cycle to the previous field. Accepts count.
     },
     perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
     perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)

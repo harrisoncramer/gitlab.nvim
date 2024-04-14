@@ -74,15 +74,8 @@ M.pick_target = function(mr)
     return
   end
 
-  local all_branch_names = u.get_all_git_branches(true, true)
-  vim.ui.select(all_branch_names, {
-    prompt = "Choose target branch for merge",
-  }, function(choice)
-    if choice then
-      mr.target = choice
-      M.pick_template(mr)
-    end
-  end)
+  -- Select target branch interactively if it was not selected by other means
+  u.select_target_branch(M.pick_template, mr, "target", true, true)
 end
 
 local function make_template_path(t)
@@ -225,7 +218,7 @@ M.open_confirmation_popup = function(mr)
 
     state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
     state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
-    state.set_popup_keymaps(target_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
     state.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     state.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     miscellaneous.set_cycle_popups_keymaps(popups)
@@ -244,6 +237,16 @@ M.build_description_lines = function(template_content)
   table.insert(description_lines, "")
 
   return description_lines
+end
+
+---Prompts for interactive selection of a new target among remote-tracking branches
+M.select_new_target = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  u.select_target_branch(function(args)
+    vim.schedule(function()
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { args.target })
+    end)
+  end, {}, "target", true, true)
 end
 
 ---This function will POST the new MR to create it

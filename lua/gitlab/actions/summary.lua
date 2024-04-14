@@ -65,6 +65,7 @@ M.summary = function()
       { cb = exit, action_before_close = true }
     )
     state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
+    state.set_popup_keymaps(info_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
     miscellaneous.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)

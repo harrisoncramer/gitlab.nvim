@@ -695,6 +695,27 @@ M.get_all_git_branches = function(remote, exclude_current)
   return branches
 end
 
+---Select a git branch, add it to callback args and perform callback
+---@param cb function The call back to perform with the selected branch
+---@param args table Table with callback arguments
+---@param arg string Name under which the selected branch will be added to the args
+---@param remote? boolean Whether remote-tracking branches should be listed
+---@param exclude_current? boolean Whether the current branch should be excluded from the list
+M.select_target_branch = function(cb, args, arg, remote, exclude_current)
+  if args == nil then
+    args = {}
+  end
+  local all_branch_names = M.get_all_git_branches(remote, exclude_current)
+  vim.ui.select(all_branch_names, {
+    prompt = "Choose target branch for merge",
+  }, function(choice)
+    if choice then
+      args[arg] = choice
+      cb(args)
+    end
+  end)
+end
+
 M.basename = function(str)
   local name = string.gsub(str, "(.*/)(.*)", "%2")
   return name

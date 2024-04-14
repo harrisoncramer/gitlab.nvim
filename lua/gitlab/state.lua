@@ -27,8 +27,8 @@ M.settings = {
   help = "g?",
   popup = {
     keymaps = {
-      next_popup = "<Tab>",
-      prev_popup = "<S-Tab>",
+      next_field = "<Tab>",
+      prev_field = "<S-Tab>",
     },
     perform_action = "<leader>s",
     perform_linewise_action = "<leader>l",
