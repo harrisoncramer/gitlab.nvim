@@ -82,7 +82,8 @@
 ---@field view_type string
 ---@field resolvable_discussions number
 ---@field resolved_discussions number
----@field draft_notes number
+---@field inline_draft_notes number
+---@field unlinked_draft_notes number
 ---@field resolvable_notes number
 ---@field resolved_notes number
 ---@field help_keymap string

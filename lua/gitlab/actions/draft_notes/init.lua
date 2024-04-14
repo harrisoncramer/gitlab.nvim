@@ -28,33 +28,50 @@ M.add_draft_note = function(opts)
   winbar.update_winbar()
 end
 
+---Tells whether a draft note was left on a particular diff or is an unlinked note
+---@param note any
+M.has_position = function(note)
+  return note.position.new_path ~= nil or note.position.old_path ~= nil
+end
+
 --- @param bufnr integer
 M.set_bufnr = function(bufnr)
   M.bufnr = bufnr
 end
 
-M.add_draft_notes_to_table = function()
+---Returns a list of nodes to add to the discussion tree. Can filter and return only unlinked (note) nodes.
+---@param unlinked boolean
+---@return NuiTree.Node[]
+M.add_draft_notes_to_table = function(unlinked)
   local draft_notes = List.new(state.DRAFT_NOTES)
 
-  ---@param note DraftNote
-  local draft_note_nodes = draft_notes:map(function(note)
-    local _, root_text, root_text_nodes = discussion_tree.build_note(note)
-    return NuiTree.Node({
-      range = (type(note.position) == "table" and note.position.line_range or nil),
-      text = root_text,
-      type = "note",
-      is_root = true,
-      is_draft = true,
-      id = note.id,
-      root_note_id = note.id,
-      file_name = (type(note.position) == "table" and note.position.new_path or nil),
-      new_line = (type(note.position) == "table" and note.position.new_line or nil),
-      old_line = (type(note.position) == "table" and note.position.old_line or nil),
-      resolvable = false,
-      resolved = false,
-      url = state.INFO.web_url .. "#note_" .. note.id,
-    }, root_text_nodes)
-  end)
+  local draft_note_nodes = draft_notes
+      ---@param note DraftNote
+      :filter(function(note)
+        if (unlinked) then
+          return not M.has_position(note)
+        end
+        return M.has_position(note)
+      end)
+      ---@param note DraftNote
+      :map(function(note)
+        local _, root_text, root_text_nodes = discussion_tree.build_note(note)
+        return NuiTree.Node({
+          range = (type(note.position) == "table" and note.position.line_range or nil),
+          text = root_text,
+          type = "note",
+          is_root = true,
+          is_draft = true,
+          id = note.id,
+          root_note_id = note.id,
+          file_name = (type(note.position) == "table" and note.position.new_path or nil),
+          new_line = (type(note.position) == "table" and note.position.new_line or nil),
+          old_line = (type(note.position) == "table" and note.position.old_line or nil),
+          resolvable = false,
+          resolved = false,
+          url = state.INFO.web_url .. "#note_" .. note.id,
+        }, root_text_nodes)
+      end)
 
   return draft_note_nodes
 

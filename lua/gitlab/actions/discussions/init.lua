@@ -407,9 +407,9 @@ M.rebuild_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local existing_comment_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
-  local draft_comment_nodes = draft_notes.add_draft_notes_to_table()
+  local draft_comment_nodes = draft_notes.add_draft_notes_to_table(false)
 
-  -- Combine draft notes with regular ones
+  -- Combine inline draft notes with regular comments
   local all_nodes = {}
   for _, draft_node in ipairs(draft_comment_nodes) do
     table.insert(all_nodes, draft_node)
@@ -439,10 +439,22 @@ M.rebuild_unlinked_discussion_tree = function()
   end
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
-  local unlinked_discussion_tree_nodes =
+  local existing_note_nodes =
       discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+  local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
+
+  -- Combine draft notes with regular notes
+  local all_nodes = {}
+  for _, draft_node in ipairs(draft_comment_nodes) do
+    table.insert(all_nodes, draft_node)
+  end
+  for _, node in ipairs(existing_note_nodes) do
+    table.insert(all_nodes, node)
+  end
+
+
   local unlinked_discussion_tree = NuiTree({
-    nodes = unlinked_discussion_tree_nodes,
+    nodes = all_nodes,
     bufnr = M.unlinked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
   })

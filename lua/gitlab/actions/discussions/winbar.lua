@@ -48,9 +48,17 @@ local function content()
   local resolvable_discussions, resolved_discussions = get_data(state.DISCUSSION_DATA.discussions)
   local resolvable_notes, resolved_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
+  local draft_notes = require("gitlab.actions.draft_notes")
+  local inline_draft_notes = List.new(state.DRAFT_NOTES):filter(draft_notes.has_position)
+  local unlinked_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
+    return not draft_notes.has_position(note)
+  end)
+
   local t = {
     resolvable_discussions = resolvable_discussions,
     resolved_discussions = resolved_discussions,
+    inline_draft_notes = #inline_draft_notes,
+    unlinked_draft_notes = #unlinked_draft_notes,
     resolvable_notes = resolvable_notes,
     resolved_notes = resolved_notes,
     help_keymap = state.settings.help,
@@ -69,34 +77,51 @@ M.update_winbar = function()
   end
 end
 
+---Builds the title string for both sections, using the count of resolvable and draft nodes
+---@param base_title string
+---@param resolvable_count integer
+---@param resolved_count integer
+---@param drafts_count integer
+---@return string
+local add_drafts_and_resolvable = function(base_title, resolvable_count, resolved_count, drafts_count)
+  if resolvable_count ~= 0 then
+    base_title = base_title ..
+        string.format(" (%d/%d resolved", resolvable_count, resolved_count)
+  end
+  if drafts_count ~= 0 then
+    if resolvable_count ~= 0 then
+      base_title = base_title .. string.format("; %d drafts)", drafts_count)
+    else
+      base_title = base_title .. string.format(" (%d drafts)", drafts_count)
+    end
+  elseif resolvable_count ~= 0 then
+    base_title = base_title .. ")"
+  end
+
+  return base_title
+end
+
 ---@param t WinbarTable
 M.make_winbar = function(t)
-  local discussions_content = t.resolvable_discussions ~= 0
-      and string.format("Inline Comments (%d/%d resolved", t.resolved_discussions, t.resolvable_discussions)
-    or "Inline Comments"
-  local notes_content = t.resolvable_notes ~= 0 and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-    or "Notes"
-
-  if #state.DRAFT_NOTES > 0 then
-    discussions_content = discussions_content .. string.format("; %d drafts)", #state.DRAFT_NOTES)
-  else
-    discussions_content = discussions_content .. ")"
-  end
+  local discussion_title = add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions,
+    t.resolved_discussions, t.inline_draft_notes)
+  local notes_title = add_drafts_and_resolvable("Notes", t.resolvable_notes, t.resolved_notes, t.unlinked_draft_notes)
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then
-    discussions_content = "%#Text#" .. discussions_content
-    notes_content = "%#Comment#" .. notes_content
+    discussion_title = "%#Text#" .. discussion_title
+    notes_title = "%#Comment#" .. notes_title
   elseif M.current_view_type == "notes" then
-    discussions_content = "%#Comment#" .. discussions_content
-    notes_content = "%#Text#" .. notes_content
+    discussion_title = "%#Comment#" .. discussion_title
+    notes_title = "%#Text#" .. notes_title
   end
 
   -- Join everything together and return it
   local separator = "%#Comment#|"
   local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
-  return string.format(" %s %s %s %s", discussions_content, separator, notes_content, help)
+  return string.format(" %s %s %s %s", discussion_title, separator, notes_title, help)
 end
+
 
 ---Sets the current view type (if provided an argument)
 ---and then updates the view
