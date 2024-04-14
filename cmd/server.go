@@ -194,8 +194,8 @@ func (a *api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.R
 		}
 
 		options := gitlab.ListProjectMergeRequestsOptions{
-			Scope:        gitlab.String("all"),
-			State:        gitlab.String("opened"),
+			Scope:        gitlab.Ptr("all"),
+			State:        gitlab.Ptr("opened"),
 			SourceBranch: &a.gitInfo.BranchName,
 		}
 
