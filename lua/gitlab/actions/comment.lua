@@ -72,9 +72,11 @@ M.create_comment = function()
   end)
 end
 
-M.get_text_and_create_comment = function()
+---Gets text from the popup and creates a note or comment
+---@param unlinked boolean
+M.get_text_and_create_comment = function(unlinked)
   local text = u.get_buffer_text(M.comment_popup.bufnr)
-  M.confirm_create_comment(text)
+  M.confirm_create_comment(text, nil, unlinked)
 end
 
 ---Create multiline comment for the last selection.
@@ -138,11 +140,46 @@ M.create_comment_suggestion = function()
 end
 
 M.create_note = function()
-  local note_popup = Popup(u.create_popup_state("Note", state.settings.popup.note))
-  note_popup:mount()
-  state.set_popup_keymaps(note_popup, function(text)
-    M.confirm_create_comment(text, nil, true)
-  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+  local note_popup = create_comment_popup()
+  local is_draft_popup = Popup(u.create_box_popup_state("Draft", false))
+
+  M.comment_popup = note_popup
+  M.is_draft_popup = is_draft_popup
+
+  local internal_layout = Layout.Box({
+    Layout.Box(note_popup, { grow = 1 }),
+    Layout.Box(is_draft_popup, { size = 3 }),
+  }, { dir = "col" })
+
+  local layout = Layout({
+    position = "50%",
+    relative = "editor",
+    size = {
+      width = "50%",
+      height = "55%",
+    },
+  }, internal_layout)
+
+  local popup_opts = {
+    action_before_close = true,
+    action_before_exit = false,
+  }
+
+  state.set_popup_keymaps(note_popup, function()
+    M.get_text_and_create_comment(true)
+  end, miscellaneous.attach_file, popup_opts)
+  if M.is_draft_popup then
+    state.set_popup_keymaps(is_draft_popup, function()
+      M.get_text_and_create_comment(true)
+    end, miscellaneous.attach_file, popup_opts)
+  end
+
+  layout:mount()
+
+  vim.schedule(function()
+    local default_to_draft = state.settings.comments.default_to_draft
+    vim.api.nvim_buf_set_lines(M.is_draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
+  end)
 end
 
 ---This function (settings.popup.perform_action) will send the comment to the Go server
