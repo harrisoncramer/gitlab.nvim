@@ -77,7 +77,7 @@ M.set_cycle_popups_keymaps = function(popups)
     end, { desc = "Go to next field (accepts count)" })
     popup:map("n", state.settings.popup.keymaps.prev_field, function()
       vim.api.nvim_set_current_win(popups[prev_index(i, number_of_popups, vim.v.count)].winid)
-    end, { desc = "Go to previous box (accepts count)" })
+    end, { desc = "Go to previous field (accepts count)" })
   end
 end
 
