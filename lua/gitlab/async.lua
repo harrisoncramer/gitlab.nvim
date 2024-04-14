@@ -36,7 +36,8 @@ function async:fetch(dependencies, i, argTable)
   end
 
   -- Call the API, set the data, and then call the next API
-  job.run_job(dependency.endpoint, dependency.method or "GET", dependency.body, function(data)
+  local body = dependency.body and dependency.body() or nil
+  job.run_job(dependency.endpoint, dependency.method or "GET", body, function(data)
     state[dependency.state] = dependency.key and data[dependency.key] or data
     self:fetch(dependencies, i + 1, argTable)
   end)

@@ -84,9 +84,6 @@ M.add_draft_notes_to_table = function(unlinked)
   -- if state.settings.discussion_tree.tree_type == "simple" then
   --   return draft_note_nodes
   -- end
-  --
-  -- local discussion_module = require("gitlab.actions.discussions.tree")
-  -- return discussion_module.create_node_list_by_file_name(draft_note_nodes)
 end
 
 ---Send edits will actually send the edits to Gitlab and refresh the draft_notes tree

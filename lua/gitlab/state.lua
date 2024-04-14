@@ -352,10 +352,11 @@ M.dependencies = {
     state = "DISCUSSION_DATA",
     refresh = false,
     method = "POST",
-    body = {
-      -- TODO: Fix this, it needs to be a function
-      blacklist = M.settings.discussion_tree.blacklist,
-    },
+    body = function()
+      return {
+        blacklist = M.settings.discussion_tree.blacklist,
+      }
+    end
   },
 }
 
