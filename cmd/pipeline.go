@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,8 +17,8 @@ type RetriggerPipelineResponse struct {
 }
 
 type PipelineWithJobs struct {
-	Jobs           []*gitlab.Job    `json:"jobs"`
-	LatestPipeline *gitlab.Pipeline `json:"latest_pipeline"`
+	Jobs           []*gitlab.Job        `json:"jobs"`
+	LatestPipeline *gitlab.PipelineInfo `json:"latest_pipeline"`
 }
 
 type GetPipelineAndJobsResponse struct {
@@ -42,25 +43,51 @@ func (a *api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* Gets the latest pipeline for a given commit, returns an error if there is no pipeline */
+func (a *api) GetLastPipeline(commit string) (*gitlab.PipelineInfo, error) {
+
+	l := &gitlab.ListProjectPipelinesOptions{
+		SHA:  gitlab.Ptr(commit),
+		Sort: gitlab.Ptr("desc"),
+	}
+
+	l.Page = 1
+	l.PerPage = 1
+
+	pipes, _, err := a.client.ListProjectPipelines(a.projectInfo.ProjectId, l)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pipes) == 0 {
+		return nil, errors.New("No pipeline running or available for commit " + commit)
+	}
+
+	return pipes[0], nil
+}
+
+/* Gets the latest pipeline and job information for the current branch */
 func (a *api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pipeline, res, err := a.client.GetLatestPipeline(a.projectInfo.ProjectId, &gitlab.GetLatestPipelineOptions{
-		Ref: &a.gitInfo.BranchName,
-	})
+	commit, err := a.gitInfo.GetLatestCommitOnRemote(a)
+
+	if err != nil {
+		fmt.Println(err)
+		handleError(w, err, "Error getting commit on remote branch", http.StatusInternalServerError)
+		return
+	}
+
+	pipeline, err := a.GetLastPipeline(commit)
 
 	if err != nil {
 		handleError(w, err, fmt.Sprintf("Gitlab failed to get latest pipeline for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
-	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("Could not get latest pipeline for %s branch", a.gitInfo.BranchName), res.StatusCode)
-		return
-	}
-
 	if pipeline == nil {
-		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), res.StatusCode)
+		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
