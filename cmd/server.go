@@ -35,8 +35,11 @@ func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInf
 		func(a *api) error {
 			err := attachEmojisToApi(a)
 			return err
+		},
+		func(a *api) error {
+			a.gitInfo.GetLatestCommitOnRemote = GetLatestCommitOnRemote
+			return nil
 		})
-
 	l := createListener()
 	server := &http.Server{Handler: m}
 
@@ -193,8 +196,8 @@ func (a *api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.R
 		}
 
 		options := gitlab.ListProjectMergeRequestsOptions{
-			Scope:        gitlab.String("all"),
-			State:        gitlab.String("opened"),
+			Scope:        gitlab.Ptr("all"),
+			State:        gitlab.Ptr("opened"),
 			SourceBranch: &a.gitInfo.BranchName,
 		}
 
