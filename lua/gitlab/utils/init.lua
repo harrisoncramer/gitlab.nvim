@@ -376,6 +376,27 @@ M.bool_to_string = function(bool)
   return "false"
 end
 
+---Toggle boolean value
+---@param bool string
+---@return string
+M.toggle_string_bool = function(bool)
+  local string_bools = {
+    ["true"] = "false",
+    ["True"] = "False",
+    ["TRUE"] = "FALSE",
+    ["false"] = "true",
+    ["False"] = "True",
+    ["FALSE"] = "TRUE",
+  }
+  bool = bool:gsub("^%s+", ""):gsub("%s+$", "")
+  local toggled = string_bools[bool]
+  if toggled == nil then
+    M.notify(("Cannot toggle value '%s'"):format(bool), vim.log.levels.ERROR)
+    return bool
+  end
+  return toggled
+end
+
 M.string_starts = function(str, start)
   return str:sub(1, #start) == start
 end
@@ -635,30 +656,62 @@ M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
 
----@param remote? boolean
-M.get_all_git_branches = function(remote)
-  local branches = {}
-
-  local handle = remote == true and io.popen("git branch -r 2>&1") or io.popen("git branch 2>&1")
-
+---Return the name of the current branch
+---@return string|nil
+M.get_current_branch = function()
+  local handle = io.popen("git branch --show-current 2>&1")
   if handle then
-    for line in handle:lines() do
-      local branch
-      if remote then
-        for res in line:gmatch("origin/([^\n]+)") do
-          branch = res -- Trim /origin
-        end
-      else
-        branch = line:gsub("^%s*%*?%s*", "") -- Trim leading whitespace and the "* " marker for the current branch
-      end
-      table.insert(branches, branch)
-    end
-    handle:close()
+    return handle:read()
   else
     M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
   end
+end
+
+---Return the list of names of all remote-tracking branches
+M.get_all_merge_targets = function()
+  local handle = io.popen("git branch -r 2>&1")
+  if not handle then
+    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
+    return
+  end
+
+  local current_branch = M.get_current_branch()
+  if not current_branch then
+    return
+  end
+
+  local lines = {}
+  for line in handle:lines() do
+    table.insert(lines, line)
+  end
+  handle:close()
+
+  -- Trim "origin/" and don't include the HEAD pointer
+  local branches = List.new(lines)
+    :map(function(line)
+      return line:match("origin/(%S+)")
+    end)
+    :filter(function(branch)
+      return not branch:match("^HEAD$") and branch ~= current_branch
+    end)
 
   return branches
+end
+
+---Select a git branch and perform callback with the branch as an argument
+---@param cb function The callback to perform with the selected branch
+M.select_target_branch = function(cb)
+  local all_branch_names = M.get_all_merge_targets()
+  if not all_branch_names then
+    return
+  end
+  vim.ui.select(all_branch_names, {
+    prompt = "Choose target branch for merge",
+  }, function(choice)
+    if choice then
+      cb(choice)
+    end
+  end)
 end
 
 M.basename = function(str)

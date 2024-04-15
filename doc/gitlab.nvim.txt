@@ -141,6 +141,10 @@ you call this function with no values the defaults will be used:
       },
       help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
       popup = { -- The popup for comment creation, editing, and replying
+        keymaps = {
+          next_field = "<Tab>", -- Cycle to the next field. Accepts |count|.
+          prev_field = "<S-Tab>", -- Cycle to the previous field. Accepts |count|.
+        },
         perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
         perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
         width = "40%",
@@ -663,6 +667,15 @@ Starts the process of creating an MR for the currently checked out branch.
             • {squash}: (bool) If true, the commits will be marked for
               squashing.
 
+After selecting all necessary details, you'll be presented with a confirmation
+window. You can cycle through the individual fields with the keymaps defined
+in `settings.popup.keymaps.next_field` and `settings.popup.keymaps.prev_field`.
+Both keymaps accept a count, i.g., 2<Tab> goes to the 2nd next field.
+In the "Delete source branch", "Squash commits", and "Target branch" fields,
+you can use the `settings.popup.perform_linewise_action` keymap to either
+toggle the Boolean value or to select a new target branch, respectively.
+Use the `settings.popup.perform_action` keymap to POST the MR to Gitlab.
+
                                                                 *gitlab.nvim.move_to_discussion_tree_from_diagnostic*
 gitlab.move_to_discussion_tree_from_diagnostic() ~
 
@@ -682,7 +695,7 @@ tied to specific changes in an MR.
   require("gitlab").create_note()
 
 After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
-keybinding, by default |<leader>l|
+keybinding, by default |<leader>s|.
 
                                                                 *gitlab.nvim.toggle_discussions*
 gitlab.toggle_discussions() ~
