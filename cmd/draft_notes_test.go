@@ -134,6 +134,10 @@ func publishDraftNote(pid interface{}, mergeRequest int, note int, options ...gi
 	return makeResponse(http.StatusOK), nil
 }
 
+func publishDraftNoteErr(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return nil, errors.New("Some error")
+}
+
 func TestPublishDraftNote(t *testing.T) {
 	t.Run("Should publish a draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{Note: 3, PublishAll: false})
@@ -144,11 +148,20 @@ func TestPublishDraftNote(t *testing.T) {
 		assert(t, data.Message, "Draft note(s) published")
 		assert(t, data.Status, http.StatusOK)
 	})
-	t.Run("Handles bad ID", func(t *testing.T) {
+
+	t.Run("Handles bad/missing ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: false})
-		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		server, _ := createRouterAndApi(fakeClient{publishDraftNote: publishDraftNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Must provide Note ID")
 		assert(t, data.Status, http.StatusBadRequest)
+	})
+
+	t.Run("Handles error", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: false, Note: 3})
+		server, _ := createRouterAndApi(fakeClient{publishDraftNote: publishDraftNoteErr})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Could not publish draft note(s)")
+		assert(t, data.Status, http.StatusInternalServerError)
 	})
 }
