@@ -31,8 +31,14 @@ end
 ---Filter all discussions which are relevant for currently visible signs and diagnostics.
 ---@return Discussion|DraftNote[]
 M.filter_placeable_discussions = function()
-  if type(state.DISCUSSION_DATA.discussions) ~= "table" and type(state.DRAFT_NOTES) ~= "table" then
-    return {}
+  local discussions = state.DISCUSSION_DATA.discussions
+  if type(discussions) ~= "table" then
+    discussions = {}
+  end
+
+  local draft_notes = state.DRAFT_NOTES
+  if type(draft_notes) ~= "table" then
+    draft_notes = {}
   end
 
   local file = reviewer.get_current_file()
@@ -40,12 +46,12 @@ M.filter_placeable_discussions = function()
     return {}
   end
 
-  local filtered_discussions = List.new(state.DISCUSSION_DATA.discussions):filter(function(discussion)
+  local filtered_discussions = List.new(discussions):filter(function(discussion)
     local first_note = discussion.notes[1]
     return type(first_note.position) == "table" and filter_discussions_and_notes(first_note, file)
   end)
 
-  local filtered_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
+  local filtered_draft_notes = List.new(draft_notes):filter(function(note)
     return filter_discussions_and_notes(note, file)
   end)
 
