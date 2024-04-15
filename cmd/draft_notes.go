@@ -86,14 +86,14 @@ func (a *api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &draftNotePublishRequest)
 
 	var res *gitlab.Response
-	if !draftNotePublishRequest.PublishAll {
+	if draftNotePublishRequest.PublishAll {
+		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
+	} else {
 		if draftNotePublishRequest.Note == 0 {
-			handleError(w, err, "Must provide Note ID", http.StatusBadRequest)
+			handleError(w, errors.New("No ID provided"), "Must provide Note ID", http.StatusBadRequest)
 			return
 		}
 		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, draftNotePublishRequest.Note)
-	} else {
-		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
 	}
 
 	if err != nil {
