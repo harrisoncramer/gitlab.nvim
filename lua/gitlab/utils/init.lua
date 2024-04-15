@@ -662,56 +662,49 @@ M.get_current_branch = function()
   end
 end
 
----@param remote? boolean Whether remote-tracking branches should be listed
----@param exclude_current? boolean Whether the current branch should be excluded from the list
-M.get_all_git_branches = function(remote, exclude_current)
-  local branches = {}
-
-  local handle = remote == true and io.popen("git branch -r 2>&1") or io.popen("git branch 2>&1")
-
-  if handle then
-    for line in handle:lines() do
-      local branch
-      if remote then
-        branch = line:match("origin/(%S+)") -- Trim "origin/"
-      else
-        branch = line:gsub("^%s*%*?%s*", "") -- Trim leading whitespace and the "* " marker for the current branch
-      end
-      if branch:match("^HEAD$") then -- Don't include the HEAD pointer
-        branch = nil
-      end
-      if exclude_current and branch == M.get_current_branch() then
-        branch = nil
-      end
-      if branch then
-        table.insert(branches, branch)
-      end
-    end
-    handle:close()
-  else
+---Return the list of names of all remote-tracking branches
+M.get_all_merge_targets = function()
+  local handle = io.popen("git branch -r 2>&1")
+  if not handle then
     M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
+    return
   end
+
+  local current_branch = M.get_current_branch()
+  if not current_branch then
+    return
+  end
+
+  local lines = {}
+  for line in handle:lines() do
+    table.insert(lines, line)
+  end
+  handle:close()
+
+  -- Trim "origin/" and don't include the HEAD pointer
+  local branches = List.new(lines)
+    :map(function(line)
+      return line:match("origin/(%S+)")
+    end)
+    :filter(function(branch)
+      return not branch:match("^HEAD$") and branch ~= current_branch
+    end)
 
   return branches
 end
 
----Select a git branch, add it to callback args and perform callback
----@param cb function The call back to perform with the selected branch
----@param args table Table with callback arguments
----@param arg string Name under which the selected branch will be added to the args
----@param remote? boolean Whether remote-tracking branches should be listed
----@param exclude_current? boolean Whether the current branch should be excluded from the list
-M.select_target_branch = function(cb, args, arg, remote, exclude_current)
-  if args == nil then
-    args = {}
+---Select a git branch and perform callback with the branch as an argument
+---@param cb function The callback to perform with the selected branch
+M.select_target_branch = function(cb)
+  local all_branch_names = M.get_all_merge_targets()
+  if not all_branch_names then
+    return
   end
-  local all_branch_names = M.get_all_git_branches(remote, exclude_current)
   vim.ui.select(all_branch_names, {
     prompt = "Choose target branch for merge",
   }, function(choice)
     if choice then
-      args[arg] = choice
-      cb(args)
+      cb(choice)
     end
   end)
 end

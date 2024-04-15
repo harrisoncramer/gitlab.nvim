@@ -74,8 +74,11 @@ M.pick_target = function(mr)
     return
   end
 
-  -- Select target branch interactively if it was not selected by other means
-  u.select_target_branch(M.pick_template, mr, "target", true, true)
+  -- Select target branch interactively if it hasn't been selected by other means
+  u.select_target_branch(function(target)
+    mr.target = target
+    M.pick_template(mr)
+  end)
 end
 
 local function make_template_path(t)
@@ -242,11 +245,11 @@ end
 ---Prompts for interactive selection of a new target among remote-tracking branches
 M.select_new_target = function()
   local bufnr = vim.api.nvim_get_current_buf()
-  u.select_target_branch(function(args)
+  u.select_target_branch(function(target)
     vim.schedule(function()
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { args.target })
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { target })
     end)
-  end, {}, "target", true, true)
+  end)
 end
 
 ---This function will POST the new MR to create it
