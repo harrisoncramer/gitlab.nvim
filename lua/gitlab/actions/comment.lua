@@ -61,10 +61,12 @@ M.create_comment = function()
 
   state.set_popup_keymaps(M.draft_popup, function()
     M.get_text_and_create_comment(false)
-  end, miscellaneous.attach_file, popup_opts)
+  end, miscellaneous.toggle_bool, popup_opts)
   state.set_popup_keymaps(M.comment_popup, function()
     M.get_text_and_create_comment(false)
   end, miscellaneous.attach_file, popup_opts)
+
+  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
 
   layout:mount()
 
@@ -169,10 +171,12 @@ M.create_note = function()
 
   state.set_popup_keymaps(M.draft_popup, function()
     M.get_text_and_create_comment(true)
-  end, miscellaneous.attach_file, popup_opts)
+  end, miscellaneous.toggle_bool, popup_opts)
   state.set_popup_keymaps(M.comment_popup, function()
     M.get_text_and_create_comment(true)
   end, miscellaneous.attach_file, popup_opts)
+
+  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
 
   layout:mount()
 
