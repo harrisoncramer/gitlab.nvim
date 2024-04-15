@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -57,7 +58,7 @@ func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		a.postDraftNote(w, r)
 	case http.MethodPatch:
-		a.editDraftNote(w, r)
+		a.updateDraftNote(w, r)
 	case http.MethodDelete:
 		a.deleteDraftNote(w, r)
 	default:
@@ -206,8 +207,8 @@ func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/* editDraftNot edits the text of a draft comment */
-func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {
+/* updateDraftNote edits the text of a draft comment */
+func (a *api) updateDraftNote(w http.ResponseWriter, r *http.Request) {
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
 	id, err := strconv.Atoi(suffix)
 	if err != nil {
@@ -227,6 +228,11 @@ func (a *api) editDraftNote(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &updateDraftNoteRequest)
 	if err != nil {
 		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
+		return
+	}
+
+	if updateDraftNoteRequest.Note == "" {
+		handleError(w, errors.New("Draft note text missing"), "Must provide draft note text", http.StatusBadRequest)
 		return
 	}
 

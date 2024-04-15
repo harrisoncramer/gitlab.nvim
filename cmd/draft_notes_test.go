@@ -106,7 +106,7 @@ func updateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.Up
 
 func TestEditDraftNote(t *testing.T) {
 	t.Run("Edits draft note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: ""})
+		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: "Some new note"})
 		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note updated")
@@ -121,11 +121,11 @@ func TestEditDraftNote(t *testing.T) {
 		assert(t, data.Status, http.StatusBadRequest)
 	})
 
-	// t.Run("Handles error", func(t *testing.T) {
-	// 	request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-	// 	server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
-	// 	data := serveRequest(t, server, request, ErrorResponse{})
-	// 	assert(t, data.Message, "Could not delete draft note")
-	// 	assert(t, data.Status, http.StatusInternalServerError)
-	// })
+	t.Run("Handles empty note", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: ""})
+		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Must provide draft note text")
+		assert(t, data.Status, http.StatusBadRequest)
+	})
 }
