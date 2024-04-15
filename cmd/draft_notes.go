@@ -85,6 +85,11 @@ func (a *api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
 	var draftNotePublishRequest DraftNotePublishRequest
 	err = json.Unmarshal(body, &draftNotePublishRequest)
 
+	if err != nil {
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+		return
+	}
+
 	var res *gitlab.Response
 	if draftNotePublishRequest.PublishAll {
 		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
