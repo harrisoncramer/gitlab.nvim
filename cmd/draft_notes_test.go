@@ -165,3 +165,33 @@ func TestPublishDraftNote(t *testing.T) {
 		assert(t, data.Status, http.StatusInternalServerError)
 	})
 }
+
+func publishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return makeResponse(http.StatusOK), nil
+}
+
+func publishAllDraftNotesErr(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return nil, errors.New("Some error")
+}
+
+func TestPublishAllDraftNotes(t *testing.T) {
+	t.Run("Should publish all draft notes", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
+		server, _ := createRouterAndApi(fakeClient{
+			publishAllDraftNotes: publishAllDraftNotes,
+		})
+		data := serveRequest(t, server, request, SuccessResponse{})
+		assert(t, data.Message, "Draft note(s) published")
+		assert(t, data.Status, http.StatusOK)
+	})
+
+	t.Run("Should handle an error", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
+		server, _ := createRouterAndApi(fakeClient{
+			publishAllDraftNotes: publishAllDraftNotesErr,
+		})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Could not publish draft note(s)")
+		assert(t, data.Status, http.StatusInternalServerError)
+	})
+}
