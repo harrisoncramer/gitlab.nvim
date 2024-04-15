@@ -26,6 +26,10 @@ M.settings = {
   attachment_dir = "",
   help = "g?",
   popup = {
+    keymaps = {
+      next_field = "<Tab>",
+      prev_field = "<S-Tab>",
+    },
     perform_action = "<leader>s",
     perform_linewise_action = "<leader>l",
     width = "40%",

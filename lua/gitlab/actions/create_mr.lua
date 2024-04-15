@@ -74,14 +74,10 @@ M.pick_target = function(mr)
     return
   end
 
-  local all_branch_names = u.get_all_git_branches(true)
-  vim.ui.select(all_branch_names, {
-    prompt = "Choose target branch for merge",
-  }, function(choice)
-    if choice then
-      mr.target = choice
-      M.pick_template(mr)
-    end
+  -- Select target branch interactively if it hasn't been selected by other means
+  u.select_target_branch(function(target)
+    mr.target = target
+    M.pick_template(mr)
   end)
 end
 
@@ -177,6 +173,14 @@ M.open_confirmation_popup = function(mr)
 
   local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup = M.create_layout()
 
+  local popups = {
+    title_popup,
+    description_popup,
+    delete_branch_popup,
+    squash_popup,
+    target_popup,
+  }
+
   M.layout = layout
   M.layout_buf = layout.bufnr
   M.layout_visible = true
@@ -209,6 +213,10 @@ M.open_confirmation_popup = function(mr)
     vim.api.nvim_buf_set_lines(M.delete_branch_bufnr, 0, -1, false, { u.bool_to_string(delete_branch) })
     vim.api.nvim_buf_set_lines(M.squash_bufnr, 0, -1, false, { u.bool_to_string(squash) })
 
+    u.switch_can_edit_buf(M.delete_branch_bufnr, false)
+    u.switch_can_edit_buf(M.squash_bufnr, false)
+    u.switch_can_edit_buf(M.target_bufnr, false)
+
     local popup_opts = {
       cb = exit,
       action_before_close = true,
@@ -217,9 +225,10 @@ M.open_confirmation_popup = function(mr)
 
     state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
     state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
-    state.set_popup_keymaps(target_popup, M.create_mr, nil, popup_opts)
-    state.set_popup_keymaps(delete_branch_popup, M.create_mr, nil, popup_opts)
-    state.set_popup_keymaps(squash_popup, M.create_mr, nil, popup_opts)
+    state.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
+    state.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    state.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    miscellaneous.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
@@ -235,6 +244,18 @@ M.build_description_lines = function(template_content)
   table.insert(description_lines, "")
 
   return description_lines
+end
+
+---Prompts for interactive selection of a new target among remote-tracking branches
+M.select_new_target = function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  u.select_target_branch(function(target)
+    vim.schedule(function()
+      u.switch_can_edit_buf(bufnr, true)
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { target })
+      u.switch_can_edit_buf(bufnr, false)
+    end)
+  end)
 end
 
 ---This function will POST the new MR to create it

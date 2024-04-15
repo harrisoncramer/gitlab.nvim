@@ -32,6 +32,11 @@ M.summary = function()
   local info_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
 
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
+  local popups = {
+    title_popup,
+    description_popup,
+    info_popup,
+  }
 
   M.layout = layout
   M.layout_buf = layout.bufnr
@@ -48,11 +53,9 @@ M.summary = function()
 
     if info_popup then
       vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
-      vim.api.nvim_set_option_value("modifiable", false, { buf = info_popup.bufnr })
-      vim.api.nvim_set_option_value("readonly", false, { buf = info_popup.bufnr })
+      u.switch_can_edit_buf(info_popup.bufnr, false)
+      M.color_details(info_popup.bufnr) -- Color values in details popup
     end
-
-    M.color_details(info_popup.bufnr) -- Color values in details popup
 
     state.set_popup_keymaps(
       description_popup,
@@ -61,6 +64,8 @@ M.summary = function()
       { cb = exit, action_before_close = true }
     )
     state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
+    state.set_popup_keymaps(info_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
+    miscellaneous.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)

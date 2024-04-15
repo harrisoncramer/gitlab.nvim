@@ -432,7 +432,12 @@ M.jump_to_reviewer = function(tree)
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(root_node.file_name, get_new_line(root_node), get_old_line(root_node))
+  local line_number = (root_node.new_line or root_node.old_line or 1)
+  if root_node.range then
+    local start_old_line, start_new_line = common.parse_line_code(root_node.range.start.line_code)
+    line_number = root_node.old_line and start_old_line or start_new_line
+  end
+  reviewer.jump(root_node.file_name, line_number, root_node.old_line == nil)
   M.refresh_view()
 end
 
@@ -973,20 +978,18 @@ end
 ---@param tree NuiTree
 M.open_in_browser = function(tree)
   local url = M.get_url(tree)
-  if url == nil then
-    return
+  if url ~= nil then
+    u.open_in_browser(url)
   end
-  u.open_in_browser(url)
 end
 
 ---@param tree NuiTree
 M.copy_node_url = function(tree)
   local url = M.get_url(tree)
-  if url == nil then
-    return
+  if url ~= nil then
+    vim.fn.setreg("+", url)
+    u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
   end
-  u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
-  vim.fn.setreg("+", url)
 end
 
 M.add_emoji_to_note = function(tree, unlinked)
