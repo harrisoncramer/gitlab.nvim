@@ -41,6 +41,10 @@ func createDraftNote(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDra
 	return &gitlab.DraftNote{}, makeResponse(http.StatusOK), nil
 }
 
+func createDraftNoteErr(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+	return nil, makeResponse(http.StatusInternalServerError), errors.New("Some error")
+}
+
 func TestPostDraftNote(t *testing.T) {
 	t.Run("Posts new draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
@@ -50,6 +54,48 @@ func TestPostDraftNote(t *testing.T) {
 
 		assert(t, data.SuccessResponse.Message, "Draft note created successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
+	})
 
+	t.Run("Handles errors on draft note creation", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
+		server, _ := createRouterAndApi(fakeClient{createDraftNote: createDraftNoteErr})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Could not create draft note")
+		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, data.Details, "Some error")
+	})
+}
+
+func deleteDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return makeResponse(http.StatusOK), nil
+}
+
+func deleteDraftNoteErr(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return makeResponse(http.StatusInternalServerError), errors.New("Something went wrong")
+}
+
+func TestDeleteDraftNote(t *testing.T) {
+	t.Run("Deletes draft note", func(t *testing.T) {
+		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
+		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
+		data := serveRequest(t, server, request, SuccessResponse{})
+		assert(t, data.Message, "Draft note deleted")
+		assert(t, data.Status, http.StatusOK)
+	})
+
+	t.Run("Handles error", func(t *testing.T) {
+		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
+		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Could not delete draft note")
+		assert(t, data.Status, http.StatusInternalServerError)
+	})
+
+	t.Run("Handles bad ID", func(t *testing.T) {
+		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/abc", nil)
+		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Could not parse draft note ID")
+		assert(t, data.Status, http.StatusBadRequest)
 	})
 }
