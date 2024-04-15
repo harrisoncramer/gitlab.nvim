@@ -86,7 +86,9 @@ M.toggle_bool = function()
   local bufnr = vim.api.nvim_get_current_buf()
   local current_val = u.get_buffer_text(bufnr)
   vim.schedule(function()
+    u.switch_can_edit_buf(bufnr, true)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { u.toggle_string_bool(current_val) })
+    u.switch_can_edit_buf(bufnr, false)
   end)
 end
 

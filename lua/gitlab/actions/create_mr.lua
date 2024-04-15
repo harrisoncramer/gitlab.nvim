@@ -213,6 +213,10 @@ M.open_confirmation_popup = function(mr)
     vim.api.nvim_buf_set_lines(M.delete_branch_bufnr, 0, -1, false, { u.bool_to_string(delete_branch) })
     vim.api.nvim_buf_set_lines(M.squash_bufnr, 0, -1, false, { u.bool_to_string(squash) })
 
+    u.switch_can_edit_buf(M.delete_branch_bufnr, false)
+    u.switch_can_edit_buf(M.squash_bufnr, false)
+    u.switch_can_edit_buf(M.target_bufnr, false)
+
     local popup_opts = {
       cb = exit,
       action_before_close = true,
@@ -247,7 +251,9 @@ M.select_new_target = function()
   local bufnr = vim.api.nvim_get_current_buf()
   u.select_target_branch(function(target)
     vim.schedule(function()
+      u.switch_can_edit_buf(bufnr, true)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { target })
+      u.switch_can_edit_buf(bufnr, false)
     end)
   end)
 end
