@@ -93,9 +93,39 @@ func TestDeleteDraftNote(t *testing.T) {
 
 	t.Run("Handles bad ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/abc", nil)
-		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
+		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not parse draft note ID")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
+}
+
+func updateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+	return &gitlab.DraftNote{}, makeResponse(http.StatusOK), nil
+}
+
+func TestEditDraftNote(t *testing.T) {
+	t.Run("Edits draft note", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: ""})
+		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		data := serveRequest(t, server, request, SuccessResponse{})
+		assert(t, data.Message, "Draft note updated")
+		assert(t, data.Status, http.StatusOK)
+	})
+
+	t.Run("Handles bad ID", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/abc", nil)
+		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		data := serveRequest(t, server, request, ErrorResponse{})
+		assert(t, data.Message, "Could not parse draft note ID")
+		assert(t, data.Status, http.StatusBadRequest)
+	})
+
+	// t.Run("Handles error", func(t *testing.T) {
+	// 	request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
+	// 	server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
+	// 	data := serveRequest(t, server, request, ErrorResponse{})
+	// 	assert(t, data.Message, "Could not delete draft note")
+	// 	assert(t, data.Status, http.StatusInternalServerError)
+	// })
 }
