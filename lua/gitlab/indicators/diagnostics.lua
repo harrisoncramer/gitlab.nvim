@@ -49,7 +49,7 @@ end
 local create_single_line_diagnostic = function(discussion)
   local first_note = discussion.notes[1]
   return create_diagnostic({
-    lnum = (first_note.position.new_line or first_note.position.old_line) - 1,
+    lnum = (first_note.position.new_line or first_note.position.old_line or 1) - 1,
   }, discussion)
 end
 
