@@ -53,7 +53,7 @@ end
 local create_single_line_diagnostic = function(d_or_n)
   local first_note = indicators_common.get_first_note(d_or_n)
   return create_diagnostic({
-    lnum = (first_note.position.new_line or first_note.position.old_line) - 1,
+    lnum = (first_note.position.new_line or first_note.position.old_line or 1) - 1,
   }, d_or_n)
 end
 
