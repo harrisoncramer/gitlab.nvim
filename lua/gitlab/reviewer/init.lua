@@ -225,7 +225,7 @@ end
 ---@return string|nil
 M.get_current_file = function()
   local view = diffview_lib.get_current_view()
-  if not view then
+  if not view or not view.panel then
     return
   end
   return view.panel.cur_file.path

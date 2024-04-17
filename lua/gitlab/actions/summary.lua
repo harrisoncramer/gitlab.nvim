@@ -4,6 +4,7 @@
 local Layout = require("nui.layout")
 local Popup = require("nui.popup")
 local job = require("gitlab.job")
+local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
@@ -28,7 +29,7 @@ M.summary = function()
   end
 
   local title = state.INFO.title
-  local description_lines = M.build_description_lines()
+  local description_lines = common.build_content(state.INFO.description)
   local info_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
 
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
@@ -69,16 +70,6 @@ M.summary = function()
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
-end
-
--- Builds a lua list of strings that contain the MR description
-M.build_description_lines = function()
-  local description_lines = {}
-  local description = state.INFO.description
-  for line in u.split_by_new_lines(description) do
-    table.insert(description_lines, line)
-  end
-  return description_lines
 end
 
 -- Builds a lua list of strings that contain metadata about the current MR. Only builds the

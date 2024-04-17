@@ -26,6 +26,18 @@ M.switch_can_edit_bufs = function(bool, ...)
   end
 end
 
+---Takes in a chunk of text separated by new line characters and returns a lua table
+---@param content string
+---@return table
+M.build_content = function(content)
+  local description_lines = {}
+  for line in u.split_by_new_lines(content) do
+    table.insert(description_lines, line)
+  end
+  table.insert(description_lines, "")
+  return description_lines
+end
+
 ---@class TitleArg
 ---@field bufnr integer
 ---@field title string
