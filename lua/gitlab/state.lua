@@ -8,8 +8,40 @@ local M = {}
 
 M.emoji_map = nil
 
+M.default_auth_provider = function()
+  local base_path
+  if M.settings.config_path ~= nil then
+    base_path = M.settings.config_path
+  else
+    base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
+    if vim.v.shell_error ~= 0 then
+      u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
+      return false
+    end
+  end
+
+  local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
+  local config_file_content = u.read_file(config_file_path, { remove_newlines = true })
+
+  local file_properties = {}
+  if config_file_content ~= nil then
+    local file = assert(io.open(config_file_path, "r"))
+    for line in file:lines() do
+      for key, value in string.gmatch(line, "(.-)=(.-)$") do
+        file_properties[key] = value
+      end
+    end
+  end
+
+  local auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
+  local gitlab_url = file_properties.gitlab_url or os.getenv("GITLAB_URL")
+
+  return auth_token, gitlab_url
+end
+
 -- These are the default settings for the plugin
 M.settings = {
+  auth_provider = M.default_auth_provider,
   port = nil, -- choose random port
   debug = { go_request = false, go_response = false },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
@@ -218,32 +250,10 @@ M.setPluginConfiguration = function()
     return true
   end
 
-  local base_path
-  if M.settings.config_path ~= nil then
-    base_path = M.settings.config_path
-  else
-    base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
-    if vim.v.shell_error ~= 0 then
-      u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
-      return false
-    end
-  end
+  local token, url = M.settings.auth_provider()
 
-  local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
-  local config_file_content = u.read_file(config_file_path, { remove_newlines = true })
-
-  local file_properties = {}
-  if config_file_content ~= nil then
-    local file = assert(io.open(config_file_path, "r"))
-    for line in file:lines() do
-      for key, value in string.gmatch(line, "(.-)=(.-)$") do
-        file_properties[key] = value
-      end
-    end
-  end
-
-  M.settings.auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
-  M.settings.gitlab_url = u.trim_slash(file_properties.gitlab_url or os.getenv("GITLAB_URL") or "https://gitlab.com")
+  M.settings.auth_token = token
+  M.settings.gitlab_url = u.trim_slash(url or "https://gitlab.com")
 
   if M.settings.auth_token == nil then
     vim.notify(
