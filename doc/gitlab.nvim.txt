@@ -53,6 +53,8 @@ QUICK START                                          *gitlab.nvim.quick-start*
 2. Add configuration (see Installation section)
 5. Run `:lua require("gitlab").choose_merge_request()`
 
+This will checkout the branch locally, and up the plugin's reviewer pane.
+
 
 INSTALLATION                                        *gitlab.nvim.installation*
 
