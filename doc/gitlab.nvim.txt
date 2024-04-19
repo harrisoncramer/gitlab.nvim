@@ -598,6 +598,21 @@ default arguments outlined under "Configuring the Plugin".
 
   require("gitlab").setup({ discussion_tree = { blacklist = { "some_bot"} } })
 <
+                                                                *gitlab.nvim.choose_merge_request*
+gitlab.choose_merge_request({opts}) ~
+
+Choose a merge request from a list of those open in your current project to review. 
+This command will automatically check out that branch locally, and optionally
+open the reviewer pane. This is the default behavior.
+>lua
+  require("gitlab").choose_merge_request()
+  require("gitlab").choose_merge_request({ open_reviewer = false })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments to configure the checkout.
+            • {open_reviewer}: (boolean) Whether to open the reviewer after
+            switching branches. True by default.
+<
                                                                 *gitlab.nvim.review*
 gitlab.review() ~
 
