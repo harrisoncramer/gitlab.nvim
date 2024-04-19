@@ -92,6 +92,18 @@ gitlab_url=https://my-personal-gitlab-instance.com/
 
 The plugin will look for the `.gitlab.nvim` file in the root of the current project by default. However, you may provide a custom path to the configuration file via the `config_path` option. This must be an absolute path to the directory that holds your `.gitlab.nvim` file.
 
+In case even more control over the auth config is needed, there is the possibility to override the `auth_provider` settings field. It should be
+a function that returns the `token` as well as the `gitlab_url` value. If the `gitlab_url` is `nil`, `https://gitlab.com` is used as default.
+
+Here an example how to use a custom `auth_provider`:
+```lua
+require("gitlab").setup({
+  auth_provider = function()
+    return "my_token", "https://custom.gitlab.instance.url"
+  end,
+}
+```
+
 For more settings, please see `:h gitlab.nvim.connecting-to-gitlab`
 
 ## Configuring the Plugin

@@ -122,6 +122,20 @@ directory that holds your `.gitlab.nvim` file.
 The `connection_settings` block in the `state.lua` file will be used to
 configure your connection to Gitlab.
 
+In case even more control over the auth config is needed, there is the
+possibility to override the `auth_provider` settings field. It should be
+a function that returns the `token` as well as the `gitlab_url` value.
+If the `gitlab_url` is `nil`, `https://gitlab.com` is used as default.
+
+Here an example how to use a custom `auth_provider`:
+>lua
+    require("gitlab").setup({
+      auth_provider = function()
+        return "my_token", "https://custom.gitlab.instance.url"
+      end,
+    }
+<
+
 
 CONFIGURING THE PLUGIN                    *gitlab.nvim.configuring-the-plugin*
 
@@ -364,7 +378,7 @@ These labels will be visible in the summary panel, as long as you provide the
 
 SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 
-By default when reviewing files, you will see diagnostics for comments that 
+By default when reviewing files, you will see diagnostics for comments that
 have been added to a review. These are the default settings:
 >lua
   discussion_signs = {
@@ -379,7 +393,7 @@ have been added to a review. These are the default settings:
     },
   },
 
-When the cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show()` 
+When the cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show()`
 
 You can also jump to discussion tree for the given comment:
 >lua
