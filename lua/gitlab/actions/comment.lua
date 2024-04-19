@@ -85,7 +85,6 @@ local confirm_create_comment = function(text, visual_range, unlinked)
   end)
 end
 
-
 ---@class LayoutOpts
 ---@field ranged boolean
 ---@field unlinked boolean
