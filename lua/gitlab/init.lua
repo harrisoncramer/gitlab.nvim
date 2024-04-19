@@ -6,6 +6,7 @@ local emoji = require("gitlab.emoji")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
+local miscellaneous = require("gitlab.actions.miscellaneous")
 local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
 local data = require("gitlab.actions.data")
@@ -22,18 +23,19 @@ local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
+local merge_requests = state.dependencies.merge_requests
 
 return {
   setup = function(args)
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    emoji.init() -- Read in emojis for lookup purposes
+    emoji.init()                         -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({
@@ -72,6 +74,7 @@ return {
   state = state,
   data = data.data,
   print_settings = state.print_settings,
+  switch_branch = async.sequence({ merge_requests }, miscellaneous.switch_branch),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then

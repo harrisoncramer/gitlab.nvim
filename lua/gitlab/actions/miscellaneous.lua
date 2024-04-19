@@ -34,6 +34,10 @@ M.attach_file = function()
   end)
 end
 
+M.switch_branch = function()
+  vim.print(state.MERGE_REQUESTS)
+end
+
 M.editable_popup_opts = {
   save_to_temp_register = true,
 }
