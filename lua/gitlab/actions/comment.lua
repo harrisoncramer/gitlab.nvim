@@ -19,14 +19,14 @@ local M = {
   end_line = nil,
 }
 
----@class PopupOpts
+---@class LayoutOpts
 ---@field ranged boolean
 ---@field unlinked boolean
 
 ---This function sets up the layout and popups needed to create a comment, note and
 ---multi-line comment. It also sets up the basic keybindings for switching between
 ---window panes, and for the non-primary sections.
----@param opts PopupOpts|nil
+---@param opts LayoutOpts|nil
 ---@return NuiLayout
 local function create_comment_layout(opts)
   if opts == nil then
