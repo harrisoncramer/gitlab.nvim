@@ -7,6 +7,7 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local git = require("gitlab.git")
 local state = require("gitlab.state")
+local common = require("gitlab.actions.common")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 
 ---@class Mr
@@ -202,7 +203,7 @@ M.open_confirmation_popup = function(mr)
     M.layout_visible = false
   end
 
-  local description_lines = mr.description and M.build_description_lines(mr.description) or { "" }
+  local description_lines = mr.description and common.build_content(mr.description) or { "" }
   local delete_branch = u.get_first_non_nil_value({ mr.delete_branch, state.settings.create_mr.delete_branch })
   local squash = u.get_first_non_nil_value({ mr.squash, state.settings.create_mr.squash })
 
@@ -232,18 +233,6 @@ M.open_confirmation_popup = function(mr)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
-end
-
----Builds a lua list of strings that contain the MR description
-M.build_description_lines = function(template_content)
-  local description_lines = {}
-  for line in u.split_by_new_lines(template_content) do
-    table.insert(description_lines, line)
-  end
-  -- TODO: @harrisoncramer Same as in lua/gitlab/actions/summary.lua:114
-  table.insert(description_lines, "")
-
-  return description_lines
 end
 
 ---Prompts for interactive selection of a new target among remote-tracking branches

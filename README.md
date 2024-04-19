@@ -92,6 +92,18 @@ gitlab_url=https://my-personal-gitlab-instance.com/
 
 The plugin will look for the `.gitlab.nvim` file in the root of the current project by default. However, you may provide a custom path to the configuration file via the `config_path` option. This must be an absolute path to the directory that holds your `.gitlab.nvim` file.
 
+In case even more control over the auth config is needed, there is the possibility to override the `auth_provider` settings field. It should be
+a function that returns the `token` as well as the `gitlab_url` value. If the `gitlab_url` is `nil`, `https://gitlab.com` is used as default.
+
+Here an example how to use a custom `auth_provider`:
+```lua
+require("gitlab").setup({
+  auth_provider = function()
+    return "my_token", "https://custom.gitlab.instance.url"
+  end,
+}
+```
+
 For more settings, please see `:h gitlab.nvim.connecting-to-gitlab`
 
 ## Configuring the Plugin
@@ -150,6 +162,7 @@ require("gitlab").setup({
     toggle_resolved_discussions = "R", -- Open or close all resolved discussions
     toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
     keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
+    publish_draft = "P", -- Publishes the currently focused note/comment
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     open_in_browser = "b" -- Jump to the URL of the current note/discussion
@@ -162,6 +175,9 @@ require("gitlab").setup({
     toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
     winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                  -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
+  },
+  comments = {
+    default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
   },
   info = { -- Show additional fields in the summary view
     enabled = true,
@@ -266,6 +282,8 @@ vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
 vim.keymap.set("n", "glp", gitlab.pipeline)
 vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
+vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

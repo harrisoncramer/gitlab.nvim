@@ -25,12 +25,16 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{})
 		server, _ := createRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussion})
 		data := serveRequest(t, server, request, CommentResponse{})
-		assert(t, data.SuccessResponse.Message, "Note created successfully")
+		assert(t, data.SuccessResponse.Message, "Comment created successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Creates a new comment", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{FileName: "some_file.txt"})
+		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{
+			PositionData: PositionData{
+				FileName: "some_file.txt",
+			},
+		})
 		server, _ := createRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussion})
 		data := serveRequest(t, server, request, CommentResponse{})
 		assert(t, data.SuccessResponse.Message, "Comment created successfully")
@@ -39,15 +43,17 @@ func TestPostComment(t *testing.T) {
 
 	t.Run("Creates a new multiline comment", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{
-			FileName: "some_file.txt",
-			LineRange: &LineRange{
-				StartRange: &LinePosition{}, /* These would have real data */
-				EndRange:   &LinePosition{},
+			PositionData: PositionData{
+				FileName: "some_file.txt",
+				LineRange: &LineRange{
+					StartRange: &LinePosition{}, /* These would have real data */
+					EndRange:   &LinePosition{},
+				},
 			},
 		})
 		server, _ := createRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussion})
 		data := serveRequest(t, server, request, CommentResponse{})
-		assert(t, data.SuccessResponse.Message, "Multiline Comment created successfully")
+		assert(t, data.SuccessResponse.Message, "Comment created successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 

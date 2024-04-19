@@ -79,9 +79,11 @@
 ---@field	moji              string
 
 ---@class WinbarTable
----@field name string
+---@field view_type string
 ---@field resolvable_discussions number
 ---@field resolved_discussions number
+---@field inline_draft_notes number
+---@field unlinked_draft_notes number
 ---@field resolvable_notes number
 ---@field resolved_notes number
 ---@field help_keymap string
@@ -120,3 +122,14 @@
 ---@field old_line integer | nil
 ---@field new_line integer | nil
 ---@field line_range ReviewerRangeInfo|nil
+
+---@class DraftNote
+---@field note string
+---@field id integer
+---@field author_id integer
+---@field merge_request_id integer
+---@field resolve_discussion boolean
+---@field discussion_id string -- This will always be ""
+---@field commit_id string  -- This will always be ""
+---@field line_code string
+---@field position NotePosition
