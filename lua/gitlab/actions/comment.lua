@@ -184,9 +184,12 @@ end
 ---Given the current visually selected area of text, builds text to fill in the
 ---comment popup with a suggested change
 ---@return LineRange|nil
+---@return integer
 local build_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local range = M.end_line - M.start_line
+  M.start_line, M.end_line = u.get_visual_selection_boundaries()
+
+  local range_length = M.end_line - M.start_line
   local backticks = "```"
   local selected_lines = u.get_lines(M.start_line, M.end_line)
 
@@ -199,13 +202,13 @@ local build_suggestion = function()
 
   local suggestion_start
   if M.start_line == current_line then
-    suggestion_start = backticks .. "suggestion:-0+" .. range
+    suggestion_start = backticks .. "suggestion:-0+" .. range_length
   elseif M.end_line == current_line then
-    suggestion_start = backticks .. "suggestion:-" .. range .. "+0"
+    suggestion_start = backticks .. "suggestion:-" .. range_length .. "+0"
   else
     --- This should never happen afaik
     u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
-    return nil
+    return nil, 0
   end
   suggestion_start = suggestion_start
   local suggestion_lines = {}
@@ -213,7 +216,7 @@ local build_suggestion = function()
   vim.list_extend(suggestion_lines, selected_lines)
   table.insert(suggestion_lines, backticks)
 
-  return suggestion_lines
+  return suggestion_lines, range_length
 end
 
 --- This function will open a a popup to create a suggestion comment
@@ -224,9 +227,9 @@ M.create_comment_suggestion = function()
     return
   end
 
-  local suggestion_lines = build_suggestion()
+  local suggestion_lines, range_length = build_suggestion()
 
-  local layout = create_comment_layout({ ranged = range > 0, unlinked = false })
+  local layout = create_comment_layout({ ranged = range_length > 0, unlinked = false })
   layout:mount()
   vim.schedule(function()
     if suggestion_lines then
