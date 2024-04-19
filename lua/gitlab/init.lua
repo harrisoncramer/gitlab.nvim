@@ -6,7 +6,7 @@ local emoji = require("gitlab.emoji")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
-local miscellaneous = require("gitlab.actions.miscellaneous")
+local merge_requests = require("gitlab.actions.merge_requests")
 local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
 local data = require("gitlab.actions.data")
@@ -24,7 +24,7 @@ local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
-local merge_requests = state.dependencies.merge_requests
+local merge_requests_dep = state.dependencies.merge_requests
 local draft_notes_dep = state.dependencies.draft_notes
 local discussion_data = state.dependencies.discussion_data
 
@@ -33,12 +33,12 @@ return {
     if args == nil then
       args = {}
     end
-    server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
-    require("gitlab.colors") -- Sets colors
+    server.build()                       -- Builds the Go binary if it doesn't exist
+    state.merge_settings(args)           -- Sets keymaps and other settings from setup function
+    require("gitlab.colors")             -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-    emoji.init() -- Read in emojis for lookup purposes
+    emoji.init()                         -- Read in emojis for lookup purposes
   end,
   -- Global Actions 🌎
   summary = async.sequence({
@@ -60,7 +60,7 @@ return {
   create_note = async.sequence({ info }, comment.create_note),
   create_mr = async.sequence({}, create_mr.start),
   review = async.sequence({ u.merge(info, { refresh = true }), revisions, user }, function(cb)
-    reviewer.open(cb)
+    reviewer.open()
   end),
   close_review = function()
     reviewer.close()
@@ -81,7 +81,7 @@ return {
   state = state,
   data = data.data,
   print_settings = state.print_settings,
-  choose_merge_request = async.sequence({ merge_requests }, miscellaneous.choose_merge_request),
+  choose_merge_request = async.sequence({ merge_requests_dep }, merge_requests.choose_merge_request),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then
