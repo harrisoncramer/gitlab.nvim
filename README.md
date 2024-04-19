@@ -179,6 +179,9 @@ require("gitlab").setup({
   comments = {
     default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
   },
+  choose_merge_request = {
+    open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
+  },
   info = { -- Show additional fields in the summary view
     enabled = true,
     horizontal = false, -- Display metadata to the left of the summary rather than underneath

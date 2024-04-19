@@ -119,9 +119,8 @@ M.settings = {
       border = "rounded",
     },
   },
-  switch_merge_request = {
-    open_reviewer = false,
-    open_summary = false,
+  choose_merge_request = {
+    open_reviewer = true,
   },
   info = {
     enabled = true,

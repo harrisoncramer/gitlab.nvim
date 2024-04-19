@@ -51,9 +51,7 @@ QUICK START                                          *gitlab.nvim.quick-start*
 
 1. Install Go
 2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+5. Run `:lua require("gitlab").choose_merge_request()`
 
 
 INSTALLATION                                        *gitlab.nvim.installation*
@@ -204,6 +202,9 @@ you call this function with no values the defaults will be used:
       },
       comments = {
         default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
+      },
+      choose_merge_request = {
+        open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
       },
       info = { -- Show additional fields in the summary view
         enabled = true,

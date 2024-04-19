@@ -59,8 +59,8 @@ return {
   move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
   create_mr = async.sequence({}, create_mr.start),
-  review = async.sequence({ u.merge(info, { refresh = true }), revisions, user }, function()
-    reviewer.open()
+  review = async.sequence({ u.merge(info, { refresh = true }), revisions, user }, function(cb)
+    reviewer.open(cb)
   end),
   close_review = function()
     reviewer.close()
@@ -81,7 +81,7 @@ return {
   state = state,
   data = data.data,
   print_settings = state.print_settings,
-  switch_merge_request = async.sequence({ merge_requests }, miscellaneous.switch_merge_request),
+  choose_merge_request = async.sequence({ merge_requests }, miscellaneous.choose_merge_request),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then

@@ -77,6 +77,7 @@ M.open = function()
     end
   end
   require("diffview.config").user_emitter:on("view_closed", function(_, ...)
+    M.is_open = false
     on_diffview_closed(...)
   end)
 
@@ -222,7 +223,7 @@ end
 ---@return string|nil
 M.get_current_file = function()
   local view = diffview_lib.get_current_view()
-  if not view or not view.panel then
+  if not view or not view.panel or not view.panel.cur_file then
     return
   end
   return view.panel.cur_file.path
@@ -252,7 +253,6 @@ M.set_callback_for_reviewer_leave = function(callback)
     pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
     group = group,
     callback = function(...)
-      M.is_open = false
       if M.tabnr == vim.api.nvim_get_current_tabpage() then
         callback(...)
       end
