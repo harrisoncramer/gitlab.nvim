@@ -15,43 +15,24 @@ local Location = require("gitlab.reviewer.location")
 
 local M = {
   current_win = nil,
+  start_line = nil,
+  end_line = nil,
 }
 
 -- Popup creation is wrapped in a function so that it is performed *after* user
 -- configuration has been merged with default configuration, not when this file is being
 -- required.
+---@return NuiLayout
+---@return table
 local function create_comment_popup()
-  return Popup(u.create_popup_state("Comment", state.settings.popup.comment))
-end
-
-M.set_win = function()
+  M.comment_popup = Popup(u.create_popup_state("Comment", state.settings.popup.comment))
+  M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  M.start_line, M.end_line = u.get_visual_selection_boundaries()
   M.current_win = vim.api.nvim_get_current_win()
-end
-
--- This function will open a comment popup in order to create a comment on the changed/updated
--- line in the current MR
-M.create_comment = function()
-  local has_clean_tree = git.has_clean_tree()
-  local is_modified = vim.api.nvim_buf_get_option(0, "modified")
-  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
-    u.notify(
-      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
-      vim.log.levels.WARN
-    )
-    return
-  end
-
-  M.set_win()
-
-  local comment_popup = create_comment_popup()
-  local draft_popup = Popup(u.create_box_popup_state("Draft", false))
-
-  M.comment_popup = comment_popup
-  M.draft_popup = draft_popup
 
   local internal_layout = Layout.Box({
-    Layout.Box(comment_popup, { grow = 1 }),
-    Layout.Box(draft_popup, { size = 3 }),
+    Layout.Box(M.comment_popup, { grow = 1 }),
+    Layout.Box(M.draft_popup, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
@@ -68,21 +49,39 @@ M.create_comment = function()
     action_before_exit = false,
   }
 
+  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
   state.set_popup_keymaps(M.draft_popup, function()
     M.get_text_and_create_comment(false)
   end, miscellaneous.toggle_bool, popup_opts)
-  state.set_popup_keymaps(M.comment_popup, function()
-    M.get_text_and_create_comment(false)
-  end, miscellaneous.attach_file, popup_opts)
-
-  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
-
-  layout:mount()
 
   vim.schedule(function()
     local default_to_draft = state.settings.comments.default_to_draft
     vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
   end)
+
+  return layout, popup_opts
+end
+
+-- This function will open a comment popup in order to create a comment on the changed/updated
+-- line in the current MR
+M.create_comment = function()
+  local has_clean_tree = git.has_clean_tree()
+  local is_modified = vim.api.nvim_buf_get_option(0, "modified")
+  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
+    u.notify(
+      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
+      vim.log.levels.WARN
+    )
+    return
+  end
+
+  local layout, popup_opts = create_comment_popup()
+
+  state.set_popup_keymaps(M.comment_popup, function()
+    M.get_text_and_create_comment(false)
+  end, miscellaneous.attach_file, popup_opts)
+
+  layout:mount()
 end
 
 ---Gets text from the popup and creates a note or comment
@@ -98,14 +97,13 @@ M.create_multiline_comment = function()
     return
   end
 
-  M.set_win()
+  local layout, popup_opts = create_comment_popup()
 
-  local comment_popup = create_comment_popup()
-  local start_line, end_line = u.get_visual_selection_boundaries()
-  comment_popup:mount()
-  state.set_popup_keymaps(comment_popup, function(text)
-    M.confirm_create_comment(text, { start_line = start_line, end_line = end_line })
-  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+  layout:mount()
+
+  state.set_popup_keymaps(M.comment_popup, function(text)
+    M.confirm_create_comment(text, { start_line = M.start_line, end_line = M.end_line })
+  end, miscellaneous.attach_file, popup_opts)
 end
 
 ---Create comment prepopulated with gitlab suggestion
@@ -114,8 +112,6 @@ M.create_comment_suggestion = function()
   if not u.check_visual_mode() then
     return
   end
-
-  M.set_win()
 
   local comment_popup = create_comment_popup()
   local start_line, end_line = u.get_visual_selection_boundaries()
@@ -159,8 +155,6 @@ M.create_comment_suggestion = function()
 end
 
 M.create_note = function()
-  M.set_win()
-
   local note_popup = create_comment_popup()
   local draft_popup = Popup(u.create_box_popup_state("Draft", false))
 

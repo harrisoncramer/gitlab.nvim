@@ -171,7 +171,6 @@ M.get_reviewer_data = function()
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
-  -- TODO this is the problem
   local is_current_sha_focused = M.is_current_sha_focused()
 
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
