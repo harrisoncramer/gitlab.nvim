@@ -19,72 +19,12 @@ local M = {
   end_line = nil,
 }
 
----@class LayoutOpts
----@field ranged boolean
----@field unlinked boolean
-
----This function sets up the layout and popups needed to create a comment, note and
----multi-line comment. It also sets up the basic keybindings for switching between
----window panes, and for the non-primary sections.
----@param opts LayoutOpts|nil
----@return NuiLayout
-local function create_comment_layout(opts)
-  if opts == nil then
-    opts = {}
-  end
-
-  M.comment_popup = Popup(u.create_popup_state("Comment", state.settings.popup.comment))
-  M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
-  M.start_line, M.end_line = u.get_visual_selection_boundaries()
-  M.current_win = vim.api.nvim_get_current_win()
-
-  local internal_layout = Layout.Box({
-    Layout.Box(M.comment_popup, { grow = 1 }),
-    Layout.Box(M.draft_popup, { size = 3 }),
-  }, { dir = "col" })
-
-  local layout = Layout({
-    position = "50%",
-    relative = "editor",
-    size = {
-      width = "50%",
-      height = "55%",
-    },
-  }, internal_layout)
-
-  local popup_opts = {
-    action_before_close = true,
-    action_before_exit = false,
-  }
-
-  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
-
-  local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
-  local unlinked = opts.unlinked or false
-
-  state.set_popup_keymaps(M.draft_popup, function()
-    local text = u.get_buffer_text(M.comment_popup.bufnr)
-    M.confirm_create_comment(text, range, unlinked)
-  end, miscellaneous.toggle_bool, popup_opts)
-
-  state.set_popup_keymaps(M.comment_popup, function(text)
-    M.confirm_create_comment(text, range, unlinked)
-  end, miscellaneous.attach_file, popup_opts)
-
-  vim.schedule(function()
-    local default_to_draft = state.settings.comments.default_to_draft
-    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
-  end)
-
-  return layout
-end
-
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.popup.perform_action keybinding
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean | nil if true, the comment is not linked to a line
-M.confirm_create_comment = function(text, visual_range, unlinked)
+local confirm_create_comment = function(text, visual_range, unlinked)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
@@ -145,6 +85,67 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
   end)
 end
 
+
+---@class LayoutOpts
+---@field ranged boolean
+---@field unlinked boolean
+
+---This function sets up the layout and popups needed to create a comment, note and
+---multi-line comment. It also sets up the basic keybindings for switching between
+---window panes, and for the non-primary sections.
+---@param opts LayoutOpts|nil
+---@return NuiLayout
+local function create_comment_layout(opts)
+  if opts == nil then
+    opts = {}
+  end
+
+  M.comment_popup = Popup(u.create_popup_state("Comment", state.settings.popup.comment))
+  M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  M.start_line, M.end_line = u.get_visual_selection_boundaries()
+  M.current_win = vim.api.nvim_get_current_win()
+
+  local internal_layout = Layout.Box({
+    Layout.Box(M.comment_popup, { grow = 1 }),
+    Layout.Box(M.draft_popup, { size = 3 }),
+  }, { dir = "col" })
+
+  local layout = Layout({
+    position = "50%",
+    relative = "editor",
+    size = {
+      width = "50%",
+      height = "55%",
+    },
+  }, internal_layout)
+
+  local popup_opts = {
+    action_before_close = true,
+    action_before_exit = false,
+  }
+
+  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+
+  local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
+  local unlinked = opts.unlinked or false
+
+  state.set_popup_keymaps(M.draft_popup, function()
+    local text = u.get_buffer_text(M.comment_popup.bufnr)
+    confirm_create_comment(text, range, unlinked)
+  end, miscellaneous.toggle_bool, popup_opts)
+
+  state.set_popup_keymaps(M.comment_popup, function(text)
+    confirm_create_comment(text, range, unlinked)
+  end, miscellaneous.attach_file, popup_opts)
+
+  vim.schedule(function()
+    local default_to_draft = state.settings.comments.default_to_draft
+    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
+  end)
+
+  return layout
+end
+
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
@@ -176,33 +177,14 @@ end
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
-  local layout = M.create_comment_layout({ ranged = false, unlinked = true })
+  local layout = create_comment_layout({ ranged = false, unlinked = true })
   layout:mount()
-end
-
---- This function will open a a popup to create a suggestion comment
---- on the changed/updated line in the current MR
---- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
-M.create_comment_suggestion = function()
-  if not u.check_visual_mode() then
-    return
-  end
-
-  local suggestion_lines = M.build_suggestion()
-
-  local layout = create_comment_layout({ ranged = range > 0, unlinked = false })
-  layout:mount()
-  vim.schedule(function()
-    if suggestion_lines then
-      vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
-    end
-  end)
 end
 
 ---Given the current visually selected area of text, builds text to fill in the
 ---comment popup with a suggested change
 ---@return LineRange|nil
-M.build_suggestion = function()
+local build_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local range = M.end_line - M.start_line
   local backticks = "```"
@@ -233,4 +215,24 @@ M.build_suggestion = function()
 
   return suggestion_lines
 end
+
+--- This function will open a a popup to create a suggestion comment
+--- on the changed/updated line in the current MR
+--- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
+M.create_comment_suggestion = function()
+  if not u.check_visual_mode() then
+    return
+  end
+
+  local suggestion_lines = build_suggestion()
+
+  local layout = create_comment_layout({ ranged = range > 0, unlinked = false })
+  layout:mount()
+  vim.schedule(function()
+    if suggestion_lines then
+      vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
+    end
+  end)
+end
+
 return M
