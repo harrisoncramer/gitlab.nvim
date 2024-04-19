@@ -265,6 +265,7 @@ you need to set them up yourself. Here's what I'm using:
 ```lua
 local gitlab = require("gitlab")
 local gitlab_server = require("gitlab.server")
+vim.keymap.set("n", "glb", gitlab.choose_merge_request)
 vim.keymap.set("n", "glr", gitlab.review)
 vim.keymap.set("n", "gls", gitlab.summary)
 vim.keymap.set("n", "glA", gitlab.approve)
