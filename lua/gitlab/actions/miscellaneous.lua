@@ -1,4 +1,7 @@
 local state = require("gitlab.state")
+local List = require("gitlab.utils.list")
+local reviewer = require("gitlab.reviewer")
+local git = require("gitlab.git")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
 local M = {}
@@ -34,8 +37,47 @@ M.attach_file = function()
   end)
 end
 
-M.switch_branch = function()
-  vim.print(state.MERGE_REQUESTS)
+M.switch_merge_request = function()
+  if not git.has_clean_tree() then
+    u.notify("Your local branch has changes, please stash or commit and push", vim.log.levels.ERROR)
+    return
+  end
+
+  local mrs = List.new(state.MERGE_REQUESTS)
+  local titles = mrs:map(function(mr)
+    return mr.title
+  end)
+  vim.ui.select(titles, {
+    prompt = "Choose Merge Request",
+  }, function(choice)
+    if not choice then
+      return
+    end
+
+    local mr = mrs:find(function(x)
+      return x.title == choice
+    end)
+
+    if mr == nil then
+      u.notify("Something went wrong choosing the branch", vim.log.levels.ERROR)
+      return
+    end
+
+    -- reviewer.close()
+    vim.schedule(function()
+      local err = git.switch_branch(mr.source_branch)
+      if err ~= "" then
+        u.notify(err, vim.log.levels.ERROR)
+        return
+      end
+
+      vim.schedule(function()
+        require("gitlab.server").restart(function()
+          u.notify("Branch changed and server restarted!")
+        end)
+      end)
+    end)
+  end)
 end
 
 M.editable_popup_opts = {

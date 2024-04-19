@@ -9,12 +9,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type ListMergeRequestsRequest struct {
-	Authors   []string `json:"authors"`
-	Reviewers []string `json:"reviewers"`
-	Assignees []string `json:"assignees"`
-}
-
 type ListMergeRequestResponse struct {
 	SuccessResponse
 	MergeRequests []*gitlab.MergeRequest `json:"merge_requests"`
