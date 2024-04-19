@@ -37,13 +37,24 @@ M.attach_file = function()
   end)
 end
 
-M.switch_merge_request = function()
+---@class SwitchOpts
+---@field open_reviewer boolean
+---@field open_summary boolean
+
+---Opens up a select menu that lets you choose a different merge request.
+---@param opts SwitchOpts|nil
+M.switch_merge_request = function(opts)
   if not git.has_clean_tree() then
     u.notify("Your local branch has changes, please stash or commit and push", vim.log.levels.ERROR)
     return
   end
 
+  if opts == nil then
+    opts = state.settings.switch_merge_request
+  end
+
   local mrs = List.new(state.MERGE_REQUESTS)
+
   local titles = mrs:map(function(mr)
     return mr.title
   end)
@@ -63,7 +74,10 @@ M.switch_merge_request = function()
       return
     end
 
-    -- reviewer.close()
+    if reviewer.is_open then
+      reviewer.close()
+    end
+
     vim.schedule(function()
       local err = git.switch_branch(mr.source_branch)
       if err ~= "" then
@@ -73,6 +87,12 @@ M.switch_merge_request = function()
 
       vim.schedule(function()
         require("gitlab.server").restart(function()
+          if opts.open_reviewer then
+            reviewer.open()
+          end
+          if opts.open_summary then
+            require("gitlab.actions.summary").open()
+          end
           u.notify("Branch changed and server restarted!")
         end)
       end)

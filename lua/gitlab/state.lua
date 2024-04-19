@@ -119,6 +119,10 @@ M.settings = {
       border = "rounded",
     },
   },
+  switch_merge_request = {
+    open_reviewer = false,
+    open_summary = false,
+  },
   info = {
     enabled = true,
     horizontal = false,
@@ -359,6 +363,12 @@ M.dependencies = {
     endpoint = "/project/members",
     key = "ProjectMembers",
     state = "PROJECT_MEMBERS",
+    refresh = false,
+  },
+  merge_requests = {
+    endpoint = "/merge_requests",
+    key = "merge_requests",
+    state = "MERGE_REQUESTS",
     refresh = false,
   },
   discussion_data = {

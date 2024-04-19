@@ -81,7 +81,7 @@ return {
   state = state,
   data = data.data,
   print_settings = state.print_settings,
-  switch_branch = async.sequence({ merge_requests }, miscellaneous.switch_branch),
+  switch_merge_request = async.sequence({ merge_requests }, miscellaneous.switch_merge_request),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then
