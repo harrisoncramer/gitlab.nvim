@@ -88,6 +88,7 @@ M.settings = {
     delete_comment = "dd",
     open_in_browser = "b",
     copy_node_url = "u",
+    publish_draft = "P",
     reply = "r",
     toggle_node = "t",
     add_emoji = "Ea",
@@ -104,24 +105,9 @@ M.settings = {
     unresolved = "-",
     tree_type = "simple",
     toggle_tree_type = "i",
-    ---@param t WinbarTable
-    winbar = function(t)
-      local discussions_content = t.resolvable_discussions ~= 0
-          and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
-      local notes_content = t.resolvable_notes ~= 0
-          and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
-      if t.name == "Discussions" then
-        notes_content = "%#Comment#" .. notes_content
-        discussions_content = "%#Text#" .. discussions_content
-      else
-        discussions_content = "%#Comment#" .. discussions_content
-        notes_content = "%#Text#" .. notes_content
-      end
-      local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
-      return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
-    end,
+  },
+  comments = {
+    default_to_draft = false,
   },
   create_mr = {
     target = nil,
@@ -188,6 +174,7 @@ M.settings = {
       file_name = "Normal",
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
+      draft = "DiffviewNonText",
     },
   },
 }
@@ -332,16 +319,58 @@ end
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
-  user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
-  info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
-  latest_pipeline = { endpoint = "/pipeline", key = "latest_pipeline", state = "PIPELINE", refresh = true },
-  labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
-  revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
+  user = {
+    endpoint = "/users/me",
+    key = "user",
+    state = "USER",
+    refresh = false,
+  },
+  info = {
+    endpoint = "/mr/info",
+    key = "info",
+    state = "INFO",
+    refresh = false,
+  },
+  latest_pipeline = {
+    endpoint = "/pipeline",
+    key = "latest_pipeline",
+    state = "PIPELINE",
+    refresh = true,
+  },
+  labels = {
+    endpoint = "/mr/label",
+    key = "labels",
+    state = "LABELS",
+    refresh = false,
+  },
+  revisions = {
+    endpoint = "/mr/revisions",
+    key = "Revisions",
+    state = "MR_REVISIONS",
+    refresh = false,
+  },
+  draft_notes = {
+    endpoint = "/mr/draft_notes/",
+    key = "draft_notes",
+    state = "DRAFT_NOTES",
+    refresh = false,
+  },
   project_members = {
     endpoint = "/project/members",
     key = "ProjectMembers",
     state = "PROJECT_MEMBERS",
     refresh = false,
+  },
+  discussion_data = {
+    endpoint = "/mr/discussions/list",
+    state = "DISCUSSION_DATA",
+    refresh = false,
+    method = "POST",
+    body = function()
+      return {
+        blacklist = M.settings.discussion_tree.blacklist,
+      }
+    end,
   },
 }
 

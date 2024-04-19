@@ -493,7 +493,7 @@ M.create_popup_state = function(title, settings, width, height, zindex)
 end
 
 ---Create view_opts for Box popups used inside popup Layouts
----@param title string The string to appear on top of the popup
+---@param title string|nil The string to appear on top of the popup
 ---@param enter boolean Whether the pop should be focused after creation
 ---@return table
 M.create_box_popup_state = function(title, enter)
@@ -738,6 +738,20 @@ M.open_in_browser = function(url)
   end
 end
 
+---Combines two tables
+---@param t1 table
+---@param t2 table
+---@return table
+M.join = function(t1, t2)
+  local res = {}
+  for _, val in ipairs(t1) do
+    table.insert(res, val)
+  end
+  for _, val in ipairs(t2) do
+    table.insert(res, val)
+  end
+  return res
+end
 ---Trims the trailing slash from a URL
 ---@param s string
 ---@return string

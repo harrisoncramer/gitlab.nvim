@@ -162,6 +162,7 @@ require("gitlab").setup({
     toggle_resolved_discussions = "R", -- Open or close all resolved discussions
     toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
     keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
+    publish_draft = "P", -- Publishes the currently focused note/comment
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     open_in_browser = "b" -- Jump to the URL of the current note/discussion
@@ -174,6 +175,9 @@ require("gitlab").setup({
     toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
     winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                  -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
+  },
+  comments = {
+    default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
   },
   info = { -- Show additional fields in the summary view
     enabled = true,
@@ -278,6 +282,8 @@ vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
 vim.keymap.set("n", "glp", gitlab.pipeline)
 vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
+vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

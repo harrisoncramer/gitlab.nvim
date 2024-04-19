@@ -189,6 +189,7 @@ you call this function with no values the defaults will be used:
         toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
+        publish_draft = "P", -- Publishes the currently focused note/comment
         position = "left", -- "top", "right", "bottom" or "left"
         open_in_browser = "b" -- Jump to the URL of the current note/discussion
         copy_node_url = "u", -- Copy the URL of the current node to clipboard
@@ -200,6 +201,9 @@ you call this function with no values the defaults will be used:
         toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
+      },
+      comments = {
+        default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
       },
       info = { -- Show additional fields in the summary view
         enabled = true,
@@ -310,6 +314,16 @@ window with Gitlab’s suggest changes
 code block with prefilled code from the visual selection.
 Just like the summary, all the different kinds of comments are saved via the
 `settings.popup.perform_action` keybinding.
+
+DRAFT NOTES                                       *gitlab.nvim.draft-comments*
+
+When you publish a "draft" of any of the above resources (configurable via the
+`state.settings.comments.default_to_draft` setting) the comment will be added
+to a review. You may publish all draft comments via the `gitlab.publish_all_drafts()`
+function, and you can publish an individual comment or note by pressing the
+`state.settings.discussion_tree.publish_draft` keybinding.
+
+Draft notes do not support editing, replying, or emojis.
 
 TEMPORARY REGISTERS                               *gitlab.nvim.temp-registers*
 
@@ -541,6 +555,7 @@ in normal mode):
     vim.keymap.set("n", "glo", gitlab.open_in_browser)
     vim.keymap.set("n", "glM", gitlab.merge)
     vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+    vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
@@ -722,6 +737,14 @@ Once the discussion tree is open, a number of different keybindings are availabl
 for interacting with different discussions. Please see the `settings.discussion_tree`
 section of the setup call for more information about different keybindings.
 
+                                                                *gitlab.nvim.publish_all_drafts*
+gitlab.publish_all_drafts() ~
+
+Publishes all unpublished draft notes. Used to finish a review and make all notes and 
+comments visible.
+>lua
+  require("gitlab").publish_all_drafts()
+<
                                                                 *gitlab.nvim.add_assignee*
 gitlab.add_assignee() ~
 
@@ -843,6 +866,7 @@ execute and passed the data as an argument.
                     • "pipeline": Information about the current branch's
                       pipeline. Returns and object with `latest_pipeline` and
                       `jobs` as fields.
+                    • "draft_notes": The current user's unpublished notes
                 • {refresh}: (bool) Whether to re-fetch the data from Gitlab
                   or use the cached data locally, if available.
         • {cb}: (function) The callback function that runs after all of the
