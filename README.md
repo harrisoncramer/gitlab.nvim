@@ -25,9 +25,9 @@ To view these help docs and to get more detailed help information, please run `:
 
 1. Install Go
 2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+5. Run `:lua require("gitlab").choose_merge_request()`
+
+This will checkout the branch locally, and open the plugin's reviewer pane.
 
 For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 
