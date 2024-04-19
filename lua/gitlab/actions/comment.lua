@@ -1,6 +1,6 @@
--- This module is responsible for creating new comments
--- in the reviewer's buffer. The reviewer will pass back
--- to this module the data required to make the API calls
+--- This module is responsible for creating new comments
+--- in the reviewer's buffer. The reviewer will pass back
+--- to this module the data required to make the API calls
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
 local state = require("gitlab.state")
@@ -19,9 +19,9 @@ local M = {
   end_line = nil,
 }
 
--- Popup creation is wrapped in a function so that it is performed *after* user
--- configuration has been merged with default configuration, not when this file is being
--- required.
+---This function sets up the layout and popups needed to create a comment, note and
+---multi-line comment. It also sets up the basic keybindings for switching between
+---window panes, and for the non-primary sections.
 ---@return NuiLayout
 ---@return table
 local function create_comment_popup()
@@ -62,142 +62,17 @@ local function create_comment_popup()
   return layout, popup_opts
 end
 
--- This function will open a comment popup in order to create a comment on the changed/updated
--- line in the current MR
-M.create_comment = function()
-  local has_clean_tree = git.has_clean_tree()
-  local is_modified = vim.api.nvim_buf_get_option(0, "modified")
-  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
-    u.notify(
-      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
-      vim.log.levels.WARN
-    )
-    return
-  end
-
-  local layout, popup_opts = create_comment_popup()
-
-  state.set_popup_keymaps(M.comment_popup, function()
-    M.get_text_and_create_comment(false)
-  end, miscellaneous.attach_file, popup_opts)
-
-  layout:mount()
-end
-
----Gets text from the popup and creates a note or comment
+---Gets text from the comment popup and calls the function required to create a comment.
+---Needed in case the perform action keybinding is called while focused on a different popup field
+---(e.g. the draft field)
 ---@param unlinked boolean
 M.get_text_and_create_comment = function(unlinked)
   local text = u.get_buffer_text(M.comment_popup.bufnr)
   M.confirm_create_comment(text, nil, unlinked)
 end
 
----Create multiline comment for the last selection.
-M.create_multiline_comment = function()
-  if not u.check_visual_mode() then
-    return
-  end
-
-  local layout, popup_opts = create_comment_popup()
-
-  layout:mount()
-
-  state.set_popup_keymaps(M.comment_popup, function(text)
-    M.confirm_create_comment(text, { start_line = M.start_line, end_line = M.end_line })
-  end, miscellaneous.attach_file, popup_opts)
-end
-
----Create comment prepopulated with gitlab suggestion
----https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
-M.create_comment_suggestion = function()
-  if not u.check_visual_mode() then
-    return
-  end
-
-  local comment_popup = create_comment_popup()
-  local start_line, end_line = u.get_visual_selection_boundaries()
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local range = end_line - start_line
-  local backticks = "```"
-  local selected_lines = u.get_lines(start_line, end_line)
-
-  for line in ipairs(selected_lines) do
-    if string.match(line, "^```$") then
-      backticks = "````"
-      break
-    end
-  end
-
-  local suggestion_start
-  if start_line == current_line then
-    suggestion_start = backticks .. "suggestion:-0+" .. range
-  elseif end_line == current_line then
-    suggestion_start = backticks .. "suggestion:-" .. range .. "+0"
-  else
-    -- This should never happen afaik
-    u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
-    return
-  end
-  suggestion_start = suggestion_start
-  local suggestion_lines = {}
-  table.insert(suggestion_lines, suggestion_start)
-  vim.list_extend(suggestion_lines, selected_lines)
-  table.insert(suggestion_lines, backticks)
-
-  comment_popup:mount()
-  vim.api.nvim_buf_set_lines(comment_popup.bufnr, 0, -1, false, suggestion_lines)
-  state.set_popup_keymaps(comment_popup, function(text)
-    if range > 0 then
-      M.confirm_create_comment(text, { start_line = start_line, end_line = end_line }, false)
-    else
-      M.confirm_create_comment(text, nil, false)
-    end
-  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
-end
-
-M.create_note = function()
-  local note_popup = create_comment_popup()
-  local draft_popup = Popup(u.create_box_popup_state("Draft", false))
-
-  M.comment_popup = note_popup
-  M.draft_popup = draft_popup
-
-  local internal_layout = Layout.Box({
-    Layout.Box(note_popup, { grow = 1 }),
-    Layout.Box(draft_popup, { size = 3 }),
-  }, { dir = "col" })
-
-  local layout = Layout({
-    position = "50%",
-    relative = "editor",
-    size = {
-      width = "50%",
-      height = "55%",
-    },
-  }, internal_layout)
-
-  local popup_opts = {
-    action_before_close = true,
-    action_before_exit = false,
-  }
-
-  state.set_popup_keymaps(M.draft_popup, function()
-    M.get_text_and_create_comment(true)
-  end, miscellaneous.toggle_bool, popup_opts)
-  state.set_popup_keymaps(M.comment_popup, function()
-    M.get_text_and_create_comment(true)
-  end, miscellaneous.attach_file, popup_opts)
-
-  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
-
-  layout:mount()
-
-  vim.schedule(function()
-    local default_to_draft = state.settings.comments.default_to_draft
-    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
-  end)
-end
-
----This function (settings.popup.perform_action) will send the comment to the Go server
+---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
+---via the M.settings.popup.perform_action keybinding
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean | nil if true, the comment is not linked to a line
@@ -259,6 +134,137 @@ M.confirm_create_comment = function(text, visual_range, unlinked)
       discussions.add_discussion({ data = data, has_position = true })
     end
     discussions.refresh()
+  end)
+end
+
+--- This function will open a comment popup in order to create a comment on the changed/updated
+--- line in the current MR
+M.create_comment = function()
+  local has_clean_tree = git.has_clean_tree()
+  local is_modified = vim.api.nvim_buf_get_option(0, "modified")
+  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
+    u.notify(
+      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
+      vim.log.levels.WARN
+    )
+    return
+  end
+
+  local layout, popup_opts = create_comment_popup()
+
+  state.set_popup_keymaps(M.comment_popup, function(text)
+    M.confirm_create_comment(text)
+  end, miscellaneous.attach_file, popup_opts)
+
+  layout:mount()
+end
+
+--- This function will open a multi-line comment popup in order to create a multi-line comment
+--- on the changed/updated line in the current MR
+M.create_multiline_comment = function()
+  if not u.check_visual_mode() then
+    return
+  end
+
+  local layout, popup_opts = create_comment_popup()
+
+  layout:mount()
+
+  state.set_popup_keymaps(M.comment_popup, function(text)
+    M.confirm_create_comment(text, { start_line = M.start_line, end_line = M.end_line })
+  end, miscellaneous.attach_file, popup_opts)
+end
+
+--- This function will open a multi-line comment popup with the draft section
+--- pre-populated with a change suggestion. See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
+M.create_comment_suggestion = function()
+  if not u.check_visual_mode() then
+    return
+  end
+
+  local comment_popup = create_comment_popup()
+  local start_line, end_line = u.get_visual_selection_boundaries()
+  local current_line = vim.api.nvim_win_get_cursor(0)[1]
+  local range = end_line - start_line
+  local backticks = "```"
+  local selected_lines = u.get_lines(start_line, end_line)
+
+  for line in ipairs(selected_lines) do
+    if string.match(line, "^```$") then
+      backticks = "````"
+      break
+    end
+  end
+
+  local suggestion_start
+  if start_line == current_line then
+    suggestion_start = backticks .. "suggestion:-0+" .. range
+  elseif end_line == current_line then
+    suggestion_start = backticks .. "suggestion:-" .. range .. "+0"
+  else
+    --- This should never happen afaik
+    u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
+    return
+  end
+  suggestion_start = suggestion_start
+  local suggestion_lines = {}
+  table.insert(suggestion_lines, suggestion_start)
+  vim.list_extend(suggestion_lines, selected_lines)
+  table.insert(suggestion_lines, backticks)
+
+  comment_popup:mount()
+  vim.api.nvim_buf_set_lines(comment_popup.bufnr, 0, -1, false, suggestion_lines)
+  state.set_popup_keymaps(comment_popup, function(text)
+    if range > 0 then
+      M.confirm_create_comment(text, { start_line = start_line, end_line = end_line }, false)
+    else
+      M.confirm_create_comment(text, nil, false)
+    end
+  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+end
+
+--- This function will open a a popup to create a "note" (e.g. unlinked comment)
+--- on the changed/updated line in the current MR
+M.create_note = function()
+  local note_popup = create_comment_popup()
+  local draft_popup = Popup(u.create_box_popup_state("Draft", false))
+
+  M.comment_popup = note_popup
+  M.draft_popup = draft_popup
+
+  local internal_layout = Layout.Box({
+    Layout.Box(note_popup, { grow = 1 }),
+    Layout.Box(draft_popup, { size = 3 }),
+  }, { dir = "col" })
+
+  local layout = Layout({
+    position = "50%",
+    relative = "editor",
+    size = {
+      width = "50%",
+      height = "55%",
+    },
+  }, internal_layout)
+
+  local popup_opts = {
+    action_before_close = true,
+    action_before_exit = false,
+  }
+
+  state.set_popup_keymaps(M.draft_popup, function()
+    M.get_text_and_create_comment(true)
+  end, miscellaneous.toggle_bool, popup_opts)
+  state.set_popup_keymaps(M.comment_popup, function()
+    M.get_text_and_create_comment(true)
+  end, miscellaneous.attach_file, popup_opts)
+
+  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+
+  layout:mount()
+
+  vim.schedule(function()
+    local default_to_draft = state.settings.comments.default_to_draft
+    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
   end)
 end
 
