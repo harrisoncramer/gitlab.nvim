@@ -47,9 +47,6 @@ function Location:build_location_data()
     line_range = nil,
   }
 
-  -- TODO: Reviewer data is being calculated incorrectly...
-  -- vim.print(reviewer_data)
-
   -- Comment on new line: Include only new_line in payload.
   -- Comment on deleted line: Include only old_line in payload.
   -- The line was not found in any hunks, send both lines.

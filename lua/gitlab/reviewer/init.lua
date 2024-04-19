@@ -171,7 +171,9 @@ M.get_reviewer_data = function()
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
+  -- TODO this is the problem
   local is_current_sha_focused = M.is_current_sha_focused()
+
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type", vim.log.levels.ERROR)
@@ -206,14 +208,7 @@ M.is_current_sha_focused = function()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local current_win = vim.fn.win_getid()
-
-  -- Handle cases where user navigates tabs in the middle of making a comment
-  -- TODO
-  -- TODO: Fix this, it's not working with the popup layout, it's causing the
-  -- reviewer data to be calculated incorrectly
-  -- TODO
-  -- TODO
+  local current_win = require("gitlab.actions.comment").current_win
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil

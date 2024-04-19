@@ -85,12 +85,12 @@ end
 local function make_template_path(t)
   local base_dir = git.base_dir()
   return base_dir
-      .. state.settings.file_separator
-      .. ".gitlab"
-      .. state.settings.file_separator
-      .. "merge_request_templates"
-      .. state.settings.file_separator
-      .. t
+    .. state.settings.file_separator
+    .. ".gitlab"
+    .. state.settings.file_separator
+    .. "merge_request_templates"
+    .. state.settings.file_separator
+    .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
