@@ -90,12 +90,11 @@ end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
-  if state.settings.discussion_signs.enabled and state.DISCUSSION_DATA then
+  if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
   end
-  if M.split_visible and state.DISCUSSION_DATA then
-    winbar.update_winbar()
-  end
+  winbar.update_winbar()
+  common.add_empty_titles()
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
@@ -135,26 +134,6 @@ M.toggle = function(callback)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unliked_bufnr)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
-
-  local position_drafts = List.new(state.DRAFT_NOTES):filter(function(note)
-    return draft_notes.has_position(note)
-  end)
-  local non_positioned_drafts = List.new(state.DRAFT_NOTES):filter(function(note)
-    return not draft_notes.has_position(note)
-  end)
-
-  common.add_empty_titles({
-    {
-      bufnr = M.linked_bufnr,
-      data = u.join(state.DISCUSSION_DATA.discussions, position_drafts),
-      title = "No Discussions for this MR",
-    },
-    {
-      bufnr = M.unlinked_bufnr,
-      data = u.join(state.DISCUSSION_DATA.unlinked_discussions or {}, non_positioned_drafts),
-      title = "No Notes (Unlinked Discussions) for this MR",
-    },
-  })
 
   -- Set default buffer
   local default_buffer = winbar.bufnr_map[state.settings.discussion_tree.default_view]

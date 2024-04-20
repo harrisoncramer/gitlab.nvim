@@ -1,6 +1,7 @@
 -- This module contains code shared between at least two modules. This includes
 -- actions common to multiple tree types, as well as general utility functions
 -- that are specific to actions (like jumping to a file or opening a URL)
+local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local common_indicators = require("gitlab.indicators.common")
@@ -38,29 +39,52 @@ M.build_content = function(content)
   return description_lines
 end
 
----@class TitleArg
----@field bufnr integer
----@field title string
----@field data table
+M.add_empty_titles = function()
+  local draft_notes = require("gitlab.actions.draft_notes")
+  local discussions = require("gitlab.actions.discussions")
+  local linked, unlinked, drafts =
+    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
+    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
+    List.new(u.ensure_table(state.DRAFT_NOTES))
 
----@param title_args TitleArg[]
-M.add_empty_titles = function(title_args)
-  for _, v in ipairs(title_args) do
-    M.switch_can_edit_bufs(true, v.bufnr)
-    local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
-    vim.cmd("highlight default TitleHighlight guifg=#787878")
+  local position_drafts = drafts:filter(function(note)
+    return draft_notes.has_position(note)
+  end)
+  local non_positioned_drafts = drafts:filter(function(note)
+    return not draft_notes.has_position(note)
+  end)
 
-    -- Set empty title if applicable
-    if #v.data == 0 then
-      vim.api.nvim_buf_set_lines(v.bufnr, 0, 1, false, { v.title })
-      local linnr = 1
-      vim.api.nvim_buf_set_extmark(
-        v.bufnr,
-        ns_id,
-        linnr - 1,
-        0,
-        { end_row = linnr - 1, end_col = string.len(v.title), hl_group = "TitleHighlight" }
-      )
+  local fields = {
+    {
+      bufnr = discussions.linked_bufnr,
+      count = #linked + #position_drafts,
+      title = "No Discussions for this MR",
+    },
+    {
+      bufnr = discussions.unlinked_bufnr,
+      count = #unlinked + #non_positioned_drafts,
+      title = "No Notes (Unlinked Discussions) for this MR",
+    },
+  }
+
+  for _, v in ipairs(fields) do
+    if v.bufnr ~= nil then
+      M.switch_can_edit_bufs(true, v.bufnr)
+      local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
+      vim.cmd("highlight default TitleHighlight guifg=#787878")
+
+      -- Set empty title if applicable
+      if v.count == 0 then
+        vim.api.nvim_buf_set_lines(v.bufnr, 0, 1, false, { v.title })
+        local linnr = 1
+        vim.api.nvim_buf_set_extmark(
+          v.bufnr,
+          ns_id,
+          linnr - 1,
+          0,
+          { end_row = linnr - 1, end_col = string.len(v.title), hl_group = "TitleHighlight" }
+        )
+      end
     end
   end
 end

@@ -760,7 +760,7 @@ M.trim_slash = function(s)
 end
 
 M.ensure_table = function(data)
-  if data == vim.NIL then
+  if data == vim.NIL or data == nil then
     return {}
   end
   return data

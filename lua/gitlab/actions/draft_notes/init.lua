@@ -21,7 +21,7 @@ local M = {}
 ---Adds a draft note to the draft notes state, then rebuilds the view
 ---@param opts AddDraftNoteOpts
 M.add_draft_note = function(opts)
-  local new_draft_notes = state.DRAFT_NOTES
+  local new_draft_notes = u.ensure_table(state.DRAFT_NOTES)
   table.insert(new_draft_notes, opts.draft_note)
   state.DRAFT_NOTES = new_draft_notes
   local discussions = require("gitlab.actions.discussions")
@@ -153,6 +153,7 @@ M.send_deletion = function(tree)
     end
 
     winbar.update_winbar()
+    common.add_empty_titles()
   end)
 end
 

@@ -31,12 +31,12 @@ end
 ---Filter all discussions which are relevant for currently visible signs and diagnostics.
 ---@return Discussion|DraftNote[]
 M.filter_placeable_discussions = function()
-  local discussions = state.DISCUSSION_DATA.discussions
+  local discussions = u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions or {})
   if type(discussions) ~= "table" then
     discussions = {}
   end
 
-  local draft_notes = state.DRAFT_NOTES
+  local draft_notes = u.ensure_table(state.DRAFT_NOTES)
   if type(draft_notes) ~= "table" then
     draft_notes = {}
   end
