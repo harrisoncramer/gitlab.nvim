@@ -47,6 +47,7 @@ type fakeClient struct {
 	updateDraftNote                    func(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
 	publishAllDraftNotes               func(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	publishDraftNote                   func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	listProjectMergeRequests           func(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error)
 }
 
 type Author struct {
@@ -159,11 +160,6 @@ func (f fakeClient) CurrentUser(options ...gitlab.RequestOptionFunc) (*gitlab.Us
 	return f.currentUser()
 }
 
-/* This middleware function needs to return an ID for the rest of the handlers */
-func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
-	return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
-}
-
 func (f fakeClient) CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error) {
 	return &gitlab.AwardEmoji{}, &gitlab.Response{}, nil
 }
@@ -182,6 +178,11 @@ func (f fakeClient) PublishDraftNote(pid interface{}, mergeRequest int, note int
 
 func (f fakeClient) PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.publishAllDraftNotes(pid, mergeRequest)
+}
+
+/* This middleware function needs to return an ID for the rest of the handlers */
+func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
+	return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
 }
 
 /* The assert function is a helper function used to check two comparables */

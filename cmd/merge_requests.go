@@ -38,7 +38,7 @@ func (a *api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	response := ListMergeRequestResponse{
 		SuccessResponse: SuccessResponse{
 			Message: "Merge requests fetched successfully",
