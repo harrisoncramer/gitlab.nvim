@@ -51,15 +51,14 @@ M.get_all_remote_branches = function()
     end)
 end
 
----Returns: 1. The name of the current branch.
----         2. A Boolean: true if `branch` is up-to-date on remote, false otherwise.
----@return string, boolean
-M.current_branch_up_to_date_on_remote = function()
+---Returns true if `branch` is up-to-date on remote, false otherwise.
+---@return boolean|nil
+M.current_branch_up_to_date_on_remote = function(log_level)
   local current_branch = M.get_current_branch()
   local handle = io.popen("git branch -r --contains " .. current_branch .. " 2>&1")
   if not handle then
     require("gitlab.utils").notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-    return "", false
+    return nil
   end
 
   local remote_branches_with_current_head = {}
@@ -72,7 +71,15 @@ M.current_branch_up_to_date_on_remote = function()
     :filter(function(line)
       return line == "  origin/" .. current_branch
     end)
-  return current_branch or "", #current_head_on_remote == 1
+  local remote_up_to_date = #current_head_on_remote == 1
+
+  if not remote_up_to_date then
+    require("gitlab.utils").notify(
+      "You have local commits that are not on origin. Have you forgotten to push?",
+      vim.log.levels[log_level]
+    )
+  end
+  return remote_up_to_date
 end
 
 return M

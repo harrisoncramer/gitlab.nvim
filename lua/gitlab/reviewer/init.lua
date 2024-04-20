@@ -86,6 +86,8 @@ M.open = function()
     discussions.close()
     require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
+
+  git.current_branch_up_to_date_on_remote("WARN")
 end
 
 -- Closes the reviewer and cleans up
