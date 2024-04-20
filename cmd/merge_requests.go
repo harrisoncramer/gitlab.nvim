@@ -15,6 +15,13 @@ type ListMergeRequestResponse struct {
 }
 
 func (a *api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
+		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
+		return
+	}
+
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope: gitlab.Ptr("all"),
 		State: gitlab.Ptr("opened"),

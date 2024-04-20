@@ -43,7 +43,10 @@ end
 M.settings = {
   auth_provider = M.default_auth_provider,
   port = nil, -- choose random port
-  debug = { go_request = false, go_response = false },
+  debug = {
+    go_request = false,
+    go_response = false,
+  },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   config_path = nil,
   reviewer = "diffview",

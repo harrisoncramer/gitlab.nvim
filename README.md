@@ -115,7 +115,10 @@ require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
-  debug = { go_request = false, go_response = false }, -- Which values to log
+  debug = {
+      go_request = false,
+      go_response = false,
+  },
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   reviewer_settings = {
     diffview = {

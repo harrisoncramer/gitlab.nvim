@@ -19,10 +19,10 @@ The FakeHandlerClient is used to create a fake gitlab client for testing our han
 
 type fakeClient struct {
 	createMrFn                         func(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	getMergeRequestFn                  func(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	updateMergeRequestFn               func(pid interface{}, mergeRequestIID int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	acceptAndMergeFn                   func(pid interface{}, mergeRequestIID int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	unapprorveMergeRequestFn           func(pid interface{}, mergeRequestIID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	getMergeRequest                    func(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	updateMergeRequest                 func(pid interface{}, mergeRequestIID int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	acceptMergeRequest                 func(pid interface{}, mergeRequestIID int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	unapproveMergeRequest              func(pid interface{}, mergeRequestIID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	uploadFile                         func(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
 	getMergeRequestDiffVersions        func(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestDiffVersionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequestDiffVersion, *gitlab.Response, error)
 	approveMergeRequest                func(pid interface{}, mergeRequestIID int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error)
@@ -64,19 +64,19 @@ func (f fakeClient) CreateMergeRequest(pid interface{}, opt *gitlab.CreateMergeR
 }
 
 func (f fakeClient) AcceptMergeRequest(pid interface{}, mergeRequestIID int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return f.acceptAndMergeFn(pid, mergeRequestIID, opt, options...)
+	return f.acceptMergeRequest(pid, mergeRequestIID, opt, options...)
 }
 
 func (f fakeClient) GetMergeRequest(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return f.getMergeRequestFn(pid, mergeRequestIID, opt, options...)
+	return f.getMergeRequest(pid, mergeRequestIID, opt, options...)
 }
 
 func (f fakeClient) UpdateMergeRequest(pid interface{}, mergeRequestIID int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return f.updateMergeRequestFn(pid, mergeRequestIID, opt, options...)
+	return f.updateMergeRequest(pid, mergeRequestIID, opt, options...)
 }
 
 func (f fakeClient) UnapproveMergeRequest(pid interface{}, mergeRequestIID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return f.unapprorveMergeRequestFn(pid, mergeRequestIID, options...)
+	return f.unapproveMergeRequest(pid, mergeRequestIID, options...)
 }
 
 func (f fakeClient) UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
