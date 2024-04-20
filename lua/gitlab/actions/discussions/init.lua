@@ -37,10 +37,9 @@ local M = {
 ---@param callback function|nil
 M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
-    state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
-    state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions
-      or {}
-    state.DISCUSSION_DATA.emojis = data.emojis ~= vim.NIL and data.emojis or {}
+    state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
+    state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
+    state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
     if type(callback) == "function" then
       callback()
     end
@@ -108,11 +107,11 @@ M.toggle = function(callback)
     return
   end
 
-  if
-    type(state.DISCUSSION_DATA.discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.draft_notes) ~= "table"
-  then
+  state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
+  state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
+  state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
+
+  if #state.DISCUSSION_DATA.discussions + #state.DISCUSSION_DATA.unlinked_discussions + #state.DRAFT_NOTES == 0 then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
     if M.split ~= nil then
       vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
@@ -145,15 +144,22 @@ M.toggle = function(callback)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
 
+  local position_drafts = List.new(state.DRAFT_NOTES):filter(function(note)
+    return draft_notes.has_position(note)
+  end)
+  local non_positioned_drafts = List.new(state.DRAFT_NOTES):filter(function(note)
+    return not draft_notes.has_position(note)
+  end)
+
   common.add_empty_titles({
     {
       bufnr = M.linked_bufnr,
-      data = state.DISCUSSION_DATA.discussions,
+      data = u.join(state.DISCUSSION_DATA.discussions, position_drafts),
       title = "No Discussions for this MR",
     },
     {
       bufnr = M.unlinked_bufnr,
-      data = state.DISCUSSION_DATA.unlinked_discussions,
+      data = u.join(state.DISCUSSION_DATA.unlinked_discussions or {}, non_positioned_drafts),
       title = "No Notes (Unlinked Discussions) for this MR",
     },
   })

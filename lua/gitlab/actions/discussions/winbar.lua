@@ -70,6 +70,9 @@ end
 ---This function updates the winbar
 M.update_winbar = function()
   local d = require("gitlab.actions.discussions")
+  if d.split == nil then
+    return
+  end
   local winId = d.split.winid
   local c = content()
   if vim.wo[winId] then

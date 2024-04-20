@@ -51,7 +51,7 @@ M.add_empty_titles = function(title_args)
     vim.cmd("highlight default TitleHighlight guifg=#787878")
 
     -- Set empty title if applicable
-    if type(v.data) ~= "table" or #v.data == 0 then
+    if #v.data == 0 then
       vim.api.nvim_buf_set_lines(v.bufnr, 0, 1, false, { v.title })
       local linnr = 1
       vim.api.nvim_buf_set_extmark(
