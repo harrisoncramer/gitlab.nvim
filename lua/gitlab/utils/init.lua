@@ -759,4 +759,11 @@ M.trim_slash = function(s)
   return (s:gsub("/+$", ""))
 end
 
+M.ensure_table = function(data)
+  if data == vim.NIL or data == nil then
+    return {}
+  end
+  return data
+end
+
 return M

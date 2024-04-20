@@ -37,10 +37,9 @@ local M = {
 ---@param callback function|nil
 M.load_discussions = function(callback)
   job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
-    state.DISCUSSION_DATA.discussions = data.discussions ~= vim.NIL and data.discussions or {}
-    state.DISCUSSION_DATA.unlinked_discussions = data.unlinked_discussions ~= vim.NIL and data.unlinked_discussions
-      or {}
-    state.DISCUSSION_DATA.emojis = data.emojis ~= vim.NIL and data.emojis or {}
+    state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
+    state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
+    state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
     if type(callback) == "function" then
       callback()
     end
@@ -91,12 +90,11 @@ end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_view = function()
-  if state.settings.discussion_signs.enabled and state.DISCUSSION_DATA then
+  if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
   end
-  if M.split_visible and state.DISCUSSION_DATA then
-    winbar.update_winbar()
-  end
+  winbar.update_winbar()
+  common.add_empty_titles()
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
@@ -108,17 +106,9 @@ M.toggle = function(callback)
     return
   end
 
-  if
-    type(state.DISCUSSION_DATA.discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table"
-    and type(state.DISCUSSION_DATA.draft_notes) ~= "table"
-  then
-    u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
-    if M.split ~= nil then
-      vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
-    end
-    return
-  end
+  state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
+  state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
+  state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
 
   -- Make buffers, get and set buffer numbers, set filetypes
   local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
@@ -144,19 +134,6 @@ M.toggle = function(callback)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unliked_bufnr)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
-
-  common.add_empty_titles({
-    {
-      bufnr = M.linked_bufnr,
-      data = state.DISCUSSION_DATA.discussions,
-      title = "No Discussions for this MR",
-    },
-    {
-      bufnr = M.unlinked_bufnr,
-      data = state.DISCUSSION_DATA.unlinked_discussions,
-      title = "No Notes (Unlinked Discussions) for this MR",
-    },
-  })
 
   -- Set default buffer
   local default_buffer = winbar.bufnr_map[state.settings.discussion_tree.default_view]
