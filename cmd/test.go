@@ -182,7 +182,11 @@ func (f fakeClient) PublishAllDraftNotes(pid interface{}, mergeRequest int, opti
 
 /* This middleware function needs to return an ID for the rest of the handlers */
 func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
-	return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
+	if f.listProjectMergeRequests == nil {
+		return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
+	} else {
+		return f.listProjectMergeRequests(pid, opt)
+	}
 }
 
 /* The assert function is a helper function used to check two comparables */

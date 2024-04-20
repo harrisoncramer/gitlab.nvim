@@ -34,7 +34,7 @@ func (a *api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(mergeRequests) == 0 {
-		handleError(w, errors.New("No merge requests found"), "No merge requests found", http.StatusBadRequest)
+		handleError(w, errors.New("No merge requests found"), "No merge requests found", http.StatusNotFound)
 		return
 	}
 
