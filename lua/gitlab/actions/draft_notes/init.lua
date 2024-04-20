@@ -39,11 +39,6 @@ M.has_position = function(note)
   return note.position.new_path ~= nil or note.position.old_path ~= nil
 end
 
---- @param bufnr integer
-M.set_bufnr = function(bufnr)
-  M.bufnr = bufnr
-end
-
 ---Returns a list of nodes to add to the discussion tree. Can filter and return only unlinked (note) nodes.
 ---@param unlinked boolean
 ---@return NuiTree.Node[]
