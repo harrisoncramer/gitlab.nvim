@@ -43,6 +43,19 @@ end
 --- continue working on it.
 ---@param args? Mr
 M.start = function(args)
+  local current_branch, remote_up_to_date = git.current_branch_up_to_date_on_remote()
+  if not remote_up_to_date then
+    u.notify(
+      "You have unpushed changes. If your feature branch exists on remote, use\n"
+        .. "    git push\n"
+        .. "To push the current branch and set the remote as upstream, use\n"
+        .. "    git push --set-upstream origin "
+        .. current_branch,
+      vim.log.levels.WARN
+    )
+    return
+  end
+
   if M.started then
     vim.ui.select({ "Yes", "No" }, { prompt = "Continue your previous MR?" }, function(choice)
       if choice == "Yes" then
