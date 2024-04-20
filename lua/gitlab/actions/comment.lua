@@ -99,10 +99,10 @@ local function create_comment_layout(opts)
     opts = {}
   end
 
+  M.current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(u.create_popup_state("Comment", state.settings.popup.comment))
   M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
-  M.current_win = vim.api.nvim_get_current_win()
 
   local internal_layout = Layout.Box({
     Layout.Box(M.comment_popup, { grow = 1 }),
@@ -131,10 +131,12 @@ local function create_comment_layout(opts)
   state.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked)
+    vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.toggle_bool, popup_opts)
 
   state.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked)
+    vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.attach_file, popup_opts)
 
   vim.schedule(function()
