@@ -114,7 +114,9 @@ M.toggle = function(callback)
     and type(state.DISCUSSION_DATA.draft_notes) ~= "table"
   then
     u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
-    vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
+    if M.split ~= nil then
+      vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
+    end
     return
   end
 

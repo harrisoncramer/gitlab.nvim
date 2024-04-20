@@ -51,9 +51,9 @@ QUICK START                                          *gitlab.nvim.quick-start*
 
 1. Install Go
 2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+5. Run `:lua require("gitlab").choose_merge_request()`
+
+This will checkout the branch locally, and up the plugin's reviewer pane.
 
 
 INSTALLATION                                        *gitlab.nvim.installation*
@@ -204,6 +204,9 @@ you call this function with no values the defaults will be used:
       },
       comments = {
         default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
+      },
+      choose_merge_request = {
+        open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
       },
       info = { -- Show additional fields in the summary view
         enabled = true,
@@ -596,6 +599,21 @@ default arguments outlined under "Configuring the Plugin".
   require("gitlab").setup({ port = 8392 })
 
   require("gitlab").setup({ discussion_tree = { blacklist = { "some_bot"} } })
+<
+                                                                *gitlab.nvim.choose_merge_request*
+gitlab.choose_merge_request({opts}) ~
+
+Choose a merge request from a list of those open in your current project to review. 
+This command will automatically check out that branch locally, and optionally
+open the reviewer pane. This is the default behavior.
+>lua
+  require("gitlab").choose_merge_request()
+  require("gitlab").choose_merge_request({ open_reviewer = false })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments to configure the checkout.
+            • {open_reviewer}: (boolean) Whether to open the reviewer after
+            switching branches. True by default.
 <
                                                                 *gitlab.nvim.review*
 gitlab.review() ~

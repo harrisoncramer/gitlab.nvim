@@ -43,7 +43,10 @@ end
 M.settings = {
   auth_provider = M.default_auth_provider,
   port = nil, -- choose random port
-  debug = { go_request = false, go_response = false },
+  debug = {
+    go_request = false,
+    go_response = false,
+  },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   config_path = nil,
   reviewer = "diffview",
@@ -118,6 +121,9 @@ M.settings = {
       width = 40,
       border = "rounded",
     },
+  },
+  choose_merge_request = {
+    open_reviewer = true,
   },
   info = {
     enabled = true,
@@ -359,6 +365,12 @@ M.dependencies = {
     endpoint = "/project/members",
     key = "ProjectMembers",
     state = "PROJECT_MEMBERS",
+    refresh = false,
+  },
+  merge_requests = {
+    endpoint = "/merge_requests",
+    key = "merge_requests",
+    state = "MERGE_REQUESTS",
     refresh = false,
   },
   discussion_data = {

@@ -145,6 +145,7 @@ func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 	m.HandleFunc("/job", a.jobHandler)
 	m.HandleFunc("/project/members", a.projectMembersHandler)
 	m.HandleFunc("/shutdown", a.shutdownHandler)
+	m.HandleFunc("/merge_requests", a.mergeRequestsHandler)
 
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 

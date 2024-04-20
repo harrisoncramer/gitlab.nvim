@@ -6,6 +6,7 @@ local emoji = require("gitlab.emoji")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
+local merge_requests = require("gitlab.actions.merge_requests")
 local merge = require("gitlab.actions.merge")
 local summary = require("gitlab.actions.summary")
 local data = require("gitlab.actions.data")
@@ -23,6 +24,7 @@ local labels_dep = state.dependencies.labels
 local project_members = state.dependencies.project_members
 local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
+local merge_requests_dep = state.dependencies.merge_requests
 local draft_notes_dep = state.dependencies.draft_notes
 local discussion_data = state.dependencies.discussion_data
 
@@ -79,6 +81,7 @@ return {
   state = state,
   data = data.data,
   print_settings = state.print_settings,
+  choose_merge_request = async.sequence({ merge_requests_dep }, merge_requests.choose_merge_request),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then

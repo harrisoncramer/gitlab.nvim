@@ -25,9 +25,9 @@ To view these help docs and to get more detailed help information, please run `:
 
 1. Install Go
 2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+5. Run `:lua require("gitlab").choose_merge_request()`
+
+This will checkout the branch locally, and open the plugin's reviewer pane.
 
 For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 
@@ -115,7 +115,10 @@ require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
-  debug = { go_request = false, go_response = false }, -- Which values to log
+  debug = {
+      go_request = false,
+      go_response = false,
+  },
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   reviewer_settings = {
     diffview = {
@@ -178,6 +181,9 @@ require("gitlab").setup({
   },
   comments = {
     default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
+  },
+  choose_merge_request = {
+    open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
   },
   info = { -- Show additional fields in the summary view
     enabled = true,
@@ -262,6 +268,7 @@ you need to set them up yourself. Here's what I'm using:
 ```lua
 local gitlab = require("gitlab")
 local gitlab_server = require("gitlab.server")
+vim.keymap.set("n", "glb", gitlab.choose_merge_request)
 vim.keymap.set("n", "glr", gitlab.review)
 vim.keymap.set("n", "gls", gitlab.summary)
 vim.keymap.set("n", "glA", gitlab.approve)

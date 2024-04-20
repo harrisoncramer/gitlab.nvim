@@ -12,6 +12,7 @@ local async = require("diffview.async")
 local diffview_lib = require("diffview.lib")
 
 local M = {
+  is_open = false,
   bufnr = nil,
   tabnr = nil,
   stored_win = nil,
@@ -47,6 +48,8 @@ M.open = function()
   end
 
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
+
+  M.is_open = true
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
   if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
@@ -74,6 +77,7 @@ M.open = function()
     end
   end
   require("diffview.config").user_emitter:on("view_closed", function(_, ...)
+    M.is_open = false
     on_diffview_closed(...)
   end)
 
@@ -219,7 +223,7 @@ end
 ---@return string|nil
 M.get_current_file = function()
   local view = diffview_lib.get_current_view()
-  if not view or not view.panel then
+  if not view or not view.panel or not view.panel.cur_file then
     return
   end
   return view.panel.cur_file.path
