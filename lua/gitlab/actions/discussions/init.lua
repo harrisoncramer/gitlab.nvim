@@ -111,14 +111,6 @@ M.toggle = function(callback)
   state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
   state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
 
-  if #state.DISCUSSION_DATA.discussions + #state.DISCUSSION_DATA.unlinked_discussions + #state.DRAFT_NOTES == 0 then
-    u.notify("No discussions, notes, or draft notes for this MR", vim.log.levels.WARN)
-    if M.split ~= nil then
-      vim.api.nvim_buf_set_lines(M.split.bufnr, 0, -1, false, { "" })
-    end
-    return
-  end
-
   -- Make buffers, get and set buffer numbers, set filetypes
   local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
   M.split = split

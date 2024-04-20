@@ -73,11 +73,18 @@ M.update_winbar = function()
   if d.split == nil then
     return
   end
-  local winId = d.split.winid
-  local c = content()
-  if vim.wo[winId] then
-    vim.wo[winId].winbar = c
+
+  local win_id = d.split.winid
+  if win_id == nil then
+    return
   end
+
+  if not vim.api.nvim_win_is_valid(win_id) then
+    return
+  end
+
+  local c = content()
+  vim.api.nvim_set_option_value("winbar", c, { scope = "local", win = win_id })
 end
 
 ---Builds the title string for both sections, using the count of resolvable and draft nodes
