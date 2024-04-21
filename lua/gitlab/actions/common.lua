@@ -4,6 +4,7 @@
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
+local indicators_common = require("gitlab.indicators.common")
 local common_indicators = require("gitlab.indicators.common")
 local state = require("gitlab.state")
 local M = {}
@@ -43,9 +44,9 @@ M.add_empty_titles = function()
   local draft_notes = require("gitlab.actions.draft_notes")
   local discussions = require("gitlab.actions.discussions")
   local linked, unlinked, drafts =
-    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
-    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
-    List.new(u.ensure_table(state.DRAFT_NOTES))
+      List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
+      List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
+      List.new(u.ensure_table(state.DRAFT_NOTES))
 
   local position_drafts = drafts:filter(function(note)
     return draft_notes.has_position(note)
@@ -176,7 +177,7 @@ end
 
 ---Takes a node and returns the line where the note is positioned in the new SHA. If
 ---the line is not in the new SHA, returns nil
----@param node any
+---@param node NuiTree.Node
 ---@return number|nil
 local function get_new_line(node)
   ---@type GitlabLineRange|nil
@@ -191,7 +192,7 @@ end
 
 ---Takes a node and returns the line where the note is positioned in the old SHA. If
 ---the line is not in the old SHA, returns nil
----@param node any
+---@param node NuiTree.Node
 ---@return number|nil
 local function get_old_line(node)
   ---@type GitlabLineRange|nil
@@ -204,6 +205,36 @@ local function get_old_line(node)
   return start_old_line
 end
 
+---@param id string|integer
+---@return integer|nil
+M.get_line_number = function(id)
+  ---@type Discussion|DraftNote|nil
+  local d_or_n
+  d_or_n = List.new(state.DISCUSSION_DATA.discussions or {}):find(function(d)
+    return d.id == id
+  end) or List.new(state.DRAFT_NOTES or {}):find(function(d)
+    return d.id == id
+  end)
+
+  if d_or_n == nil then
+    return
+  end
+
+  local first_note = indicators_common.get_first_note(d_or_n)
+  return (indicators_common.is_new_sha(d_or_n) and first_note.position.new_line or first_note.position.old_line) or 1
+end
+
+---@param root_node NuiTree.Node
+---@return integer|nil
+M.get_line_number_from_node = function(root_node)
+  if root_node.range then
+    local start_old_line, start_new_line = common_indicators.parse_line_code(root_node.range.start.line_code)
+    return root_node.old_line and start_old_line or start_new_line
+  else
+    return M.get_line_number(root_node.id)
+  end
+end
+
 -- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree, callback)
   local node = tree:get_node()
@@ -212,10 +243,10 @@ M.jump_to_reviewer = function(tree, callback)
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
-  local line_number = (root_node.new_line or root_node.old_line or 1)
-  if root_node.range then
-    local start_old_line, start_new_line = common_indicators.parse_line_code(root_node.range.start.line_code)
-    line_number = root_node.old_line and start_old_line or start_new_line
+  local line_number = M.get_line_number_from_node(root_node)
+  if line_number == nil then
+    u.notify("Could not get line number", vim.log.levels.ERROR)
+    return
   end
   reviewer.jump(root_node.file_name, line_number, root_node.old_line == nil)
   callback()
