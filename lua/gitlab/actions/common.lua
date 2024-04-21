@@ -32,10 +32,7 @@ end
 ---@param content string
 ---@return table
 M.build_content = function(content)
-  local description_lines = {}
-  for line in u.split_by_new_lines(content) do
-    table.insert(description_lines, line)
-  end
+  local description_lines = u.lines_into_table(content)
   table.insert(description_lines, "")
   return description_lines
 end
@@ -44,9 +41,9 @@ M.add_empty_titles = function()
   local draft_notes = require("gitlab.actions.draft_notes")
   local discussions = require("gitlab.actions.discussions")
   local linked, unlinked, drafts =
-    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
-    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
-    List.new(u.ensure_table(state.DRAFT_NOTES))
+      List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
+      List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
+      List.new(u.ensure_table(state.DRAFT_NOTES))
 
   local position_drafts = drafts:filter(function(note)
     return draft_notes.has_position(note)

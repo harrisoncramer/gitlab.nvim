@@ -150,7 +150,10 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  local has_clean_tree = git.has_clean_tree()
+  local has_clean_tree, err = git.has_clean_tree()
+  if err ~= nil then
+    return
+  end
   local is_modified = vim.api.nvim_buf_get_option(0, "modified")
   if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
     u.notify(

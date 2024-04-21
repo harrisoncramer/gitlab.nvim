@@ -10,7 +10,10 @@ local M = {}
 ---Opens up a select menu that lets you choose a different merge request.
 ---@param opts SwitchOpts|nil
 M.choose_merge_request = function(opts)
-  if not git.has_clean_tree() then
+  local has_clean_tree, err = git.has_clean_tree()
+  if err ~= nil then
+    return
+  elseif clean ~= "" then
     u.notify("Your local branch has changes, please stash or commit and push", vim.log.levels.ERROR)
     return
   end
@@ -34,9 +37,8 @@ M.choose_merge_request = function(opts)
     end
 
     vim.schedule(function()
-      local err = git.switch_branch(choice.source_branch)
-      if err ~= "" then
-        u.notify(err, vim.log.levels.ERROR)
+      local _, err = git.switch_branch(choice.source_branch)
+      if err ~= nil then
         return
       end
 

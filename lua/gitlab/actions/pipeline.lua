@@ -40,7 +40,7 @@ M.open = function()
   local height = 6 + #M.pipeline_jobs + 3
 
   local pipeline_popup =
-    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+      Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
@@ -143,10 +143,7 @@ M.see_logs = function()
       return
     end
 
-    local lines = {}
-    for line in u.split_by_new_lines(file) do
-      table.insert(lines, line)
-    end
+    local lines = u.lines_into_table(file)
 
     if #lines == 0 then
       u.notify("Log trace lines could not be parsed", vim.log.levels.ERROR)

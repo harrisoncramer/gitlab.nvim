@@ -42,7 +42,10 @@ M.open = function()
   end
 
   local diffview_open_command = "DiffviewOpen"
-  local has_clean_tree = git.has_clean_tree()
+  local has_clean_tree, err = git.has_clean_tree()
+  if err ~= nil then
+    return
+  end
   if state.settings.reviewer_settings.diffview.imply_local and has_clean_tree then
     diffview_open_command = diffview_open_command .. " --imply-local"
   end

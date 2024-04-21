@@ -46,7 +46,7 @@ end
 ---@param ending string
 ---@return boolean
 M.ends_with = function(str, ending)
-  return ending == "" or str:sub(-#ending) == ending
+  return ending == "" or str:sub(- #ending) == ending
 end
 
 M.filter = function(input_table, value_to_remove)
@@ -199,8 +199,19 @@ end
 M.split_by_new_lines = function(s)
   if s:sub(-1) ~= "\n" then
     s = s .. "\n"
-  end -- Append a new line to the string, if there's none, otherwise the last line would be lost.
+  end                       -- Append a new line to the string, if there's none, otherwise the last line would be lost.
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
+end
+
+---Takes a string of lines and returns a table of lines
+---@param s string The string to parse
+---@return table
+M.lines_into_table = function(s)
+  local lines = {}
+  for line in u.split_by_new_lines(s) do
+    table.insert(lines, line)
+  end
+  return lines
 end
 
 -- Reverses the order of elements in a list
@@ -242,7 +253,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -591,17 +602,17 @@ M.list_files_in_folder = function(folder_path)
   local files = {}
   if folder ~= nil then
     files = List.new(folder)
-      :map(function(file)
-        local file_path = folder_path .. M.path_separator .. file
-        local timestamp = vim.fn.getftime(file_path)
-        return { name = file, timestamp = timestamp }
-      end)
-      :sort(function(a, b)
-        return a.timestamp > b.timestamp
-      end)
-      :map(function(file)
-        return file.name
-      end)
+        :map(function(file)
+          local file_path = folder_path .. M.path_separator .. file
+          local timestamp = vim.fn.getftime(file_path)
+          return { name = file, timestamp = timestamp }
+        end)
+        :sort(function(a, b)
+          return a.timestamp > b.timestamp
+        end)
+        :map(function(file)
+          return file.name
+        end)
   end
 
   return files
@@ -657,22 +668,10 @@ M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
 
----Return the list of possible merge targets.
----@return table|nil
-M.get_all_merge_targets = function()
-  local current_branch = git.get_current_branch()
-  if not current_branch then
-    return
-  end
-  return List.new(git.get_all_remote_branches()):filter(function(branch)
-    return branch ~= current_branch
-  end)
-end
-
 ---Select a git branch and perform callback with the branch as an argument
 ---@param cb function The callback to perform with the selected branch
 M.select_target_branch = function(cb)
-  local all_branch_names = M.get_all_merge_targets()
+  local all_branch_names = git.get_all_merge_targets()
   if not all_branch_names then
     return
   end
