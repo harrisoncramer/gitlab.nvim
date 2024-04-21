@@ -208,7 +208,7 @@ end
 ---@return table
 M.lines_into_table = function(s)
   local lines = {}
-  for line in u.split_by_new_lines(s) do
+  for line in M.split_by_new_lines(s) do
     table.insert(lines, line)
   end
   return lines
