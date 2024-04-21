@@ -215,6 +215,10 @@ end
 
 -- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
 M.reply = function(tree)
+  if M.is_draft_note(tree) then
+    u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
+    return
+  end
   local reply_popup = Popup(u.create_popup_state("Reply", state.settings.popup.reply))
   local node = tree:get_node()
   local discussion_node = common.get_root_node(tree, node)
