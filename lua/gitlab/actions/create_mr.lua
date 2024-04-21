@@ -43,7 +43,7 @@ end
 --- continue working on it.
 ---@param args? Mr
 M.start = function(args)
-  if not git.current_branch_up_to_date_on_remote("ERROR") then
+  if not git.current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
     return
   end
 
@@ -92,12 +92,12 @@ local function make_template_path(t)
     return
   end
   return base_dir
-      .. state.settings.file_separator
-      .. ".gitlab"
-      .. state.settings.file_separator
-      .. "merge_request_templates"
-      .. state.settings.file_separator
-      .. t
+    .. state.settings.file_separator
+    .. ".gitlab"
+    .. state.settings.file_separator
+    .. "merge_request_templates"
+    .. state.settings.file_separator
+    .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description

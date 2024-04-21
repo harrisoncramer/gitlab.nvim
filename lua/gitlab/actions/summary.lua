@@ -72,7 +72,7 @@ M.summary = function()
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
 
-  git.current_branch_up_to_date_on_remote("WARN")
+  git.current_branch_up_to_date_on_remote(vim.log.levels.WARN)
 end
 
 -- Builds a lua list of strings that contain metadata about the current MR. Only builds the

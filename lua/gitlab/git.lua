@@ -71,14 +71,14 @@ M.get_all_remote_branches = function()
   local u = require("gitlab.utils")
   local lines = u.lines_into_table(all_branches)
   return List.new(lines)
-      :map(function(line)
-        -- Trim "origin/"
-        return line:match("origin/(%S+)")
-      end)
-      :filter(function(branch)
-        -- Don't include the HEAD pointer
-        return not branch:match("^HEAD$")
-      end)
+    :map(function(line)
+      -- Trim "origin/"
+      return line:match("origin/(%S+)")
+    end)
+    :filter(function(branch)
+      -- Don't include the HEAD pointer
+      return not branch:match("^HEAD$")
+    end)
 end
 
 ---Return whether something
@@ -89,6 +89,7 @@ M.contains_branch = function(current_branch)
 end
 
 ---Returns true if `branch` is up-to-date on remote, false otherwise.
+---@param log_level integer
 ---@return boolean|nil
 M.current_branch_up_to_date_on_remote = function(log_level)
   local current_branch = M.get_current_branch()
@@ -112,7 +113,7 @@ M.current_branch_up_to_date_on_remote = function(log_level)
   if not remote_up_to_date then
     require("gitlab.utils").notify(
       "You have local commits that are not on origin. Have you forgotten to push?",
-      vim.log.levels[log_level]
+      log_level
     )
   end
   return remote_up_to_date

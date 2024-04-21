@@ -90,7 +90,7 @@ M.open = function()
     require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
 
-  git.current_branch_up_to_date_on_remote("WARN")
+  git.current_branch_up_to_date_on_remote(vim.log.levels.WARN)
 end
 
 -- Closes the reviewer and cleans up
