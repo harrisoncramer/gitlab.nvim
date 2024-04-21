@@ -43,6 +43,10 @@ end
 --- continue working on it.
 ---@param args? Mr
 M.start = function(args)
+  if not git.current_branch_up_to_date_on_remote("ERROR") then
+    return
+  end
+
   if M.started then
     vim.ui.select({ "Yes", "No" }, { prompt = "Continue your previous MR?" }, function(choice)
       if choice == "Yes" then

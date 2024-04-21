@@ -1,3 +1,4 @@
+local git = require("gitlab.git")
 local List = require("gitlab.utils.list")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local M = {}
@@ -656,46 +657,16 @@ M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
 
----Return the name of the current branch
----@return string|nil
-M.get_current_branch = function()
-  local handle = io.popen("git branch --show-current 2>&1")
-  if handle then
-    return handle:read()
-  else
-    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-  end
-end
-
----Return the list of names of all remote-tracking branches
+---Return the list of possible merge targets.
+---@return table|nil
 M.get_all_merge_targets = function()
-  local handle = io.popen("git branch -r 2>&1")
-  if not handle then
-    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-    return
-  end
-
-  local current_branch = M.get_current_branch()
+  local current_branch = git.get_current_branch()
   if not current_branch then
     return
   end
-
-  local lines = {}
-  for line in handle:lines() do
-    table.insert(lines, line)
-  end
-  handle:close()
-
-  -- Trim "origin/" and don't include the HEAD pointer
-  local branches = List.new(lines)
-    :map(function(line)
-      return line:match("origin/(%S+)")
-    end)
-    :filter(function(branch)
-      return not branch:match("^HEAD$") and branch ~= current_branch
-    end)
-
-  return branches
+  return List.new(git.get_all_remote_branches()):filter(function(branch)
+    return branch ~= current_branch
+  end)
 end
 
 ---Select a git branch and perform callback with the branch as an argument

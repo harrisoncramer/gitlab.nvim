@@ -3,6 +3,7 @@
 -- send edits to the description back to Gitlab
 local Layout = require("nui.layout")
 local Popup = require("nui.popup")
+local git = require("gitlab.git")
 local job = require("gitlab.job")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
@@ -70,6 +71,8 @@ M.summary = function()
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
+
+  git.current_branch_up_to_date_on_remote("WARN")
 end
 
 -- Builds a lua list of strings that contain metadata about the current MR. Only builds the
