@@ -3,21 +3,22 @@
 -- This module is also responsible for ensuring that the state of the plugin
 -- is valid via dependencies
 
+local git = require("gitlab.git")
 local u = require("gitlab.utils")
 local M = {}
 
 M.emoji_map = nil
 
+---Returns a gitlab token, and a gitlab URL. Used to connect to gitlab.
+---@return string|nil, string|nil, string|nil
 M.default_auth_provider = function()
-  local base_path
-  if M.settings.config_path ~= nil then
-    base_path = M.settings.config_path
-  else
-    base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
-    if vim.v.shell_error ~= 0 then
-      u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
-      return false
-    end
+  local base_path, err = M.settings.config_path, nil
+  if base_path == nil then
+    base_path, err = git.base_dir()
+  end
+
+  if err ~= nil then
+    return "", ""
   end
 
   local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
@@ -36,7 +37,7 @@ M.default_auth_provider = function()
   local auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
   local gitlab_url = file_properties.gitlab_url or os.getenv("GITLAB_URL")
 
-  return auth_token, gitlab_url
+  return auth_token, gitlab_url, err
 end
 
 -- These are the default settings for the plugin
@@ -243,7 +244,10 @@ M.setPluginConfiguration = function()
     return true
   end
 
-  local token, url = M.settings.auth_provider()
+  local token, url, err = M.settings.auth_provider()
+  if err ~= nil then
+    return
+  end
 
   M.settings.auth_token = token
   M.settings.gitlab_url = u.trim_slash(url or "https://gitlab.com")
