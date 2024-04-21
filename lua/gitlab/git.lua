@@ -67,10 +67,9 @@ M.current_branch_up_to_date_on_remote = function(log_level)
   end
   handle:close()
 
-  local current_head_on_remote = List.new(remote_branches_with_current_head)
-    :filter(function(line)
-      return line == "  origin/" .. current_branch
-    end)
+  local current_head_on_remote = List.new(remote_branches_with_current_head):filter(function(line)
+    return line == "  origin/" .. current_branch
+  end)
   local remote_up_to_date = #current_head_on_remote == 1
 
   if not remote_up_to_date then
