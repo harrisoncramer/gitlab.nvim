@@ -51,9 +51,7 @@ end
 ---@param d_or_n Discussion|DraftNote
 ---@return Diagnostic
 local create_single_line_diagnostic = function(d_or_n)
-  local first_note = indicators_common.get_first_note(d_or_n)
-  local linnr = (indicators_common.is_new_sha(d_or_n) and first_note.position.new_line or first_note.position.old_line)
-    or 1
+  local linnr = actions_common.get_line_number(d_or_n.id)
   return create_diagnostic({
     lnum = linnr - 1,
   }, d_or_n)

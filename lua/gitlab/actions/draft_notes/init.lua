@@ -85,11 +85,15 @@ end
 ---Send edits will actually send the edits to Gitlab and refresh the draft_notes tree
 M.send_edits = function(note_id)
   return function(text)
-    local body = { note = text }
+    local all_notes = List.new(state.DRAFT_NOTES)
+    local the_note = all_notes:find(function(note)
+      return note.id == note_id
+    end)
+    local body = { note = text, position = the_note.position }
     job.run_job(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       local has_position = false
-      local new_draft_notes = List.new(state.DRAFT_NOTES):map(function(note)
+      local new_draft_notes = all_notes:map(function(note)
         if note.id == note_id then
           has_position = M.has_position(note)
           note.note = text

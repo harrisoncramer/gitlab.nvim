@@ -106,7 +106,7 @@ func updateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.Up
 
 func TestEditDraftNote(t *testing.T) {
 	t.Run("Edits draft note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: "Some new note"})
+		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: "Some new note", Position: gitlab.PositionOptions{}})
 		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note updated")

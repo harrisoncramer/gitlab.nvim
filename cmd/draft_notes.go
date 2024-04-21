@@ -22,7 +22,8 @@ type PostDraftNoteRequest struct {
 }
 
 type UpdateDraftNoteRequest struct {
-	Note string `json:"note"`
+	Note     string `json:"note"`
+	Position gitlab.PositionOptions
 }
 
 type DraftNotePublishRequest struct {
@@ -242,7 +243,8 @@ func (a *api) updateDraftNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opt := gitlab.UpdateDraftNoteOptions{
-		Note: &updateDraftNoteRequest.Note,
+		Note:     &updateDraftNoteRequest.Note,
+		Position: &updateDraftNoteRequest.Position,
 	}
 
 	draftNote, res, err := a.client.UpdateDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, id, &opt)
