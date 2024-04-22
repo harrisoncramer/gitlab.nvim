@@ -203,6 +203,17 @@ M.split_by_new_lines = function(s)
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
 end
 
+---Takes a string of lines and returns a table of lines
+---@param s string The string to parse
+---@return table
+M.lines_into_table = function(s)
+  local lines = {}
+  for line in M.split_by_new_lines(s) do
+    table.insert(lines, line)
+  end
+  return lines
+end
+
 -- Reverses the order of elements in a list
 ---@param list table The list to reverse
 ---@return table
@@ -657,22 +668,10 @@ M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
 
----Return the list of possible merge targets.
----@return table|nil
-M.get_all_merge_targets = function()
-  local current_branch = git.get_current_branch()
-  if not current_branch then
-    return
-  end
-  return List.new(git.get_all_remote_branches()):filter(function(branch)
-    return branch ~= current_branch
-  end)
-end
-
 ---Select a git branch and perform callback with the branch as an argument
 ---@param cb function The callback to perform with the selected branch
 M.select_target_branch = function(cb)
-  local all_branch_names = M.get_all_merge_targets()
+  local all_branch_names = git.get_all_merge_targets()
   if not all_branch_names then
     return
   end

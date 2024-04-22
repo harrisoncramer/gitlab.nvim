@@ -43,7 +43,7 @@ end
 --- continue working on it.
 ---@param args? Mr
 M.start = function(args)
-  if not git.current_branch_up_to_date_on_remote("ERROR") then
+  if not git.current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
     return
   end
 
@@ -87,7 +87,10 @@ M.pick_target = function(mr)
 end
 
 local function make_template_path(t)
-  local base_dir = git.base_dir()
+  local base_dir, err = git.base_dir()
+  if err ~= nil then
+    return
+  end
   return base_dir
     .. state.settings.file_separator
     .. ".gitlab"

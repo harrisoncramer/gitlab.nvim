@@ -5,9 +5,10 @@ import (
 )
 
 func main() {
+	log.SetFlags(0)
 	gitInfo, err := extractGitInfo(RefreshProjectInfo, GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
 	if err != nil {
-		log.Fatalf("Failure initializing plugin with `git` commands: %v", err)
+		log.Fatalf("Failure initializing plugin: %v", err)
 	}
 
 	err, client := initGitlabClient()

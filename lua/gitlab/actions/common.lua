@@ -32,10 +32,7 @@ end
 ---@param content string
 ---@return table
 M.build_content = function(content)
-  local description_lines = {}
-  for line in u.split_by_new_lines(content) do
-    table.insert(description_lines, line)
-  end
+  local description_lines = u.lines_into_table(content)
   table.insert(description_lines, "")
   return description_lines
 end

@@ -124,14 +124,16 @@ configure your connection to Gitlab.
 
 In case even more control over the auth config is needed, there is the
 possibility to override the `auth_provider` settings field. It should be
-a function that returns the `token` as well as the `gitlab_url` value.
+a function that returns the `token` as well as the `gitlab_url` value and
+a nilable error value.
+
 If the `gitlab_url` is `nil`, `https://gitlab.com` is used as default.
 
 Here an example how to use a custom `auth_provider`:
 >lua
     require("gitlab").setup({
       auth_provider = function()
-        return "my_token", "https://custom.gitlab.instance.url"
+        return "my_token", "https://custom.gitlab.instance.url", nil
       end,
     }
 <
@@ -199,11 +201,10 @@ you call this function with no values the defaults will be used:
         unresolved = '-', -- Symbol to show next to unresolved discussions
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
+        draft_mode = false, -- Whether comments are posted as drafts as part of a review
+        toggle_draft_mode = "D" -- Toggle between draft mode and regular mode, where comments are posted immediately
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
-      },
-      comments = {
-        default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
       },
       choose_merge_request = {
         open_reviewer = true, -- Open the reviewer window automatically after switching merge requests

@@ -528,6 +528,10 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.delete_comment(tree)
     end
   end, { buffer = bufnr, desc = "Delete comment" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_draft_mode, function()
+    state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
+    winbar.update_winbar()
+  end, { buffer = bufnr, desc = "Toggle between draft mode and live mode" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
     if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
       M.toggle_discussion_resolved(tree)
