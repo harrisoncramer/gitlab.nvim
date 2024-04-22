@@ -113,8 +113,7 @@ end
 ---@param t WinbarTable
 M.make_winbar = function(t)
   local discussion_title =
-      add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions, t.resolved_discussions, t
-        .inline_draft_notes)
+    add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions, t.resolved_discussions, t.inline_draft_notes)
   local notes_title = add_drafts_and_resolvable("Notes", t.resolvable_notes, t.resolved_notes, t.unlinked_draft_notes)
 
   -- Colorize the active tab
@@ -132,8 +131,16 @@ M.make_winbar = function(t)
   local separator = "%#Comment#|"
   local end_section = "%="
   local help = "%#Comment#Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
-  return string.format(" %s %s %s %s %s %s %s", discussion_title, separator, notes_title, end_section, mode, separator,
-    help)
+  return string.format(
+    " %s %s %s %s %s %s %s",
+    discussion_title,
+    separator,
+    notes_title,
+    end_section,
+    mode,
+    separator,
+    help
+  )
 end
 
 ---Returns a string for the winbar indicating the mode type, live or draft
