@@ -109,9 +109,8 @@ M.settings = {
     unresolved = "-",
     tree_type = "simple",
     toggle_tree_type = "i",
-  },
-  comments = {
-    default_to_draft = false,
+    toggle_draft_mode = "D",
+    draft_mode = false,
   },
   create_mr = {
     target = nil,

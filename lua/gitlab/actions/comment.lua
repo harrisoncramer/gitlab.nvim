@@ -140,8 +140,8 @@ local function create_comment_layout(opts)
   end, miscellaneous.attach_file, popup_opts)
 
   vim.schedule(function()
-    local default_to_draft = state.settings.comments.default_to_draft
-    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(default_to_draft) })
+    local draft_mode = state.settings.discussion_tree.draft_mode
+    vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(draft_mode) })
   end)
 
   return layout

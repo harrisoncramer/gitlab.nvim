@@ -426,7 +426,7 @@ M.rebuild_unlinked_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local existing_note_nodes =
-    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
 
   -- Combine draft notes with regular notes
@@ -528,6 +528,10 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.delete_comment(tree)
     end
   end, { buffer = bufnr, desc = "Delete comment" })
+  vim.keymap.set("n", state.settings.discussion_tree.toggle_draft_mode, function()
+    state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
+    winbar.update_winbar()
+  end, { buffer = bufnr, desc = "Toggle between draft mode and live mode" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
     if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
       M.toggle_discussion_resolved(tree)

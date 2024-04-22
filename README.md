@@ -176,11 +176,10 @@ require("gitlab").setup({
     unresolved = '-', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
     toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
+    draft_mode = false, -- Whether comments are posted as drafts as part of a review
+    toggle_draft_mode = "D" -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
     winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                  -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
-  },
-  comments = {
-    default_to_draft = false, -- Whether to default a comment to a "draft" or not in the popup
   },
   choose_merge_request = {
     open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
