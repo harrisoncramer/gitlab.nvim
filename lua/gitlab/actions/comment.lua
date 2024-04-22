@@ -163,6 +163,10 @@ M.create_comment = function()
     return
   end
 
+  if not M.sha_exists() then
+    return
+  end
+
   local layout = create_comment_layout()
   layout:mount()
 end
@@ -171,6 +175,9 @@ end
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
   if not u.check_visual_mode() then
+    return
+  end
+  if not M.sha_exists() then
     return
   end
 
@@ -230,6 +237,9 @@ M.create_comment_suggestion = function()
   if not u.check_visual_mode() then
     return
   end
+  if not M.sha_exists() then
+    return
+  end
 
   local suggestion_lines, range_length = build_suggestion()
 
@@ -240,6 +250,17 @@ M.create_comment_suggestion = function()
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
     end
   end)
+end
+
+---Checks to see whether you are commenting on a valid buffer. The Diffview plugin names non-existent
+---buffers as 'null'
+---@return boolean
+M.sha_exists = function()
+  if vim.fn.expand("%") == "diffview://null" then
+    u.notify("This file does not exist, please comment on the other buffer", vim.log.levels.ERROR)
+    return false
+  end
+  return true
 end
 
 return M
