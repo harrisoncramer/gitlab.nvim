@@ -3,15 +3,51 @@
 -- This module is also responsible for ensuring that the state of the plugin
 -- is valid via dependencies
 
+local git = require("gitlab.git")
 local u = require("gitlab.utils")
 local M = {}
 
 M.emoji_map = nil
 
+---Returns a gitlab token, and a gitlab URL. Used to connect to gitlab.
+---@return string|nil, string|nil, string|nil
+M.default_auth_provider = function()
+  local base_path, err = M.settings.config_path, nil
+  if base_path == nil then
+    base_path, err = git.base_dir()
+  end
+
+  if err ~= nil then
+    return "", ""
+  end
+
+  local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
+  local config_file_content = u.read_file(config_file_path, { remove_newlines = true })
+
+  local file_properties = {}
+  if config_file_content ~= nil then
+    local file = assert(io.open(config_file_path, "r"))
+    for line in file:lines() do
+      for key, value in string.gmatch(line, "(.-)=(.-)$") do
+        file_properties[key] = value
+      end
+    end
+  end
+
+  local auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
+  local gitlab_url = file_properties.gitlab_url or os.getenv("GITLAB_URL")
+
+  return auth_token, gitlab_url, err
+end
+
 -- These are the default settings for the plugin
 M.settings = {
+  auth_provider = M.default_auth_provider,
   port = nil, -- choose random port
-  debug = { go_request = false, go_response = false },
+  debug = {
+    go_request = false,
+    go_response = false,
+  },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   config_path = nil,
   reviewer = "diffview",
@@ -56,6 +92,7 @@ M.settings = {
     delete_comment = "dd",
     open_in_browser = "b",
     copy_node_url = "u",
+    publish_draft = "P",
     reply = "r",
     toggle_node = "t",
     add_emoji = "Ea",
@@ -72,24 +109,8 @@ M.settings = {
     unresolved = "-",
     tree_type = "simple",
     toggle_tree_type = "i",
-    ---@param t WinbarTable
-    winbar = function(t)
-      local discussions_content = t.resolvable_discussions ~= 0
-          and string.format("Discussions (%d/%d)", t.resolved_discussions, t.resolvable_discussions)
-        or "Discussions"
-      local notes_content = t.resolvable_notes ~= 0
-          and string.format("Notes (%d/%d)", t.resolved_notes, t.resolvable_notes)
-        or "Notes"
-      if t.name == "Discussions" then
-        notes_content = "%#Comment#" .. notes_content
-        discussions_content = "%#Text#" .. discussions_content
-      else
-        discussions_content = "%#Comment#" .. discussions_content
-        notes_content = "%#Text#" .. notes_content
-      end
-      local help = "%#Comment#%=Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
-      return " " .. discussions_content .. " %#Comment#| " .. notes_content .. help
-    end,
+    toggle_draft_mode = "D",
+    draft_mode = false,
   },
   create_mr = {
     target = nil,
@@ -100,6 +121,9 @@ M.settings = {
       width = 40,
       border = "rounded",
     },
+  },
+  choose_merge_request = {
+    open_reviewer = true,
   },
   info = {
     enabled = true,
@@ -156,6 +180,7 @@ M.settings = {
       file_name = "Normal",
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
+      draft = "DiffviewNonText",
     },
   },
 }
@@ -218,32 +243,13 @@ M.setPluginConfiguration = function()
     return true
   end
 
-  local base_path
-  if M.settings.config_path ~= nil then
-    base_path = M.settings.config_path
-  else
-    base_path = vim.fn.trim(vim.fn.system({ "git", "rev-parse", "--show-toplevel" }))
-    if vim.v.shell_error ~= 0 then
-      u.notify(string.format("Could not get base directory: %s", base_path), vim.log.levels.ERROR)
-      return false
-    end
+  local token, url, err = M.settings.auth_provider()
+  if err ~= nil then
+    return
   end
 
-  local config_file_path = base_path .. M.settings.file_separator .. ".gitlab.nvim"
-  local config_file_content = u.read_file(config_file_path, { remove_newlines = true })
-
-  local file_properties = {}
-  if config_file_content ~= nil then
-    local file = assert(io.open(config_file_path, "r"))
-    for line in file:lines() do
-      for key, value in string.gmatch(line, "(.-)=(.-)$") do
-        file_properties[key] = value
-      end
-    end
-  end
-
-  M.settings.auth_token = file_properties.auth_token or os.getenv("GITLAB_TOKEN")
-  M.settings.gitlab_url = u.trim_slash(file_properties.gitlab_url or os.getenv("GITLAB_URL") or "https://gitlab.com")
+  M.settings.auth_token = token
+  M.settings.gitlab_url = u.trim_slash(url or "https://gitlab.com")
 
   if M.settings.auth_token == nil then
     vim.notify(
@@ -322,16 +328,64 @@ end
 -- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
 -- adding a reviewer) requires some initial state.
 M.dependencies = {
-  user = { endpoint = "/users/me", key = "user", state = "USER", refresh = false },
-  info = { endpoint = "/mr/info", key = "info", state = "INFO", refresh = false },
-  latest_pipeline = { endpoint = "/pipeline", key = "latest_pipeline", state = "PIPELINE", refresh = true },
-  labels = { endpoint = "/mr/label", key = "labels", state = "LABELS", refresh = false },
-  revisions = { endpoint = "/mr/revisions", key = "Revisions", state = "MR_REVISIONS", refresh = false },
+  user = {
+    endpoint = "/users/me",
+    key = "user",
+    state = "USER",
+    refresh = false,
+  },
+  info = {
+    endpoint = "/mr/info",
+    key = "info",
+    state = "INFO",
+    refresh = false,
+  },
+  latest_pipeline = {
+    endpoint = "/pipeline",
+    key = "latest_pipeline",
+    state = "PIPELINE",
+    refresh = true,
+  },
+  labels = {
+    endpoint = "/mr/label",
+    key = "labels",
+    state = "LABELS",
+    refresh = false,
+  },
+  revisions = {
+    endpoint = "/mr/revisions",
+    key = "Revisions",
+    state = "MR_REVISIONS",
+    refresh = false,
+  },
+  draft_notes = {
+    endpoint = "/mr/draft_notes/",
+    key = "draft_notes",
+    state = "DRAFT_NOTES",
+    refresh = false,
+  },
   project_members = {
     endpoint = "/project/members",
     key = "ProjectMembers",
     state = "PROJECT_MEMBERS",
     refresh = false,
+  },
+  merge_requests = {
+    endpoint = "/merge_requests",
+    key = "merge_requests",
+    state = "MERGE_REQUESTS",
+    refresh = false,
+  },
+  discussion_data = {
+    endpoint = "/mr/discussions/list",
+    state = "DISCUSSION_DATA",
+    refresh = false,
+    method = "POST",
+    body = function()
+      return {
+        blacklist = M.settings.discussion_tree.blacklist,
+      }
+    end,
   },
 }
 

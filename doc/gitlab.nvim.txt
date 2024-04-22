@@ -51,9 +51,9 @@ QUICK START                                          *gitlab.nvim.quick-start*
 
 1. Install Go
 2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+5. Run `:lua require("gitlab").choose_merge_request()`
+
+This will checkout the branch locally, and up the plugin's reviewer pane.
 
 
 INSTALLATION                                        *gitlab.nvim.installation*
@@ -78,20 +78,25 @@ With Lazy:
 <
 And with Packer:
 >lua
-    use {
-      'harrisoncramer/gitlab.nvim',
-      requires = {
-        "MunifTanjim/nui.nvim",
-        "nvim-lua/plenary.nvim",
-        "sindrets/diffview.nvim",
-        "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-        "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
-      },
-      run = function() require("gitlab.server").build(true) end,
-      config = function()
-        require("gitlab").setup()
-      end,
-    }
+  use {
+    "harrisoncramer/gitlab.nvim",
+    requires = {
+      "MunifTanjim/nui.nvim",
+      "nvim-lua/plenary.nvim",
+      "sindrets/diffview.nvim"
+      "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+      "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
+    },
+    build = function()
+      require("gitlab.server").build()
+    end,
+    branch = "develop",
+    config = function()
+      require("diffview") -- We require some global state from diffview
+      local gitlab = require("gitlab")
+      gitlab.setup()
+    end,
+  }
 <
 
 CONNECTING TO GITLAB                        *gitlab.nvim.connecting-to-gitlab*
@@ -121,6 +126,22 @@ directory that holds your `.gitlab.nvim` file.
 
 The `connection_settings` block in the `state.lua` file will be used to
 configure your connection to Gitlab.
+
+In case even more control over the auth config is needed, there is the
+possibility to override the `auth_provider` settings field. It should be
+a function that returns the `token` as well as the `gitlab_url` value and
+a nilable error value.
+
+If the `gitlab_url` is `nil`, `https://gitlab.com` is used as default.
+
+Here an example how to use a custom `auth_provider`:
+>lua
+    require("gitlab").setup({
+      auth_provider = function()
+        return "my_token", "https://custom.gitlab.instance.url", nil
+      end,
+    }
+<
 
 
 CONFIGURING THE PLUGIN                    *gitlab.nvim.configuring-the-plugin*
@@ -175,6 +196,7 @@ you call this function with no values the defaults will be used:
         toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
+        publish_draft = "P", -- Publishes the currently focused note/comment
         position = "left", -- "top", "right", "bottom" or "left"
         open_in_browser = "b" -- Jump to the URL of the current note/discussion
         copy_node_url = "u", -- Copy the URL of the current node to clipboard
@@ -184,8 +206,13 @@ you call this function with no values the defaults will be used:
         unresolved = '-', -- Symbol to show next to unresolved discussions
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
+        draft_mode = false, -- Whether comments are posted as drafts as part of a review
+        toggle_draft_mode = "D" -- Toggle between draft mode and regular mode, where comments are posted immediately
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
+      },
+      choose_merge_request = {
+        open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
       },
       info = { -- Show additional fields in the summary view
         enabled = true,
@@ -297,6 +324,16 @@ code block with prefilled code from the visual selection.
 Just like the summary, all the different kinds of comments are saved via the
 `settings.popup.perform_action` keybinding.
 
+DRAFT NOTES                                       *gitlab.nvim.draft-comments*
+
+When you publish a "draft" of any of the above resources (configurable via the
+`state.settings.comments.default_to_draft` setting) the comment will be added
+to a review. You may publish all draft comments via the `gitlab.publish_all_drafts()`
+function, and you can publish an individual comment or note by pressing the
+`state.settings.discussion_tree.publish_draft` keybinding.
+
+Draft notes do not support editing, replying, or emojis.
+
 TEMPORARY REGISTERS                               *gitlab.nvim.temp-registers*
 
 While writing a note/comment/suggestion/reply, you may need to interrupt the
@@ -364,7 +401,7 @@ These labels will be visible in the summary panel, as long as you provide the
 
 SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 
-By default when reviewing files, you will see diagnostics for comments that 
+By default when reviewing files, you will see diagnostics for comments that
 have been added to a review. These are the default settings:
 >lua
   discussion_signs = {
@@ -379,7 +416,7 @@ have been added to a review. These are the default settings:
     },
   },
 
-When the cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show()` 
+When the cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show()`
 
 You can also jump to discussion tree for the given comment:
 >lua
@@ -527,6 +564,7 @@ in normal mode):
     vim.keymap.set("n", "glo", gitlab.open_in_browser)
     vim.keymap.set("n", "glM", gitlab.merge)
     vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+    vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
@@ -567,6 +605,21 @@ default arguments outlined under "Configuring the Plugin".
   require("gitlab").setup({ port = 8392 })
 
   require("gitlab").setup({ discussion_tree = { blacklist = { "some_bot"} } })
+<
+                                                                *gitlab.nvim.choose_merge_request*
+gitlab.choose_merge_request({opts}) ~
+
+Choose a merge request from a list of those open in your current project to review. 
+This command will automatically check out that branch locally, and optionally
+open the reviewer pane. This is the default behavior.
+>lua
+  require("gitlab").choose_merge_request()
+  require("gitlab").choose_merge_request({ open_reviewer = false })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments to configure the checkout.
+            • {open_reviewer}: (boolean) Whether to open the reviewer after
+            switching branches. True by default.
 <
                                                                 *gitlab.nvim.review*
 gitlab.review() ~
@@ -708,6 +761,14 @@ Once the discussion tree is open, a number of different keybindings are availabl
 for interacting with different discussions. Please see the `settings.discussion_tree`
 section of the setup call for more information about different keybindings.
 
+                                                                *gitlab.nvim.publish_all_drafts*
+gitlab.publish_all_drafts() ~
+
+Publishes all unpublished draft notes. Used to finish a review and make all notes and 
+comments visible.
+>lua
+  require("gitlab").publish_all_drafts()
+<
                                                                 *gitlab.nvim.add_assignee*
 gitlab.add_assignee() ~
 
@@ -829,6 +890,7 @@ execute and passed the data as an argument.
                     • "pipeline": Information about the current branch's
                       pipeline. Returns and object with `latest_pipeline` and
                       `jobs` as fields.
+                    • "draft_notes": The current user's unpublished notes
                 • {refresh}: (bool) Whether to re-fetch the data from Gitlab
                   or use the cached data locally, if available.
         • {cb}: (function) The callback function that runs after all of the

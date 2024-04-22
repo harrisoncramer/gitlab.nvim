@@ -23,7 +23,7 @@ func updateAssigneesErr(pid interface{}, mergeRequest int, opt *gitlab.UpdateMer
 func TestAssigneeHandler(t *testing.T) {
 	t.Run("Updates assignees", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", AssigneeUpdateRequest{Ids: []int{1, 2}})
-		server, _ := createRouterAndApi(fakeClient{updateMergeRequestFn: updateAssignees})
+		server, _ := createRouterAndApi(fakeClient{updateMergeRequest: updateAssignees})
 		data := serveRequest(t, server, request, AssigneeUpdateResponse{})
 		assert(t, data.SuccessResponse.Message, "Assignees updated")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -31,7 +31,7 @@ func TestAssigneeHandler(t *testing.T) {
 
 	t.Run("Disallows non-PUT method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/assignee", nil)
-		server, _ := createRouterAndApi(fakeClient{updateMergeRequestFn: updateAssignees})
+		server, _ := createRouterAndApi(fakeClient{updateMergeRequest: updateAssignees})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 		assert(t, data.Details, "Invalid request type")
@@ -40,7 +40,7 @@ func TestAssigneeHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", AssigneeUpdateRequest{Ids: []int{1, 2}})
-		server, _ := createRouterAndApi(fakeClient{updateMergeRequestFn: updateAssigneesErr})
+		server, _ := createRouterAndApi(fakeClient{updateMergeRequest: updateAssigneesErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusInternalServerError)
 		assert(t, data.Message, "Could not modify merge request assignees")
@@ -49,7 +49,7 @@ func TestAssigneeHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", AssigneeUpdateRequest{Ids: []int{1, 2}})
-		server, _ := createRouterAndApi(fakeClient{updateMergeRequestFn: updateAssigneesNon200})
+		server, _ := createRouterAndApi(fakeClient{updateMergeRequest: updateAssigneesNon200})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusSeeOther)
 		assert(t, data.Message, "Could not modify merge request assignees")

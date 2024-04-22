@@ -1,3 +1,4 @@
+local git = require("gitlab.git")
 local List = require("gitlab.utils.list")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 local M = {}
@@ -200,6 +201,17 @@ M.split_by_new_lines = function(s)
     s = s .. "\n"
   end -- Append a new line to the string, if there's none, otherwise the last line would be lost.
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
+end
+
+---Takes a string of lines and returns a table of lines
+---@param s string The string to parse
+---@return table
+M.lines_into_table = function(s)
+  local lines = {}
+  for line in M.split_by_new_lines(s) do
+    table.insert(lines, line)
+  end
+  return lines
 end
 
 -- Reverses the order of elements in a list
@@ -493,7 +505,7 @@ M.create_popup_state = function(title, settings, width, height, zindex)
 end
 
 ---Create view_opts for Box popups used inside popup Layouts
----@param title string The string to appear on top of the popup
+---@param title string|nil The string to appear on top of the popup
 ---@param enter boolean Whether the pop should be focused after creation
 ---@return table
 M.create_box_popup_state = function(title, enter)
@@ -656,52 +668,10 @@ M.make_comma_separated_readable = function(str)
   return string.gsub(str, ",", ", ")
 end
 
----Return the name of the current branch
----@return string|nil
-M.get_current_branch = function()
-  local handle = io.popen("git branch --show-current 2>&1")
-  if handle then
-    return handle:read()
-  else
-    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-  end
-end
-
----Return the list of names of all remote-tracking branches
-M.get_all_merge_targets = function()
-  local handle = io.popen("git branch -r 2>&1")
-  if not handle then
-    M.notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-    return
-  end
-
-  local current_branch = M.get_current_branch()
-  if not current_branch then
-    return
-  end
-
-  local lines = {}
-  for line in handle:lines() do
-    table.insert(lines, line)
-  end
-  handle:close()
-
-  -- Trim "origin/" and don't include the HEAD pointer
-  local branches = List.new(lines)
-    :map(function(line)
-      return line:match("origin/(%S+)")
-    end)
-    :filter(function(branch)
-      return not branch:match("^HEAD$") and branch ~= current_branch
-    end)
-
-  return branches
-end
-
 ---Select a git branch and perform callback with the branch as an argument
 ---@param cb function The callback to perform with the selected branch
 M.select_target_branch = function(cb)
-  local all_branch_names = M.get_all_merge_targets()
+  local all_branch_names = git.get_all_merge_targets()
   if not all_branch_names then
     return
   end
@@ -738,11 +708,32 @@ M.open_in_browser = function(url)
   end
 end
 
+---Combines two tables
+---@param t1 table
+---@param t2 table
+---@return table
+M.join = function(t1, t2)
+  local res = {}
+  for _, val in ipairs(t1) do
+    table.insert(res, val)
+  end
+  for _, val in ipairs(t2) do
+    table.insert(res, val)
+  end
+  return res
+end
 ---Trims the trailing slash from a URL
 ---@param s string
 ---@return string
 M.trim_slash = function(s)
   return (s:gsub("/+$", ""))
+end
+
+M.ensure_table = function(data)
+  if data == vim.NIL or data == nil then
+    return {}
+  end
+  return data
 end
 
 return M

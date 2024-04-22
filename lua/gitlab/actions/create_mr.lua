@@ -7,6 +7,7 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local git = require("gitlab.git")
 local state = require("gitlab.state")
+local common = require("gitlab.actions.common")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 
 ---@class Mr
@@ -42,6 +43,10 @@ end
 --- continue working on it.
 ---@param args? Mr
 M.start = function(args)
+  if not git.current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
+    return
+  end
+
   if M.started then
     vim.ui.select({ "Yes", "No" }, { prompt = "Continue your previous MR?" }, function(choice)
       if choice == "Yes" then
@@ -82,7 +87,10 @@ M.pick_target = function(mr)
 end
 
 local function make_template_path(t)
-  local base_dir = git.base_dir()
+  local base_dir, err = git.base_dir()
+  if err ~= nil then
+    return
+  end
   return base_dir
     .. state.settings.file_separator
     .. ".gitlab"
@@ -202,7 +210,7 @@ M.open_confirmation_popup = function(mr)
     M.layout_visible = false
   end
 
-  local description_lines = mr.description and M.build_description_lines(mr.description) or { "" }
+  local description_lines = mr.description and common.build_content(mr.description) or { "" }
   local delete_branch = u.get_first_non_nil_value({ mr.delete_branch, state.settings.create_mr.delete_branch })
   local squash = u.get_first_non_nil_value({ mr.squash, state.settings.create_mr.squash })
 
@@ -232,18 +240,6 @@ M.open_confirmation_popup = function(mr)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
-end
-
----Builds a lua list of strings that contain the MR description
-M.build_description_lines = function(template_content)
-  local description_lines = {}
-  for line in u.split_by_new_lines(template_content) do
-    table.insert(description_lines, line)
-  end
-  -- TODO: @harrisoncramer Same as in lua/gitlab/actions/summary.lua:114
-  table.insert(description_lines, "")
-
-  return description_lines
 end
 
 ---Prompts for interactive selection of a new target among remote-tracking branches

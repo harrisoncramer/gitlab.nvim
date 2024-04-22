@@ -25,9 +25,9 @@ To view these help docs and to get more detailed help information, please run `:
 
 1. Install Go
 2. Add configuration (see Installation section)
-3. Checkout your feature branch: `git checkout feature-branch`
-4. Open Neovim
-5. Run `:lua require("gitlab").review()` to open the reviewer pane
+5. Run `:lua require("gitlab").choose_merge_request()`
+
+This will checkout the branch locally, and open the plugin's reviewer pane.
 
 For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 
@@ -56,20 +56,25 @@ return {
 And with Packer:
 
 ```lua
-use {
-  'harrisoncramer/gitlab.nvim',
-  requires = {
-    "MunifTanjim/nui.nvim",
-    "nvim-lua/plenary.nvim",
-    "sindrets/diffview.nvim",
-    "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-    "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
-  },
-  run = function() require("gitlab.server").build(true) end,
-  config = function()
-    require("gitlab").setup()
-  end,
-}
+  use {
+    "harrisoncramer/gitlab.nvim",
+    requires = {
+      "MunifTanjim/nui.nvim",
+      "nvim-lua/plenary.nvim",
+      "sindrets/diffview.nvim"
+      "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+      "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
+    },
+    build = function()
+      require("gitlab.server").build()
+    end,
+    branch = "develop",
+    config = function()
+      require("diffview") -- We require some global state from diffview
+      local gitlab = require("gitlab")
+      gitlab.setup()
+    end,
+  }
 ```
 
 ## Connecting to Gitlab
@@ -92,6 +97,18 @@ gitlab_url=https://my-personal-gitlab-instance.com/
 
 The plugin will look for the `.gitlab.nvim` file in the root of the current project by default. However, you may provide a custom path to the configuration file via the `config_path` option. This must be an absolute path to the directory that holds your `.gitlab.nvim` file.
 
+In case even more control over the auth config is needed, there is the possibility to override the `auth_provider` settings field. It should be
+a function that returns the `token` as well as the `gitlab_url` value, and a nilable error. If the `gitlab_url` is `nil`, `https://gitlab.com` is used as default.
+
+Here an example how to use a custom `auth_provider`:
+```lua
+require("gitlab").setup({
+  auth_provider = function()
+    return "my_token", "https://custom.gitlab.instance.url", nil
+  end,
+}
+```
+
 For more settings, please see `:h gitlab.nvim.connecting-to-gitlab`
 
 ## Configuring the Plugin
@@ -103,7 +120,10 @@ require("gitlab").setup({
   port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
   log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
   config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
-  debug = { go_request = false, go_response = false }, -- Which values to log
+  debug = {
+      go_request = false,
+      go_response = false,
+  },
   attachment_dir = nil, -- The local directory for files (see the "summary" section)
   reviewer_settings = {
     diffview = {
@@ -150,6 +170,7 @@ require("gitlab").setup({
     toggle_resolved_discussions = "R", -- Open or close all resolved discussions
     toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
     keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
+    publish_draft = "P", -- Publishes the currently focused note/comment
     toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
     position = "left", -- "top", "right", "bottom" or "left"
     open_in_browser = "b" -- Jump to the URL of the current note/discussion
@@ -160,8 +181,13 @@ require("gitlab").setup({
     unresolved = '-', -- Symbol to show next to unresolved discussions
     tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
     toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
+    draft_mode = false, -- Whether comments are posted as drafts as part of a review
+    toggle_draft_mode = "D" -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
     winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                  -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
+  },
+  choose_merge_request = {
+    open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
   },
   info = { -- Show additional fields in the summary view
     enabled = true,
@@ -246,6 +272,7 @@ you need to set them up yourself. Here's what I'm using:
 ```lua
 local gitlab = require("gitlab")
 local gitlab_server = require("gitlab.server")
+vim.keymap.set("n", "glb", gitlab.choose_merge_request)
 vim.keymap.set("n", "glr", gitlab.review)
 vim.keymap.set("n", "gls", gitlab.summary)
 vim.keymap.set("n", "glA", gitlab.approve)
@@ -266,6 +293,8 @@ vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
 vim.keymap.set("n", "glp", gitlab.pipeline)
 vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
+vim.keymap.set("n", "glu", gitlab.copy_mr_url)
+vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

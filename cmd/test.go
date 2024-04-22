@@ -19,10 +19,10 @@ The FakeHandlerClient is used to create a fake gitlab client for testing our han
 
 type fakeClient struct {
 	createMrFn                         func(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	getMergeRequestFn                  func(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	updateMergeRequestFn               func(pid interface{}, mergeRequestIID int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	acceptAndMergeFn                   func(pid interface{}, mergeRequestIID int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
-	unapprorveMergeRequestFn           func(pid interface{}, mergeRequestIID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	getMergeRequest                    func(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	updateMergeRequest                 func(pid interface{}, mergeRequestIID int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	acceptMergeRequest                 func(pid interface{}, mergeRequestIID int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	unapproveMergeRequest              func(pid interface{}, mergeRequestIID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	uploadFile                         func(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
 	getMergeRequestDiffVersions        func(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestDiffVersionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequestDiffVersion, *gitlab.Response, error)
 	approveMergeRequest                func(pid interface{}, mergeRequestIID int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error)
@@ -41,6 +41,13 @@ type fakeClient struct {
 	listMergeRequestAwardEmojiOnNote   func(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
 	deleteMergeRequestAwardEmojiOnNote func(pid interface{}, mergeRequestIID, noteID, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	currentUser                        func(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error)
+	createDraftNote                    func(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
+	listDraftNotes                     func(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error)
+	deleteDraftNote                    func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	updateDraftNote                    func(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
+	publishAllDraftNotes               func(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	publishDraftNote                   func(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	listProjectMergeRequests           func(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error)
 }
 
 type Author struct {
@@ -58,19 +65,19 @@ func (f fakeClient) CreateMergeRequest(pid interface{}, opt *gitlab.CreateMergeR
 }
 
 func (f fakeClient) AcceptMergeRequest(pid interface{}, mergeRequestIID int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return f.acceptAndMergeFn(pid, mergeRequestIID, opt, options...)
+	return f.acceptMergeRequest(pid, mergeRequestIID, opt, options...)
 }
 
 func (f fakeClient) GetMergeRequest(pid interface{}, mergeRequestIID int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return f.getMergeRequestFn(pid, mergeRequestIID, opt, options...)
+	return f.getMergeRequest(pid, mergeRequestIID, opt, options...)
 }
 
 func (f fakeClient) UpdateMergeRequest(pid interface{}, mergeRequestIID int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return f.updateMergeRequestFn(pid, mergeRequestIID, opt, options...)
+	return f.updateMergeRequest(pid, mergeRequestIID, opt, options...)
 }
 
 func (f fakeClient) UnapproveMergeRequest(pid interface{}, mergeRequestIID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return f.unapprorveMergeRequestFn(pid, mergeRequestIID, options...)
+	return f.unapproveMergeRequest(pid, mergeRequestIID, options...)
 }
 
 func (f fakeClient) UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
@@ -141,17 +148,45 @@ func (f fakeClient) DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeReq
 	return f.deleteMergeRequestAwardEmojiOnNote(pid, mergeRequestIID, noteID, awardID)
 }
 
+func (f fakeClient) CreateDraftNote(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+	return f.createDraftNote(pid, mergeRequestIID, opt)
+}
+
+func (f fakeClient) ListDraftNotes(pid interface{}, mergeRequestIID int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error) {
+	return f.listDraftNotes(pid, mergeRequestIID, opt)
+}
+
 func (f fakeClient) CurrentUser(options ...gitlab.RequestOptionFunc) (*gitlab.User, *gitlab.Response, error) {
 	return f.currentUser()
 }
 
-/* This middleware function needs to return an ID for the rest of the handlers */
-func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
-	return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
-}
-
 func (f fakeClient) CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error) {
 	return &gitlab.AwardEmoji{}, &gitlab.Response{}, nil
+}
+
+func (f fakeClient) UpdateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+	return f.updateDraftNote(pid, mergeRequest, note, opt)
+}
+
+func (f fakeClient) DeleteDraftNote(pid interface{}, mergeRequestIID int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return f.deleteDraftNote(pid, mergeRequestIID, note)
+}
+
+func (f fakeClient) PublishDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return f.publishDraftNote(pid, mergeRequest, note)
+}
+
+func (f fakeClient) PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+	return f.publishAllDraftNotes(pid, mergeRequest)
+}
+
+/* This middleware function needs to return an ID for the rest of the handlers */
+func (f fakeClient) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
+	if f.listProjectMergeRequests == nil {
+		return []*gitlab.MergeRequest{{ID: 1}}, &gitlab.Response{}, nil
+	} else {
+		return f.listProjectMergeRequests(pid, opt)
+	}
 }
 
 /* The assert function is a helper function used to check two comparables */

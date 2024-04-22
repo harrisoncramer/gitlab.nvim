@@ -12,6 +12,7 @@ local async = require("diffview.async")
 local diffview_lib = require("diffview.lib")
 
 local M = {
+  is_open = false,
   bufnr = nil,
   tabnr = nil,
   stored_win = nil,
@@ -41,12 +42,17 @@ M.open = function()
   end
 
   local diffview_open_command = "DiffviewOpen"
-  local has_clean_tree = git.has_clean_tree()
+  local has_clean_tree, err = git.has_clean_tree()
+  if err ~= nil then
+    return
+  end
   if state.settings.reviewer_settings.diffview.imply_local and has_clean_tree then
     diffview_open_command = diffview_open_command .. " --imply-local"
   end
 
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
+
+  M.is_open = true
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
   if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
@@ -74,14 +80,17 @@ M.open = function()
     end
   end
   require("diffview.config").user_emitter:on("view_closed", function(_, ...)
+    M.is_open = false
     on_diffview_closed(...)
   end)
 
   if state.settings.discussion_tree.auto_open then
     local discussions = require("gitlab.actions.discussions")
     discussions.close()
-    discussions.toggle()
+    require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
+
+  git.current_branch_up_to_date_on_remote(vim.log.levels.WARN)
 end
 
 -- Closes the reviewer and cleans up
@@ -91,7 +100,7 @@ M.close = function()
   discussions.close()
 end
 
--- Jumps to the location provided in the reviewer window
+--- Jumps to the location provided in the reviewer window
 ---@param file_name string
 ---@param line_number number
 ---@param new_buffer boolean
@@ -172,6 +181,7 @@ M.get_reviewer_data = function()
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
   local is_current_sha_focused = M.is_current_sha_focused()
+
   local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type", vim.log.levels.ERROR)
@@ -206,9 +216,7 @@ M.is_current_sha_focused = function()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local current_win = vim.fn.win_getid()
-
-  -- Handle cases where user navigates tabs in the middle of making a comment
+  local current_win = require("gitlab.actions.comment").current_win
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil
@@ -220,7 +228,7 @@ end
 ---@return string|nil
 M.get_current_file = function()
   local view = diffview_lib.get_current_view()
-  if not view then
+  if not view or not view.panel or not view.panel.cur_file then
     return
   end
   return view.panel.cur_file.path

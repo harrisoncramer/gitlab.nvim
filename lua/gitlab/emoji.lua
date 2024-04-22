@@ -1,4 +1,5 @@
 local u = require("gitlab.utils")
+local common = require("gitlab.actions.common")
 local state = require("gitlab.state")
 
 local M = {
@@ -70,15 +71,15 @@ M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
     callback = function()
       local node = tree:get_node()
-      if node == nil or not require("gitlab.actions.discussions").is_node_note(node) then
+      if node == nil or not common.is_node_note(node) then
         return
       end
 
-      local note_node = require("gitlab.actions.discussions").get_note_node(tree, node)
-      local root_node = require("gitlab.actions.discussions").get_root_node(tree, node)
+      local note_node = common.get_note_node(tree, node)
+      local root_node = common.get_root_node(tree, node)
       local note_id_str = tostring(note_node.is_root and root_node.root_note_id or note_node.id)
+      local emojis = state.DISCUSSION_DATA.emojis
 
-      local emojis = require("gitlab.actions.discussions").emojis
       local note_emojis = emojis[note_id_str]
       if note_emojis == nil then
         return

@@ -21,12 +21,12 @@ end
 
 ---Filters a given list
 ---@generic T
----@param func fun(v: T):boolean
+---@param func fun(v: T, i: integer):boolean
 ---@return List<T> @Returns a new list of elements for which func returns true
 function List:filter(func)
   local result = List.new()
-  for _, v in ipairs(self) do
-    if func(v) == true then
+  for i, v in ipairs(self) do
+    if func(v, i) == true then
       table.insert(result, v)
     end
   end
@@ -61,6 +61,19 @@ function List:slice(first, last, step)
     sliced[#sliced + 1] = self[i]
   end
   return sliced
+end
+
+---Returns true if any of the elements can satisfy the callback
+---@generic T
+---@param func fun(v: T, i: integer):boolean
+---@return List<T> @Returns a boolean
+function List:includes(func)
+  for i, v in ipairs(self) do
+    if func(v, i) == true then
+      return true
+    end
+  end
+  return false
 end
 
 function List:values()
