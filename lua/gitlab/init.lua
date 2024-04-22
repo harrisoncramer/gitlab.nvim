@@ -74,7 +74,7 @@ return {
     draft_notes_dep,
     discussion_data,
   }, discussions.toggle),
-  toggle_draft_mode = async.sequence({ info }, discussions.toggle_draft_mode),
+  toggle_draft_mode = discussions.toggle_draft_mode,
   publish_all_drafts = draft_notes.publish_all_drafts,
   -- Other functions 🤷
   state = state,
