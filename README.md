@@ -290,6 +290,7 @@ vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
 vim.keymap.set("n", "glu", gitlab.copy_mr_url)
 vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
+vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

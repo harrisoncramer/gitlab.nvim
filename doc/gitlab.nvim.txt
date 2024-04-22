@@ -560,6 +560,7 @@ in normal mode):
     vim.keymap.set("n", "glM", gitlab.merge)
     vim.keymap.set("n", "glu", gitlab.copy_mr_url)
     vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
+    vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*

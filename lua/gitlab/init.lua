@@ -74,9 +74,8 @@ return {
     draft_notes_dep,
     discussion_data,
   }, discussions.toggle),
-  toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),
+  toggle_draft_mode = async.sequence({ info }, discussions.toggle_draft_mode),
   publish_all_drafts = draft_notes.publish_all_drafts,
-  reply = async.sequence({ info }, discussions.reply),
   -- Other functions 🤷
   state = state,
   data = data.data,
