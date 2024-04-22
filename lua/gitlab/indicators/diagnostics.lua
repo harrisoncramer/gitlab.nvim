@@ -32,8 +32,10 @@ local function create_diagnostic(range_info, d_or_n)
   local message = header
   if d_or_n.notes then
     for _, note in ipairs(d_or_n.notes or {}) do
-      message = message .. actions_common.build_note_header(note) .. "\n" .. note.body .. "\n"
+      message = message .. "\n" .. note.body .. "\n"
     end
+  else
+    message = message .. "\n" .. d_or_n.note .. "\n"
   end
 
   local diagnostic = {
