@@ -155,10 +155,10 @@ M.create_comment_layout = function(opts)
     opts = {}
   end
 
-  M.current_win = vim.api.nvim_get_current_win()
   local title = opts.discussion_id and "Reply" or "Comment"
   local settings = opts.discussion_id ~= nil and state.settings.popup.reply or state.settings.popup.comment
 
+  M.current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(u.create_popup_state(title, settings))
   M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
@@ -191,19 +191,27 @@ M.create_comment_layout = function(opts)
   state.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
-    vim.api.nvim_set_current_win(opts.discussion_id == nil and M.current_win or discussions.split.winid)
+    vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.toggle_bool, popup_opts)
 
   ---Keybinding for focus on draft section
   state.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
-    vim.api.nvim_set_current_win(opts.discussion_id == nil and M.current_win or discussions.split.winid)
+    vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.attach_file, popup_opts)
 
   vim.schedule(function()
     local draft_mode = state.settings.discussion_tree.draft_mode
     vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(draft_mode) })
   end)
+
+  --Send back to previous window on close
+  vim.api.nvim_create_autocmd("BufHidden", {
+    buffer = M.draft_popup.bufnr,
+    callback = function()
+      vim.api.nvim_set_current_win(M.current_win)
+    end,
+  })
 
   return layout
 end
