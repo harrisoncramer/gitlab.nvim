@@ -96,17 +96,6 @@ M.modifiable = function(bool)
   end
 end
 
----Refresh discussion data, signs, diagnostics, and winbar with new data from API
---- and rebuild the entire view
-M.refresh = function(cb)
-  M.load_discussions(function()
-    M.refresh_diagnostics_and_winbar()
-    if cb ~= nil then
-      cb()
-    end
-  end)
-end
-
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
 M.refresh_diagnostics_and_winbar = function()
   if state.settings.discussion_signs.enabled then
@@ -352,6 +341,59 @@ M.toggle_discussion_resolved = function(tree)
   end)
 end
 
+---Opens a popup prompting the user to choose an emoji to attach to the current node
+---@param tree any
+---@param unlinked boolean
+M.add_emoji_to_note = function(tree, unlinked)
+  local node = tree:get_node()
+  local note_node = common.get_note_node(tree, node)
+  local root_node = common.get_root_node(tree, node)
+  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+  local emojis = require("gitlab.emoji").emoji_list
+  emoji.pick_emoji(emojis, function(name)
+    local body = { emoji = name, note_id = note_id }
+    job.run_job("/mr/awardable/note/", "POST", body, function()
+      u.notify("Emoji added", vim.log.levels.INFO)
+      M.rebuild_view(unlinked)
+    end)
+  end)
+end
+
+---Opens a popup prompting the user to choose an emoji to remove from the current node
+---@param tree any
+---@param unlinked boolean
+M.delete_emoji_from_note = function(tree, unlinked)
+  local node = tree:get_node()
+  local note_node = common.get_note_node(tree, node)
+  local root_node = common.get_root_node(tree, node)
+  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+  local note_id_str = tostring(note_id)
+
+  local e = require("gitlab.emoji")
+
+  local emojis = {}
+  local current_emojis = state.DISCUSSION_DATA.emojis[note_id_str]
+  for _, current_emoji in ipairs(current_emojis) do
+    if state.USER.id == current_emoji.user.id then
+      table.insert(emojis, e.emoji_map[current_emoji.name])
+    end
+  end
+
+  emoji.pick_emoji(emojis, function(name)
+    local awardable_id
+    for _, current_emoji in ipairs(current_emojis) do
+      if current_emoji.name == name and current_emoji.user.id == state.USER.id then
+        awardable_id = current_emoji.id
+        break
+      end
+    end
+    job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function()
+      u.notify("Emoji removed", vim.log.levels.INFO)
+      M.rebuild_view(unlinked)
+    end)
+  end)
+end
+
 --
 -- 🌲 Helper Functions
 --
@@ -421,7 +463,7 @@ M.rebuild_unlinked_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local existing_note_nodes =
-    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
 
   -- Combine draft notes with regular notes
@@ -599,57 +641,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   emoji.init_popup(tree, bufnr)
 end
 
----Redraws the header of a node in a tree when it's been toggled to resolved/unresolved
----@param tree NuiTree
----@param note NuiTree.Node
----@param mark_resolved boolean
-M.redraw_resolved_status = function(tree, note, mark_resolved)
-  local current_text = tree.nodes.by_id["-" .. note.id].text
-  local target = mark_resolved and "resolved" or "unresolved"
-  local current = mark_resolved and "unresolved" or "resolved"
-
-  local function set_property(key, val)
-    tree.nodes.by_id["-" .. note.id][key] = val
-  end
-
-  local has_symbol = function(s)
-    return state.settings.discussion_tree[s] ~= nil and state.settings.discussion_tree[s] ~= ""
-  end
-
-  set_property("resolved", mark_resolved)
-
-  if not has_symbol(current) and not has_symbol(target) then
-    return
-  end
-
-  if not has_symbol(current) and has_symbol(target) then
-    set_property("text", (current_text .. " " .. state.settings.discussion_tree[target]))
-  elseif has_symbol(current) and not has_symbol(target) then
-    set_property("text", u.remove_last_chunk(current_text))
-  else
-    set_property("text", (u.remove_last_chunk(current_text) .. " " .. state.settings.discussion_tree[target]))
-  end
-
-  tree:render()
-end
-
----Replace text in discussion after note update.
----@param data Discussion[]|UnlinkedDiscussion[]
----@param discussion_id string
----@param note_id integer
----@param text string
-M.replace_text = function(data, discussion_id, note_id, text)
-  for i, discussion in ipairs(data) do
-    if discussion.id == discussion_id then
-      for j, note in ipairs(discussion.notes) do
-        if note.id == note_id then
-          data[i].notes[j].body = text
-        end
-      end
-    end
-  end
-end
-
 ---Toggle comments tree type between "simple" and "by_file_name"
 M.toggle_tree_type = function()
   if state.settings.discussion_tree.tree_type == "simple" then
@@ -667,82 +658,6 @@ M.is_draft_note = function(tree)
   local current_node = tree:get_node()
   local root_node = common.get_root_node(tree, current_node)
   return root_node ~= nil and root_node.is_draft
-end
-
----Opens a popup prompting the user to choose an emoji to attach to the current node
----@param tree any
----@param unlinked boolean
-M.add_emoji_to_note = function(tree, unlinked)
-  local node = tree:get_node()
-  local note_node = common.get_note_node(tree, node)
-  local root_node = common.get_root_node(tree, node)
-  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
-  local note_id_str = tostring(note_id)
-  local emojis = require("gitlab.emoji").emoji_list
-  emoji.pick_emoji(emojis, function(name)
-    local body = { emoji = name, note_id = note_id }
-    job.run_job("/mr/awardable/note/", "POST", body, function(data)
-      if state.DISCUSSION_DATA.emojis[note_id_str] == nil then
-        state.DISCUSSION_DATA.emojis[note_id_str] = {}
-        table.insert(state.DISCUSSION_DATA.emojis[note_id_str], data.Emoji)
-      else
-        table.insert(state.DISCUSSION_DATA.emojis[note_id_str], data.Emoji)
-      end
-      if unlinked then
-        M.rebuild_unlinked_discussion_tree()
-      else
-        M.rebuild_discussion_tree()
-      end
-      u.notify("Emoji added", vim.log.levels.INFO)
-    end)
-  end)
-end
-
----Opens a popup prompting the user to choose an emoji to remove from the current node
----@param tree any
----@param unlinked boolean
-M.delete_emoji_from_note = function(tree, unlinked)
-  local node = tree:get_node()
-  local note_node = common.get_note_node(tree, node)
-  local root_node = common.get_root_node(tree, node)
-  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
-  local note_id_str = tostring(note_id)
-
-  local e = require("gitlab.emoji")
-
-  local emojis = {}
-  local current_emojis = state.DISCUSSION_DATA.emojis[note_id_str]
-  for _, current_emoji in ipairs(current_emojis) do
-    if state.USER.id == current_emoji.user.id then
-      table.insert(emojis, e.emoji_map[current_emoji.name])
-    end
-  end
-
-  emoji.pick_emoji(emojis, function(name)
-    local awardable_id
-    for _, current_emoji in ipairs(current_emojis) do
-      if current_emoji.name == name and current_emoji.user.id == state.USER.id then
-        awardable_id = current_emoji.id
-        break
-      end
-    end
-    job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function(_)
-      local keep = {} -- Emojis to keep after deletion in the UI
-      for _, saved in ipairs(state.DISCUSSION_DATA.emojis[note_id_str]) do
-        if saved.name ~= name or saved.user.id ~= state.USER.id then
-          table.insert(keep, saved)
-        end
-      end
-      state.DISCUSSION_DATA.emojis[note_id_str] = keep
-      if unlinked then
-        M.rebuild_unlinked_discussion_tree()
-      else
-        M.rebuild_discussion_tree()
-      end
-      e.init_popup(tree, unlinked and M.unlinked_bufnr or M.linked_bufnr)
-      u.notify("Emoji removed", vim.log.levels.INFO)
-    end)
-  end)
 end
 
 return M
