@@ -14,7 +14,7 @@ local M = {}
 
 ---Re-fetches all draft notes (and non-draft notes) and re-renders the relevant views
 ---@param unlinked boolean
----@param all boolean
+---@param all boolean|nil
 M.rebuild_view = function(unlinked, all)
   M.load_draft_notes(function()
     local discussions = require("gitlab.actions.discussions")

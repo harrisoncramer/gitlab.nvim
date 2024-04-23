@@ -17,7 +17,8 @@ as when they are creating a normal comment, but the Gitlab
 endpoints + resources we handle are different */
 
 type PostDraftNoteRequest struct {
-	Comment string `json:"comment"`
+	Comment      string `json:"comment"`
+	DiscussionId string `json:"discussion_id,omitempty"`
 	PositionData
 }
 
@@ -143,9 +144,11 @@ func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 
 	opt := gitlab.CreateDraftNoteOptions{
 		Note: &postDraftNoteRequest.Comment,
-		// TODO: Support posting replies as drafts and rendering draft replies in the discussion tree
-		// instead of the notes tree
-		// InReplyToDiscussionID *string          `url:"in_reply_to_discussion_id,omitempty" json:"in_reply_to_discussion_id,omitempty"`
+	}
+
+	// Draft notes can be posted in "response" to existing discussions
+	if postDraftNoteRequest.DiscussionId != "" {
+		opt.InReplyToDiscussionID = gitlab.Ptr(postDraftNoteRequest.DiscussionId)
 	}
 
 	if postDraftNoteRequest.FileName != "" {

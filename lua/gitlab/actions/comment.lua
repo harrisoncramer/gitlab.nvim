@@ -35,8 +35,8 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
 
   local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
 
-  -- Creating a reply to a discussion
-  if discussion_id ~= nil then
+  -- Creating a normal reply to a discussion
+  if discussion_id ~= nil and not is_draft then
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
     job.run_job("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
@@ -83,9 +83,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   end
 
   local revision = state.MR_REVISIONS[1]
-  local body = {
-    type = "text",
-    comment = text,
+  local position_data = {
     file_name = reviewer_data.file_name,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
@@ -95,7 +93,20 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     line_range = location_data.line_range,
   }
 
-  -- Creating a comment (linked to specific changes)
+  -- Creating a draft reply, in response to a discussion ID
+  if discussion_id ~= nil and is_draft then
+    local body = { comment = text, discussion_id = discussion_id, position = position_data }
+    job.run_job("/mr/draft_notes/", "POST", body, function()
+      u.notify("Draft reply created!", vim.log.levels.INFO)
+      draft_notes.load_draft_notes(function()
+        discussions.rebuild_view(false, true)
+      end)
+    end)
+    return
+  end
+
+  -- Creating a new comment (linked to specific changes)
+  local body = u.merge({ type = "text", comment = text }, position_data)
   local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
   job.run_job(endpoint, "POST", body, function()
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
