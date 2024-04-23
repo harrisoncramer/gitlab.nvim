@@ -396,7 +396,7 @@ M.load_new_state = function(dep, cb)
     function(data)
       M[dep.state] = u.ensure_table(data)
       if type(cb) == "function" then
-        cb()
+        cb(data)
       end
     end
   )

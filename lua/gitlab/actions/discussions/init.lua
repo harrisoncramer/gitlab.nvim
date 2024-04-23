@@ -38,11 +38,11 @@ local M = {
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
-  job.run_job("/mr/discussions/list", "POST", { blacklist = state.settings.discussion_tree.blacklist }, function(data)
+  state.load_new_state(state.dependencies.discussion_data, function(data)
     state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
     state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
     state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
-    if type(callback) == "function" then
+    if callback ~= nil then
       callback()
     end
   end)

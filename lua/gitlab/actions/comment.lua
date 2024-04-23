@@ -13,9 +13,6 @@ local draft_notes = require("gitlab.actions.draft_notes")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
 local Location = require("gitlab.reviewer.location")
-local winbar = require("gitlab.actions.discussions.winbar")
-local common = require("gitlab.actions.common")
-local diagnostics = require("gitlab.indicators.diagnostics")
 
 local M = {
   current_win = nil,
@@ -24,6 +21,16 @@ local M = {
   draft_popup = nil,
   comment_popup = nil,
 }
+
+M.rebuild_view = function(unlinked)
+  discussions.refresh(function()
+    if unlinked then
+      discussions.rebuild_unlinked_discussion_tree()
+    else
+      discussions.rebuild_discussion_tree()
+    end
+  end)
+end
 
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.popup.perform_action keybinding
@@ -56,12 +63,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
     job.run_job(endpoint, "POST", body, function(data)
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
-      if is_draft then
-        draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = true })
-      else
-        discussions.add_discussion({ data = data, unlinked = true })
-      end
-      discussions.refresh()
+      M.rebuild_view(unlinked)
     end)
     return
   end
@@ -99,11 +101,48 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
       draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = false })
+      discussions.refresh()
     else
-      discussions.add_discussion({ data = data, has_position = true })
+      M.rebuild_view(unlinked)
     end
-    discussions.refresh()
   end)
+end
+
+-- This function will actually send the deletion to Gitlab when you make a selection,
+-- and re-render the tree
+---@param note_id integer
+---@param discussion_id string
+M.send_deletion = function(note_id, discussion_id)
+  local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
+  job.run_job("/mr/comment", "DELETE", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+
+    local has_position = List.new(state.DISCUSSION_DATA.discussions):find(function(d)
+      if d.id ~= discussion_id then
+        return true
+      end
+    end) ~= nil
+
+    M.rebuild_view(not has_position)
+  end)
+end
+
+---This function sends the edited comment to the Go server
+---@param discussion_id string
+---@param note_id integer
+---@param unlinked boolean
+M.send_edits = function(discussion_id, note_id, unlinked)
+  return function(text)
+    local body = {
+      discussion_id = discussion_id,
+      note_id = note_id,
+      comment = text,
+    }
+    job.run_job("/mr/comment", "PATCH", body, function(data)
+      u.notify(data.message, vim.log.levels.INFO)
+      M.rebuild_view(unlinked)
+    end)
+  end
 end
 
 ---@class LayoutOpts
@@ -288,33 +327,6 @@ M.sha_exists = function()
     return false
   end
   return true
-end
-
--- This function will actually send the deletion to Gitlab when you make a selection,
--- and re-render the tree
----@param note_id integer
----@param discussion_id string
-M.send_deletion = function(note_id, discussion_id)
-  local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
-  job.run_job("/mr/comment", "DELETE", body, function(data)
-    u.notify(data.message, vim.log.levels.INFO)
-
-    local has_position = List.new(state.DISCUSSION_DATA.discussions):find(function(d)
-      if d.id ~= discussion_id then
-        return true
-      end
-    end) ~= nil
-
-    discussions.refresh(function()
-      if has_position then
-        discussions.rebuild_discussion_tree()
-      else
-        discussions.rebuild_unlinked_discussion_tree()
-      end
-      winbar.update_winbar()
-      common.add_empty_titles()
-    end)
-  end)
 end
 
 return M
