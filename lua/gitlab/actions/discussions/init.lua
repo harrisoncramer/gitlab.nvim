@@ -36,7 +36,7 @@ local M = {
 }
 
 M.rebuild_view = function(unlinked, all)
-  M.refresh(function()
+  M.load_discussions(function()
     if all then
       M.rebuild_unlinked_discussion_tree()
       M.rebuild_discussion_tree()
@@ -45,8 +45,7 @@ M.rebuild_view = function(unlinked, all)
     else
       M.rebuild_discussion_tree()
     end
-    winbar.update_winbar()
-    common.add_empty_titles()
+    M.refresh_diagnostics_and_winbar()
   end)
 end
 
@@ -67,7 +66,7 @@ end
 M.initialize_discussions = function()
   signs.setup_signs()
   reviewer.set_callback_for_file_changed(function()
-    M.refresh_view()
+    M.refresh_diagnostics_and_winbar()
     M.modifiable(false)
   end)
   reviewer.set_callback_for_reviewer_enter(function()
@@ -98,7 +97,7 @@ end
 --- and rebuild the entire view
 M.refresh = function(cb)
   M.load_discussions(function()
-    M.refresh_view()
+    M.refresh_diagnostics_and_winbar()
     if cb ~= nil then
       cb()
     end
@@ -106,7 +105,7 @@ M.refresh = function(cb)
 end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
-M.refresh_view = function()
+M.refresh_diagnostics_and_winbar = function()
   if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
   end
@@ -163,7 +162,7 @@ M.toggle = function(callback)
   end
 
   vim.schedule(function()
-    M.refresh_view()
+    M.refresh_diagnostics_and_winbar()
   end)
 end
 
@@ -340,8 +339,8 @@ M.toggle_discussion_resolved = function(tree)
 
   job.run_job("/mr/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    M.redraw_resolved_status(tree, note, not note.resolved)
-    M.refresh()
+    local unlinked = tree.bufnr == M.unlinked_bufnr
+    M.rebuild_view(unlinked)
   end)
 end
 
@@ -472,7 +471,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end, { buffer = bufnr, desc = "Jump to file" })
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
       if M.is_current_node_note(tree) then
-        common.jump_to_reviewer(tree, M.refresh_view)
+        common.jump_to_reviewer(tree, M.refresh_diagnostics_and_winbar)
       end
     end, { buffer = bufnr, desc = "Jump to reviewer" })
     vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
