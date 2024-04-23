@@ -15,8 +15,8 @@ local M = {}
 
 M.rebuild_view = function(unlinked)
   M.load_draft_notes(function()
-    local comment = require("gitlab.actions.comment")
-    comment.rebuild_view(unlinked)
+    local discussions = require("gitlab.actions.discussions")
+    discussions.rebuild_view(unlinked)
   end)
 end
 
@@ -24,7 +24,6 @@ end
 ---@param callback function|nil
 M.load_draft_notes = function(callback)
   state.load_new_state("draft_notes", function()
-    print("New draft notes loaded")
     if callback ~= nil then
       callback()
     end
@@ -141,11 +140,7 @@ M.confirm_publish_all_drafts = function()
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
     local discussions = require("gitlab.actions.discussions")
-    discussions.refresh(function()
-      discussions.rebuild_discussion_tree()
-      discussions.rebuild_unlinked_discussion_tree()
-      winbar.update_winbar()
-    end)
+    discussions.rebuild_view(false, true)
   end)
 end
 
@@ -169,27 +164,9 @@ M.confirm_publish_draft = function(tree)
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
 
-    local has_position = false
-    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
-      if note.id ~= note_id then
-        return true
-      else
-        has_position = M.has_position(note)
-        return false
-      end
-    end)
-
-    state.DRAFT_NOTES = new_draft_notes
     local discussions = require("gitlab.actions.discussions")
-    discussions.refresh(function()
-      if has_position then
-        discussions.rebuild_discussion_tree()
-      else
-        discussions.rebuild_unlinked_discussion_tree()
-      end
-      winbar.update_winbar()
-      common.add_empty_titles()
-    end)
+    local unlinked = tree.bufnr == discussions.unlinked_bufnr
+    M.rebuild_view(unlinked)
   end)
 end
 

@@ -35,6 +35,21 @@ local M = {
   unlinked_discussion_tree = nil,
 }
 
+M.rebuild_view = function(unlinked, all)
+  M.refresh(function()
+    if all then
+      M.rebuild_unlinked_discussion_tree()
+      M.rebuild_discussion_tree()
+    elseif unlinked then
+      M.rebuild_unlinked_discussion_tree()
+    else
+      M.rebuild_discussion_tree()
+    end
+    winbar.update_winbar()
+    common.add_empty_titles()
+  end)
+end
+
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
@@ -83,7 +98,6 @@ end
 --- and rebuild the entire view
 M.refresh = function(cb)
   M.load_discussions(function()
-    print("New discussions loaded")
     M.refresh_view()
     if cb ~= nil then
       cb()

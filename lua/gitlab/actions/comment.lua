@@ -21,16 +21,6 @@ local M = {
   comment_popup = nil,
 }
 
-M.rebuild_view = function(unlinked)
-  discussions.refresh(function()
-    if unlinked then
-      discussions.rebuild_unlinked_discussion_tree()
-    else
-      discussions.rebuild_discussion_tree()
-    end
-  end)
-end
-
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.popup.perform_action keybinding
 ---@param text string comment text
@@ -52,10 +42,10 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
       u.notify("Sent reply!", vim.log.levels.INFO)
       if is_draft then
         draft_notes.load_draft_notes(function()
-          M.rebuild_view(unlinked)
+          discussions.rebuild_view(unlinked)
         end)
       else
-        M.rebuild_view(unlinked)
+        discussions.rebuild_view(unlinked)
       end
     end)
     return
@@ -69,10 +59,10 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
       if is_draft then
         draft_notes.load_draft_notes(function()
-          M.rebuild_view(unlinked)
+          discussions.rebuild_view(unlinked)
         end)
       else
-        M.rebuild_view(unlinked)
+        discussions.rebuild_view(unlinked)
       end
     end)
     return
@@ -111,10 +101,10 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
       draft_notes.load_draft_notes(function()
-        M.rebuild_view(unlinked)
+        discussions.rebuild_view(unlinked)
       end)
     else
-      M.rebuild_view(unlinked)
+      discussions.rebuild_view(unlinked)
     end
   end)
 end
@@ -128,7 +118,7 @@ M.confirm_delete_comment = function(note_id, discussion_id, unlinked)
   local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
   job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-    M.rebuild_view(unlinked)
+    discussions.rebuild_view(unlinked)
   end)
 end
 
@@ -145,7 +135,7 @@ M.confirm_edit_comment = function(discussion_id, note_id, unlinked)
     }
     job.run_job("/mr/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
-      M.rebuild_view(unlinked)
+      discussions.rebuild_view(unlinked)
     end)
   end
 end
