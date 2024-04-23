@@ -71,8 +71,8 @@ return {
   toggle_discussions = async.sequence({
     info,
     user,
-    draft_notes_dep,
-    discussion_data,
+    u.merge(draft_notes_dep, { refresh = true }),
+    u.merge(discussion_data, { refresh = true }),
   }, discussions.toggle),
   toggle_draft_mode = discussions.toggle_draft_mode,
   publish_all_drafts = draft_notes.publish_all_drafts,
