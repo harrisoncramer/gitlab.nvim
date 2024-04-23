@@ -579,8 +579,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
   end, { buffer = bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_draft_mode, function()
-    state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
-    winbar.update_winbar()
+    M.toggle_draft_mode()
   end, { buffer = bufnr, desc = "Toggle between draft mode and live mode" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
     if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
@@ -649,6 +648,12 @@ M.toggle_tree_type = function()
     state.settings.discussion_tree.tree_type = "simple"
   end
   M.rebuild_discussion_tree()
+end
+
+---Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
+M.toggle_draft_mode = function()
+  state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
+  winbar.update_winbar()
 end
 
 ---Indicates whether the node under the cursor is a draft note or not

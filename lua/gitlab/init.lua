@@ -74,9 +74,8 @@ return {
     draft_notes_dep,
     discussion_data,
   }, discussions.toggle),
-  toggle_resolved = async.sequence({ info }, discussions.toggle_discussion_resolved),
+  toggle_draft_mode = discussions.toggle_draft_mode,
   publish_all_drafts = draft_notes.publish_all_drafts,
-  reply = async.sequence({ info }, discussions.reply),
   refresh_data = function()
     -- This also rebuilds the regular views
     u.notify("Refreshing data...", vim.log.levels.INFO)
