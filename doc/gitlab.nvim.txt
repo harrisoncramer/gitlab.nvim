@@ -326,13 +326,16 @@ Just like the summary, all the different kinds of comments are saved via the
 
 DRAFT NOTES                                       *gitlab.nvim.draft-comments*
 
-When you publish a "draft" of any of the above resources (configurable via the
-`state.settings.comments.default_to_draft` setting) the comment will be added
-to a review. You may publish all draft comments via the `gitlab.publish_all_drafts()`
-function, and you can publish an individual comment or note by pressing the
+When you publish a "draft" of any of the above resources, the comment will be
+added to a review. You can configure the default commenting mode (draft vs
+live) via the `state.settings.discussion_tree.draft_mode` setting, and you can
+toggle the setting with the `state.settings.discussion_tree.toggle_draft_mode`
+keybinding, or by calling the `gitlab.toggle_draft_mode()` function. You may
+publish all draft comments via the `gitlab.publish_all_drafts()` function, and
+you can publish an individual comment or note by pressing the
 `state.settings.discussion_tree.publish_draft` keybinding.
 
-Draft notes do not support editing, replying, or emojis.
+Draft notes do not support replying or emojis.
 
 TEMPORARY REGISTERS                               *gitlab.nvim.temp-registers*
 
@@ -565,6 +568,7 @@ in normal mode):
     vim.keymap.set("n", "glM", gitlab.merge)
     vim.keymap.set("n", "glu", gitlab.copy_mr_url)
     vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
+    vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
@@ -769,6 +773,12 @@ comments visible.
 >lua
   require("gitlab").publish_all_drafts()
 <
+                                                                *gitlab.nvim.toggle_draft_mode*
+gitlab.toggle_draft_mode() ~
+
+Toggles between draft mode, where comments and notes are added to a review as
+drafts, and regular (or live) mode, where comments are posted immediately.
+
                                                                 *gitlab.nvim.add_assignee*
 gitlab.add_assignee() ~
 
