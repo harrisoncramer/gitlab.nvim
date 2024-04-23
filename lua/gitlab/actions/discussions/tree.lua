@@ -267,7 +267,7 @@ local function build_note_body(note, resolve_info)
   local resolve_symbol = ""
   if resolve_info ~= nil and resolve_info.resolvable then
     resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-        or state.settings.discussion_tree.unresolved
+      or state.settings.discussion_tree.unresolved
   end
 
   local noteHeader = common.build_note_header(note) .. " " .. resolve_symbol
@@ -369,8 +369,8 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
-          (unlinked and state.unlinked_discussion_tree.resolved_expanded)
-          or (not unlinked and state.discussion_tree.resolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.resolved_expanded)
+        or (not unlinked and state.discussion_tree.resolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, true)
       else
@@ -379,8 +379,8 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
     end
     if opts.toggle_unresolved then
       if
-          (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
-          or (not unlinked and state.discussion_tree.unresolved_expanded)
+        (unlinked and state.unlinked_discussion_tree.unresolved_expanded)
+        or (not unlinked and state.discussion_tree.unresolved_expanded)
       then
         M.collapse_recursively(tree, node, root_node, opts.keep_current_open, false)
       else

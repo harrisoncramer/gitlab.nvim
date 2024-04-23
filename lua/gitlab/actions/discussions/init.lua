@@ -35,6 +35,9 @@ local M = {
   unlinked_discussion_tree = nil,
 }
 
+---Re-fetches all discussions and re-renders the relevant view
+---@param unlinked boolean
+---@param all boolean
 M.rebuild_view = function(unlinked, all)
   M.load_discussions(function()
     if all then
@@ -305,8 +308,12 @@ M.edit_comment = function(tree, unlinked)
 
   -- Draft notes module handles edits for draft notes
   if root_node.is_draft then
-    state.set_popup_keymaps(edit_popup, draft_notes.confirm_edit_draft_note(root_node.id, unlinked), nil,
-      miscellaneous.editable_popup_opts)
+    state.set_popup_keymaps(
+      edit_popup,
+      draft_notes.confirm_edit_draft_note(root_node.id, unlinked),
+      nil,
+      miscellaneous.editable_popup_opts
+    )
   else
     local comment = require("gitlab.actions.comment")
     state.set_popup_keymaps(
@@ -414,7 +421,7 @@ M.rebuild_unlinked_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local existing_note_nodes =
-      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
 
   -- Combine draft notes with regular notes
@@ -492,6 +499,7 @@ M.is_current_node_note = function(tree)
 end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
+  ---Keybindings only relevant for linked (comment) view
   if not unlinked then
     vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
       if M.is_current_node_note(tree) then
@@ -507,6 +515,12 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.toggle_tree_type()
     end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
   end
+
+  vim.keymap.set("n", state.settings.discussion_tree.refresh_data, function()
+    u.notify("Refreshing data...", vim.log.levels.INFO)
+    draft_notes.rebuild_view(unlinked, false)
+  end, { buffer = bufnr, desc = "Refreshes the view with Gitlab's APIs" })
+
   vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
     if M.is_current_node_note(tree) then
       M.edit_comment(tree, unlinked)

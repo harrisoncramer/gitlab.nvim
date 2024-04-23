@@ -88,6 +88,7 @@ M.settings = {
     jump_to_reviewer = "m",
     edit_comment = "e",
     delete_comment = "dd",
+    refresh_data = "a",
     open_in_browser = "b",
     copy_node_url = "u",
     publish_draft = "P",

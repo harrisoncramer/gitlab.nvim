@@ -162,6 +162,7 @@ require("gitlab").setup({
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
     edit_comment = "e", -- Edit comment
     delete_comment = "dd", -- Delete comment
+    refresh_data = "a", -- Refreshes the data in the view by hitting Gitlab's APIs again
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
     add_emoji = "Ea" -- Add an emoji to the note/comment
