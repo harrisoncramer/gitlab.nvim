@@ -1,6 +1,7 @@
 --- This module is responsible for creating new comments
 --- in the reviewer's buffer. The reviewer will pass back
 --- to this module the data required to make the API calls
+local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
 local state = require("gitlab.state")
@@ -12,6 +13,9 @@ local draft_notes = require("gitlab.actions.draft_notes")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 local reviewer = require("gitlab.reviewer")
 local Location = require("gitlab.reviewer.location")
+local winbar = require("gitlab.actions.discussions.winbar")
+local common = require("gitlab.actions.common")
+local diagnostics = require("gitlab.indicators.diagnostics")
 
 local M = {
   current_win = nil,
@@ -40,7 +44,6 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
     job.run_job("/mr/reply", "POST", body, function(data)
       u.notify("Sent reply!", vim.log.levels.INFO)
-      vim.print(data)
       discussions.add_reply_to_tree(data.note, discussion_id, false)
       discussions.load_discussions()
     end)
@@ -285,6 +288,33 @@ M.sha_exists = function()
     return false
   end
   return true
+end
+
+-- This function will actually send the deletion to Gitlab when you make a selection,
+-- and re-render the tree
+---@param note_id integer
+---@param discussion_id string
+M.send_deletion = function(note_id, discussion_id)
+  local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
+  job.run_job("/mr/comment", "DELETE", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+
+    local has_position = List.new(state.DISCUSSION_DATA.discussions):find(function(d)
+      if d.id ~= discussion_id then
+        return true
+      end
+    end) ~= nil
+
+    discussions.refresh(function()
+      if has_position then
+        discussions.rebuild_discussion_tree()
+      else
+        discussions.rebuild_unlinked_discussion_tree()
+      end
+      winbar.update_winbar()
+      common.add_empty_titles()
+    end)
+  end)
 end
 
 return M

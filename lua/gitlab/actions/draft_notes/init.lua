@@ -46,32 +46,32 @@ M.add_draft_notes_to_table = function(unlinked)
   local draft_notes = List.new(state.DRAFT_NOTES)
 
   local draft_note_nodes = draft_notes
-    ---@param note DraftNote
-    :filter(function(note)
-      if unlinked then
-        return not M.has_position(note)
-      end
-      return M.has_position(note)
-    end)
-    ---@param note DraftNote
-    :map(function(note)
-      local _, root_text, root_text_nodes = discussion_tree.build_note(note)
-      return NuiTree.Node({
-        range = (type(note.position) == "table" and note.position.line_range or nil),
-        text = root_text,
-        type = "note",
-        is_root = true,
-        is_draft = true,
-        id = note.id,
-        root_note_id = note.id,
-        file_name = (type(note.position) == "table" and note.position.new_path or nil),
-        new_line = (type(note.position) == "table" and note.position.new_line or nil),
-        old_line = (type(note.position) == "table" and note.position.old_line or nil),
-        resolvable = false,
-        resolved = false,
-        url = state.INFO.web_url .. "#note_" .. note.id,
-      }, root_text_nodes)
-    end)
+      ---@param note DraftNote
+      :filter(function(note)
+        if unlinked then
+          return not M.has_position(note)
+        end
+        return M.has_position(note)
+      end)
+      ---@param note DraftNote
+      :map(function(note)
+        local _, root_text, root_text_nodes = discussion_tree.build_note(note)
+        return NuiTree.Node({
+          range = (type(note.position) == "table" and note.position.line_range or nil),
+          text = root_text,
+          type = "note",
+          is_root = true,
+          is_draft = true,
+          id = note.id,
+          root_note_id = note.id,
+          file_name = (type(note.position) == "table" and note.position.new_path or nil),
+          new_line = (type(note.position) == "table" and note.position.new_line or nil),
+          old_line = (type(note.position) == "table" and note.position.old_line or nil),
+          resolvable = false,
+          resolved = false,
+          url = state.INFO.web_url .. "#note_" .. note.id,
+        }, root_text_nodes)
+      end)
 
   return draft_note_nodes
 
@@ -113,19 +113,7 @@ M.send_edits = function(note_id)
 end
 
 -- This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree
-M.send_deletion = function(tree)
-  local current_node = tree:get_node()
-  local note_node = common.get_note_node(tree, current_node)
-  local root_node = common.get_root_node(tree, current_node)
-
-  if note_node == nil or root_node == nil then
-    u.notify("Could not get note or root node", vim.log.levels.ERROR)
-    return
-  end
-
-  ---@type integer
-  local note_id = note_node.is_root and root_node.id or note_node.id
-
+M.send_deletion = function(note_id)
   job.run_job(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
 
@@ -232,6 +220,7 @@ M.confirm_publish_draft = function(tree)
         discussions.rebuild_unlinked_discussion_tree()
       end
       winbar.update_winbar()
+      common.add_empty_titles()
     end)
   end)
 end

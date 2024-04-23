@@ -242,42 +242,24 @@ M.delete_comment = function(tree)
     prompt = "Delete comment?",
   }, function(choice)
     if choice == "Confirm" then
-      M.send_deletion(tree)
+      local current_node = tree:get_node()
+      local note_node = common.get_note_node(tree, current_node)
+      local root_node = common.get_root_node(tree, current_node)
+      if note_node == nil or root_node == nil then
+        u.notify("Could not get note or root node", vim.log.levels.ERROR)
+        return
+      end
+
+      ---@type integer
+      local note_id = note_node.is_root and root_node.root_note_id or note_node.id
+      if root_node.is_draft then
+        draft_notes.send_deletion(note_id)
+      else
+        local comment = require("gitlab.actions.comment")
+        comment.send_deletion(note_id, root_node.root_note_id)
+      end
     end
   end)
-end
-
--- This function will actually send the deletion to Gitlab
--- when you make a selection, and re-render the tree
-M.send_deletion = function(tree)
-  local current_node = tree:get_node()
-
-  local note_node = common.get_note_node(tree, current_node)
-  local root_node = common.get_root_node(tree, current_node)
-  if note_node == nil or root_node == nil then
-    u.notify("Could not get note or root node", vim.log.levels.ERROR)
-    return
-  end
-
-  ---@type integer
-  local note_id = note_node.is_root and root_node.root_note_id or note_node.id
-
-  if root_node.is_draft then
-    draft_notes.send_deletion(tree)
-  else
-    local body = { discussion_id = root_node.id, note_id = tonumber(note_id) }
-    job.run_job("/mr/comment", "DELETE", body, function(data)
-      u.notify(data.message, vim.log.levels.INFO)
-      if note_node.is_root then
-        -- Replace root node w/ current node's contents...
-        tree:remove_node("-" .. root_node.id)
-      else
-        tree:remove_node("-" .. note_id)
-      end
-      tree:render()
-      M.refresh()
-    end)
-  end
 end
 
 -- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
