@@ -2,7 +2,6 @@
 -- That includes things like editing existing draft notes in the tree, and
 -- and deleting them. Normal notes and comments are managed separately,
 -- under lua/gitlab/actions/discussions/init.lua
-local winbar = require("gitlab.actions.discussions.winbar")
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local job = require("gitlab.job")
