@@ -41,9 +41,9 @@ M.add_empty_titles = function()
   local draft_notes = require("gitlab.actions.draft_notes")
   local discussions = require("gitlab.actions.discussions")
   local linked, unlinked, drafts =
-    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
-    List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
-    List.new(u.ensure_table(state.DRAFT_NOTES))
+      List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions)),
+      List.new(u.ensure_table(state.DISCUSSION_DATA and state.DISCUSSION_DATA.unlinked_discussions)),
+      List.new(u.ensure_table(state.DRAFT_NOTES))
 
   local position_drafts = drafts:filter(function(note)
     return draft_notes.has_position(note)
@@ -207,7 +207,7 @@ end
 M.get_line_number = function(id)
   ---@type Discussion|DraftNote|nil
   local d_or_n
-  d_or_n = List.new(state.DISCUSSION_DATA.discussions or {}):find(function(d)
+  d_or_n = List.new(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions or {}):find(function(d)
     return d.id == id
   end) or List.new(state.DRAFT_NOTES or {}):find(function(d)
     return d.id == id

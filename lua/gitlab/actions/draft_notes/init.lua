@@ -3,7 +3,6 @@
 -- and deleting them. Normal notes and comments are managed separately,
 -- under lua/gitlab/actions/discussions/init.lua
 local winbar = require("gitlab.actions.discussions.winbar")
-local diagnostics = require("gitlab.indicators.diagnostics")
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local job = require("gitlab.job")
@@ -16,21 +15,16 @@ local M = {}
 
 M.rebuild_view = function(unlinked)
   M.load_draft_notes(function()
-    local discussions = require("gitlab.actions.discussions")
-    discussions.refresh_view()
-    if unlinked then
-      discussions.rebuild_unlinked_discussion_tree()
-    else
-      discussions.rebuild_discussion_tree()
-    end
-    discussions.refresh()
+    local comment = require("gitlab.actions.comment")
+    comment.rebuild_view(unlinked)
   end)
 end
 
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_draft_notes = function(callback)
-  state.load_new_state(state.dependencies.draft_notes, function()
+  state.load_new_state("draft_notes", function()
+    print("New draft notes loaded")
     if callback ~= nil then
       callback()
     end
@@ -90,8 +84,11 @@ M.add_draft_notes_to_table = function(unlinked)
   -- end
 end
 
----Send edits will actually send the edits to Gitlab and refresh the draft_notes tree
-M.send_edits = function(note_id)
+---Will actually send the edits to Gitlab and refresh the draft_notes tree
+---@param note_id integer
+---@param unlinked boolean
+---@return function
+M.confirm_edit_draft_note = function(note_id, unlinked)
   return function(text)
     local all_notes = List.new(state.DRAFT_NOTES)
     local the_note = all_notes:find(function(note)
@@ -100,55 +97,18 @@ M.send_edits = function(note_id)
     local body = { note = text, position = the_note.position }
     job.run_job(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
-      local has_position = false
-      local new_draft_notes = all_notes:map(function(note)
-        if note.id == note_id then
-          has_position = M.has_position(note)
-          note.note = text
-        end
-        return note
-      end)
-      state.DRAFT_NOTES = new_draft_notes
-      local discussions = require("gitlab.actions.discussions")
-      if has_position then
-        discussions.rebuild_discussion_tree()
-      else
-        discussions.rebuild_unlinked_discussion_tree()
-      end
-      winbar.update_winbar()
+      M.rebuild_view(unlinked)
     end)
   end
 end
 
--- This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree
-M.send_deletion = function(note_id)
+---This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree
+---@param note_id integer
+---@param unlinked boolean
+M.confirm_delete_draft_note = function(note_id, unlinked)
   job.run_job(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-
-    local has_position = false
-    local new_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
-      if note.id ~= note_id then
-        return true
-      else
-        has_position = M.has_position(note)
-        return false
-      end
-    end)
-
-    state.DRAFT_NOTES = new_draft_notes
-    local discussions = require("gitlab.actions.discussions")
-    if has_position then
-      discussions.rebuild_discussion_tree()
-    else
-      discussions.rebuild_unlinked_discussion_tree()
-    end
-
-    if state.settings.discussion_signs.enabled and state.DISCUSSION_DATA then
-      diagnostics.refresh_diagnostics()
-    end
-
-    winbar.update_winbar()
-    common.add_empty_titles()
+    M.rebuild_view(unlinked)
   end)
 end
 

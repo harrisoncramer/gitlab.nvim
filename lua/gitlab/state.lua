@@ -375,6 +375,7 @@ M.dependencies = {
     refresh = false,
   },
   discussion_data = {
+    -- key is missing here...
     endpoint = "/mr/discussions/list",
     state = "DISCUSSION_DATA",
     refresh = false,
@@ -389,14 +390,17 @@ M.dependencies = {
 
 M.load_new_state = function(dep, cb)
   local job = require("gitlab.job")
+  local dependency = M.dependencies[dep]
   job.run_job(
-    dep.endpoint,
-    dep.method,
-    dep.body and dep.body() or nil,
+    dependency.endpoint,
+    dependency.method or "GET",
+    dependency.body and dependency.body() or nil,
     function(data)
-      M[dep.state] = u.ensure_table(data)
+      if dependency.key then
+        M[dependency.state] = u.ensure_table(data[dependency.key])
+      end
       if type(cb) == "function" then
-        cb(data)
+        cb(data) -- To set data manually...
       end
     end
   )

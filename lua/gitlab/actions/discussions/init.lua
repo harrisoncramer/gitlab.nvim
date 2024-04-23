@@ -38,7 +38,7 @@ local M = {
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
-  state.load_new_state(state.dependencies.discussion_data, function(data)
+  state.load_new_state("discussion_data", function(data)
     state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
     state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
     state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
@@ -83,6 +83,7 @@ end
 --- and rebuild the entire view
 M.refresh = function(cb)
   M.load_discussions(function()
+    print("New discussions loaded")
     M.refresh_view()
     if cb ~= nil then
       cb()
@@ -253,7 +254,7 @@ M.delete_comment = function(tree, unlinked)
       ---@type integer
       local note_id = note_node.is_root and root_node.root_note_id or note_node.id
       if root_node.is_draft then
-        draft_notes.send_deletion(note_id)
+        draft_notes.confirm_delete_draft_note(note_id, unlinked)
       else
         local comment = require("gitlab.actions.comment")
         comment.confirm_delete_comment(note_id, root_node.id, unlinked)
@@ -290,7 +291,8 @@ M.edit_comment = function(tree, unlinked)
 
   -- Draft notes module handles edits for draft notes
   if root_node.is_draft then
-    state.set_popup_keymaps(edit_popup, draft_notes.send_edits(root_node.id), nil, miscellaneous.editable_popup_opts)
+    state.set_popup_keymaps(edit_popup, draft_notes.confirm_edit_draft_note(root_node.id, unlinked), nil,
+      miscellaneous.editable_popup_opts)
   else
     local comment = require("gitlab.actions.comment")
     state.set_popup_keymaps(

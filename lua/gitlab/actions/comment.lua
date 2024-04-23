@@ -50,7 +50,13 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
     job.run_job("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
-      M.rebuild_view(unlinked)
+      if is_draft then
+        draft_notes.load_draft_notes(function()
+          M.rebuild_view(unlinked)
+        end)
+      else
+        M.rebuild_view(unlinked)
+      end
     end)
     return
   end
@@ -59,9 +65,15 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   if unlinked then
     local body = { comment = text }
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
-    job.run_job(endpoint, "POST", body, function(data)
+    job.run_job(endpoint, "POST", body, function()
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
-      M.rebuild_view(unlinked)
+      if is_draft then
+        draft_notes.load_draft_notes(function()
+          M.rebuild_view(unlinked)
+        end)
+      else
+        M.rebuild_view(unlinked)
+      end
     end)
     return
   end
@@ -98,7 +110,9 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   job.run_job(endpoint, "POST", body, function()
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
-      draft_notes.rebuild_view()
+      draft_notes.load_draft_notes(function()
+        M.rebuild_view(unlinked)
+      end)
     else
       M.rebuild_view(unlinked)
     end
