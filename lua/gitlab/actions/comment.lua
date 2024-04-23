@@ -25,7 +25,7 @@ local M = {
 ---via the M.settings.popup.perform_action keybinding
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
----@param unlinked boolean | nil if true, the comment is not linked to a line
+---@param unlinked boolean if true, the comment is not linked to a line
 ---@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
 local confirm_create_comment = function(text, visual_range, unlinked, discussion_id)
   if text == nil then

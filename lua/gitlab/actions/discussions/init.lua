@@ -37,7 +37,7 @@ local M = {
 
 ---Re-fetches all discussions and re-renders the relevant view
 ---@param unlinked boolean
----@param all boolean
+---@param all boolean|nil
 M.rebuild_view = function(unlinked, all)
   M.load_discussions(function()
     if all then
