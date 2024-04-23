@@ -110,7 +110,7 @@ end
 ---@param note_id integer
 ---@param discussion_id string
 ---@param unlinked boolean
-M.send_deletion = function(note_id, discussion_id, unlinked)
+M.confirm_delete_comment = function(note_id, discussion_id, unlinked)
   local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
   job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
@@ -122,7 +122,7 @@ end
 ---@param discussion_id string
 ---@param note_id integer
 ---@param unlinked boolean
-M.send_edits = function(discussion_id, note_id, unlinked)
+M.confirm_edit_comment = function(discussion_id, note_id, unlinked)
   return function(text)
     local body = {
       discussion_id = discussion_id,

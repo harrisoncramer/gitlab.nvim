@@ -256,7 +256,7 @@ M.delete_comment = function(tree, unlinked)
         draft_notes.send_deletion(note_id)
       else
         local comment = require("gitlab.actions.comment")
-        comment.send_deletion(note_id, root_node.id, unlinked)
+        comment.confirm_delete_comment(note_id, root_node.id, unlinked)
       end
     end
   end)
@@ -292,36 +292,13 @@ M.edit_comment = function(tree, unlinked)
   if root_node.is_draft then
     state.set_popup_keymaps(edit_popup, draft_notes.send_edits(root_node.id), nil, miscellaneous.editable_popup_opts)
   else
+    local comment = require("gitlab.actions.comment")
     state.set_popup_keymaps(
       edit_popup,
-      M.send_edits(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
+      comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
       nil,
       miscellaneous.editable_popup_opts
     )
-  end
-end
-
----This function sends the edited comment to the Go server
----@param discussion_id string
----@param note_id integer
----@param unlinked boolean
-M.send_edits = function(discussion_id, note_id, unlinked)
-  return function(text)
-    local body = {
-      discussion_id = discussion_id,
-      note_id = note_id,
-      comment = text,
-    }
-    job.run_job("/mr/comment", "PATCH", body, function(data)
-      u.notify(data.message, vim.log.levels.INFO)
-      if unlinked then
-        M.replace_text(state.DISCUSSION_DATA.unlinked_discussions, discussion_id, note_id, text)
-        M.rebuild_unlinked_discussion_tree()
-      else
-        M.replace_text(state.DISCUSSION_DATA.discussions, discussion_id, note_id, text)
-        M.rebuild_discussion_tree()
-      end
-    end)
   end
 end
 
