@@ -1,7 +1,6 @@
 --- This module is responsible for creating new comments
 --- in the reviewer's buffer. The reviewer will pass back
 --- to this module the data required to make the API calls
-local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
 local state = require("gitlab.state")
@@ -49,10 +48,9 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   -- Creating a reply to a discussion
   if discussion_id ~= nil then
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
-    job.run_job("/mr/reply", "POST", body, function(data)
+    job.run_job("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
-      discussions.add_reply_to_tree(data.note, discussion_id, false)
-      discussions.load_discussions()
+      M.rebuild_view(unlinked)
     end)
     return
   end
@@ -97,11 +95,10 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
 
   -- Creating a comment (linked to specific changes)
   local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
-  job.run_job(endpoint, "POST", body, function(data)
+  job.run_job(endpoint, "POST", body, function()
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
-      draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = false })
-      discussions.refresh()
+      draft_notes.rebuild_view()
     else
       M.rebuild_view(unlinked)
     end
@@ -112,18 +109,12 @@ end
 -- and re-render the tree
 ---@param note_id integer
 ---@param discussion_id string
-M.send_deletion = function(note_id, discussion_id)
+---@param unlinked boolean
+M.send_deletion = function(note_id, discussion_id, unlinked)
   local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
   job.run_job("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-
-    local has_position = List.new(state.DISCUSSION_DATA.discussions):find(function(d)
-      if d.id ~= discussion_id then
-        return true
-      end
-    end) ~= nil
-
-    M.rebuild_view(not has_position)
+    M.rebuild_view(unlinked)
   end)
 end
 
@@ -233,7 +224,7 @@ M.create_comment = function()
     return
   end
 
-  local layout = M.create_comment_layout()
+  local layout = M.create_comment_layout({ ranged = false, unlinked = false })
   layout:mount()
 end
 

@@ -14,24 +14,32 @@ local state = require("gitlab.state")
 
 local M = {}
 
+M.rebuild_view = function(unlinked)
+  M.load_draft_notes(function()
+    local discussions = require("gitlab.actions.discussions")
+    discussions.refresh_view()
+    if unlinked then
+      discussions.rebuild_unlinked_discussion_tree()
+    else
+      discussions.rebuild_discussion_tree()
+    end
+    discussions.refresh()
+  end)
+end
+
+---Makes API call to get the discussion data, stores it in the state, and calls the callback
+---@param callback function|nil
+M.load_draft_notes = function(callback)
+  state.load_new_state(state.dependencies.draft_notes, function()
+    if callback ~= nil then
+      callback()
+    end
+  end)
+end
+
 ---@class AddDraftNoteOpts table
 ---@field draft_note DraftNote
 ---@field unlinked boolean
-
----Adds a draft note to the draft notes state, then rebuilds the view
----@param opts AddDraftNoteOpts
-M.add_draft_note = function(opts)
-  local new_draft_notes = u.ensure_table(state.DRAFT_NOTES)
-  table.insert(new_draft_notes, opts.draft_note)
-  state.DRAFT_NOTES = new_draft_notes
-  local discussions = require("gitlab.actions.discussions")
-  if opts.unlinked then
-    discussions.rebuild_unlinked_discussion_tree()
-  else
-    discussions.rebuild_discussion_tree()
-  end
-  winbar.update_winbar()
-end
 
 ---Tells whether a draft note was left on a particular diff or is an unlinked note
 ---@param note DraftNote

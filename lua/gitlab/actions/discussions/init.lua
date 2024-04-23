@@ -237,7 +237,7 @@ M.reply = function(tree)
 end
 
 -- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
-M.delete_comment = function(tree)
+M.delete_comment = function(tree, unlinked)
   vim.ui.select({ "Confirm", "Cancel" }, {
     prompt = "Delete comment?",
   }, function(choice)
@@ -256,7 +256,7 @@ M.delete_comment = function(tree)
         draft_notes.send_deletion(note_id)
       else
         local comment = require("gitlab.actions.comment")
-        comment.send_deletion(note_id, root_node.root_note_id)
+        comment.send_deletion(note_id, root_node.id, unlinked)
       end
     end
   end)
@@ -498,7 +498,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   end, { buffer = bufnr, desc = "Publish draft" })
   vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
     if M.is_current_node_note(tree) then
-      M.delete_comment(tree)
+      M.delete_comment(tree, unlinked)
     end
   end, { buffer = bufnr, desc = "Delete comment" })
   vim.keymap.set("n", state.settings.discussion_tree.toggle_draft_mode, function()
@@ -613,21 +613,6 @@ M.replace_text = function(data, discussion_id, note_id, text)
       end
     end
   end
-end
-
----Given some note data, adds it to the tree and re-renders the tree
----@param note Note|DraftNote
----@param discussion_id string
----@param unlinked boolean
-M.add_reply_to_tree = function(note, discussion_id, unlinked)
-  local note_node = tree_utils.build_note(note)
-  note_node:expand()
-  local tree = unlinked and M.unlinked_discussion_tree or M.discussion_tree
-  if tree == nil then
-    return
-  end
-  tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
-  tree:render()
 end
 
 ---Toggle comments tree type between "simple" and "by_file_name"
