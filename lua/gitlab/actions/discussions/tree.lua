@@ -460,6 +460,16 @@ M.collapse_recursively = function(tree, node, current_root_node, keep_current_op
   end
 end
 
+---Expands a given node in a given tree by it's ID
+---@param tree NuiTree
+---@param id string
+M.open_node_by_id = function(tree, id)
+  local node = tree:get_node(id)
+  if node then
+    node:expand()
+  end
+end
+
 -- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
 M.toggle_node = function(tree)
   local node = tree:get_node()

@@ -189,6 +189,7 @@ you call this function with no values the defaults will be used:
         jump_to_reviewer = "m", -- Jump to the location in the reviewer window
         edit_comment = "e", -- Edit comment
         delete_comment = "dd", -- Delete comment
+        refresh_data = "a", -- Refreshes the data in the view by hitting Gitlab's APIs again
         reply = "r", -- Reply to comment
         toggle_node = "t", -- Opens or closes the discussion
         toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions

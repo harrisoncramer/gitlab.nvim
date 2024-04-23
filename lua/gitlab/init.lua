@@ -76,6 +76,11 @@ return {
   }, discussions.toggle),
   toggle_draft_mode = discussions.toggle_draft_mode,
   publish_all_drafts = draft_notes.publish_all_drafts,
+  refresh_data = function()
+    -- This also rebuilds the regular views
+    u.notify("Refreshing data...", vim.log.levels.INFO)
+    draft_notes.rebuild_view(false, true)
+  end,
   -- Other functions 🤷
   state = state,
   data = data.data,
