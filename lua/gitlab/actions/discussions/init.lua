@@ -29,8 +29,10 @@ local M = {
   linked_bufnr = nil,
   ---@type number
   unlinked_bufnr = nil,
-  ---@type number
+  ---@type NuiTree|nil
   discussion_tree = nil,
+  ---@type NuiTree|nil
+  unlinked_discussion_tree = nil,
 }
 
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
@@ -415,7 +417,7 @@ M.rebuild_unlinked_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local existing_note_nodes =
-    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
 
   -- Combine draft notes with regular notes
@@ -632,12 +634,16 @@ M.replace_text = function(data, discussion_id, note_id, text)
 end
 
 ---Given some note data, adds it to the tree and re-renders the tree
----@param tree any
----@param note any
----@param discussion_id any
-M.add_reply_to_tree = function(tree, note, discussion_id)
+---@param note Note|DraftNote
+---@param discussion_id string
+---@param unlinked boolean
+M.add_reply_to_tree = function(note, discussion_id, unlinked)
   local note_node = tree_utils.build_note(note)
   note_node:expand()
+  local tree = unlinked and M.unlinked_discussion_tree or M.discussion_tree
+  if tree == nil then
+    return
+  end
   tree:add_node(note_node, discussion_id and ("-" .. discussion_id) or nil)
   tree:render()
 end

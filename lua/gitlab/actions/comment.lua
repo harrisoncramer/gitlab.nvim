@@ -26,13 +26,28 @@ local M = {
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean | nil if true, the comment is not linked to a line
-local confirm_create_comment = function(text, visual_range, unlinked)
+---@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
+local confirm_create_comment = function(text, visual_range, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
   end
 
   local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+
+  -- Creating a reply to a discussion
+  if discussion_id ~= nil then
+    local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
+    job.run_job("/mr/reply", "POST", body, function(data)
+      u.notify("Sent reply!", vim.log.levels.INFO)
+      vim.print(data)
+      discussions.add_reply_to_tree(data.note, discussion_id, false)
+      discussions.load_discussions()
+    end)
+    return
+  end
+
+  -- Creating a note (unlinked comment)
   if unlinked then
     local body = { comment = text }
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
@@ -75,6 +90,7 @@ local confirm_create_comment = function(text, visual_range, unlinked)
     line_range = location_data.line_range,
   }
 
+  -- Creating a comment (linked to specific changes)
   local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
   job.run_job(endpoint, "POST", body, function(data)
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
@@ -137,24 +153,14 @@ M.create_comment_layout = function(opts)
   ---Keybinding for focus on text section
   state.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
-    if opts.discussion_id == nil then
-      confirm_create_comment(text, range, unlinked)
-      vim.api.nvim_set_current_win(M.current_win)
-    else
-      M.confirm_send_reply(text, opts.discussion_id)
-      vim.api.nvim_set_current_win(discussions.split.winid)
-    end
+    confirm_create_comment(text, range, unlinked, opts.discussion_id)
+    vim.api.nvim_set_current_win(opts.discussion_id == nil and M.current_win or discussions.split.winid)
   end, miscellaneous.toggle_bool, popup_opts)
 
   ---Keybinding for focus on draft section
   state.set_popup_keymaps(M.comment_popup, function(text)
-    if opts.discussion_id == nil then
-      confirm_create_comment(text, range, unlinked)
-      vim.api.nvim_set_current_win(M.current_win)
-    else
-      M.confirm_send_reply(text, opts.discussion_id)
-      vim.api.nvim_set_current_win(discussions.split.winid)
-    end
+    confirm_create_comment(text, range, unlinked, opts.discussion_id)
+    vim.api.nvim_set_current_win(opts.discussion_id == nil and M.current_win or discussions.split.winid)
   end, miscellaneous.attach_file, popup_opts)
 
   vim.schedule(function()
@@ -268,18 +274,6 @@ M.create_comment_suggestion = function()
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
     end
   end)
-end
-
--- This function will send the reply to the Go API
-M.confirm_send_reply = function(text, discussion_id)
-  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
-  local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
-  vim.print(body)
-  -- job.run_job("/mr/reply", "POST", body, function(data)
-  -- u.notify("Sent reply!", vim.log.levels.INFO)
-  -- discussions.add_reply_to_tree(data.note, discussion_id)
-  -- M.load_discussions()
-  -- end)
 end
 
 ---Checks to see whether you are commenting on a valid buffer. The Diffview plugin names non-existent
