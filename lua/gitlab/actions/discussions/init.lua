@@ -427,13 +427,7 @@ M.rebuild_discussion_tree = function()
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(false)
 
   -- Combine inline draft notes with regular comments
-  local all_nodes = {}
-  for _, draft_node in ipairs(draft_comment_nodes) do
-    table.insert(all_nodes, draft_node)
-  end
-  for _, node in ipairs(existing_comment_nodes) do
-    table.insert(all_nodes, node)
-  end
+  local all_nodes = u.join(draft_comment_nodes, existing_comment_nodes)
 
   local discussion_tree = NuiTree({
     nodes = all_nodes,
@@ -467,13 +461,7 @@ M.rebuild_unlinked_discussion_tree = function()
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
 
   -- Combine draft notes with regular notes
-  local all_nodes = {}
-  for _, draft_node in ipairs(draft_comment_nodes) do
-    table.insert(all_nodes, draft_node)
-  end
-  for _, node in ipairs(existing_note_nodes) do
-    table.insert(all_nodes, node)
-  end
+  local all_nodes = u.join(draft_comment_nodes, existing_note_nodes)
 
   local unlinked_discussion_tree = NuiTree({
     nodes = all_nodes,

@@ -80,12 +80,6 @@ M.add_draft_notes_to_table = function(unlinked)
     end)
 
   return draft_note_nodes
-
-  -- TODO: Combine draft_notes and normal discussion nodes in the complex discussion
-  -- tree. The code for that feature is a clusterfuck so this is difficult
-  -- if state.settings.discussion_tree.tree_type == "simple" then
-  --   return draft_note_nodes
-  -- end
 end
 
 ---Will actually send the edits to Gitlab and refresh the draft_notes tree
