@@ -387,6 +387,21 @@ M.dependencies = {
   },
 }
 
+M.load_new_state = function(dep, cb)
+  local job = require("gitlab.job")
+  job.run_job(
+    dep.endpoint,
+    dep.method,
+    dep.body and dep.body() or nil,
+    function(data)
+      M[dep.state] = u.ensure_table(data)
+      if type(cb) == "function" then
+        cb()
+      end
+    end
+  )
+end
+
 -- This function clears out all of the previously fetched data. It's used
 -- to reset the plugin state when the Go server is restarted
 M.clear_data = function()
