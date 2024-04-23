@@ -56,6 +56,9 @@ M.add_draft_notes_to_table = function(unlinked)
       end
       return M.has_position(note)
     end)
+    :filter(function(note)
+      return note.discussion_id == "" -- Do not include draft replies
+    end)
     ---@param note DraftNote
     :map(function(note)
       local _, root_text, root_text_nodes = discussion_tree.build_note(note)
