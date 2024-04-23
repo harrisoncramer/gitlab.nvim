@@ -246,7 +246,8 @@ M.reply = function(tree)
 
   local discussion_id = tostring(discussion_node.id)
   local comment = require("gitlab.actions.comment")
-  local layout = comment.create_comment_layout({ ranged = false, discussion_id = discussion_id, unlinked = false })
+  local unlinked = tree.bufnr == M.unlinked_bufnr
+  local layout = comment.create_comment_layout({ ranged = false, discussion_id = discussion_id, unlinked = unlinked })
   layout:mount()
 end
 
@@ -348,13 +349,30 @@ end
 -- 🌲 Helper Functions
 --
 
+---Used to collect all nodes in a tree prior to rebuilding it, so that they
+---can be re-expanded before render
+---@param tree any
+---@return table
+M.gather_expanded_node_ids = function(tree)
+  -- Gather all nodes for later expansion, after rebuild
+  local ids = {}
+  for id, node in pairs(tree and tree.nodes.by_id or {}) do
+    if node._is_expanded then
+      table.insert(ids, id)
+    end
+  end
+  return ids
+end
+
 ---Rebuilds the discussion tree, which contains all comments and draft comments
 ---linked to specific places in the code.
 M.rebuild_discussion_tree = function()
   if M.linked_bufnr == nil then
     return
   end
+  local expanded_node_ids = M.gather_expanded_node_ids(M.discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
+
   vim.api.nvim_buf_set_lines(M.linked_bufnr, 0, -1, false, {})
   local existing_comment_nodes = discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.discussions, false)
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(false)
@@ -373,6 +391,10 @@ M.rebuild_discussion_tree = function()
     bufnr = M.linked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
   })
+  -- Re-expand already expanded nodes
+  for _, id in ipairs(expanded_node_ids) do
+    tree_utils.open_node_by_id(discussion_tree, id)
+  end
 
   discussion_tree:render()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
@@ -388,6 +410,7 @@ M.rebuild_unlinked_discussion_tree = function()
   if M.unlinked_bufnr == nil then
     return
   end
+  local expanded_node_ids = M.gather_expanded_node_ids(M.unlinked_discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local existing_note_nodes =
@@ -408,7 +431,13 @@ M.rebuild_unlinked_discussion_tree = function()
     bufnr = M.unlinked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
   })
+
+  -- Re-expand already expanded nodes
+  for _, id in ipairs(expanded_node_ids) do
+    tree_utils.open_node_by_id(unlinked_discussion_tree, id)
+  end
   unlinked_discussion_tree:render()
+
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
