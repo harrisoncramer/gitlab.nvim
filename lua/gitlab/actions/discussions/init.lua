@@ -258,10 +258,10 @@ M.delete_comment = function(tree, unlinked)
       end
 
       ---@type integer
-      local note_id = note_node.is_root and root_node.root_note_id or note_node.id
-      if root_node.is_draft then
-        draft_notes.confirm_delete_draft_note(note_id, unlinked)
+      if M.is_draft_note(tree) then
+        draft_notes.confirm_delete_draft_note(note_node.id, unlinked)
       else
+        local note_id = note_node.is_root and root_node.root_note_id or note_node.id
         local comment = require("gitlab.actions.comment")
         comment.confirm_delete_comment(note_id, root_node.id, unlinked)
       end
@@ -296,10 +296,11 @@ M.edit_comment = function(tree, unlinked)
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
 
   -- Draft notes module handles edits for draft notes
-  if root_node.is_draft then
+  if M.is_draft_note(tree) then
+    vim.print(note_node)
     state.set_popup_keymaps(
       edit_popup,
-      draft_notes.confirm_edit_draft_note(root_node.id, unlinked),
+      draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
       nil,
       miscellaneous.editable_popup_opts
     )
@@ -649,6 +650,10 @@ end
 ---@return boolean
 M.is_draft_note = function(tree)
   local current_node = tree:get_node()
+  local note_node = common.get_note_node(tree, current_node)
+  if note_node and note_node.is_draft then
+    return true
+  end
   local root_node = common.get_root_node(tree, current_node)
   return root_node ~= nil and root_node.is_draft
 end

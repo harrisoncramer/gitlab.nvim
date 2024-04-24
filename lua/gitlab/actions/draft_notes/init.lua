@@ -126,12 +126,6 @@ M.has_position = function(note)
   return note.position.new_path ~= nil or note.position.old_path ~= nil
 end
 
-M.build_reply_draft_note = function(note)
-  local discussions = require("gitlab.actions.discussions")
-  local text, text_nodes = discussions.build_note_body(note)
-  return NuiTree.Node({})
-end
-
 ---Builds a note for the discussion tree for draft notes that are roots
 ---of their own discussions, e.g. not replies
 ---@param note DraftNote
