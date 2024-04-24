@@ -12,6 +12,7 @@ import (
 type ReplyRequest struct {
 	DiscussionId string `json:"discussion_id"`
 	Reply        string `json:"reply"`
+	IsDraft      bool   `json:"is_draft"`
 }
 
 type ReplyResponse struct {
