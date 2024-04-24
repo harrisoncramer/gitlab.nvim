@@ -52,7 +52,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   end
 
   -- Creating a note (unlinked comment)
-  if unlinked then
+  if unlinked and discussion_id == nil then
     local body = { comment = text }
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
     job.run_job(endpoint, "POST", body, function()
