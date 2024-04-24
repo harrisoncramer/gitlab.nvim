@@ -32,60 +32,6 @@ M.load_draft_notes = function(callback)
   end)
 end
 
----@class AddDraftNoteOpts table
----@field draft_note DraftNote
----@field unlinked boolean
-
----Tells whether a draft note was left on a particular diff or is an unlinked note
----@param note DraftNote
-M.has_position = function(note)
-  return note.position.new_path ~= nil or note.position.old_path ~= nil
-end
-
----Builds a note for the discussion tree for draft notes that are roots
----of their own discussions, e.g. not replies
----@param note DraftNote
----@return NuiTree.Node
-M.build_root_draft_note = function(note)
-  local _, root_text, root_text_nodes = discussion_tree.build_note(note)
-  return NuiTree.Node({
-    range = (type(note.position) == "table" and note.position.line_range or nil),
-    text = root_text,
-    type = "note",
-    is_root = true,
-    is_draft = true,
-    id = note.id,
-    root_note_id = note.id,
-    file_name = (type(note.position) == "table" and note.position.new_path or nil),
-    new_line = (type(note.position) == "table" and note.position.new_line or nil),
-    old_line = (type(note.position) == "table" and note.position.old_line or nil),
-    resolvable = false,
-    resolved = false,
-    url = state.INFO.web_url .. "#note_" .. note.id,
-  }, root_text_nodes)
-end
-
----Returns a list of nodes to add to the discussion tree. Can filter and return only unlinked (note) nodes.
----@param unlinked boolean
----@return NuiTree.Node[]
-M.add_draft_notes_to_table = function(unlinked)
-  local draft_notes = List.new(state.DRAFT_NOTES)
-  local draft_note_nodes = draft_notes
-    ---@param note DraftNote
-    :filter(function(note)
-      if unlinked then
-        return not M.has_position(note)
-      end
-      return M.has_position(note)
-    end)
-    :filter(function(note)
-      return note.discussion_id == "" -- Do not include draft replies
-    end)
-    :map(M.build_root_draft_note)
-
-  return draft_note_nodes
-end
-
 ---Will actually send the edits to Gitlab and refresh the draft_notes tree
 ---@param note_id integer
 ---@param unlinked boolean
@@ -171,6 +117,63 @@ M.confirm_publish_draft = function(tree)
     local unlinked = tree.bufnr == discussions.unlinked_bufnr
     M.rebuild_view(unlinked)
   end)
+end
+
+--- Helper functions
+---Tells whether a draft note was left on a particular diff or is an unlinked note
+---@param note DraftNote
+M.has_position = function(note)
+  return note.position.new_path ~= nil or note.position.old_path ~= nil
+end
+
+M.build_reply_draft_note = function(note)
+  local discussions = require("gitlab.actions.discussions")
+  local text, text_nodes = discussions.build_note_body(note)
+  return NuiTree.Node({})
+end
+
+---Builds a note for the discussion tree for draft notes that are roots
+---of their own discussions, e.g. not replies
+---@param note DraftNote
+---@return NuiTree.Node
+M.build_root_draft_note = function(note)
+  local _, root_text, root_text_nodes = discussion_tree.build_note(note)
+  return NuiTree.Node({
+    range = (type(note.position) == "table" and note.position.line_range or nil),
+    text = root_text,
+    type = "note",
+    is_root = true,
+    is_draft = true,
+    id = note.id,
+    root_note_id = note.id,
+    file_name = (type(note.position) == "table" and note.position.new_path or nil),
+    new_line = (type(note.position) == "table" and note.position.new_line or nil),
+    old_line = (type(note.position) == "table" and note.position.old_line or nil),
+    resolvable = false,
+    resolved = false,
+    url = state.INFO.web_url .. "#note_" .. note.id,
+  }, root_text_nodes)
+end
+
+---Returns a list of nodes to add to the discussion tree. Can filter and return only unlinked (note) nodes.
+---@param unlinked boolean
+---@return NuiTree.Node[]
+M.add_draft_notes_to_table = function(unlinked)
+  local draft_notes = List.new(state.DRAFT_NOTES)
+  local draft_note_nodes = draft_notes
+    ---@param note DraftNote
+    :filter(function(note)
+      if unlinked then
+        return not M.has_position(note)
+      end
+      return M.has_position(note)
+    end)
+    :filter(function(note)
+      return note.discussion_id == "" -- Do not include draft replies
+    end)
+    :map(M.build_root_draft_note)
+
+  return draft_note_nodes
 end
 
 return M
