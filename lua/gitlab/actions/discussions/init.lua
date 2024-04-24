@@ -297,7 +297,6 @@ M.edit_comment = function(tree, unlinked)
 
   -- Draft notes module handles edits for draft notes
   if M.is_draft_note(tree) then
-    vim.print(note_node)
     state.set_popup_keymaps(
       edit_popup,
       draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
