@@ -284,8 +284,8 @@ local build_suggestion = function()
   local backticks = "```"
   local selected_lines = u.get_lines(M.start_line, M.end_line)
 
-  for line in ipairs(selected_lines) do
-    if string.match(line, "^```$") then
+  for _, line in ipairs(selected_lines) do
+    if string.match(line, "^```%S*$") then
       backticks = "````"
       break
     end
