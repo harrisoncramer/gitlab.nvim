@@ -91,7 +91,10 @@ M.build_info_lines = function()
     branch = { title = "Branch", content = info.source_branch },
     labels = { title = "Labels", content = table.concat(info.labels, ", ") },
     target_branch = { title = "Target Branch", content = info.target_branch },
-    delete_branch = { title = "Delete Source Branch", content = (info.force_remove_source_branch and "Yes" or "No") },
+    delete_branch = {
+      title = "Delete Source Branch",
+      content = (info.force_remove_source_branch and "Yes" or "No"),
+    },
     squash = { title = "Squash Commits", content = (info.squash and "Yes" or "No") },
     pipeline = {
       title = "Pipeline Status",

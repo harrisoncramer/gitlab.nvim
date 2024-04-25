@@ -17,31 +17,53 @@ local M = {
   current_win = nil,
   start_line = nil,
   end_line = nil,
+  draft_popup = nil,
+  comment_popup = nil,
 }
 
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.popup.perform_action keybinding
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
----@param unlinked boolean | nil if true, the comment is not linked to a line
-local confirm_create_comment = function(text, visual_range, unlinked)
+---@param unlinked boolean if true, the comment is not linked to a line
+---@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
+local confirm_create_comment = function(text, visual_range, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
   end
 
   local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
-  if unlinked then
+
+  -- Creating a normal reply to a discussion
+  if discussion_id ~= nil and not is_draft then
+    local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
+    job.run_job("/mr/reply", "POST", body, function()
+      u.notify("Sent reply!", vim.log.levels.INFO)
+      if is_draft then
+        draft_notes.load_draft_notes(function()
+          discussions.rebuild_view(unlinked)
+        end)
+      else
+        discussions.rebuild_view(unlinked)
+      end
+    end)
+    return
+  end
+
+  -- Creating a note (unlinked comment)
+  if unlinked and discussion_id == nil then
     local body = { comment = text }
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
-    job.run_job(endpoint, "POST", body, function(data)
+    job.run_job(endpoint, "POST", body, function()
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
       if is_draft then
-        draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = true })
+        draft_notes.load_draft_notes(function()
+          discussions.rebuild_view(unlinked)
+        end)
       else
-        discussions.add_discussion({ data = data, unlinked = true })
+        discussions.rebuild_view(unlinked)
       end
-      discussions.refresh()
     end)
     return
   end
@@ -61,9 +83,7 @@ local confirm_create_comment = function(text, visual_range, unlinked)
   end
 
   local revision = state.MR_REVISIONS[1]
-  local body = {
-    type = "text",
-    comment = text,
+  local position_data = {
     file_name = reviewer_data.file_name,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
@@ -73,20 +93,67 @@ local confirm_create_comment = function(text, visual_range, unlinked)
     line_range = location_data.line_range,
   }
 
+  -- Creating a draft reply, in response to a discussion ID
+  if discussion_id ~= nil and is_draft then
+    local body = { comment = text, discussion_id = discussion_id, position = position_data }
+    job.run_job("/mr/draft_notes/", "POST", body, function()
+      u.notify("Draft reply created!", vim.log.levels.INFO)
+      draft_notes.load_draft_notes(function()
+        discussions.rebuild_view(false, true)
+      end)
+    end)
+    return
+  end
+
+  -- Creating a new comment (linked to specific changes)
+  local body = u.merge({ type = "text", comment = text }, position_data)
   local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
-  job.run_job(endpoint, "POST", body, function(data)
+  job.run_job(endpoint, "POST", body, function()
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
-      draft_notes.add_draft_note({ draft_note = data.draft_note, unlinked = false })
+      draft_notes.load_draft_notes(function()
+        discussions.rebuild_view(unlinked)
+      end)
     else
-      discussions.add_discussion({ data = data, has_position = true })
+      discussions.rebuild_view(unlinked)
     end
-    discussions.refresh()
   end)
+end
+
+-- This function will actually send the deletion to Gitlab when you make a selection,
+-- and re-render the tree
+---@param note_id integer
+---@param discussion_id string
+---@param unlinked boolean
+M.confirm_delete_comment = function(note_id, discussion_id, unlinked)
+  local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
+  job.run_job("/mr/comment", "DELETE", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    discussions.rebuild_view(unlinked)
+  end)
+end
+
+---This function sends the edited comment to the Go server
+---@param discussion_id string
+---@param note_id integer
+---@param unlinked boolean
+M.confirm_edit_comment = function(discussion_id, note_id, unlinked)
+  return function(text)
+    local body = {
+      discussion_id = discussion_id,
+      note_id = note_id,
+      comment = text,
+    }
+    job.run_job("/mr/comment", "PATCH", body, function(data)
+      u.notify(data.message, vim.log.levels.INFO)
+      discussions.rebuild_view(unlinked)
+    end)
+  end
 end
 
 ---@class LayoutOpts
 ---@field ranged boolean
+---@field discussion_id string|nil
 ---@field unlinked boolean
 
 ---This function sets up the layout and popups needed to create a comment, note and
@@ -94,13 +161,16 @@ end
 ---window panes, and for the non-primary sections.
 ---@param opts LayoutOpts|nil
 ---@return NuiLayout
-local function create_comment_layout(opts)
+M.create_comment_layout = function(opts)
   if opts == nil then
     opts = {}
   end
 
+  local title = opts.discussion_id and "Reply" or "Comment"
+  local settings = opts.discussion_id ~= nil and state.settings.popup.reply or state.settings.popup.comment
+
   M.current_win = vim.api.nvim_get_current_win()
-  M.comment_popup = Popup(u.create_popup_state("Comment", state.settings.popup.comment))
+  M.comment_popup = Popup(u.create_popup_state(title, settings))
   M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
 
@@ -128,14 +198,16 @@ local function create_comment_layout(opts)
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
 
+  ---Keybinding for focus on text section
   state.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
-    confirm_create_comment(text, range, unlinked)
+    confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.toggle_bool, popup_opts)
 
+  ---Keybinding for focus on draft section
   state.set_popup_keymaps(M.comment_popup, function(text)
-    confirm_create_comment(text, range, unlinked)
+    confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.attach_file, popup_opts)
 
@@ -143,6 +215,14 @@ local function create_comment_layout(opts)
     local draft_mode = state.settings.discussion_tree.draft_mode
     vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(draft_mode) })
   end)
+
+  --Send back to previous window on close
+  vim.api.nvim_create_autocmd("BufHidden", {
+    buffer = M.draft_popup.bufnr,
+    callback = function()
+      vim.api.nvim_set_current_win(M.current_win)
+    end,
+  })
 
   return layout
 end
@@ -167,7 +247,7 @@ M.create_comment = function()
     return
   end
 
-  local layout = create_comment_layout()
+  local layout = M.create_comment_layout({ ranged = false, unlinked = false })
   layout:mount()
 end
 
@@ -181,14 +261,14 @@ M.create_multiline_comment = function()
     return
   end
 
-  local layout = create_comment_layout({ ranged = true, unlinked = false })
+  local layout = M.create_comment_layout({ ranged = true, unlinked = false })
   layout:mount()
 end
 
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
-  local layout = create_comment_layout({ ranged = false, unlinked = true })
+  local layout = M.create_comment_layout({ ranged = false, unlinked = true })
   layout:mount()
 end
 
@@ -204,8 +284,8 @@ local build_suggestion = function()
   local backticks = "```"
   local selected_lines = u.get_lines(M.start_line, M.end_line)
 
-  for line in ipairs(selected_lines) do
-    if string.match(line, "^```$") then
+  for _, line in ipairs(selected_lines) do
+    if string.match(line, "^```%S*$") then
       backticks = "````"
       break
     end
@@ -243,7 +323,7 @@ M.create_comment_suggestion = function()
 
   local suggestion_lines, range_length = build_suggestion()
 
-  local layout = create_comment_layout({ ranged = range_length > 0, unlinked = false })
+  local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
   layout:mount()
   vim.schedule(function()
     if suggestion_lines then

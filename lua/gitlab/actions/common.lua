@@ -207,7 +207,7 @@ end
 M.get_line_number = function(id)
   ---@type Discussion|DraftNote|nil
   local d_or_n
-  d_or_n = List.new(state.DISCUSSION_DATA.discussions or {}):find(function(d)
+  d_or_n = List.new(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions or {}):find(function(d)
     return d.id == id
   end) or List.new(state.DRAFT_NOTES or {}):find(function(d)
     return d.id == id

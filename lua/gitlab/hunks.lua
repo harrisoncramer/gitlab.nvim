@@ -91,9 +91,9 @@ end
 
 ---Parse git diff hunks.
 ---@param file_path string Path to file.
----@param base_branch string Git base branch of merge request.
+---@param base_sha string Git base SHA of merge request.
 ---@return HunksAndDiff
-local parse_hunks_and_diff = function(file_path, base_branch)
+local parse_hunks_and_diff = function(file_path, base_sha)
   local hunks = {}
   local all_diff_output = {}
 
@@ -101,7 +101,7 @@ local parse_hunks_and_diff = function(file_path, base_branch)
 
   local diff_job = Job:new({
     command = "git",
-    args = { "diff", "--minimal", "--unified=0", "--no-color", base_branch, "--", file_path },
+    args = { "diff", "--minimal", "--unified=0", "--no-color", base_sha, "--", file_path },
     on_exit = function(j, return_code)
       if return_code == 0 then
         all_diff_output = j:result()
@@ -225,7 +225,7 @@ end
 ---@param is_current_sha_focused boolean
 ---@return string|nil
 function M.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
-  local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.target_branch)
+  local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.diff_refs.base_sha)
   if hunk_and_diff_data.hunks == nil then
     return
   end

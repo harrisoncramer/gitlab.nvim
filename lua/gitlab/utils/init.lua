@@ -472,7 +472,7 @@ end
 
 ---Get the popup view_opts
 ---@param title string The string to appear on top of the popup
----@param settings table User defined popup settings
+---@param settings table|nil User defined popup settings
 ---@param width number? Override default width
 ---@param height number? Override default height
 ---@return table

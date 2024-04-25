@@ -162,6 +162,7 @@ require("gitlab").setup({
     jump_to_reviewer = "m", -- Jump to the location in the reviewer window
     edit_comment = "e", -- Edit comment
     delete_comment = "dd", -- Delete comment
+    refresh_data = "a", -- Refreshes the data in the view by hitting Gitlab's APIs again
     reply = "r", -- Reply to comment
     toggle_node = "t", -- Opens or closes the discussion
     add_emoji = "Ea" -- Add an emoji to the note/comment
@@ -295,6 +296,7 @@ vim.keymap.set("n", "glo", gitlab.open_in_browser)
 vim.keymap.set("n", "glM", gitlab.merge)
 vim.keymap.set("n", "glu", gitlab.copy_mr_url)
 vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
+vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`

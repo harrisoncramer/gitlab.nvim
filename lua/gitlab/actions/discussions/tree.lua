@@ -2,6 +2,7 @@
 -- is not used in the draft notes tree
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
+local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local NuiTree = require("nui.tree")
 local NuiLine = require("nui.line")
@@ -56,8 +57,20 @@ M.add_discussions_to_table = function(items, unlinked)
       end
     end
 
+    -- Attaches draft notes that are replies to their parent discussions
+    local draft_replies = List.new(state.DRAFT_NOTES or {})
+      :filter(function(note)
+        return note.discussion_id == discussion.id
+      end)
+      :map(function(note)
+        local result = M.build_note(note)
+        return result
+      end)
+
+    local all_children = u.join(discussion_children, draft_replies)
+
     -- Creates the first node in the discussion, and attaches children
-    local body = u.spread(root_text_nodes, discussion_children)
+    local body = u.spread(root_text_nodes, all_children)
     local root_node = NuiTree.Node({
       range = range,
       text = root_text,
@@ -457,6 +470,16 @@ M.collapse_recursively = function(tree, node, current_root_node, keep_current_op
   local children = node:get_child_ids()
   for _, child in ipairs(children) do
     M.collapse_recursively(tree, tree:get_node(child), current_root_node, keep_current_open, is_resolved)
+  end
+end
+
+---Expands a given node in a given tree by it's ID
+---@param tree NuiTree
+---@param id string
+M.open_node_by_id = function(tree, id)
+  local node = tree:get_node(id)
+  if node then
+    node:expand()
   end
 end
 

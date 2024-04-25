@@ -73,9 +73,7 @@ M.settings = {
     border = "rounded",
     opacity = 1.0,
     edit = nil,
-    reply = nil,
     comment = nil,
-    note = nil,
     help = nil,
     pipeline = nil,
     squash_message = nil,
@@ -90,6 +88,7 @@ M.settings = {
     jump_to_reviewer = "m",
     edit_comment = "e",
     delete_comment = "dd",
+    refresh_data = "a",
     open_in_browser = "b",
     copy_node_url = "u",
     publish_draft = "P",
@@ -377,6 +376,7 @@ M.dependencies = {
     refresh = false,
   },
   discussion_data = {
+    -- key is missing here...
     endpoint = "/mr/discussions/list",
     state = "DISCUSSION_DATA",
     refresh = false,
@@ -388,6 +388,24 @@ M.dependencies = {
     end,
   },
 }
+
+M.load_new_state = function(dep, cb)
+  local job = require("gitlab.job")
+  local dependency = M.dependencies[dep]
+  job.run_job(
+    dependency.endpoint,
+    dependency.method or "GET",
+    dependency.body and dependency.body() or nil,
+    function(data)
+      if dependency.key then
+        M[dependency.state] = u.ensure_table(data[dependency.key])
+      end
+      if type(cb) == "function" then
+        cb(data) -- To set data manually...
+      end
+    end
+  )
+end
 
 -- This function clears out all of the previously fetched data. It's used
 -- to reset the plugin state when the Go server is restarted
