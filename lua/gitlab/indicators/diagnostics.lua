@@ -73,15 +73,18 @@ local create_multiline_diagnostic = function(d_or_n)
   end
 
   local old_start_line, new_start_line = indicators_common.parse_line_code(line_range.start.line_code)
+  local old_end_line, new_end_line = indicators_common.parse_line_code(line_range["end"].line_code)
 
   if indicators_common.is_new_sha(d_or_n) then
+    local range = new_end_line - new_start_line
     return create_diagnostic({
-      lnum = new_start_line - 1,
+      lnum = first_note.position.new_line - 1 - range,
       end_lnum = first_note.position.new_line - 1,
     }, d_or_n)
   else
+    local range = old_end_line - old_start_line
     return create_diagnostic({
-      lnum = old_start_line - 1,
+      lnum = first_note.position.old_line - 1 - range,
       end_lnum = first_note.position.old_line - 1,
     }, d_or_n)
   end
