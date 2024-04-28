@@ -226,7 +226,8 @@ end
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
     local old_start_line, new_start_line = common_indicators.parse_line_code(root_node.range.start.line_code)
-    return root_node.old_line and old_start_line or new_start_line
+    local old_end_line, new_end_line = indicators_common.parse_line_code(root_node.range["end"].line_code)
+    return root_node.old_line and (old_start_line + root_node.old_line - old_end_line) or (new_start_line + root_node.new_line - new_end_line)
   else
     return M.get_line_number(root_node.id)
   end
