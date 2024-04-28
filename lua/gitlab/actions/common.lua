@@ -183,8 +183,8 @@ local function get_new_line(node)
     return node.new_line
   end
 
-  local _, start_new_line = common_indicators.parse_line_code(range.start.line_code)
-  return start_new_line
+  local _, new_start_line = indicators_common.parse_line_code(range.start.line_code)
+  return new_start_line
 end
 
 ---Takes a node and returns the line where the note is positioned in the old SHA. If
@@ -198,8 +198,8 @@ local function get_old_line(node)
     return node.old_line
   end
 
-  local start_old_line, _ = common_indicators.parse_line_code(range.start.line_code)
-  return start_old_line
+  local old_start_line, _ = indicators_common.parse_line_code(range.start.line_code)
+  return old_start_line
 end
 
 ---@param id string|integer
@@ -225,8 +225,8 @@ end
 ---@return integer|nil
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local start_old_line, start_new_line = common_indicators.parse_line_code(root_node.range.start.line_code)
-    return root_node.old_line and start_old_line or start_new_line
+    local old_start_line, new_start_line = common_indicators.parse_line_code(root_node.range.start.line_code)
+    return root_node.old_line and old_start_line or new_start_line
   else
     return M.get_line_number(root_node.id)
   end

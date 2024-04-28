@@ -72,16 +72,16 @@ local create_multiline_diagnostic = function(d_or_n)
     error("Parsing multi-line comment but note does not contain line range")
   end
 
-  local start_old_line, start_new_line = indicators_common.parse_line_code(line_range.start.line_code)
+  local old_start_line, new_start_line = indicators_common.parse_line_code(line_range.start.line_code)
 
   if indicators_common.is_new_sha(d_or_n) then
     return create_diagnostic({
-      lnum = start_new_line - 1,
+      lnum = new_start_line - 1,
       end_lnum = first_note.position.new_line - 1,
     }, d_or_n)
   else
     return create_diagnostic({
-      lnum = start_old_line - 1,
+      lnum = old_start_line - 1,
       end_lnum = first_note.position.old_line - 1,
     }, d_or_n)
   end
