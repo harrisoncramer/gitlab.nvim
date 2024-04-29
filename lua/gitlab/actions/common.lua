@@ -5,7 +5,6 @@ local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local indicators_common = require("gitlab.indicators.common")
-local common_indicators = require("gitlab.indicators.common")
 local state = require("gitlab.state")
 local M = {}
 
@@ -221,13 +220,39 @@ M.get_line_number = function(id)
   return (indicators_common.is_new_sha(d_or_n) and first_note.position.new_line or first_note.position.old_line) or 1
 end
 
----@param root_node NuiTree.Node
+---Return the start and end line numbers for the note range. The range is calculated from the line
+---codes but the position itself is based on either the `new_line` or `old_line`.
+---@param old_line integer|nil The line number in the OLD version
+---@param new_line integer|nil The line number in the NEW version
+---@param start_line_code string The line code for the start of the range
+---@param end_line_code string The line code for the end of the range
+---@return integer, integer
+M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end_line_code)
+  local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
+  local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
+  if old_line ~= nil then
+    local range = old_end_line - old_start_line
+    return (old_line - range), old_line
+  elseif new_line ~= nil then
+    local range = new_end_line - new_start_line
+    return (new_line - range), new_line
+  else
+    u.notify("Error getting new or old line for range", vim.log.levels.ERROR)
+    return 1, 1
+  end
+end
+
+---@param root_node RootNode
 ---@return integer|nil
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local old_start_line, new_start_line = common_indicators.parse_line_code(root_node.range.start.line_code)
-    local old_end_line, new_end_line = indicators_common.parse_line_code(root_node.range["end"].line_code)
-    return root_node.old_line and (old_start_line + root_node.old_line - old_end_line) or (new_start_line + root_node.new_line - new_end_line)
+    local line_number, _ = M.get_line_numbers_for_range(
+      root_node.old_line,
+      root_node.new_line,
+      root_node.range.start.line_code,
+      root_node.range["end"].line_code
+    )
+    return line_number
   else
     return M.get_line_number(root_node.id)
   end
