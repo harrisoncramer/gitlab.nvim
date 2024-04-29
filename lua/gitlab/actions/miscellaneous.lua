@@ -35,7 +35,15 @@ M.attach_file = function()
 end
 
 M.editable_popup_opts = {
+  action_before_close = true,
+  action_before_exit = false,
   save_to_temp_register = true,
+}
+
+M.non_editable_popup_opts = {
+  action_before_close = true,
+  action_before_exit = false,
+  save_to_temp_register = false,
 }
 
 -- Get the index of the next popup when cycling forward
