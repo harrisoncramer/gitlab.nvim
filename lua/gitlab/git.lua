@@ -18,7 +18,7 @@ end
 ---Returns all branches for the current repository
 ---@return string|nil, string|nil
 M.branches = function()
-  return run_system({ "git", "branch" })
+  return run_system({ "git", "branch", "-r" })
 end
 
 ---Checks whether the tree has any changes that haven't been pushed to the remote
