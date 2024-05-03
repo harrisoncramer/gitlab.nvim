@@ -1,5 +1,4 @@
 local List = require("gitlab.utils.list")
-local u = require("gitlab.utils")
 
 local M = {}
 
@@ -7,6 +6,8 @@ local M = {}
 ---@param command table
 ---@return string|nil, string|nil
 local run_system = function(command)
+  -- Load here to prevent loop
+  local u = require("gitlab.utils")
   local result = vim.fn.trim(vim.fn.system(command))
   if vim.v.shell_error ~= 0 then
     u.notify(result, vim.log.levels.ERROR)
@@ -19,6 +20,8 @@ end
 ---@param args table|nil extra arguments for `git branch`
 ---@return string|nil, string|nil
 M.branches = function(args)
+  -- Load here to prevent loop
+  local u = require("gitlab.utils")
   return run_system(u.combine({ "git", "branch" }, args or {}))
 end
 
