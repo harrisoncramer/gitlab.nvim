@@ -1,4 +1,5 @@
 local List = require("gitlab.utils.list")
+local u = require("gitlab.utils")
 
 local M = {}
 
@@ -6,7 +7,6 @@ local M = {}
 ---@param command table
 ---@return string|nil, string|nil
 local run_system = function(command)
-  local u = require("gitlab.utils")
   local result = vim.fn.trim(vim.fn.system(command))
   if vim.v.shell_error ~= 0 then
     u.notify(result, vim.log.levels.ERROR)
@@ -16,9 +16,10 @@ local run_system = function(command)
 end
 
 ---Returns all branches for the current repository
+---@param args table|nil extra arguments for `git branch`
 ---@return string|nil, string|nil
-M.branches = function()
-  return run_system({ "git", "branch" })
+M.branches = function(args)
+  return run_system(u.combine({ "git", "branch" }, args or {}))
 end
 
 ---Checks whether the tree has any changes that haven't been pushed to the remote
@@ -60,7 +61,7 @@ end
 ---Return the list of names of all remote-tracking branches or an empty list.
 ---@return table, string|nil
 M.get_all_remote_branches = function()
-  local all_branches, err = M.branches()
+  local all_branches, err = M.branches({ "--remotes" })
   if err ~= nil then
     return {}, err
   end
