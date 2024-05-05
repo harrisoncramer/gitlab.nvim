@@ -188,28 +188,23 @@ M.create_comment_layout = function(opts)
     },
   }, internal_layout)
 
-  local popup_opts = {
-    action_before_close = true,
-    action_before_exit = false,
-  }
-
   miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
 
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
 
-  ---Keybinding for focus on text section
+  ---Keybinding for focus on draft section
   state.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.toggle_bool, popup_opts)
+  end, miscellaneous.toggle_bool, miscellaneous.non_editable_popup_opts)
 
-  ---Keybinding for focus on draft section
+  ---Keybinding for focus on text section
   state.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.attach_file, popup_opts)
+  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
 
   vim.schedule(function()
     local draft_mode = state.settings.discussion_tree.draft_mode
