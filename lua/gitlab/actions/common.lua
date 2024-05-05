@@ -113,7 +113,7 @@ end
 ---@param tree NuiTree
 M.copy_node_url = function(tree)
   local url = M.get_url(tree)
-  if url == nil then
+  if url ~= nil then
     vim.fn.setreg("+", url)
     u.notify("Copied '" .. url .. "' to clipboard", vim.log.levels.INFO)
   end
