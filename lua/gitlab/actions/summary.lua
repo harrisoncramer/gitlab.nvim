@@ -63,7 +63,7 @@ M.summary = function()
       description_popup,
       M.edit_summary,
       miscellaneous.attach_file,
-      { cb = exit, action_before_close = true }
+      { cb = exit, action_before_close = true, save_to_temp_register = true }
     )
     state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
     state.set_popup_keymaps(info_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
