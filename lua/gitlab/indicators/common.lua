@@ -67,12 +67,9 @@ end
 ---@param d_or_n Discussion|DraftNote
 ---@return boolean
 M.is_old_sha = function(d_or_n)
-  local first_note = M.get_first_note(d_or_n)
-  local old_start_line
-  if first_note.position.line_range ~= nil then
-    old_start_line, _ = M.parse_line_code(first_note.position.line_range.start.line_code)
-  end
-  return first_note.position.old_line ~= nil and old_start_line ~= 0
+  local position = M.get_first_note(d_or_n).position
+  local old_start_line = position.line_range ~= nil and M.parse_line_code(position.line_range.start.line_code) or nil
+  return position.old_line ~= nil and old_start_line ~= 0
 end
 
 ---@param discussion Discussion|DraftNote
