@@ -202,7 +202,8 @@ local function get_old_line(node)
 end
 
 ---@param id string|integer
----@return integer|nil
+---@return integer|nil line_number
+---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number = function(id)
   ---@type Discussion|DraftNote|nil
   local d_or_n
@@ -213,11 +214,12 @@ M.get_line_number = function(id)
   end)
 
   if d_or_n == nil then
-    return
+    return nil, true
   end
 
   local first_note = indicators_common.get_first_note(d_or_n)
-  return (indicators_common.is_new_sha(d_or_n) and first_note.position.new_line or first_note.position.old_line) or 1
+  local is_new_sha = indicators_common.is_new_sha(d_or_n)
+  return ((is_new_sha and first_note.position.new_line or first_note.position.old_line) or 1), is_new_sha
 end
 
 ---Return the start and end line numbers for the note range. The range is calculated from the line
@@ -226,33 +228,36 @@ end
 ---@param new_line integer|nil The line number in the NEW version
 ---@param start_line_code string The line code for the start of the range
 ---@param end_line_code string The line code for the end of the range
----@return integer, integer
+---@return integer start_line
+---@return integer end_line
+---@return boolean is_new_sha True if line range refers to NEW SHA
 M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end_line_code)
   local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
   local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
-  if old_line ~= nil then
+  if old_line ~= nil and old_start_line ~= 0 then
     local range = old_end_line - old_start_line
-    return (old_line - range), old_line
+    return (old_line - range), old_line, false
   elseif new_line ~= nil then
     local range = new_end_line - new_start_line
-    return (new_line - range), new_line
+    return (new_line - range), new_line, true
   else
     u.notify("Error getting new or old line for range", vim.log.levels.ERROR)
-    return 1, 1
+    return 1, 1, false
   end
 end
 
 ---@param root_node RootNode
----@return integer|nil
+---@return integer|nil line_number
+---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local line_number, _ = M.get_line_numbers_for_range(
+    local line_number, _, is_new_sha = M.get_line_numbers_for_range(
       root_node.old_line,
       root_node.new_line,
       root_node.range.start.line_code,
       root_node.range["end"].line_code
     )
-    return line_number
+    return line_number, is_new_sha
   else
     return M.get_line_number(root_node.id)
   end
@@ -266,12 +271,12 @@ M.jump_to_reviewer = function(tree, callback)
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
     return
   end
-  local line_number = M.get_line_number_from_node(root_node)
+  local line_number, is_new_sha = M.get_line_number_from_node(root_node)
   if line_number == nil then
     u.notify("Could not get line number", vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(root_node.file_name, line_number, root_node.old_line == nil)
+  reviewer.jump(root_node.file_name, line_number, is_new_sha)
   callback()
 end
 
