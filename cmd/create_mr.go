@@ -61,7 +61,7 @@ func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if createMrRequest.TargetProjectID != 0 {
-		opts.TargetProjectID = gitlab.Int(createMrRequest.TargetProjectID)
+		opts.TargetProjectID = gitlab.Ptr(createMrRequest.TargetProjectID)
 	}
 
 	_, res, err := a.client.CreateMergeRequest(a.projectInfo.ProjectId, &opts)

@@ -118,7 +118,7 @@ M.settings = {
     squash = false,
     fork = {
       enabled = false,
-      forked_project_id = nil
+      forked_project_id = nil,
     },
     title_input = {
       width = 40,

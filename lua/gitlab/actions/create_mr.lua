@@ -30,7 +30,8 @@ local M = {
     target = "",
     title = "",
     description = "",
-    forked_project_id = state.settings.create_mr.fork.enabled and state.settings.create_mr.fork.forked_project_id or nil,
+    forked_project_id = state.settings.create_mr.fork.enabled and state.settings.create_mr.fork.forked_project_id
+      or nil,
   },
 }
 
@@ -95,12 +96,12 @@ local function make_template_path(t)
     return
   end
   return base_dir
-      .. state.settings.file_separator
-      .. ".gitlab"
-      .. state.settings.file_separator
-      .. "merge_request_templates"
-      .. state.settings.file_separator
-      .. t
+    .. state.settings.file_separator
+    .. ".gitlab"
+    .. state.settings.file_separator
+    .. "merge_request_templates"
+    .. state.settings.file_separator
+    .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
@@ -214,7 +215,7 @@ M.open_confirmation_popup = function(mr)
   end
 
   local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup, forked_project_id_popup =
-      M.create_layout()
+    M.create_layout()
 
   local popups = {
     title_popup,
@@ -366,8 +367,13 @@ M.create_layout = function()
 
   layout:mount()
 
-  return layout, title_popup, description_popup, target_branch_popup, delete_branch_popup, squash_popup,
-      forked_project_id_popup
+  return layout,
+    title_popup,
+    description_popup,
+    target_branch_popup,
+    delete_branch_popup,
+    squash_popup,
+    forked_project_id_popup
 end
 
 return M
