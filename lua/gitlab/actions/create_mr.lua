@@ -14,6 +14,7 @@ local miscellaneous = require("gitlab.actions.miscellaneous")
 ---@field target? string
 ---@field title? string
 ---@field description? string
+---@field forked_project_id number?
 ---@field template_file? string
 ---@field delete_branch boolean?
 ---@field squash boolean?
@@ -29,6 +30,7 @@ local M = {
     target = "",
     title = "",
     description = "",
+    forked_project_id = state.settings.create_mr.fork.enabled and state.settings.create_mr.fork.forked_project_id or nil,
   },
 }
 
@@ -37,6 +39,7 @@ M.reset_state = function()
   M.mr.title = ""
   M.mr.target = ""
   M.mr.description = ""
+  M.mr.forked_project_id = nil
 end
 
 ---1. If the user has already begun writing an MR, prompt them to
@@ -92,12 +95,12 @@ local function make_template_path(t)
     return
   end
   return base_dir
-    .. state.settings.file_separator
-    .. ".gitlab"
-    .. state.settings.file_separator
-    .. "merge_request_templates"
-    .. state.settings.file_separator
-    .. t
+      .. state.settings.file_separator
+      .. ".gitlab"
+      .. state.settings.file_separator
+      .. "merge_request_templates"
+      .. state.settings.file_separator
+      .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
@@ -157,11 +160,42 @@ M.add_title = function(mr)
     prompt = "",
     default_value = "",
     on_close = function() end,
-    on_submit = function(_value)
-      M.open_confirmation_popup(mr)
+    on_submit = function()
+      if state.settings.create_mr.fork.enabled and state.settings.create_mr.fork.forked_project_id == nil then
+        M.open_fork_popup(mr)
+      else
+        M.open_confirmation_popup(mr)
+      end
     end,
     on_change = function(value)
       mr.title = value
+    end,
+  })
+  input:mount()
+end
+
+---Sets the ID of the base project when working from a fork
+---@param mr Mr
+M.open_fork_popup = function(mr)
+  local input = Input({
+    position = "50%",
+    relative = "editor",
+    size = state.settings.create_mr.title_input.width,
+    border = {
+      style = state.settings.create_mr.title_input.border,
+      text = {
+        top = "Forked Project ID",
+      },
+    },
+  }, {
+    prompt = "",
+    default_value = "",
+    on_close = function() end,
+    on_submit = function()
+      M.open_confirmation_popup(mr)
+    end,
+    on_change = function(value)
+      mr.forked_project_id = tonumber(value)
     end,
   })
   input:mount()
@@ -179,11 +213,13 @@ M.open_confirmation_popup = function(mr)
     return
   end
 
-  local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup = M.create_layout()
+  local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup, forked_project_id_popup =
+      M.create_layout()
 
   local popups = {
     title_popup,
     description_popup,
+    forked_project_id_popup,
     delete_branch_popup,
     squash_popup,
     target_popup,
@@ -199,12 +235,14 @@ M.open_confirmation_popup = function(mr)
     local target = vim.fn.trim(u.get_buffer_text(M.target_bufnr))
     local delete_branch = u.string_to_bool(u.get_buffer_text(M.delete_branch_bufnr))
     local squash = u.string_to_bool(u.get_buffer_text(M.squash_bufnr))
+    local forked_project_id = tonumber(u.get_buffer_text(M.forked_project_id_bufnr))
     M.mr = {
       title = title,
       description = description,
       target = target,
       delete_branch = delete_branch,
       squash = squash,
+      forked_project_id = forked_project_id,
     }
     layout:unmount()
     M.layout_visible = false
@@ -220,6 +258,10 @@ M.open_confirmation_popup = function(mr)
     vim.api.nvim_buf_set_lines(M.target_bufnr, 0, -1, false, { mr.target })
     vim.api.nvim_buf_set_lines(M.delete_branch_bufnr, 0, -1, false, { u.bool_to_string(delete_branch) })
     vim.api.nvim_buf_set_lines(M.squash_bufnr, 0, -1, false, { u.bool_to_string(squash) })
+    if state.settings.create_mr.fork.enabled then
+      local forked_id = state.settings.create_mr.fork.forked_project_id or mr.forked_project_id
+      vim.api.nvim_buf_set_lines(M.forked_project_id_bufnr, 0, -1, false, { tostring(forked_id) })
+    end
 
     u.switch_can_edit_buf(M.delete_branch_bufnr, false)
     u.switch_can_edit_buf(M.squash_bufnr, false)
@@ -236,6 +278,7 @@ M.open_confirmation_popup = function(mr)
     state.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
     state.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     state.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    state.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
     miscellaneous.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
@@ -261,6 +304,7 @@ M.create_mr = function()
   local target = u.get_buffer_text(M.target_bufnr):gsub("\n", " ")
   local delete_branch = u.string_to_bool(u.get_buffer_text(M.delete_branch_bufnr))
   local squash = u.string_to_bool(u.get_buffer_text(M.squash_bufnr))
+  local forked_project_id = tonumber(u.get_buffer_text(M.forked_project_id_bufnr))
 
   local body = {
     title = title,
@@ -268,7 +312,10 @@ M.create_mr = function()
     target_branch = target,
     delete_branch = delete_branch,
     squash = squash,
+    forked_project_id = forked_project_id,
   }
+
+  vim.print(body)
 
   job.run_job("/create_mr", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
@@ -291,6 +338,8 @@ M.create_layout = function()
   local squash_title = vim.o.columns > 110 and "Squash commits" or "Squash"
   local squash_popup = Popup(u.create_box_popup_state(squash_title, false))
   M.squash_bufnr = squash_popup.bufnr
+  local forked_project_id_popup = Popup(u.create_box_popup_state("Forked Project ID", false))
+  M.forked_project_id_bufnr = forked_project_id_popup.bufnr
 
   local internal_layout
   internal_layout = Layout.Box({
@@ -299,6 +348,7 @@ M.create_layout = function()
     }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
     Layout.Box({
+      Layout.Box(forked_project_id_popup, { size = { width = 20 } }),
       Layout.Box(delete_branch_popup, { size = { width = #delete_title + 4 } }),
       Layout.Box(squash_popup, { size = { width = #squash_title + 4 } }),
       Layout.Box(target_branch_popup, { grow = 1 }),
@@ -316,7 +366,8 @@ M.create_layout = function()
 
   layout:mount()
 
-  return layout, title_popup, description_popup, target_branch_popup, delete_branch_popup, squash_popup
+  return layout, title_popup, description_popup, target_branch_popup, delete_branch_popup, squash_popup,
+      forked_project_id_popup
 end
 
 return M

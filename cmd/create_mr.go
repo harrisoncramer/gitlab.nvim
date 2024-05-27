@@ -11,11 +11,12 @@ import (
 )
 
 type CreateMrRequest struct {
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	TargetBranch string `json:"target_branch"`
-	DeleteBranch bool   `json:"delete_branch"`
-	Squash       bool   `json:"squash"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	TargetBranch    string `json:"target_branch"`
+	DeleteBranch    bool   `json:"delete_branch"`
+	Squash          bool   `json:"squash"`
+	TargetProjectID int    `json:"forked_project_id,omitempty"`
 }
 
 /* createMr creates a merge request */
@@ -57,6 +58,10 @@ func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
 		SourceBranch:       &a.gitInfo.BranchName,
 		RemoveSourceBranch: &createMrRequest.DeleteBranch,
 		Squash:             &createMrRequest.Squash,
+	}
+
+	if createMrRequest.TargetProjectID != 0 {
+		opts.TargetProjectID = gitlab.Int(createMrRequest.TargetProjectID)
 	}
 
 	_, res, err := a.client.CreateMergeRequest(a.projectInfo.ProjectId, &opts)
