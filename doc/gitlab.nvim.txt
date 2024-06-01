@@ -420,14 +420,19 @@ have been added to a review. These are the default settings:
     },
   },
 
-When the cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show()`
+When the cursor is on a diagnostic line you can view the discussion thread by
+using `vim.diagnostic.show()`.
 
-You can also jump to discussion tree for the given comment:
+You can also jump to the discussion tree for the given comment:
 >lua
     require("gitlab").move_to_discussion_tree_from_diagnostic()
 
+Since nvim 0.10 you can use these two function anywhere in the diagnostic
+range. In previous versions, you have to move the cursor to the first line of
+the diagnostic.
+
 You may skip resolved discussions by toggling `discussion_signs.skip_resolved_discussion`
-in your setup function to true. By default, discussions from this plugin
+in your setup function to `true`. By default, discussions from this plugin
 are shown at the INFO severity level (see :h vim.diagnostic.severity).
 
 
