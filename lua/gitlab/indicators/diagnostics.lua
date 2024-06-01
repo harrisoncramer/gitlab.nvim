@@ -15,7 +15,7 @@ M.clear_diagnostics = function()
 end
 
 -- Display options for the diagnostic
-local create_display_opts = function ()
+local create_display_opts = function()
   return {
     virtual_text = state.settings.discussion_signs.virtual_text,
     severity_sort = true,
