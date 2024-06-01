@@ -215,6 +215,7 @@ require("gitlab").setup({
     skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
     severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
     virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+    use_diagnostic_signs = true, -- Show diagnostic sign (depending on the `severity` setting, e.g., I for INFO) along with the comment icon
     priority = 100, -- Higher will override LSP warnings, etc
     icons = {
       comment = "→|",
