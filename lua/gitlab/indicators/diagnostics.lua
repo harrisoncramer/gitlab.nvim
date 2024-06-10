@@ -15,11 +15,14 @@ M.clear_diagnostics = function()
 end
 
 -- Display options for the diagnostic
-local display_opts = {
-  virtual_text = state.settings.discussion_signs.virtual_text,
-  severity_sort = true,
-  underline = false,
-}
+local create_display_opts = function()
+  return {
+    virtual_text = state.settings.discussion_signs.virtual_text,
+    severity_sort = true,
+    underline = false,
+    signs = state.settings.discussion_signs.use_diagnostic_signs,
+  }
+end
 
 ---Takes some range information and data about a discussion
 ---and creates a diagnostic to be placed in the reviewer
@@ -121,10 +124,10 @@ M.refresh_diagnostics = function()
     end
 
     local new_diagnostics = M.parse_new_diagnostics(filtered_discussions)
-    set_diagnostics_in_new_sha(diagnostics_namespace, new_diagnostics, display_opts)
+    set_diagnostics_in_new_sha(diagnostics_namespace, new_diagnostics, create_display_opts())
 
     local old_diagnostics = M.parse_old_diagnostics(filtered_discussions)
-    set_diagnostics_in_old_sha(diagnostics_namespace, old_diagnostics, display_opts)
+    set_diagnostics_in_old_sha(diagnostics_namespace, old_diagnostics, create_display_opts())
   end)
 
   if not ok then
