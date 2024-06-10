@@ -56,6 +56,9 @@ end
 ---@param callback function|nil
 M.load_discussions = function(callback)
   state.load_new_state("discussion_data", function(data)
+    if not state.DISCUSSION_DATA then
+      state.DISCUSSION_DATA = {}
+    end
     state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
     state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
     state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
