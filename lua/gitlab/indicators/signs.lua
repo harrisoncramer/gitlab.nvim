@@ -2,7 +2,6 @@ local u = require("gitlab.utils")
 local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
 local discussion_sign_name = require("gitlab.indicators.diagnostics").discussion_sign_name
-local namespace = require("gitlab.indicators.diagnostics").diagnostics_namespace
 
 local M = {}
 M.clear_signs = function()
@@ -32,9 +31,8 @@ M.set_signs = function(diagnostics, bufnr)
   for _, diagnostic in ipairs(diagnostics) do
     ---@type SignTable[]
     local existing_signs =
-      vim.fn.sign_getplaced(vim.api.nvim_get_current_buf(), { group = "gitlab_discussion" })[1].signs
+      vim.fn.sign_getplaced(vim.api.nvim_get_current_buf(), { group = discussion_sign_name })[1].signs
 
-    local sign_id = string.format("%s__%d", namespace, diagnostic.lnum)
     if diagnostic.end_lnum then
       local linenr = diagnostic.lnum + 1
       while linenr <= diagnostic.end_lnum do
@@ -44,7 +42,7 @@ M.set_signs = function(diagnostics, bufnr)
         end)
         if conflicting_comment_sign == nil then
           vim.fn.sign_place(
-            sign_id,
+            linenr,
             discussion_sign_name,
             "DiagnosticSign" .. M.severity .. gitlab_range,
             bufnr,
@@ -55,7 +53,7 @@ M.set_signs = function(diagnostics, bufnr)
     end
 
     vim.fn.sign_place(
-      sign_id,
+      diagnostic.lnum + 1,
       discussion_sign_name,
       "DiagnosticSign" .. M.severity .. gitlab_comment,
       bufnr,

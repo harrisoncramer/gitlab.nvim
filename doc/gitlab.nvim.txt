@@ -160,6 +160,9 @@ you call this function with no values the defaults will be used:
           imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
         },
       },
+      connection_settings = {
+        insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
+      },
       help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
       popup = { -- The popup for comment creation, editing, and replying
         keymaps = {
@@ -192,12 +195,14 @@ you call this function with no values the defaults will be used:
         refresh_data = "a", -- Refreshes the data in the view by hitting Gitlab's APIs again
         reply = "r", -- Reply to comment
         toggle_node = "t", -- Opens or closes the discussion
+        add_emoji = "Ea" -- Add an emoji to the note/comment
+        add_emoji = "Ed" -- Remove an emoji from a note/comment
         toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
         toggle_resolved_discussions = "R", -- Open or close all resolved discussions
         toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
-        toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
         publish_draft = "P", -- Publishes the currently focused note/comment
+        toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
         position = "left", -- "top", "right", "bottom" or "left"
         open_in_browser = "b" -- Jump to the URL of the current note/discussion
         copy_node_url = "u", -- Copy the URL of the current node to clipboard
@@ -208,7 +213,7 @@ you call this function with no values the defaults will be used:
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
-        toggle_draft_mode = "D" -- Toggle between draft mode and regular mode, where comments are posted immediately
+        toggle_draft_mode = "D" -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
@@ -218,7 +223,7 @@ you call this function with no values the defaults will be used:
       info = { -- Show additional fields in the summary view
         enabled = true,
         horizontal = false, -- Display metadata to the left of the summary rather than underneath
-        fields = {  -- The fields listed here will be displayed, in whatever order you choose
+        fields = { -- The fields listed here will be displayed, in whatever order you choose
           "author",
           "created_at",
           "updated_at",
@@ -240,6 +245,7 @@ you call this function with no values the defaults will be used:
         skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
         severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
         virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+        use_diagnostic_signs = true, -- Show diagnostic sign (depending on the `severity` setting, e.g., I for INFO) along with the comment icon
         priority = 100, -- Higher will override LSP warnings, etc
         icons = {
           comment = "→|",
@@ -275,7 +281,7 @@ you call this function with no values the defaults will be used:
           directory = "Directory",
           directory_icon = "DiffviewFolderSign",
           file_name = "Normal",
-          }
+        }
       }
     })
 <
@@ -413,6 +419,7 @@ have been added to a review. These are the default settings:
     skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
     severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
     virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+    use_diagnostic_signs = true, -- Show diagnostic sign (depending on the `severity` setting, e.g., I for INFO) along with the comment icon
     priority = 100, -- Higher will override LSP warnings, etc
     icons = {
       comment = "→|",
@@ -420,14 +427,19 @@ have been added to a review. These are the default settings:
     },
   },
 
-When the cursor is on diagnostic line you can view discussion thread by using `vim.diagnostic.show()`
+When the cursor is on a diagnostic line you can view the discussion thread by
+using `vim.diagnostic.show()`.
 
-You can also jump to discussion tree for the given comment:
+You can also jump to the discussion tree for the given comment:
 >lua
     require("gitlab").move_to_discussion_tree_from_diagnostic()
 
+Since nvim 0.10 you can use these two function anywhere in the diagnostic
+range. In previous versions, you have to move the cursor to the first line of
+the diagnostic.
+
 You may skip resolved discussions by toggling `discussion_signs.skip_resolved_discussion`
-in your setup function to true. By default, discussions from this plugin
+in your setup function to `true`. By default, discussions from this plugin
 are shown at the INFO severity level (see :h vim.diagnostic.severity).
 
 
