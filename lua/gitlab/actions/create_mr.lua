@@ -31,7 +31,7 @@ local M = {
     title = "",
     description = "",
     forked_project_id = state.settings.create_mr.fork.enabled and state.settings.create_mr.fork.forked_project_id
-      or nil,
+        or nil,
   },
 }
 
@@ -96,12 +96,12 @@ local function make_template_path(t)
     return
   end
   return base_dir
-    .. state.settings.file_separator
-    .. ".gitlab"
-    .. state.settings.file_separator
-    .. "merge_request_templates"
-    .. state.settings.file_separator
-    .. t
+      .. state.settings.file_separator
+      .. ".gitlab"
+      .. state.settings.file_separator
+      .. "merge_request_templates"
+      .. state.settings.file_separator
+      .. t
 end
 
 ---3. Pick template (if applicable). This is used as the description
@@ -215,7 +215,7 @@ M.open_confirmation_popup = function(mr)
   end
 
   local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup, forked_project_id_popup =
-    M.create_layout()
+      M.create_layout()
 
   local popups = {
     title_popup,
@@ -342,18 +342,20 @@ M.create_layout = function()
   local forked_project_id_popup = Popup(u.create_box_popup_state("Forked Project ID", false))
   M.forked_project_id_bufnr = forked_project_id_popup.bufnr
 
-  local internal_layout
-  internal_layout = Layout.Box({
+  local boxes = {}
+  if state.settings.create_mr.fork.enabled then
+    table.insert(boxes, Layout.Box(forked_project_id_popup, { size = { width = 20 } }))
+  end
+  table.insert(boxes, Layout.Box(delete_branch_popup, { size = { width = #delete_title + 4 } }))
+  table.insert(boxes, Layout.Box(squash_popup, { size = { width = #squash_title + 4 } }))
+  table.insert(boxes, Layout.Box(target_branch_popup, { grow = 1 }))
+
+  local internal_layout = Layout.Box({
     Layout.Box({
       Layout.Box(title_popup, { grow = 1 }),
     }, { size = 3 }),
     Layout.Box(description_popup, { grow = 1 }),
-    Layout.Box({
-      Layout.Box(forked_project_id_popup, { size = { width = 20 } }),
-      Layout.Box(delete_branch_popup, { size = { width = #delete_title + 4 } }),
-      Layout.Box(squash_popup, { size = { width = #squash_title + 4 } }),
-      Layout.Box(target_branch_popup, { grow = 1 }),
-    }, { size = 3 }),
+    Layout.Box(boxes, { size = 3 }),
   }, { dir = "col" })
 
   local layout = Layout({
@@ -368,12 +370,12 @@ M.create_layout = function()
   layout:mount()
 
   return layout,
-    title_popup,
-    description_popup,
-    target_branch_popup,
-    delete_branch_popup,
-    squash_popup,
-    forked_project_id_popup
+      title_popup,
+      description_popup,
+      target_branch_popup,
+      delete_branch_popup,
+      squash_popup,
+      forked_project_id_popup
 end
 
 return M
