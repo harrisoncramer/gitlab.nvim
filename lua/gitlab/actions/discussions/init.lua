@@ -56,6 +56,7 @@ end
 ---@param callback function|nil
 M.load_discussions = function(callback)
   state.load_new_state("discussion_data", function(data)
+    if not state.DISCUSSION_DATA then state.DISCUSSION_DATA = {} end
     state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
     state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
     state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
@@ -457,7 +458,7 @@ M.rebuild_unlinked_discussion_tree = function()
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
   local existing_note_nodes =
-    discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
+      discussions_tree.add_discussions_to_table(state.DISCUSSION_DATA.unlinked_discussions, true)
   local draft_comment_nodes = draft_notes.add_draft_notes_to_table(true)
 
   -- Combine draft notes with regular notes
