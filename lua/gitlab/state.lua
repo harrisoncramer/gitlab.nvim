@@ -153,6 +153,7 @@ M.settings = {
     skip_resolved_discussion = false,
     severity = vim.diagnostic.severity.INFO,
     virtual_text = false,
+    use_diagnostic_signs = true,
     icons = {
       comment = "→|",
       range = " |",
