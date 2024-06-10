@@ -116,6 +116,10 @@ M.settings = {
     template_file = nil,
     delete_branch = false,
     squash = false,
+    fork = {
+      enabled = false,
+      forked_project_id = nil,
+    },
     title_input = {
       width = 40,
       border = "rounded",
