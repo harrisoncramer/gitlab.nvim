@@ -635,7 +635,7 @@ This command will automatically check out that branch locally, and optionally
 open the reviewer pane. This is the default behavior.
 >lua
   require("gitlab").choose_merge_request()
-  require("gitlab").choose_merge_request({ open_reviewer = false })
+  require("gitlab").choose_merge_request({ open_reviewer = true })
 <
     Parameters: ~
         • {opts}: (table|nil) Keyword arguments to configure the checkout.
