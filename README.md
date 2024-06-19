@@ -118,7 +118,7 @@ For more settings, please see `:h gitlab.nvim.connecting-to-gitlab`
 
 The plugin expects you to call `setup()` and pass in a table of options. All of these values are optional, and if you call this function with no values the defaults will be used.
 
-For a list of all these settings please run `:h gitlab.nvim.configuring-the-plugin` which will show you the help stored in `doc/gitlab.nvim.txt`
+For a list of all these settings please run `:h gitlab.nvim.configuring-the-plugin` which will show you the help stored in [doc/gitlab.nvim.txt](doc/gitlab.nvim.txt).
 
 ## Keybindings
 
