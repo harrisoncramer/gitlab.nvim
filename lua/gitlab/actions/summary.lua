@@ -63,10 +63,20 @@ M.summary = function()
       description_popup,
       M.edit_summary,
       miscellaneous.attach_file,
-      { cb = exit, action_before_close = true, save_to_temp_register = true }
+      { cb = exit, action_before_close = true, action_before_exit = true, save_to_temp_register = true }
     )
-    state.set_popup_keymaps(title_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
-    state.set_popup_keymaps(info_popup, M.edit_summary, nil, { cb = exit, action_before_close = true })
+    state.set_popup_keymaps(
+      title_popup,
+      M.edit_summary,
+      nil,
+      { cb = exit, action_before_close = true, action_before_exit = true }
+    )
+    state.set_popup_keymaps(
+      info_popup,
+      M.edit_summary,
+      nil,
+      { cb = exit, action_before_close = true, action_before_exit = true }
+    )
     miscellaneous.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
@@ -151,8 +161,6 @@ M.edit_summary = function()
     u.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
     state.INFO.title = data.mr.title
-    M.layout:unmount()
-    M.layout_visible = false
   end)
 end
 
