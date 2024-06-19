@@ -155,3 +155,7 @@ vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
 ```
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`
+
+## Contributing
+
+Contributions to the plugin are welcome. Please read [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) before you start working on a pull request.
