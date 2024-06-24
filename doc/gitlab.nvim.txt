@@ -55,6 +55,9 @@ QUICK START                                          *gitlab.nvim.quick-start*
 
 This will checkout the branch locally, and up the plugin's reviewer pane.
 
+NOTE: At the moment, the plugin assumes that the remote where you want to
+merge your feature branch is called "origin".
+
 
 INSTALLATION                                        *gitlab.nvim.installation*
 
@@ -78,25 +81,25 @@ With Lazy:
 <
 And with Packer:
 >lua
-  use {
-    "harrisoncramer/gitlab.nvim",
-    requires = {
-      "MunifTanjim/nui.nvim",
-      "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim"
-      "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-      "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
-    },
-    build = function()
-      require("gitlab.server").build()
-    end,
-    branch = "develop",
-    config = function()
-      require("diffview") -- We require some global state from diffview
-      local gitlab = require("gitlab")
-      gitlab.setup()
-    end,
-  }
+    use {
+      "harrisoncramer/gitlab.nvim",
+      requires = {
+        "MunifTanjim/nui.nvim",
+        "nvim-lua/plenary.nvim",
+        "sindrets/diffview.nvim",
+        "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+        "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
+      },
+      build = function()
+        require("gitlab.server").build()
+      end,
+      branch = "develop",
+      config = function()
+        require("diffview") -- We require some global state from diffview
+        local gitlab = require("gitlab")
+        gitlab.setup()
+      end,
+    }
 <
 
 CONNECTING TO GITLAB                        *gitlab.nvim.connecting-to-gitlab*
@@ -418,18 +421,18 @@ SIGNS AND DIAGNOSTICS                      *gitlab.nvim.signs-and-diagnostics*
 By default when reviewing files, you will see diagnostics for comments that
 have been added to a review. These are the default settings:
 >lua
-  discussion_signs = {
-    enabled = true, -- Show diagnostics for gitlab comments in the reviewer
-    skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
-    severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
-    virtual_text = false, -- Whether to show the comment text inline as floating virtual text
-    use_diagnostic_signs = true, -- Show diagnostic sign (depending on the `severity` setting, e.g., I for INFO) along with the comment icon
-    priority = 100, -- Higher will override LSP warnings, etc
-    icons = {
-      comment = "→|",
-      range = " |",
+    discussion_signs = {
+      enabled = true, -- Show diagnostics for gitlab comments in the reviewer
+      skip_resolved_discussion = false, -- Show diagnostics for resolved discussions
+      severity = vim.diagnostic.severity.INFO, -- ERROR, WARN, INFO, or HINT
+      virtual_text = false, -- Whether to show the comment text inline as floating virtual text
+      use_diagnostic_signs = true, -- Show diagnostic sign (depending on the `severity` setting, e.g., I for INFO) along with the comment icon
+      priority = 100, -- Higher will override LSP warnings, etc
+      icons = {
+        comment = "→|",
+        range = " |",
+      },
     },
-  },
 
 When the cursor is on a diagnostic line you can view the discussion thread by
 using `vim.diagnostic.show()`.
@@ -630,12 +633,13 @@ default arguments outlined under "Configuring the Plugin".
                                                                 *gitlab.nvim.choose_merge_request*
 gitlab.choose_merge_request({opts}) ~
 
-Choose a merge request from a list of those open in your current project to review. 
-This command will automatically check out that branch locally, and optionally
-open the reviewer pane. This is the default behavior.
+Choose a merge request from a list of those open in your current project to
+review. This command will automatically check out the feature branch locally,
+and by default also open the reviewer pane (this can be overridden with the
+`open_reviewer` parameter).
 >lua
   require("gitlab").choose_merge_request()
-  require("gitlab").choose_merge_request({ open_reviewer = true })
+  require("gitlab").choose_merge_request({ open_reviewer = false })
 <
     Parameters: ~
         • {opts}: (table|nil) Keyword arguments to configure the checkout.
