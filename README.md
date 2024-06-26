@@ -29,6 +29,9 @@ To view these help docs and to get more detailed help information, please run `:
 
 This will checkout the branch locally, and open the plugin's reviewer pane.
 
+NOTE: At the moment, the plugin assumes that the remote where you want to merge your feature branch
+is called "origin".
+
 For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 
 ## Installation

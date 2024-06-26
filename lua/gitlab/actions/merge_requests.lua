@@ -25,7 +25,7 @@ M.choose_merge_request = function(opts)
   vim.ui.select(state.MERGE_REQUESTS, {
     prompt = "Choose Merge Request",
     format_item = function(mr)
-      return string.format("%s (%s)", mr.title, mr.author.name)
+      return string.format("%s [%s -> %s] (%s)", mr.title, mr.source_branch, mr.target_branch, mr.author.name)
     end,
   }, function(choice)
     if not choice then

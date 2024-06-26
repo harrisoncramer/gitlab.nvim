@@ -295,9 +295,9 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
-        vim.api.nvim_buf_delete(popup.bufnr, {})
+        exit(popup, opts)
       else
-        vim.api.nvim_buf_delete(popup.bufnr, {})
+        exit(popup, opts)
         action(text, popup.bufnr)
       end
     end, { buffer = popup.bufnr, desc = "Perform action" })
@@ -312,18 +312,26 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
     end, { buffer = popup.bufnr, desc = "Perform linewise action" })
   end
 
-  vim.api.nvim_create_autocmd("BufWinLeave", {
-    buffer = popup.bufnr,
-    callback = function()
-      if opts.save_to_temp_register then
+  if opts.save_to_temp_register then
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+      buffer = popup.bufnr,
+      callback = function()
         local text = u.get_buffer_text(popup.bufnr)
         for _, register in ipairs(M.settings.popup.temp_registers) do
           vim.fn.setreg(register, text)
         end
-      end
-      exit(popup, opts)
-    end,
-  })
+      end,
+    })
+  end
+
+  if opts.action_before_exit then
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+      buffer = popup.bufnr,
+      callback = function()
+        exit(popup, opts)
+      end,
+    })
+  end
 end
 
 -- Dependencies

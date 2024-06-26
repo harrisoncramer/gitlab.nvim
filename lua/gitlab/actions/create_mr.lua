@@ -316,8 +316,6 @@ M.create_mr = function()
     forked_project_id = forked_project_id,
   }
 
-  vim.print(body)
-
   job.run_job("/create_mr", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.reset_state()
