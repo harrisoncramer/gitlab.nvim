@@ -177,6 +177,7 @@ M.settings = {
   colors = {
     discussion_tree = {
       username = "Keyword",
+      mention = "WarningMsg",
       date = "Comment",
       chevron = "DiffviewNonText",
       directory = "Directory",

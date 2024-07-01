@@ -283,6 +283,7 @@ you call this function with no values the defaults will be used:
       colors = {
         discussion_tree = {
           username = "Keyword",
+          mention = "WarningMsg",
           date = "Comment",
           chevron = "DiffviewNonText",
           directory = "Directory",
