@@ -522,6 +522,7 @@ M.create_box_popup_state = function(title, enter)
         top = title,
       },
     },
+    opacity = settings.opacity,
   }
 end
 

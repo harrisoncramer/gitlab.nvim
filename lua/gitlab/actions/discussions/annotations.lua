@@ -133,3 +133,17 @@
 ---@field commit_id string  -- This will always be ""
 ---@field line_code string
 ---@field position NotePosition
+
+---@class RootNode: NuiTree.Node
+---@field range table
+---@field old_line integer|nil
+---@field new_line integer|nil
+---@field id string
+---@field text string
+---@field type "note"
+---@field is_root boolean
+---@field root_note_id string
+---@field file_name string
+---@field resolvable boolean
+---@field resolved boolean
+---@field url string
