@@ -46,7 +46,7 @@ end
 ---@param ending string
 ---@return boolean
 M.ends_with = function(str, ending)
-  return ending == "" or str:sub(-#ending) == ending
+  return ending == "" or str:sub(- #ending) == ending
 end
 
 M.filter = function(input_table, value_to_remove)
@@ -199,7 +199,7 @@ end
 M.split_by_new_lines = function(s)
   if s:sub(-1) ~= "\n" then
     s = s .. "\n"
-  end -- Append a new line to the string, if there's none, otherwise the last line would be lost.
+  end                       -- Append a new line to the string, if there's none, otherwise the last line would be lost.
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
 end
 
@@ -253,7 +253,7 @@ M.format_to_local = function(date_string, offset)
     -- 2021-01-01T00:00:00.000-05:00
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
-      date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+        date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
@@ -354,6 +354,9 @@ M.split_path = function(path)
 end
 
 M.get_buffer_text = function(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return ""
+  end
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
   return text
@@ -374,7 +377,6 @@ M.string_to_bool = function(str)
   elseif str == "false" or str == "False" or str == "FALSE" then
     return false
   end
-  M.notify("Not a valid boolean value `" .. str .. "`. Defaulting to `false`", vim.log.levels.WARN)
   return false
 end
 
@@ -602,17 +604,17 @@ M.list_files_in_folder = function(folder_path)
   local files = {}
   if folder ~= nil then
     files = List.new(folder)
-      :map(function(file)
-        local file_path = folder_path .. M.path_separator .. file
-        local timestamp = vim.fn.getftime(file_path)
-        return { name = file, timestamp = timestamp }
-      end)
-      :sort(function(a, b)
-        return a.timestamp > b.timestamp
-      end)
-      :map(function(file)
-        return file.name
-      end)
+        :map(function(file)
+          local file_path = folder_path .. M.path_separator .. file
+          local timestamp = vim.fn.getftime(file_path)
+          return { name = file, timestamp = timestamp }
+        end)
+        :sort(function(a, b)
+          return a.timestamp > b.timestamp
+        end)
+        :map(function(file)
+          return file.name
+        end)
   end
 
   return files
