@@ -354,6 +354,9 @@ M.split_path = function(path)
 end
 
 M.get_buffer_text = function(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return ""
+  end
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
   return text
@@ -374,7 +377,6 @@ M.string_to_bool = function(str)
   elseif str == "false" or str == "False" or str == "FALSE" then
     return false
   end
-  M.notify("Not a valid boolean value `" .. str .. "`. Defaulting to `false`", vim.log.levels.WARN)
   return false
 end
 
