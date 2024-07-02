@@ -191,7 +191,7 @@ local function get_modification_type_from_new_sha(new_line, hunks, all_diff_outp
     return nil
   end
   return List.new(hunks):find(function(hunk)
-    local new_line_end = hunk.new_line + hunk.new_range
+    local new_line_end = hunk.new_line + hunk.new_range - (hunk.new_range > 0 and 1 or 0)
     local in_new_range = new_line >= hunk.new_line and new_line <= new_line_end
     local is_range_zero = hunk.new_range == 0 and hunk.old_range == 0
     return in_new_range and (is_range_zero or line_was_added(new_line, hunk, all_diff_output))
@@ -209,10 +209,10 @@ local function get_modification_type_from_old_sha(old_line, new_line, hunks, all
   end
 
   return List.new(hunks):find(function(hunk)
-    local old_line_end = hunk.old_line + hunk.old_range
-    local new_line_end = hunk.new_line + hunk.new_range
+    local old_line_end = hunk.old_line + hunk.old_range - (hunk.old_range > 0 and 1 or 0)
+    local new_line_end = hunk.new_line + hunk.new_range - (hunk.new_range > 0 and 1 or 0)
     local in_old_range = old_line >= hunk.old_line and old_line <= old_line_end
-    local in_new_range = old_line >= hunk.new_line and new_line <= new_line_end
+    local in_new_range = new_line >= hunk.new_line and new_line <= new_line_end
     return (in_old_range or in_new_range) and line_was_removed(old_line, hunk, all_diff_output)
   end) and "deleted" or "unmodified"
 end
