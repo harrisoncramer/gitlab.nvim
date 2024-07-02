@@ -2,7 +2,8 @@ if filereadable($VIMRUNTIME . '/syntax/markdown.vim')
   source $VIMRUNTIME/syntax/markdown.vim
 endif
 
-syntax match Username "@\S*"
+syntax match Username "\%([]\)\@<= @\S*"
+syntax match Mention "\%([] \)\@<!@\S*"
 syntax match Date "\v\d+\s+\w+\s+ago"
 syntax match ChevronDown ""
 syntax match ChevronRight ""
@@ -11,6 +12,7 @@ syntax match Unresolved /\s-\s\?/
 syntax match Pencil //
 
 highlight link Username GitlabUsername
+highlight link Mention GitlabMention
 highlight link Date GitlabDate
 highlight link ChevronDown GitlabChevron
 highlight link ChevronRight GitlabChevron
