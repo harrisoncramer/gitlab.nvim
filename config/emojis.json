@@ -3432,6 +3432,54 @@
     ],
     "moji": "🤕"
   },
+  "heart": {
+    "unicode": "1F495",
+    "unicode_alternates": [],
+    "name": "heart",
+    "shortname": ":heart:",
+    "category": "people",
+    "aliases": [],
+    "aliases_ascii": [],
+    "keywords": [
+      "affection",
+      "crush",
+      "face",
+      "infatuation",
+      "like",
+      "love",
+      "valentines",
+      "heart",
+      "lovestruck",
+      "heart-shaped",
+      "emotion",
+      "beautiful"
+    ],
+    "moji": "❤️ "
+  },
+  "hearts": {
+    "unicode": "1F495",
+    "unicode_alternates": [],
+    "name": "hearts",
+    "shortname": ":hearts:",
+    "category": "people",
+    "aliases": [],
+    "aliases_ascii": [],
+    "keywords": [
+      "affection",
+      "crush",
+      "face",
+      "infatuation",
+      "like",
+      "love",
+      "valentines",
+      "heart",
+      "lovestruck",
+      "heart-shaped",
+      "emotion",
+      "beautiful"
+    ],
+    "moji": "❤️ "
+  },
   "heart_eyes": {
     "unicode": "1F60D",
     "unicode_alternates": [],
