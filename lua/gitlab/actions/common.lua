@@ -246,7 +246,7 @@ M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end
   end
 end
 
----@param root_node RootNode
+---@param root_node NuiTree.Node
 ---@return integer|nil line_number
 ---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number_from_node = function(root_node)
