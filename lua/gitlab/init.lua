@@ -68,12 +68,18 @@ return {
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   -- Discussion Tree Actions 🌴
-  toggle_discussions = async.sequence({
-    info,
-    user,
-    u.merge(draft_notes_dep, { refresh = true }),
-    u.merge(discussion_data, { refresh = true }),
-  }, discussions.toggle),
+  toggle_discussions = function()
+    if discussions.split_visible then
+      discussions.close()
+    else
+      async.sequence({
+        info,
+        user,
+        u.merge(draft_notes_dep, { refresh = true }),
+        u.merge(discussion_data, { refresh = true }),
+      }, discussions.open)()
+    end
+  end,
   toggle_draft_mode = discussions.toggle_draft_mode,
   publish_all_drafts = draft_notes.publish_all_drafts,
   refresh_data = function()

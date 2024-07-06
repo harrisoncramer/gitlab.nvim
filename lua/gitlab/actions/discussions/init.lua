@@ -111,12 +111,7 @@ end
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
-M.toggle = function(callback)
-  if M.split_visible then
-    M.close()
-    return
-  end
-
+M.open = function(callback)
   state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
   state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
   state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
