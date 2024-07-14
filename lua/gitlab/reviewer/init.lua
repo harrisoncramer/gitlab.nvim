@@ -239,7 +239,7 @@ end
 M.set_callback_for_file_changed = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
   vim.api.nvim_create_autocmd("User", {
-    pattern = { "DiffviewDiffBufWinEnter" },
+    pattern = { "DiffviewDiffBufRead" },
     group = group,
     callback = function(...)
       M.stored_win = vim.api.nvim_get_current_win()
