@@ -62,7 +62,7 @@ M.settings = {
   attachment_dir = "",
   keymaps = {
     disable_all = false,
-    keymaps = {
+    help = "g?",
     popup = {
       disable_all = false,
       next_field = "<Tab>",
@@ -296,11 +296,11 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   if opts == nil then
     opts = {}
   end
-  if action ~= "Help" then -- Don't show help on the help popup
-    vim.keymap.set("n", M.settings.help, function()
+  if action ~= "Help" and M.settings.keymaps.help then -- Don't show help on the help popup
+    vim.keymap.set("n", M.settings.keymaps.help, function()
       local help = require("gitlab.actions.help")
       help.open()
-    end, { buffer = popup.bufnr, desc = "Open help" })
+    end, { buffer = popup.bufnr, desc = "Open help", nowait = M.settings.keymaps.help_nowait })
   end
   if action ~= nil and M.settings.keymaps.popup.perform_action then
     vim.keymap.set("n", M.settings.keymaps.popup.perform_action, function()
