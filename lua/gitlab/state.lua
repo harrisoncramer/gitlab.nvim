@@ -398,6 +398,54 @@ M.merge_settings = function(args)
     )
   end
 
+  M._get_nested_field = function(table, field)
+    local subfield = string.match(field, "[^.]+")
+    local subtable = table[subfield]
+    if subtable ~= nil then
+      local new_field = string.gsub(field, "^" .. subfield .. ".?", "")
+      if new_field ~= "" then
+        return M._get_nested_field(subtable, new_field)
+      else
+        return subtable
+      end
+    end
+  end
+
+  local replaced = {
+    "discussion_tree.add_emoji",
+    "discussion_tree.copy_node_url",
+    "discussion_tree.delete_comment",
+    "discussion_tree.delete_emoji",
+    "discussion_tree.edit_comment",
+    "discussion_tree.jump_to_file",
+    "discussion_tree.jump_to_reviewer",
+    "discussion_tree.open_in_browser",
+    "discussion_tree.publish_draft",
+    "discussion_tree.refresh_data",
+    "discussion_tree.reply",
+    "discussion_tree.switch_view",
+    "discussion_tree.toggle_all_discussions",
+    "discussion_tree.toggle_draft_mode",
+    "discussion_tree.toggle_node",
+    "discussion_tree.toggle_resolved",
+    "discussion_tree.toggle_resolved_discussions",
+    "discussion_tree.toggle_tree_type",
+    "discussion_tree.toggle_unresolved_discussions",
+    "help",
+    "popup.keymaps.next_field",
+    "popup.keymaps.prev_field",
+    "popup.perform_action",
+    "popup.perform_linewise_action",
+  }
+  for _, field in ipairs(replaced) do
+    if M._get_nested_field(M.settings, field) ~= nil then
+      u.notify(
+        "The '" .. field .. "' setup option has been removed. Use the 'kyemaps' field instead.",
+        vim.log.levels.WARN
+      )
+    end
+  end
+
   M.settings.file_separator = (u.is_windows() and "\\" or "/")
 
   return true
