@@ -60,14 +60,19 @@ M.settings = {
     insecure = true,
   },
   attachment_dir = "",
-  help = "g?",
-  popup = {
+  keymaps = {
+    disable_all = false,
     keymaps = {
+    popup = {
+      disable_all = false,
       next_field = "<Tab>",
       prev_field = "<S-Tab>",
+      perform_action = "ZZ",
+      perform_linewise_action = "<leader>l",
     },
-    perform_action = "<leader>s",
-    perform_linewise_action = "<leader>l",
+    },
+  },
+  popup = {
     width = "40%",
     height = "60%",
     border = "rounded",
@@ -284,6 +289,10 @@ end
 
 -- These keymaps are buffer specific and are set dynamically when popups mount
 M.set_popup_keymaps = function(popup, action, linewise_action, opts)
+  if M.settings.keymaps.disable_all or M.settings.keymaps.popup.disable_all then
+    return
+  end
+
   if opts == nil then
     opts = {}
   end
@@ -293,8 +302,8 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       help.open()
     end, { buffer = popup.bufnr, desc = "Open help" })
   end
-  if action ~= nil then
-    vim.keymap.set("n", M.settings.popup.perform_action, function()
+  if action ~= nil and M.settings.keymaps.popup.perform_action then
+    vim.keymap.set("n", M.settings.keymaps.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
@@ -303,16 +312,20 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
         exit(popup, opts)
         action(text, popup.bufnr)
       end
-    end, { buffer = popup.bufnr, desc = "Perform action" })
+    end, { buffer = popup.bufnr, desc = "Perform action", nowait = M.settings.keymaps.popup.perform_action_nowait })
   end
 
-  if linewise_action ~= nil then
-    vim.keymap.set("n", M.settings.popup.perform_linewise_action, function()
+  if linewise_action ~= nil and M.settings.keymaps.popup.perform_action then
+    vim.keymap.set("n", M.settings.keymaps.popup.perform_linewise_action, function()
       local bufnr = vim.api.nvim_get_current_buf()
       local linnr = vim.api.nvim_win_get_cursor(0)[1]
       local text = u.get_line_content(bufnr, linnr)
       linewise_action(text)
-    end, { buffer = popup.bufnr, desc = "Perform linewise action" })
+    end, {
+      buffer = popup.bufnr,
+      desc = "Perform linewise action",
+      nowait = M.settings.keymaps.popup.perform_linewise_action_nowait,
+    })
   end
 
   if opts.save_to_temp_register then
