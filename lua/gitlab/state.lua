@@ -116,6 +116,11 @@ M.settings = {
       refresh_data = "<C-R>",
       print_node = "<leader>p",
     },
+    reviewer = {
+      disable_all = false,
+      create_comment = "c",
+      create_suggestion = "s",
+      move_to_discussion_tree = "a",
     },
   },
   popup = {
