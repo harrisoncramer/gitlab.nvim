@@ -63,6 +63,29 @@ M.settings = {
   keymaps = {
     disable_all = false,
     help = "g?",
+    global = {
+      disable_all = false,
+      add_assignee = "glaa",
+      delete_assignee = "glad",
+      add_label = "glla",
+      delete_label = "glld",
+      add_reviewer = "glra",
+      delete_reviewer = "glrd",
+      approve = "glA",
+      revoke = "glR",
+      merge = "glM",
+      create_mr = "glC",
+      choose_merge_request = "glc",
+      start_review = "glS",
+      summary = "gls",
+      copy_mr_url = "glu",
+      open_in_browser = "glo",
+      create_note = "gln",
+      pipeline = "glp",
+      toggle_discussions = "gld",
+      toggle_draft_mode = "glD",
+      publish_all_drafts = "glP",
+    },
     popup = {
       disable_all = false,
       next_field = "<Tab>",
@@ -210,6 +233,135 @@ M.unlinked_discussion_tree = {
   resolved_expanded = false,
   unresolved_expanded = false,
 }
+
+-- These keymaps are set globally when the plugin is initialized
+M.set_global_keymaps = function()
+  local keymaps = M.settings.keymaps
+
+  if keymaps.disable_all or keymaps.global.disable_all then
+    return
+  end
+
+  if keymaps.global.start_review then
+    vim.keymap.set("n", keymaps.global.start_review, function()
+      require("gitlab").review()
+    end, { desc = "Start Gitlab review", nowait = keymaps.global.start_review_nowait })
+  end
+
+  if keymaps.global.choose_merge_request then
+    vim.keymap.set("n", keymaps.global.choose_merge_request, function()
+      require("gitlab").choose_merge_request()
+    end, { desc = "Choose MR for review", nowait = keymaps.global.choose_merge_request_nowait })
+  end
+
+  if keymaps.global.summary then
+    vim.keymap.set("n", keymaps.global.summary, function()
+      require("gitlab").summary()
+    end, { desc = "Show MR summary", nowait = keymaps.global.summary_nowait })
+  end
+
+  if keymaps.global.approve then
+    vim.keymap.set("n", keymaps.global.approve, function()
+      require("gitlab").approve()
+    end, { desc = "Approve MR", nowait = keymaps.global.approve_nowait })
+  end
+
+  if keymaps.global.revoke then
+    vim.keymap.set("n", keymaps.global.revoke, function()
+      require("gitlab").revoke()
+    end, { desc = "Revoke approval", nowait = keymaps.global.revoke_nowait })
+  end
+
+  if keymaps.global.create_mr then
+    vim.keymap.set("n", keymaps.global.create_mr, function()
+      require("gitlab").create_mr()
+    end, { desc = "Create MR", nowait = keymaps.global.create_mr_nowait })
+  end
+
+  if keymaps.global.create_note then
+    vim.keymap.set("n", keymaps.global.create_note, function()
+      require("gitlab").create_note()
+    end, { desc = "Create MR note", nowait = keymaps.global.create_note_nowait })
+  end
+
+  if keymaps.global.toggle_discussions then
+    vim.keymap.set("n", keymaps.global.toggle_discussions, function()
+      require("gitlab").toggle_discussions()
+    end, { desc = "Toggle MR discussions", nowait = keymaps.global.toggle_discussions_nowait })
+  end
+
+  if keymaps.global.add_assignee then
+    vim.keymap.set("n", keymaps.global.add_assignee, function()
+      require("gitlab").add_assignee()
+    end, { desc = "Add MR assignee", nowait = keymaps.global.add_assignee_nowait })
+  end
+
+  if keymaps.global.delete_assignee then
+    vim.keymap.set("n", keymaps.global.delete_assignee, function()
+      require("gitlab").delete_assignee()
+    end, { desc = "Delete MR assignee", nowait = keymaps.global.delete_assignee_nowait })
+  end
+
+  if keymaps.global.add_label then
+    vim.keymap.set("n", keymaps.global.add_label, function()
+      require("gitlab").add_label()
+    end, { desc = "Add MR label", nowait = keymaps.global.add_label_nowait })
+  end
+
+  if keymaps.global.delete_label then
+    vim.keymap.set("n", keymaps.global.delete_label, function()
+      require("gitlab").delete_label()
+    end, { desc = "Delete MR label", nowait = keymaps.global.delete_label_nowait })
+  end
+
+  if keymaps.global.add_reviewer then
+    vim.keymap.set("n", keymaps.global.add_reviewer, function()
+      require("gitlab").add_reviewer()
+    end, { desc = "Add MR reviewer", nowait = keymaps.global.add_reviewer_nowait })
+  end
+
+  if keymaps.global.delete_reviewer then
+    vim.keymap.set("n", keymaps.global.delete_reviewer, function()
+      require("gitlab").delete_reviewer()
+    end, { desc = "Delete MR reviewer", nowait = keymaps.global.delete_reviewer_nowait })
+  end
+
+  if keymaps.global.pipeline then
+    vim.keymap.set("n", keymaps.global.pipeline, function()
+      require("gitlab").pipeline()
+    end, { desc = "Show MR pipeline status", nowait = keymaps.global.pipeline_nowait })
+  end
+
+  if keymaps.global.open_in_browser then
+    vim.keymap.set("n", keymaps.global.open_in_browser, function()
+      require("gitlab").open_in_browser()
+    end, { desc = "Open MR in browser", nowait = keymaps.global.open_in_browser_nowait })
+  end
+
+  if keymaps.global.merge then
+    vim.keymap.set("n", keymaps.global.merge, function()
+      require("gitlab").merge()
+    end, { desc = "Merge MR", nowait = keymaps.global.merge_nowait })
+  end
+
+  if keymaps.global.copy_mr_url then
+    vim.keymap.set("n", keymaps.global.copy_mr_url, function()
+      require("gitlab").copy_mr_url()
+    end, { desc = "Copy MR url", nowait = keymaps.global.copy_mr_url_nowait })
+  end
+
+  if keymaps.global.publish_all_drafts then
+    vim.keymap.set("n", keymaps.global.publish_all_drafts, function()
+      require("gitlab").publish_all_drafts()
+    end, { desc = "Publish all MR comment drafts", nowait = keymaps.global.publish_all_drafts_nowait })
+  end
+
+  if keymaps.global.toggle_draft_mode then
+    vim.keymap.set("n", keymaps.global.toggle_draft_mode, function()
+      require("gitlab").toggle_draft_mode()
+    end, { desc = "Toggle MR comment draft mode", nowait = keymaps.global.toggle_draft_mode_nowait })
+  end
+end
 
 -- Merges user settings into the default settings, overriding them
 M.merge_settings = function(args)
