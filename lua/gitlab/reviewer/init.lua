@@ -366,7 +366,7 @@ end
 M.set_reviewer_keymaps = function()
   -- Require keymaps only after user settings have been merged with defaults
   local keymaps = require("gitlab.state").settings.keymaps
-  if keymaps.reviewer.disable_all then
+  if keymaps.disable_all or keymaps.reviewer.disable_all then
     return
   end
 
@@ -378,6 +378,41 @@ M.set_reviewer_keymaps = function()
   end
   if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
     set_keymaps(b, keymaps)
+  end
+end
+
+---Delete keymaps from reviewer buffers.
+---@param bufnr integer Number of the buffer from which the keybindings will be removed.
+---@param keymaps table The settings keymaps table.
+local del_keymaps = function(bufnr, keymaps)
+  for _, func in ipairs({ "create_comment", "create_suggestion" }) do
+    if keymaps.reviewer[func] ~= false then
+      for _, mode in ipairs({ "n", "o", "v" }) do
+        pcall(vim.api.nvim_buf_del_keymap, bufnr, mode, keymaps.reviewer[func])
+      end
+    end
+  end
+  if keymaps.reviewer.move_to_discussion_tree ~= false then
+    pcall(vim.api.nvim_buf_del_keymap, bufnr, "n", keymaps.reviewer.move_to_discussion_tree)
+  end
+end
+
+--- Deletes keymaps from both buffers in the reviewer.
+M.del_reviewer_keymaps = function()
+  -- Require keymaps only after user settings have been merged with defaults
+  local keymaps = require("gitlab.state").settings.keymaps
+  if keymaps.disable_all or keymaps.reviewer.disable_all then
+    return
+  end
+
+  local view = diffview_lib.get_current_view()
+  local a = view.cur_layout.a.file.bufnr
+  local b = view.cur_layout.b.file.bufnr
+  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
+    del_keymaps(a, keymaps)
+  end
+  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
+    del_keymaps(b, keymaps)
   end
 end
 

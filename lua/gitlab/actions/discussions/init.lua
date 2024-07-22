@@ -83,6 +83,7 @@ M.initialize_discussions = function()
     signs.clear_signs()
     diagnostics.clear_diagnostics()
     M.modifiable(true)
+    reviewer.del_reviewer_keymaps()
   end)
 end
 
