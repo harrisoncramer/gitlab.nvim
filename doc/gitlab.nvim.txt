@@ -198,6 +198,7 @@ you call this function with no values the defaults will be used:
           prev_field = "<S-Tab>", -- Cycle to the previous field. Accepts |count|.
           perform_action = "ZZ", -- Once in normal mode, does action (like saving comment or applying description edit, etc)
           perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
+          discard_changes = "ZQ", -- Quit the popup discarding changes, the popup content is not saved to the `temp_registers` (see `:h gitlab.nvim.temp-registers`)
         },
         discussion_tree = {
           disable_all = false, -- Disable all default mappings for the discussion tree window
@@ -411,6 +412,10 @@ nvim.
 NOTE: The `temp_registers` are also filled with the contents of the popup when
 pressing the `keymaps.popup.perform_action` keybinding, even if the action
 that was supposed to be performed fails.
+
+If you don't want the popup contents to be saved to the `temp_registers`, quit
+the popup using the `keymaps.pupup.discard_changes` keybinding, which is `ZQ`
+by default (compare the builtin |ZQ| command).
 
 DISCUSSIONS AND NOTES                      *gitlab.nvim.discussions-and-notes*
 

@@ -92,6 +92,7 @@ M.settings = {
       prev_field = "<S-Tab>",
       perform_action = "ZZ",
       perform_linewise_action = "<leader>l",
+      discard_changes = "ZQ",
     },
     discussion_tree = {
       disable_all = false,
@@ -534,6 +535,19 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       buffer = popup.bufnr,
       desc = "Perform linewise action",
       nowait = M.settings.keymaps.popup.perform_linewise_action_nowait,
+    })
+  end
+
+  if M.settings.keymaps.popup.discard_changes then
+    vim.keymap.set("n", M.settings.keymaps.popup.discard_changes, function()
+      local temp_registers = M.settings.popup.temp_registers
+      M.settings.popup.temp_registers = {}
+      vim.cmd("quit!")
+      M.settings.popup.temp_registers = temp_registers
+    end, {
+      buffer = popup.bufnr,
+      desc = "Quit discarding changes",
+      nowait = M.settings.keymaps.popup.discard_changes_nowait,
     })
   end
 
