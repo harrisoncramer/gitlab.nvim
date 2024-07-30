@@ -154,6 +154,43 @@ vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
 vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
 ```
 
+### Or if you are using [which-key](https://github.com/folke/which-key.nvim), here's what you can use:
+
+```lua
+local wk = require("which-key")
+local gitlab = require("gitlab")
+
+wk.register({
+    ["lb"] = { gitlab.choose_merge_request, "choose_merge_request" },
+    ["lr"] = { gitlab.review, "review" },
+    ["ls"] = { gitlab.summary, "summary" },
+    ["lA"] = { gitlab.approve, "approve" },
+    ["lR"] = { gitlab.revoke, "revoke" },
+    ["lc"] = { gitlab.create_comment, "create_comment" },
+    ["lO"] = { gitlab.create_mr, "create_mr" },
+    ["lm"] = { gitlab.move_to_discussion_tree_from_diagnostic, "move_to_discussion_tree_from_diagnostic" },
+    ["ln"] = { gitlab.create_note, "create_note" },
+    ["ld"] = { gitlab.toggle_discussions, "toggle_discussions" },
+    ["laa"] = { gitlab.add_assignee, "add_assignee" },
+    ["lad"] = { gitlab.delete_assignee, "delete_assignee" },
+    ["lla"] = { gitlab.add_label, "add_label" },
+    ["lld"] = { gitlab.delete_label, "delete_label" },
+    ["lra"] = { gitlab.add_reviewer, "add_reviewer" },
+    ["lrd"] = { gitlab.delete_reviewer, "delete_reviewer" },
+    ["lp"] = { gitlab.pipeline, "pipeline" },
+    ["lo"] = { gitlab.open_in_browser, "open_in_browser" },
+    ["lM"] = { gitlab.merge, "merge" },
+    ["lu"] = { gitlab.copy_mr_url, "copy_mr_url" },
+    ["lP"] = { gitlab.publish_all_drafts, "publish_all_drafts" },
+    ["lD"] = { gitlab.toggle_draft_mode, "toggle_draft_mode" },
+}, { prefix = "g", mode = "n" })
+
+wk.register({
+    ["lc"] = { gitlab.create_multiline_comment, "create_multiline_comment" },
+    ["lC"] = { gitlab.create_comment_suggestion, "create_comment_suggestion" },
+}, { prefix = "g", mode = "v" })
+```
+
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`
 
 ## Contributing
