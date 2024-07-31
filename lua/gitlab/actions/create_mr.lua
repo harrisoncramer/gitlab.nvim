@@ -220,11 +220,14 @@ M.open_confirmation_popup = function(mr)
   local popups = {
     title_popup,
     description_popup,
-    forked_project_id_popup,
     delete_branch_popup,
     squash_popup,
     target_popup,
   }
+
+  if state.settings.create_mr.fork.enabled then
+    table.insert(popups, 3, forked_project_id_popup)
+  end
 
   M.layout = layout
   M.layout_buf = layout.bufnr
