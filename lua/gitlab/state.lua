@@ -82,6 +82,7 @@ M.settings = {
     temp_registers = {},
   },
   discussion_tree = {
+    chevrons = { " ", " ", "  " },
     auto_open = true,
     switch_view = "S",
     default_view = "discussions",

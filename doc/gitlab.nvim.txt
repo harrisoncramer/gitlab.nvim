@@ -187,6 +187,7 @@ you call this function with no values the defaults will be used:
         temp_registers = {}, -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
       },
       discussion_tree = { -- The discussion tree that holds all comments
+        chevrons = { " ", " ", "  " },
         auto_open = true, -- Automatically open when the reviewer is opened
         switch_view = "S", -- Toggles between the notes and discussions views
         default_view = "discussions" -- Show "discussions" or "notes" by default

@@ -325,16 +325,17 @@ M.nui_tree_prepare_node = function(node)
 
   for i, text in ipairs(texts) do
     local line = NuiLine()
+    local closed, open, none = table.unpack(state.settings.discussion_tree.chevrons)
 
-    line:append(string.rep("  ", node._depth - 1))
+    line:append(string.rep(none, node._depth - 1))
 
     if i == 1 and node:has_children() then
-      line:append(node:is_expanded() and " " or " ")
+      line:append(node:is_expanded() and open or closed)
       if node.icon then
         line:append(node.icon .. " ", node.icon_hl)
       end
     else
-      line:append("  ")
+      line:append(none)
     end
 
     line:append(text, node.text_hl)
