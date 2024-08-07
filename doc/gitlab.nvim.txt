@@ -675,25 +675,15 @@ keybinding, e.g., `<leader>c<leader>c`.
 
 Delay in keybindings ~
 
-If you are experiencing a lag in some of the keybindings, it may be the case
-that they have the same prefix with another existing keybinding. E.g., you
-normally remap `co` to call function F, then the default `c` operator mapping
-in the reviewer will take some time to trigger. If 'showcmd' is set, then
-after pressing `c`, you'll first see a `c` in the right bottom corner of the
-screen, and during that time `neovim` will also accept `o` as the next
-character and it will allow you to call function F. However, if the
-'timeoutlen' passes without you pressing any keys, the `c` will change to |g@|
-and `neovim` will be waiting for you to press a {motion} keybinding. You will
-no longer be able to finish your `co` mapping. If the lag annoys you and you
-don't really care about your `co` mapping for this buffer, you can force the
-`gitlab.nvim` mapping to fire immediately by adding a special field into your
-`keymaps` table. E.g., if the name of the keybinding is
-`reviewer.create_comment`, then you can add the following:
+You may experience a lag in some of the keybindings, because you have existing
+keybinding starting with they same kye(s). You can force the `gitlab.nvim`
+mapping to use |nowait| and fire immediately (and lose your other mapping for
+this buffer) by adding a special field into your `keymaps` table like this: If
+the name of the keybinding is `reviewer.create_comment`, then you add the
+following to your config:
 >lua
     keymaps = { reviewer = { create_comment_nowait = true }}
 <
-This works by adding the |nowait| argument to the |vim.keymap.set| call.
-
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
 
