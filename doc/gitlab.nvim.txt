@@ -663,15 +663,8 @@ normal comment or `s` for a suggestion.
 
 To create a comment or suggestion for the current line, just duplicate the
 keybinding: `cc` and `ss`. Alternatively, you can use any motion that moves on
-that line only, e.g., `cw`, `cl`, `c$`, etc.
-
-The plugin takes advantage of the fact that the `c` and `s` normal mode
-commands modify the text, but the Diffview buffers are set as |nomodifiable|,
-so the keys are practically free for remapping. If, however, you don't like
-the default `c` and `s` keybindings, you can remap these operators to a
-different key or keys, e.g. `keymaps.reviewer.create_comment = "<leader>c"`.
-This will still work for commenting on the same line by duplicating the
-keybinding, e.g., `<leader>c<leader>c`.
+that line only, e.g., `c$`. The same logic applies also when you change these
+keybindings, e.g., to something like `<leader>c`.
 
 Delay in keybindings ~
 
