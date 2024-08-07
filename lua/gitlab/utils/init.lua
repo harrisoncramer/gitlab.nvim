@@ -739,4 +739,17 @@ M.ensure_table = function(data)
   return data
 end
 
+M.get_nested_field = function(table, field)
+  local subfield = string.match(field, "[^.]+")
+  local subtable = table[subfield]
+  if subtable ~= nil then
+    local new_field = string.gsub(field, "^" .. subfield .. ".?", "")
+    if new_field ~= "" then
+      return M.get_nested_field(subtable, new_field)
+    else
+      return subtable
+    end
+  end
+end
+
 return M

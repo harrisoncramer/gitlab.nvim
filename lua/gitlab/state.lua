@@ -392,27 +392,8 @@ M.merge_settings = function(args)
     return false
   end
 
-  if M.settings.review_pane ~= nil then
-    u.notify(
-      "The review_pane field is only relevant for Delta, which has been deprecated, please remove it from your setup function",
-      vim.log.levels.WARN
-    )
-  end
-
-  M._get_nested_field = function(table, field)
-    local subfield = string.match(field, "[^.]+")
-    local subtable = table[subfield]
-    if subtable ~= nil then
-      local new_field = string.gsub(field, "^" .. subfield .. ".?", "")
-      if new_field ~= "" then
-        return M._get_nested_field(subtable, new_field)
-      else
-        return subtable
-      end
-    end
-  end
-
-  local replaced = {
+  local removed_fields_in_user_config = {}
+  local removed_settings_fields = {
     "discussion_tree.add_emoji",
     "discussion_tree.copy_node_url",
     "discussion_tree.delete_comment",
@@ -437,14 +418,19 @@ M.merge_settings = function(args)
     "popup.keymaps.prev_field",
     "popup.perform_action",
     "popup.perform_linewise_action",
+    "review_pane", -- Only relevant for the Delta reviewer
   }
-  for _, field in ipairs(replaced) do
-    if M._get_nested_field(M.settings, field) ~= nil then
-      u.notify(
-        "The '" .. field .. "' setup option has been removed. Use the 'kyemaps' field instead.",
-        vim.log.levels.WARN
-      )
+  for _, field in ipairs(removed_settings_fields) do
+    if u.get_nested_field(M.settings, field) ~= nil then
+      table.insert(removed_fields_in_user_config, field)
     end
+  end
+
+  if #removed_fields_in_user_config ~= 0 then
+    u.notify(
+      "The following settings fields have been removed:\n" .. table.concat(removed_fields_in_user_config, "\n"),
+      vim.log.levels.WARN
+    )
   end
 
   M.settings.file_separator = (u.is_windows() and "\\" or "/")
