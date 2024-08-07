@@ -82,7 +82,11 @@ M.settings = {
     temp_registers = {},
   },
   discussion_tree = {
-    chevrons = { " ", " ", "  " },
+    expanders = {
+      expanded = " ",
+      collapsed = " ",
+      indentation = "  ",
+    },
     auto_open = true,
     switch_view = "S",
     default_view = "discussions",
