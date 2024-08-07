@@ -197,7 +197,7 @@ you call this function with no values the defaults will be used:
           next_field = "<Tab>", -- Cycle to the next field. Accepts |count|.
           prev_field = "<S-Tab>", -- Cycle to the previous field. Accepts |count|.
           perform_action = "ZZ", -- Once in normal mode, does action (like saving comment or applying description edit, etc)
-          perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
+          perform_linewise_action = "ZA", -- Once in normal mode, does the linewise action (see logs for this job, etc)
           discard_changes = "ZQ", -- Quit the popup discarding changes, the popup content is not saved to the `temp_registers` (see `:h gitlab.nvim.temp-registers`)
         },
         discussion_tree = {
@@ -785,7 +785,7 @@ reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
   require("gitlab").create_comment()
 
 After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_action` keybinding, by default `<leader>l`.
+`keymaps.popup.perform_action` keybinding, by default `ZZ`.
 
                                                                 *gitlab.nvim.create_multiline_comment*
 gitlab.create_multiline_comment() ~
@@ -796,7 +796,7 @@ mode, and will use the currently selected lines.
   require("gitlab").create_multiline_comment()
 
 After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding, by default `<leader>l`.
+`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
 
                                                                 *gitlab.nvim.create_comment_suggestion*
 gitlab.create_comment_suggestion() ~
@@ -807,7 +807,7 @@ change suggestion to the currently selected lines).
   require("gitlab").create_multiline_comment()
 
 After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding, by default `<leader>l`.
+`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
 
                                                                 *gitlab.nvim.create_mr*
 gitlab.create_mr({opts}) ~

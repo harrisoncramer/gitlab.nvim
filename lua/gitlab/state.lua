@@ -91,7 +91,7 @@ M.settings = {
       next_field = "<Tab>",
       prev_field = "<S-Tab>",
       perform_action = "ZZ",
-      perform_linewise_action = "<leader>l",
+      perform_linewise_action = "ZA",
       discard_changes = "ZQ",
     },
     discussion_tree = {
