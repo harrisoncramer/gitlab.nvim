@@ -244,6 +244,11 @@ you call this function with no values the defaults will be used:
         temp_registers = {}, -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
       },
       discussion_tree = { -- The discussion tree that holds all comments
+        expanders = { -- Discussion tree icons
+          expanded = " ", -- Icon for expanded discussion thread
+          collapsed = " ",  -- Icon for collapsed discussion thread
+          indentation = "  ", -- Indentation Icon
+        },
         auto_open = true, -- Automatically open when the reviewer is opened
         default_view = "discussions" -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
@@ -323,7 +328,7 @@ you call this function with no values the defaults will be used:
           username = "Keyword",
           mention = "WarningMsg",
           date = "Comment",
-          chevron = "DiffviewNonText",
+          expander = "DiffviewNonText",
           directory = "Directory",
           directory_icon = "DiffviewFolderSign",
           file_name = "Normal",

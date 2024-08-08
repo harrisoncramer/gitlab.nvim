@@ -139,6 +139,11 @@ M.settings = {
     temp_registers = {},
   },
   discussion_tree = {
+    expanders = {
+      expanded = " ",
+      collapsed = " ",
+      indentation = "  ",
+    },
     auto_open = true,
     default_view = "discussions",
     blacklist = {},
@@ -219,7 +224,7 @@ M.settings = {
       username = "Keyword",
       mention = "WarningMsg",
       date = "Comment",
-      chevron = "DiffviewNonText",
+      expander = "DiffviewNonText",
       directory = "Directory",
       directory_icon = "DiffviewFolderSign",
       file_name = "Normal",
