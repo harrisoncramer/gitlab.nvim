@@ -263,7 +263,7 @@ M.get_line_number_from_node = function(root_node)
   end
 end
 
--- This function (settings.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
+-- This function (settings.keymaps.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
 M.jump_to_reviewer = function(tree, callback)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)
@@ -280,7 +280,7 @@ M.jump_to_reviewer = function(tree, callback)
   callback()
 end
 
--- This function (settings.discussion_tree.jump_to_file) will jump to the file changed in a new tab
+-- This function (settings.keymaps.discussion_tree.jump_to_file) will jump to the file changed in a new tab
 M.jump_to_file = function(tree)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)

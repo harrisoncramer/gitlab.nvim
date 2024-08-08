@@ -78,14 +78,23 @@ end
 ---Setup keymaps for cycling popups. The keymap accepts count.
 ---@param popups table Table of Popups
 M.set_cycle_popups_keymaps = function(popups)
+  local keymaps = require("gitlab.state").settings.keymaps
+  if keymaps.disable_all or keymaps.popup.disable_all then
+    return
+  end
+
   local number_of_popups = #popups
   for i, popup in ipairs(popups) do
-    popup:map("n", state.settings.popup.keymaps.next_field, function()
-      vim.api.nvim_set_current_win(popups[next_index(i, number_of_popups, vim.v.count)].winid)
-    end, { desc = "Go to next field (accepts count)" })
-    popup:map("n", state.settings.popup.keymaps.prev_field, function()
-      vim.api.nvim_set_current_win(popups[prev_index(i, number_of_popups, vim.v.count)].winid)
-    end, { desc = "Go to previous field (accepts count)" })
+    if keymaps.popup.next_field then
+      popup:map("n", keymaps.popup.next_field, function()
+        vim.api.nvim_set_current_win(popups[next_index(i, number_of_popups, vim.v.count)].winid)
+      end, { desc = "Go to next field (accepts count)", nowait = keymaps.popup.next_field_nowait })
+    end
+    if keymaps.popup.prev_field then
+      popup:map("n", keymaps.popup.prev_field, function()
+        vim.api.nvim_set_current_win(popups[prev_index(i, number_of_popups, vim.v.count)].winid)
+      end, { desc = "Go to previous field (accepts count)", nowait = keymaps.popup.prev_field_nowait })
+    end
   end
 end
 

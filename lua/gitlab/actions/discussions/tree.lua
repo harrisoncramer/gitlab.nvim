@@ -325,16 +325,17 @@ M.nui_tree_prepare_node = function(node)
 
   for i, text in ipairs(texts) do
     local line = NuiLine()
+    local expanders = state.settings.discussion_tree.expanders
 
-    line:append(string.rep("  ", node._depth - 1))
+    line:append(string.rep(expanders.indentation, node._depth - 1))
 
     if i == 1 and node:has_children() then
-      line:append(node:is_expanded() and " " or " ")
+      line:append(node:is_expanded() and expanders.expanded or expanders.collapsed)
       if node.icon then
         line:append(node.icon .. " ", node.icon_hl)
       end
     else
-      line:append("  ")
+      line:append(expanders.indentation)
     end
 
     line:append(text, node.text_hl)
@@ -368,7 +369,7 @@ end
 ---@field toggle_unresolved boolean Whether to toggle unresolved discussions.
 ---@field keep_current_open boolean Whether to keep the current discussion open even if it should otherwise be closed.
 
----This function (settings.discussion_tree.toggle_nodes) expands/collapses all nodes and their children according to the opts.
+---This function expands/collapses all nodes and their children according to the opts.
 ---@param tree NuiTree
 ---@param winid integer
 ---@param unlinked boolean
@@ -433,7 +434,7 @@ M.restore_cursor_position = function(winid, tree, original_node, root_node)
   end
 end
 
----This function (settings.discussion_tree.expand_recursively) expands a node and its children.
+---This function expands a node and its children.
 ---@param tree NuiTree
 ---@param node NuiTree.Node
 ---@param is_resolved boolean If true, expand resolved discussions. If false, expand unresolved discussions.
@@ -450,7 +451,7 @@ M.expand_recursively = function(tree, node, is_resolved)
   end
 end
 
----This function (settings.discussion_tree.collapse_recursively) collapses a node and its children.
+---This function collapses a node and its children.
 ---@param tree NuiTree
 ---@param node NuiTree.Node
 ---@param current_root_node NuiTree.Node The root node of the current node.
@@ -483,7 +484,7 @@ M.open_node_by_id = function(tree, id)
   end
 end
 
--- This function (settings.discussion_tree.toggle_node) expands/collapses the current node and its children
+-- This function (settings.keymaps.discussion_tree.toggle_node) expands/collapses the current node and its children
 M.toggle_node = function(tree)
   local node = tree:get_node()
   if node == nil then

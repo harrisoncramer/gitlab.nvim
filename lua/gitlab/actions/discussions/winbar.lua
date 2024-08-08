@@ -61,7 +61,7 @@ local function content()
     unlinked_draft_notes = #unlinked_draft_notes,
     resolvable_notes = resolvable_notes,
     resolved_notes = resolved_notes,
-    help_keymap = state.settings.help,
+    help_keymap = state.settings.keymaps.help,
   }
 
   return M.make_winbar(t)
@@ -130,7 +130,7 @@ M.make_winbar = function(t)
   -- Join everything together and return it
   local separator = "%#Comment#|"
   local end_section = "%="
-  local help = "%#Comment#Help: " .. t.help_keymap:gsub(" ", "<space>") .. " "
+  local help = "%#Comment#Help: " .. (t.help_keymap and t.help_keymap:gsub(" ", "<space>") .. " " or "unmapped")
   return string.format(
     " %s %s %s %s %s %s %s",
     discussion_title,

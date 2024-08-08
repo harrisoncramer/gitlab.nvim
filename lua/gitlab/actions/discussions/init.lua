@@ -74,6 +74,7 @@ M.initialize_discussions = function()
   reviewer.set_callback_for_file_changed(function()
     M.refresh_diagnostics_and_winbar()
     M.modifiable(false)
+    reviewer.set_reviewer_keymaps()
   end)
   reviewer.set_callback_for_reviewer_enter(function()
     M.modifiable(false)
@@ -82,6 +83,7 @@ M.initialize_discussions = function()
     signs.clear_signs()
     diagnostics.clear_diagnostics()
     M.modifiable(true)
+    reviewer.del_reviewer_keymaps()
   end)
 end
 
@@ -219,7 +221,7 @@ M.move_to_discussion_tree = function()
   end
 end
 
--- The reply popup will mount in a window when you trigger it (settings.discussion_tree.reply) when hovering over a node in the discussion tree.
+-- The reply popup will mount in a window when you trigger it (settings.keymaps.discussion_tree.reply) when hovering over a node in the discussion tree.
 M.reply = function(tree)
   if M.is_draft_note(tree) then
     u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
@@ -241,7 +243,7 @@ M.reply = function(tree)
   layout:mount()
 end
 
--- This function (settings.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
+-- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
 M.delete_comment = function(tree, unlinked)
   vim.ui.select({ "Confirm", "Cancel" }, {
     prompt = "Delete comment?",
@@ -267,7 +269,7 @@ M.delete_comment = function(tree, unlinked)
   end)
 end
 
--- This function (settings.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
+-- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
   local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
@@ -312,7 +314,7 @@ M.edit_comment = function(tree, unlinked)
   end
 end
 
--- This function (settings.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
+-- This function (settings.keymaps.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
 M.toggle_discussion_resolved = function(tree)
   local note = tree:get_node()
   if note == nil then
@@ -527,101 +529,215 @@ M.is_current_node_note = function(tree)
 end
 
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
-  ---Keybindings only relevant for linked (comment) view
-  if not unlinked then
-    vim.keymap.set("n", state.settings.discussion_tree.jump_to_file, function()
-      if M.is_current_node_note(tree) then
-        common.jump_to_file(tree)
-      end
-    end, { buffer = bufnr, desc = "Jump to file" })
-    vim.keymap.set("n", state.settings.discussion_tree.jump_to_reviewer, function()
-      if M.is_current_node_note(tree) then
-        common.jump_to_reviewer(tree, M.refresh_diagnostics_and_winbar)
-      end
-    end, { buffer = bufnr, desc = "Jump to reviewer" })
-    vim.keymap.set("n", state.settings.discussion_tree.toggle_tree_type, function()
-      M.toggle_tree_type()
-    end, { buffer = bufnr, desc = "Toggle tree type between `simple` and `by_file_name`" })
+  -- Require keymaps only after user settings have been merged with defaults
+  local keymaps = require("gitlab.state").settings.keymaps
+  if keymaps.disable_all or keymaps.discussion_tree.disable_all then
+    return
   end
 
-  vim.keymap.set("n", state.settings.discussion_tree.refresh_data, function()
-    u.notify("Refreshing data...", vim.log.levels.INFO)
-    draft_notes.rebuild_view(unlinked, false)
-  end, { buffer = bufnr, desc = "Refreshes the view with Gitlab's APIs" })
+  ---Keybindings only relevant for linked (comment) view
+  if not unlinked then
+    if keymaps.discussion_tree.jump_to_file then
+      vim.keymap.set("n", keymaps.discussion_tree.jump_to_file, function()
+        if M.is_current_node_note(tree) then
+          common.jump_to_file(tree)
+        end
+      end, { buffer = bufnr, desc = "Jump to file", nowait = keymaps.discussion_tree.jump_to_file_nowait })
+    end
 
-  vim.keymap.set("n", state.settings.discussion_tree.edit_comment, function()
-    if M.is_current_node_note(tree) then
-      M.edit_comment(tree, unlinked)
+    if keymaps.discussion_tree.jump_to_reviewer then
+      vim.keymap.set("n", keymaps.discussion_tree.jump_to_reviewer, function()
+        if M.is_current_node_note(tree) then
+          common.jump_to_reviewer(tree, M.refresh_diagnostics_and_winbar)
+        end
+      end, { buffer = bufnr, desc = "Jump to reviewer", nowait = keymaps.discussion_tree.jump_to_reviewer_nowait })
     end
-  end, { buffer = bufnr, desc = "Edit comment" })
-  vim.keymap.set("n", state.settings.discussion_tree.publish_draft, function()
-    if M.is_draft_note(tree) then
-      draft_notes.publish_draft(tree)
+
+    if keymaps.discussion_tree.toggle_tree_type then
+      vim.keymap.set("n", keymaps.discussion_tree.toggle_tree_type, function()
+        M.toggle_tree_type()
+      end, {
+        buffer = bufnr,
+        desc = "Change tree type between `simple` and `by_file_name`",
+        nowait = keymaps.discussion_tree.toggle_tree_type_nowait,
+      })
     end
-  end, { buffer = bufnr, desc = "Publish draft" })
-  vim.keymap.set("n", state.settings.discussion_tree.delete_comment, function()
-    if M.is_current_node_note(tree) then
-      M.delete_comment(tree, unlinked)
-    end
-  end, { buffer = bufnr, desc = "Delete comment" })
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_draft_mode, function()
-    M.toggle_draft_mode()
-  end, { buffer = bufnr, desc = "Toggle between draft mode and live mode" })
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved, function()
-    if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
-      M.toggle_discussion_resolved(tree)
-    end
-  end, { buffer = bufnr, desc = "Toggle resolved" })
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_node, function()
-    tree_utils.toggle_node(tree)
-  end, { buffer = bufnr, desc = "Toggle node" })
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_all_discussions, function()
-    tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
-      toggle_resolved = true,
-      toggle_unresolved = true,
-      keep_current_open = state.settings.discussion_tree.keep_current_open,
+  end
+
+  if keymaps.discussion_tree.refresh_data then
+    vim.keymap.set("n", keymaps.discussion_tree.refresh_data, function()
+      u.notify("Refreshing data...", vim.log.levels.INFO)
+      draft_notes.rebuild_view(unlinked, false)
+    end, {
+      buffer = bufnr,
+      desc = "Refresh the view with Gitlab's APIs",
+      nowait = keymaps.discussion_tree.refresh_data_nowait,
     })
-  end, { buffer = bufnr, desc = "Toggle all nodes" })
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_resolved_discussions, function()
-    tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
-      toggle_resolved = true,
-      toggle_unresolved = false,
-      keep_current_open = state.settings.discussion_tree.keep_current_open,
+  end
+
+  if keymaps.discussion_tree.edit_comment then
+    vim.keymap.set("n", keymaps.discussion_tree.edit_comment, function()
+      if M.is_current_node_note(tree) then
+        M.edit_comment(tree, unlinked)
+      end
+    end, { buffer = bufnr, desc = "Edit comment", nowait = keymaps.discussion_tree.edit_comment_nowait })
+  end
+
+  if keymaps.discussion_tree.publish_draft then
+    vim.keymap.set("n", keymaps.discussion_tree.publish_draft, function()
+      if M.is_draft_note(tree) then
+        draft_notes.publish_draft(tree)
+      end
+    end, { buffer = bufnr, desc = "Publish draft", nowait = keymaps.discussion_tree.publish_draft_nowait })
+  end
+
+  if keymaps.discussion_tree.delete_comment then
+    vim.keymap.set("n", keymaps.discussion_tree.delete_comment, function()
+      if M.is_current_node_note(tree) then
+        M.delete_comment(tree, unlinked)
+      end
+    end, { buffer = bufnr, desc = "Delete comment", nowait = keymaps.discussion_tree.delete_comment_nowait })
+  end
+
+  if keymaps.discussion_tree.toggle_draft_mode then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_draft_mode, function()
+      M.toggle_draft_mode()
+    end, {
+      buffer = bufnr,
+      desc = "Toggle between draft mode and live mode",
+      nowait = keymaps.discussion_tree.toggle_draft_mode_nowait,
     })
-  end, { buffer = bufnr, desc = "Toggle resolved nodes" })
-  vim.keymap.set("n", state.settings.discussion_tree.toggle_unresolved_discussions, function()
-    tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
-      toggle_resolved = false,
-      toggle_unresolved = true,
-      keep_current_open = state.settings.discussion_tree.keep_current_open,
+  end
+
+  if keymaps.discussion_tree.toggle_resolved then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_resolved, function()
+      if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
+        M.toggle_discussion_resolved(tree)
+      end
+    end, { buffer = bufnr, desc = "Toggle resolved", nowait = keymaps.discussion_tree.toggle_resolved_nowait })
+  end
+
+  if keymaps.discussion_tree.toggle_node then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_node, function()
+      tree_utils.toggle_node(tree)
+    end, { buffer = bufnr, desc = "Toggle node", nowait = keymaps.discussion_tree.toggle_node_nowait })
+  end
+
+  if keymaps.discussion_tree.toggle_all_discussions then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_all_discussions, function()
+      tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
+        toggle_resolved = true,
+        toggle_unresolved = true,
+        keep_current_open = state.settings.discussion_tree.keep_current_open,
+      })
+    end, {
+      buffer = bufnr,
+      desc = "Toggle all nodes",
+      nowait = keymaps.discussion_tree.toggle_all_discussions_nowait,
     })
-  end, { buffer = bufnr, desc = "Toggle unresolved nodes" })
-  vim.keymap.set("n", state.settings.discussion_tree.reply, function()
-    if M.is_current_node_note(tree) then
-      M.reply(tree)
-    end
-  end, { buffer = bufnr, desc = "Reply" })
-  vim.keymap.set("n", state.settings.discussion_tree.switch_view, function()
-    winbar.switch_view_type()
-  end, { buffer = bufnr, desc = "Switch view type" })
-  vim.keymap.set("n", state.settings.help, function()
-    help.open()
-  end, { buffer = bufnr, desc = "Open help popup" })
-  vim.keymap.set("n", state.settings.discussion_tree.open_in_browser, function()
-    common.open_in_browser(tree)
-  end, { buffer = bufnr, desc = "Open the note in your browser" })
-  vim.keymap.set("n", state.settings.discussion_tree.copy_node_url, function()
-    common.copy_node_url(tree)
-  end, { buffer = bufnr, desc = "Copy the URL of the current node to clipboard" })
-  vim.keymap.set("n", "<leader>p", function()
-    common.print_node(tree)
-  end, { buffer = bufnr, desc = "Print current node (for debugging)" })
-  vim.keymap.set("n", state.settings.discussion_tree.add_emoji, function()
-    M.add_emoji_to_note(tree, unlinked)
-  end, { buffer = bufnr, desc = "Add an emoji reaction to the note/comment" })
-  vim.keymap.set("n", state.settings.discussion_tree.delete_emoji, function()
-    M.delete_emoji_from_note(tree, unlinked)
-  end, { buffer = bufnr, desc = "Remove an emoji reaction from the note/comment" })
+  end
+
+  if keymaps.discussion_tree.toggle_resolved_discussions then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_resolved_discussions, function()
+      tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
+        toggle_resolved = true,
+        toggle_unresolved = false,
+        keep_current_open = state.settings.discussion_tree.keep_current_open,
+      })
+    end, {
+      buffer = bufnr,
+      desc = "Toggle resolved nodes",
+      nowait = keymaps.discussion_tree.toggle_resolved_discussions_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.toggle_unresolved_discussions then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_unresolved_discussions, function()
+      tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
+        toggle_resolved = false,
+        toggle_unresolved = true,
+        keep_current_open = state.settings.discussion_tree.keep_current_open,
+      })
+    end, {
+      buffer = bufnr,
+      desc = "Toggle unresolved nodes",
+      nowait = keymaps.discussion_tree.toggle_unresolved_discussions_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.reply then
+    vim.keymap.set("n", keymaps.discussion_tree.reply, function()
+      if M.is_current_node_note(tree) then
+        M.reply(tree)
+      end
+    end, { buffer = bufnr, desc = "Reply", nowait = keymaps.discussion_tree.reply_nowait })
+  end
+
+  if keymaps.discussion_tree.switch_view then
+    vim.keymap.set("n", keymaps.discussion_tree.switch_view, function()
+      winbar.switch_view_type()
+    end, {
+      buffer = bufnr,
+      desc = "Change view type between discussions and notes",
+      nowait = keymaps.discussion_tree.switch_view_nowait,
+    })
+  end
+
+  if keymaps.help then
+    vim.keymap.set("n", keymaps.help, function()
+      help.open()
+    end, { buffer = bufnr, desc = "Open help popup", nowait = keymaps.help_nowait })
+  end
+
+  if keymaps.discussion_tree.open_in_browser then
+    vim.keymap.set("n", keymaps.discussion_tree.open_in_browser, function()
+      common.open_in_browser(tree)
+    end, {
+      buffer = bufnr,
+      desc = "Open the note in your browser",
+      nowait = keymaps.discussion_tree.open_in_browser_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.copy_node_url then
+    vim.keymap.set("n", keymaps.discussion_tree.copy_node_url, function()
+      common.copy_node_url(tree)
+    end, {
+      buffer = bufnr,
+      desc = "Copy the URL of the current node to clipboard",
+      nowait = keymaps.discussion_tree.copy_node_url_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.print_node then
+    vim.keymap.set("n", keymaps.discussion_tree.print_node, function()
+      common.print_node(tree)
+    end, {
+      buffer = bufnr,
+      desc = "Print current node (for debugging)",
+      nowait = keymaps.discussion_tree.print_node_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.add_emoji then
+    vim.keymap.set("n", keymaps.discussion_tree.add_emoji, function()
+      M.add_emoji_to_note(tree, unlinked)
+    end, {
+      buffer = bufnr,
+      desc = "Add an emoji reaction to the note/comment",
+      nowait = keymaps.discussion_tree.add_emoji_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.delete_emoji then
+    vim.keymap.set("n", keymaps.discussion_tree.delete_emoji, function()
+      M.delete_emoji_from_note(tree, unlinked)
+    end, {
+      buffer = bufnr,
+      desc = "Remove an emoji reaction from the note/comment",
+      nowait = keymaps.discussion_tree.delete_emoji_nowait,
+    })
+  end
 
   emoji.init_popup(tree, bufnr)
 end

@@ -2,22 +2,25 @@ if filereadable($VIMRUNTIME . '/syntax/markdown.vim')
   source $VIMRUNTIME/syntax/markdown.vim
 endif
 
-syntax match Username "\%([]\)\@<= @\S*"
-syntax match Mention "\%([] \)\@<!@\S*"
 syntax match Date "\v\d+\s+\w+\s+ago"
-syntax match ChevronDown ""
-syntax match ChevronRight ""
-syntax match Resolved /\s✓\s\?/
-syntax match Unresolved /\s-\s\?/
-syntax match Pencil //
-
-highlight link Username GitlabUsername
-highlight link Mention GitlabMention
 highlight link Date GitlabDate
-highlight link ChevronDown GitlabChevron
-highlight link ChevronRight GitlabChevron
-highlight link Resolved GitlabResolved
+
+execute 'syntax match Unresolved /\s' . g:gitlab_discussion_tree_unresolved . '\s\?/'
 highlight link Unresolved GitlabUnresolved
-highlight link Pencil GitlabDraft
+
+execute 'syntax match Resolved /\s' . g:gitlab_discussion_tree_resolved . '\s\?/'
+highlight link Resolved GitlabResolved
+
+execute 'syntax match GitlabDiscussionOpen /^' . g:gitlab_discussion_tree_expander_open . '/'
+highlight link GitlabDiscussionOpen GitlabExpander
+
+execute 'syntax match GitlabDiscussionClosed /^' . g:gitlab_discussion_tree_expander_closed . '/'
+highlight link GitlabDiscussionClosed GitlabExpander
+
+execute 'syntax match Draft /' . g:gitlab_discussion_tree_draft . '/'
+highlight link Draft GitlabDraft
+
+execute 'syntax match Username "@\w\+"'
+highlight link Username GitlabUsername
 
 let b:current_syntax = "gitlab"

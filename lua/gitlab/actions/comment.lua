@@ -22,7 +22,7 @@ local M = {
 }
 
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
----via the M.settings.popup.perform_action keybinding
+---via the M.settings.keymaps.popup.perform_action keybinding
 ---@param text string comment text
 ---@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean if true, the comment is not linked to a line
