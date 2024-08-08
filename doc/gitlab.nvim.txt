@@ -669,10 +669,10 @@ keybindings, e.g., to something like `<leader>c`.
 Delay in keybindings ~
 
 You may experience a lag in some of the keybindings, because you have existing
-keybinding starting with they same kye(s). You can force the `gitlab.nvim`
+keybinding starting with they same key(s). You can force the `gitlab.nvim`
 mapping to use |nowait| and fire immediately (and lose your other mapping for
-this buffer) by adding a special field into your `keymaps` table like this: If
-the name of the keybinding is `reviewer.create_comment`, then you add the
+this buffer) by adding a special field called `nowait` to your keymap. For example,
+if the name of the keybinding is `reviewer.create_comment`, then you add the
 following to your config:
 >lua
     keymaps = { reviewer = { create_comment_nowait = true }}
