@@ -7,9 +7,9 @@ local colors = state.settings.colors
 local expanders = state.settings.discussion_tree.expanders
 vim.g.gitlab_discussion_tree_expander_open = expanders.expanded
 vim.g.gitlab_discussion_tree_expander_closed = expanders.collapsed
-vim.g.gitlab_discussion_tree_draft = ''
-vim.g.gitlab_discussion_tree_resolved = '✓'
-vim.g.gitlab_discussion_tree_unresolved = '-'
+vim.g.gitlab_discussion_tree_draft = ""
+vim.g.gitlab_discussion_tree_resolved = "✓"
+vim.g.gitlab_discussion_tree_unresolved = "-"
 
 local discussion = colors.discussion_tree
 vim.api.nvim_set_hl(0, "GitlabUsername", u.get_colors_for_group(discussion.username))
