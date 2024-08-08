@@ -290,7 +290,7 @@ you call this function with no values the defaults will be used:
           username = "Keyword",
           mention = "WarningMsg",
           date = "Comment",
-          chevron = "DiffviewNonText",
+          expander = "DiffviewNonText",
           directory = "Directory",
           directory_icon = "DiffviewFolderSign",
           file_name = "Normal",
