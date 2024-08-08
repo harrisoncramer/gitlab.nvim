@@ -166,14 +166,71 @@ you call this function with no values the defaults will be used:
       connection_settings = {
         insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
       },
-      help = "g?", -- Opens a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
-      popup = { -- The popup for comment creation, editing, and replying
-        keymaps = {
+      keymaps = {
+        disable_all = false, -- Disable all mappings created by the plugin
+        help = "g?", -- Open a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
+        global = {
+          disable_all = false, -- Disable all global mappings created by the plugin
+          add_assignee = "glaa",
+          delete_assignee = "glad",
+          add_label = "glla",
+          delete_label = "glld",
+          add_reviewer = "glra",
+          delete_reviewer = "glrd",
+          approve = "glA", -- Approve MR
+          revoke = "glR", -- Revoke MR approval
+          merge = "glM", -- Merge the feature branch to the target branch and close MR
+          create_mr = "glC", -- Create a new MR for currently checked-out feature branch
+          choose_merge_request = "glc", -- Chose MR for review (if necessary check out the feature branch)
+          start_review = "glS", -- Start review for the currently checked-out branch
+          summary = "gls", -- Show the editable summary of the MR
+          copy_mr_url = "glu", -- Copy the URL of the MR to the system clipboard
+          open_in_browser = "glo", -- Openthe URL of the MR in the default Internet browser
+          create_note = "gln", -- Create a note (comment not linked to a specific line)
+          pipeline = "glp", -- Show the pipeline status
+          toggle_discussions = "gld", -- Toggle the discussions window
+          toggle_draft_mode = "glD", -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
+          publish_all_drafts = "glP", -- Publish all draft comments/notes
+        },
+        popup = {
+          disable_all = false, -- Disable all default mappings for the popup windows (comments, summary, MR creation, etc.)
           next_field = "<Tab>", -- Cycle to the next field. Accepts |count|.
           prev_field = "<S-Tab>", -- Cycle to the previous field. Accepts |count|.
+          perform_action = "ZZ", -- Once in normal mode, does action (like saving comment or applying description edit, etc)
+          perform_linewise_action = "ZA", -- Once in normal mode, does the linewise action (see logs for this job, etc)
+          discard_changes = "ZQ", -- Quit the popup discarding changes, the popup content is not saved to the `temp_registers` (see `:h gitlab.nvim.temp-registers`)
         },
-        perform_action = "<leader>s", -- Once in normal mode, does action (like saving comment or editing description, etc)
-        perform_linewise_action = "<leader>l", -- Once in normal mode, does the linewise action (see logs for this job, etc)
+        discussion_tree = {
+          disable_all = false, -- Disable all default mappings for the discussion tree window
+          add_emoji = "Ea", -- Add an emoji to the note/comment
+          delete_emoji = "Ed", -- Remove an emoji from a note/comment
+          delete_comment = "dd", -- Delete comment
+          edit_comment = "e", -- Edit comment
+          reply = "r", -- Reply to comment
+          toggle_resolved = "-", -- Toggle the resolved status of the whole discussion
+          jump_to_file = "o", -- Jump to comment location in file
+          jump_to_reviewer = "a", -- Jump to the comment location in the reviewer window
+          open_in_browser = "b", -- Jump to the URL of the current note/discussion
+          copy_node_url = "u", -- Copy the URL of the current node to clipboard
+          switch_view = "c", -- Toggle between the notes and discussions views
+          toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
+          publish_draft = "P", -- Publish the currently focused note/comment
+          toggle_draft_mode = "D", -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
+          toggle_node = "t", -- Open or close the discussion
+          toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
+          toggle_resolved_discussions = "R", -- Open or close all resolved discussions
+          toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
+          refresh_data = "<C-R>", -- Refresh the data in the view by hitting Gitlab's APIs again
+          print_node = "<leader>p", -- Print the current node (for debugging)
+        },
+        reviewer = {
+          disable_all = false, -- Disable all default mappings for the reviewer windows
+          create_comment = "c", -- Create a comment for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
+          create_suggestion = "s", -- Create a suggestion for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
+          move_to_discussion_tree = "a", -- Jump to the comment in the discussion tree
+        },
+      },
+      popup = { -- The popup for comment creation, editing, and replying
         width = "40%",
         height = "60%",
         border = "rounded", -- One of "rounded", "single", "double", "solid"
@@ -188,35 +245,16 @@ you call this function with no values the defaults will be used:
       },
       discussion_tree = { -- The discussion tree that holds all comments
         auto_open = true, -- Automatically open when the reviewer is opened
-        switch_view = "S", -- Toggles between the notes and discussions views
         default_view = "discussions" -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
-        jump_to_file = "o", -- Jump to comment location in file
-        jump_to_reviewer = "m", -- Jump to the location in the reviewer window
-        edit_comment = "e", -- Edit comment
-        delete_comment = "dd", -- Delete comment
-        refresh_data = "a", -- Refreshes the data in the view by hitting Gitlab's APIs again
-        reply = "r", -- Reply to comment
-        toggle_node = "t", -- Opens or closes the discussion
-        add_emoji = "Ea" -- Add an emoji to the note/comment
-        delete_emoji = "Ed" -- Remove an emoji from a note/comment
-        toggle_all_discussions = "T", -- Open or close separately both resolved and unresolved discussions
-        toggle_resolved_discussions = "R", -- Open or close all resolved discussions
-        toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
-        publish_draft = "P", -- Publishes the currently focused note/comment
-        toggle_resolved = "p" -- Toggles the resolved status of the whole discussion
         position = "left", -- "top", "right", "bottom" or "left"
-        open_in_browser = "b" -- Jump to the URL of the current note/discussion
-        copy_node_url = "u", -- Copy the URL of the current node to clipboard
         size = "20%", -- Size of split
         relative = "editor", -- Position of tree split relative to "editor" or "window"
         resolved = '✓', -- Symbol to show next to resolved discussions
         unresolved = '-', -- Symbol to show next to unresolved discussions
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
-        toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
-        toggle_draft_mode = "D" -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
@@ -314,7 +352,7 @@ The `summary` action will open the MR title and description:
     require("gitlab").summary()
 <
 After editing the description or title, you may save your changes via the
-`settings.popup.perform_action` keybinding.
+`keymaps.popup.perform_action` keybinding.
 
 By default this plugin will also show additional metadata about the MR in a
 separate pane underneath the description. This can be disabled, and these
@@ -338,20 +376,20 @@ For suggesting changes you can use `create_comment_suggestion` in visual mode
 which works similar to `create_multiline_comment` but prefills the comment
 window with Gitlab’s suggest changes
 <https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html>
-code block with prefilled code from the visual selection.
-Just like the summary, all the different kinds of comments are saved via the
-`settings.popup.perform_action` keybinding.
+code block with prefilled code from the visual selection. Just like the
+summary, all the different kinds of comments are saved via the
+`keymaps.popup.perform_action` keybinding.
 
 DRAFT NOTES                                       *gitlab.nvim.draft-comments*
 
 When you publish a "draft" of any of the above resources, the comment will be
 added to a review. You can configure the default commenting mode (draft vs
 live) via the `state.settings.discussion_tree.draft_mode` setting, and you can
-toggle the setting with the `state.settings.discussion_tree.toggle_draft_mode`
+toggle the setting with the `keymaps.discussion_tree.toggle_draft_mode`
 keybinding, or by calling the `gitlab.toggle_draft_mode()` function. You may
 publish all draft comments via the `gitlab.publish_all_drafts()` function, and
 you can publish an individual comment or note by pressing the
-`state.settings.discussion_tree.publish_draft` keybinding.
+`keymaps.discussion_tree.publish_draft` keybinding.
 
 Draft notes do not support replying or emojis.
 
@@ -372,8 +410,12 @@ else. Using the clipboard register lets you easily use the text outside of
 nvim.
 
 NOTE: The `temp_registers` are also filled with the contents of the popup when
-pressing the `settings.popup.perform_action` keybinding, even if the action
+pressing the `keymaps.popup.perform_action` keybinding, even if the action
 that was supposed to be performed fails.
+
+If you don't want the popup contents to be saved to the `temp_registers`, quit
+the popup using the `keymaps.pupup.discard_changes` keybinding, which is `ZQ`
+by default (compare the builtin |ZQ| command).
 
 DISCUSSIONS AND NOTES                      *gitlab.nvim.discussions-and-notes*
 
@@ -386,11 +428,11 @@ action, which will show the discussions in a split window:
 <
 
 You can jump to the comment’s location in the reviewer window by using the
-`state.settings.discussion_tree.jump_to_reviewer` key, or to the actual file
-with the `state.settings.discussion_tree.jump_to_file` key.
+`keymaps.discussion_tree.jump_to_reviewer` keybinding, or to the actual file
+with the `keymaps.discussion_tree.jump_to_file` keybinding.
 
 Within the discussion tree, you can delete/edit/reply to comments with the
-`state.settings.discussion_tree.SOME_ACTION` keybindings.
+`keymaps.discussion_tree.SOME_ACTION` keybindings.
 
 If you’d like to create a note in an MR (like a comment, but not linked to a
 specific line) use the `create_note` action. The same keybindings for
@@ -466,14 +508,14 @@ emojis that you have responded with.
 UPLOADING FILES                                  *gitlab.nvim.uploading-files*
 
 To attach a file to an MR description, reply, comment, and so forth use the
-`settings.popup.perform_linewise_action` keybinding when the popup is open.
+`keymaps.popup.perform_linewise_action` keybinding when the popup is open.
 This will open a picker that will look for files in the directory you specify
 in the `settings.attachment_dir` folder (this must be an absolute path).
 
 When you have picked the file, it will be added to the current buffer at the
 current line.
 
-Use the `settings.popup.perform_action` to send the changes to Gitlab.
+Use the `keymaps.popup.perform_action` to send the changes to Gitlab.
 
 
 MR APPROVALS                                        *gitlab.nvim.mr-approvals*
@@ -515,8 +557,8 @@ action.
     require("gitlab").pipeline()
 <
 To re-trigger failed jobs in the pipeline manually, use the
-`settings.popup.perform_action` keybinding. To open the log trace of a job in a
-new Neovim buffer, use your `settings.popup.perform_linewise_action`
+`keymaps.popup.perform_action` keybinding. To open the log trace of a job in a
+new Neovim buffer, use your `keymaps.popup.perform_linewise_action`
 keybinding.
 
 
@@ -565,34 +607,75 @@ reviewer when checking out a new branch:
 
 KEYBINDINGS                                          *gitlab.nvim.keybindings*
 
-The plugin does not set up any keybindings outside of the special buffers it
-creates, you need to set them up yourself. Here’s what I’m using (note that
-the `<leader>` prefix is not necessary, as `gl` does not have a special meaning
-in normal mode):
+The `gitlab.nvim` plugin sets up a number of default keybindings for the
+discussion tree, the popup windows and the reviewer windows, and also some
+global keybindings that are available in any buffer. You can find the defaults
+in the `keymaps` section of the configuration table (see
+|gitlab.nvim.configuring-the-plugin|) and you can see the current buffer-local
+mappings by pressing the `keymaps.help` keybinding (`g?` by default). The
+`help` mapping is not set in the reviewer windows which are managed by the
+Diffview plugin, see |diffview-config-keymaps|.
+
+You can set any of the mappings to whatever you want. You can also prevent the
+plugin from setting up any keybindings whatsoever, or any keybindings for
+individual buffers by setting `keymaps.disable_all`,
+`keymaps.global.disable_all`, `keymaps.popup.disable_all`, etc. to `true`.
+Alternatively, you can disable individual keybindings by setting the value of
+the field to `false`, e.g., `keymaps = {global {merge = false}}`, which will
+leave all the other keybindings in place.
+
+The global keymaps all use the `gl` prefix as it does not have a special
+meaning in normal mode. You can add your own global keybindings by calling
+something like this after the `gitlab.setup()` call:
 >lua
     local gitlab = require("gitlab")
-    local gitlab_server = require("gitlab.server")
-    vim.keymap.set("n", "glr", gitlab.review)
-    vim.keymap.set("n", "gls", gitlab.summary)
-    vim.keymap.set("n", "glA", gitlab.approve)
-    vim.keymap.set("n", "glR", gitlab.revoke)
-    vim.keymap.set("n", "glc", gitlab.create_comment)
-    vim.keymap.set("v", "glc", gitlab.create_multiline_comment)
-    vim.keymap.set("v", "glC", gitlab.create_comment_suggestion)
-    vim.keymap.set("n", "glO", gitlab.create_mr)
-    vim.keymap.set("n", "glm", gitlab.move_to_discussion_tree_from_diagnostic)
-    vim.keymap.set("n", "gln", gitlab.create_note)
-    vim.keymap.set("n", "gld", gitlab.toggle_discussions)
-    vim.keymap.set("n", "glaa", gitlab.add_assignee)
-    vim.keymap.set("n", "glad", gitlab.delete_assignee)
-    vim.keymap.set("n", "glra", gitlab.add_reviewer)
-    vim.keymap.set("n", "glrd", gitlab.delete_reviewer)
-    vim.keymap.set("n", "glp", gitlab.pipeline)
-    vim.keymap.set("n", "glo", gitlab.open_in_browser)
-    vim.keymap.set("n", "glM", gitlab.merge)
-    vim.keymap.set("n", "glu", gitlab.copy_mr_url)
-    vim.keymap.set("n", "glP", gitlab.publish_all_drafts)
-    vim.keymap.set("n", "glD", gitlab.toggle_draft_mode)
+    vim.keymap.set("n", "gl<c-s>", gitlab.print_settings, { desc = "Print gitlab.nvim settings"})
+<
+See |gitlab.nvim.api| for an overview of available API functions that you can
+use in your mappings.
+
+If you want to set up your own additional keybindings for the discussion tree,
+you can put them in the `$XDG_CONFIG_HOME/nvim/after/ftplugin/gitlab.lua`
+file. E.g., if you wanted to use the `j` and `k` keys to move to the next
+discussion node instead of the next line, you could add to the |ftplugin| file
+the following lines:
+>lua
+    vim.keymap.set("n", "j", [[<Cmd>call search('[] @')<CR>]], { buffer = 0, desc = "Go to next node" })
+    vim.keymap.set("n", "k", [[<Cmd>call search('[] @', 'b')<CR>]], { buffer = 0, desc = "Go to previous node" })
+<
+
+Reviewer keybindings ~
+
+Most of the keybindings `gitlab.nvim` sets are normal mode mappings, with the
+exception of `keymaps.reviewer.create_comment` and
+`keymaps.reviewer.create_suggestion` which work in both normal and visual
+mode. In normal mode, these keybindings are |operator|s that accept a |motion|
+(with an optional |count|). E.g., `c2j` will create a comment for the current
+and the next 2 lines. Similarly, `sip` will create a suggestion for the "inner
+paragraph". The operator forces |linewise| visual selection, so it works
+correctly even if the motion itself works |characterwise| (e.g., |i(| for
+selecting the inner parentheses block).
+
+The keybindings also work in visual mode, e.g., if you first want to make
+sure you are commenting on the right text segment/object, you can do `v4j` to
+visually select the current and the next 4 lines, followed by either `c` for a
+normal comment or `s` for a suggestion.
+
+To create a comment or suggestion for the current line, just duplicate the
+keybinding: `cc` and `ss`. Alternatively, you can use any motion that moves on
+that line only, e.g., `c$`. The same logic applies also when you change these
+keybindings, e.g., to something like `<leader>c`.
+
+Delay in keybindings ~
+
+You may experience a lag in some of the keybindings, because you have existing
+keybinding starting with they same key(s). You can force the `gitlab.nvim`
+mapping to use |nowait| and fire immediately (and lose your other mapping for
+this buffer) by adding a special field called `nowait` to your keymap. For example,
+if the name of the keybinding is `reviewer.create_comment`, then you add the
+following to your config:
+>lua
+    keymaps = { reviewer = { create_comment_nowait = true }}
 <
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
@@ -668,7 +751,7 @@ in the setup call.
   require("gitlab").summary()
 
 The summary can be edited. Once you have made changes, send them to Gitlab via
-the `settings.popup.perform_action` keybinding.
+the `keymaps.popup.perform_action` keybinding.
 
                                                                 *gitlab.nvim.approve*
 gitlab.approve() ~
@@ -694,8 +777,8 @@ reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
 >lua
   require("gitlab").create_comment()
 
-After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
-keybinding, by default `<leader>l`.
+After the comment is typed, submit it to Gitlab via the
+`keymaps.popup.perform_action` keybinding, by default `ZZ`.
 
                                                                 *gitlab.nvim.create_multiline_comment*
 gitlab.create_multiline_comment() ~
@@ -705,8 +788,8 @@ mode, and will use the currently selected lines.
 >lua
   require("gitlab").create_multiline_comment()
 
-After the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
-keybinding, by default `<leader>l`.
+After the comment is typed, submit it to Gitlab via the
+`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
 
                                                                 *gitlab.nvim.create_comment_suggestion*
 gitlab.create_comment_suggestion() ~
@@ -716,8 +799,8 @@ change suggestion to the currently selected lines).
 >lua
   require("gitlab").create_multiline_comment()
 
-After the comment is typed, submit it to Gitlab via the |settings.popup.perform_linewise_action|
-keybinding, by default |<leader>l|
+After the comment is typed, submit it to Gitlab via the
+`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
 
                                                                 *gitlab.nvim.create_mr*
 gitlab.create_mr({opts}) ~
@@ -751,12 +834,12 @@ Starts the process of creating an MR for the currently checked out branch.
 
 After selecting all necessary details, you'll be presented with a confirmation
 window. You can cycle through the individual fields with the keymaps defined
-in `settings.popup.keymaps.next_field` and `settings.popup.keymaps.prev_field`.
-Both keymaps accept a count, i.g., 2<Tab> goes to the 2nd next field.
-In the "Delete source branch", "Squash commits", and "Target branch" fields,
-you can use the `settings.popup.perform_linewise_action` keymap to either
-toggle the Boolean value or to select a new target branch, respectively.
-Use the `settings.popup.perform_action` keymap to POST the MR to Gitlab.
+in `keymaps.popup.next_field` and `keymaps.popup.prev_field`. Both keymaps
+accept a count, i.g., 2<Tab> goes to the 2nd next field. In the "Delete source
+branch", "Squash commits", and "Target branch" fields, you can use the
+`keymaps.popup.perform_linewise_action` keymap to either toggle the Boolean
+value or to select a new target branch, respectively. Use the
+`keymaps.popup.perform_action` keymap to POST the MR to Gitlab.
 
                                                                 *gitlab.nvim.move_to_discussion_tree_from_diagnostic*
 gitlab.move_to_discussion_tree_from_diagnostic() ~
@@ -776,8 +859,8 @@ tied to specific changes in an MR.
 >lua
   require("gitlab").create_note()
 
-After the comment is typed, submit it to Gitlab via the `settings.popup.perform_action`
-keybinding, by default |<leader>s|.
+After the comment is typed, submit it to Gitlab via the
+`keymaps.popup.perform_action` keybinding, by default `ZZ`.
 
                                                                 *gitlab.nvim.toggle_discussions*
 gitlab.toggle_discussions() ~
@@ -786,15 +869,16 @@ Toggles visibility of the discussion tree.
 >lua
   require("gitlab").toggle_discussions()
 
-Once the discussion tree is open, a number of different keybindings are available
-for interacting with different discussions. Please see the `settings.discussion_tree`
-section of the setup call for more information about different keybindings.
+Once the discussion tree is open, a number of different keybindings are
+available for interacting with different discussions. Please see the
+`keymaps.discussion_tree` section of the setup call for more information about
+different keybindings.
 
                                                                 *gitlab.nvim.publish_all_drafts*
 gitlab.publish_all_drafts() ~
 
-Publishes all unpublished draft notes. Used to finish a review and make all notes and 
-comments visible.
+Publishes all unpublished draft notes. Used to finish a review and make all
+notes and comments visible.
 >lua
   require("gitlab").publish_all_drafts()
 <
@@ -853,8 +937,9 @@ Opens up a popup with information about the pipeline for the current merge reque
 >lua
   require("gitlab").pipeline()
 <
-To re-trigger failed jobs in the pipeline manually, use the `settings.popup.perform_action` keybinding.
-To open the log trace of a job in a new Neovim buffer, use your `settings.popup.perform_linewise_action`
+To re-trigger failed jobs in the pipeline manually, use the
+`keymaps.popup.perform_action` keybinding. To open the log trace of a job in a
+new Neovim buffer, use your `keymaps.popup.perform_linewise_action`
 keybinding.
 
                                                                 *gitlab.nvim.open_in_browser*
@@ -891,8 +976,8 @@ Gitlab online. You can see the current settings in the Summary view, see
             • {squash}: (bool) If true, the commits will be squashed. If
               you enable {squash} you will be prompted for a squash
               message. To use the default message, leave the popup empty.
-              Use the `settings.popup.perform_action` to merge the MR with
-              your message.
+              Use the `keymaps.popup.perform_action` to merge the MR
+              with your message.
 
                                                                 *gitlab.nvim.data*
 gitlab.data({resources}, {cb}) ~
