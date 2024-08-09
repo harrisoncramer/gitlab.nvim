@@ -23,4 +23,4 @@ highlight link Draft GitlabDraft
 execute 'syntax match Username "@[a-zA-Z0-9.]\+"'
 highlight link Username GitlabUsername
 
-let b:current_syntax = "gitlab"
+let b:current_syntax = 'gitlab'
