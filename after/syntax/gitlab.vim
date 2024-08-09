@@ -23,4 +23,8 @@ highlight link Draft GitlabDraft
 execute 'syntax match Username "@[a-zA-Z0-9.]\+"'
 highlight link Username GitlabUsername
 
+execute 'syntax match Mention "\%(' . g:gitlab_discussion_tree_expander_open . '\|'
+  \ . g:gitlab_discussion_tree_expander_closed . '\)\@<!@[a-zA-Z0-9.]*"'
+highlight link Mention GitlabMention
+
 let b:current_syntax = 'gitlab'
