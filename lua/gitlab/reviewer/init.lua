@@ -276,4 +276,144 @@ M.set_callback_for_reviewer_enter = function(callback)
   })
 end
 
+---Create the line-wise visual selection in the range of the motion and execute the gitlab.nvim API
+---function. After that, restore the cursor position and the original operatorfunc.
+---@param callback string Name of the gitlab.nvim API function to call
+M.execute_callback = function(callback)
+  return function()
+    vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { "'[V']" } }, {})
+    vim.api.nvim_cmd(
+      { cmd = "lua", args = { ("require'gitlab'.%s()"):format(callback) }, mods = { lockmarks = true } },
+      {}
+    )
+    vim.api.nvim_win_set_cursor(M.old_winnr, M.old_cursor_position)
+    vim.opt.operatorfunc = M.old_opfunc
+  end
+end
+
+---Set the operatorfunc that will work on the lines defined by the motion that follows after the
+---operator mapping, and enter the operator-pending mode.
+---@param cb string Name of the gitlab.nvim API function to call, e.g., "create_multiline_comment".
+local function execute_operatorfunc(cb)
+  M.old_opfunc = vim.opt.operatorfunc
+  M.old_winnr = vim.api.nvim_get_current_win()
+  M.old_cursor_position = vim.api.nvim_win_get_cursor(M.old_winnr)
+  vim.opt.operatorfunc = ("v:lua.require'gitlab.reviewer'.execute_callback'%s'"):format(cb)
+  vim.api.nvim_feedkeys("g@", "n", false)
+end
+
+---Set keymaps for creating comments, suggestions and for jumping to discussion tree.
+---@param bufnr integer Number of the buffer for which the keybindings will be created.
+---@param keymaps table The settings keymaps table.
+local set_keymaps = function(bufnr, keymaps)
+  -- Set mappings for creating comments
+  if keymaps.reviewer.create_comment ~= false then
+    vim.keymap.set(
+      "o",
+      keymaps.reviewer.create_comment,
+      "$",
+      { buffer = bufnr, desc = "Create comment for current line", nowait = keymaps.reviewer.create_comment_nowait }
+    )
+    vim.keymap.set(
+      "n",
+      keymaps.reviewer.create_comment,
+      function()
+        execute_operatorfunc("create_multiline_comment")
+      end,
+      { buffer = bufnr, desc = "Create comment for range of motion", nowait = keymaps.reviewer.create_comment_nowait }
+    )
+    vim.keymap.set("v", keymaps.reviewer.create_comment, function()
+      require("gitlab").create_multiline_comment()
+    end, {
+      buffer = bufnr,
+      desc = "Create comment for selected text",
+      nowait = keymaps.reviewer.create_comment_nowait,
+    })
+  end
+
+  -- Set mappings for creating suggestions
+  if keymaps.reviewer.create_suggestion ~= false then
+    vim.keymap.set("o", keymaps.reviewer.create_suggestion, "$", {
+      buffer = bufnr,
+      desc = "Create suggestion for current line",
+      nowait = keymaps.reviewer.create_suggestion_nowait,
+    })
+    vim.keymap.set("n", keymaps.reviewer.create_suggestion, function()
+      execute_operatorfunc("create_comment_suggestion")
+    end, {
+      buffer = bufnr,
+      desc = "Create suggestion for range of motion",
+      nowait = keymaps.reviewer.create_suggestion_nowait,
+    })
+    vim.keymap.set("v", keymaps.reviewer.create_suggestion, function()
+      require("gitlab").create_comment_suggestion()
+    end, {
+      buffer = bufnr,
+      desc = "Create suggestion for selected text",
+      nowait = keymaps.reviewer.create_suggestion_nowait,
+    })
+  end
+
+  -- Set mapping for moving to discussion tree
+  if keymaps.reviewer.move_to_discussion_tree ~= false then
+    vim.keymap.set("n", keymaps.reviewer.move_to_discussion_tree, function()
+      require("gitlab").move_to_discussion_tree_from_diagnostic()
+    end, { buffer = bufnr, desc = "Move to discussion", nowait = keymaps.reviewer.move_to_discussion_tree_nowait })
+  end
+end
+
+--- Sets up keymaps for both buffers in the reviewer.
+M.set_reviewer_keymaps = function()
+  -- Require keymaps only after user settings have been merged with defaults
+  local keymaps = require("gitlab.state").settings.keymaps
+  if keymaps.disable_all or keymaps.reviewer.disable_all then
+    return
+  end
+
+  local view = diffview_lib.get_current_view()
+  local a = view.cur_layout.a.file.bufnr
+  local b = view.cur_layout.b.file.bufnr
+  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
+    set_keymaps(a, keymaps)
+  end
+  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
+    set_keymaps(b, keymaps)
+  end
+end
+
+---Delete keymaps from reviewer buffers.
+---@param bufnr integer Number of the buffer from which the keybindings will be removed.
+---@param keymaps table The settings keymaps table.
+local del_keymaps = function(bufnr, keymaps)
+  for _, func in ipairs({ "create_comment", "create_suggestion" }) do
+    if keymaps.reviewer[func] ~= false then
+      for _, mode in ipairs({ "n", "o", "v" }) do
+        pcall(vim.api.nvim_buf_del_keymap, bufnr, mode, keymaps.reviewer[func])
+      end
+    end
+  end
+  if keymaps.reviewer.move_to_discussion_tree ~= false then
+    pcall(vim.api.nvim_buf_del_keymap, bufnr, "n", keymaps.reviewer.move_to_discussion_tree)
+  end
+end
+
+--- Deletes keymaps from both buffers in the reviewer.
+M.del_reviewer_keymaps = function()
+  -- Require keymaps only after user settings have been merged with defaults
+  local keymaps = require("gitlab.state").settings.keymaps
+  if keymaps.disable_all or keymaps.reviewer.disable_all then
+    return
+  end
+
+  local view = diffview_lib.get_current_view()
+  local a = view.cur_layout.a.file.bufnr
+  local b = view.cur_layout.b.file.bufnr
+  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
+    del_keymaps(a, keymaps)
+  end
+  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
+    del_keymaps(b, keymaps)
+  end
+end
+
 return M

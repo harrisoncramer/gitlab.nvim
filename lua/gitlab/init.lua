@@ -34,7 +34,8 @@ return {
       args = {}
     end
     server.build() -- Builds the Go binary if it doesn't exist
-    state.merge_settings(args) -- Sets keymaps and other settings from setup function
+    state.merge_settings(args) -- Merges user settings with default settings
+    state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
     require("gitlab.colors") -- Sets colors
     reviewer.init()
     discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer

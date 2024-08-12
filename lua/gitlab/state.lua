@@ -60,14 +60,71 @@ M.settings = {
     insecure = true,
   },
   attachment_dir = "",
-  help = "g?",
-  popup = {
-    keymaps = {
+  keymaps = {
+    disable_all = false,
+    help = "g?",
+    global = {
+      disable_all = false,
+      add_assignee = "glaa",
+      delete_assignee = "glad",
+      add_label = "glla",
+      delete_label = "glld",
+      add_reviewer = "glra",
+      delete_reviewer = "glrd",
+      approve = "glA",
+      revoke = "glR",
+      merge = "glM",
+      create_mr = "glC",
+      choose_merge_request = "glc",
+      start_review = "glS",
+      summary = "gls",
+      copy_mr_url = "glu",
+      open_in_browser = "glo",
+      create_note = "gln",
+      pipeline = "glp",
+      toggle_discussions = "gld",
+      toggle_draft_mode = "glD",
+      publish_all_drafts = "glP",
+    },
+    popup = {
+      disable_all = false,
       next_field = "<Tab>",
       prev_field = "<S-Tab>",
+      perform_action = "ZZ",
+      perform_linewise_action = "ZA",
+      discard_changes = "ZQ",
     },
-    perform_action = "<leader>s",
-    perform_linewise_action = "<leader>l",
+    discussion_tree = {
+      disable_all = false,
+      add_emoji = "Ea",
+      delete_emoji = "Ed",
+      delete_comment = "dd",
+      edit_comment = "e",
+      reply = "r",
+      toggle_resolved = "-",
+      jump_to_file = "o",
+      jump_to_reviewer = "a",
+      open_in_browser = "b",
+      copy_node_url = "u",
+      switch_view = "c",
+      toggle_tree_type = "i",
+      publish_draft = "P",
+      toggle_draft_mode = "D",
+      toggle_node = "t",
+      toggle_all_discussions = "T",
+      toggle_resolved_discussions = "R",
+      toggle_unresolved_discussions = "U",
+      refresh_data = "<C-R>",
+      print_node = "<leader>p",
+    },
+    reviewer = {
+      disable_all = false,
+      create_comment = "c",
+      create_suggestion = "s",
+      move_to_discussion_tree = "a",
+    },
+  },
+  popup = {
     width = "40%",
     height = "60%",
     border = "rounded",
@@ -82,36 +139,22 @@ M.settings = {
     temp_registers = {},
   },
   discussion_tree = {
+    expanders = {
+      expanded = " ",
+      collapsed = " ",
+      indentation = "  ",
+    },
     auto_open = true,
-    switch_view = "S",
     default_view = "discussions",
     blacklist = {},
-    jump_to_file = "o",
-    jump_to_reviewer = "m",
-    edit_comment = "e",
-    delete_comment = "dd",
-    refresh_data = "a",
-    reply = "r",
-    toggle_node = "t",
-    add_emoji = "Ea",
-    delete_emoji = "Ed",
-    toggle_all_discussions = "T",
-    toggle_resolved_discussions = "R",
-    toggle_unresolved_discussions = "U",
     keep_current_open = false,
-    publish_draft = "P",
-    toggle_resolved = "p",
     position = "left",
-    open_in_browser = "b",
-    copy_node_url = "u",
     size = "20%",
     relative = "editor",
     resolved = "✓",
     unresolved = "-",
     tree_type = "simple",
-    toggle_tree_type = "i",
     draft_mode = false,
-    toggle_draft_mode = "D",
   },
   create_mr = {
     target = nil,
@@ -181,7 +224,7 @@ M.settings = {
       username = "Keyword",
       mention = "WarningMsg",
       date = "Comment",
-      chevron = "DiffviewNonText",
+      expander = "DiffviewNonText",
       directory = "Directory",
       directory_icon = "DiffviewFolderSign",
       file_name = "Normal",
@@ -201,6 +244,135 @@ M.unlinked_discussion_tree = {
   resolved_expanded = false,
   unresolved_expanded = false,
 }
+
+-- These keymaps are set globally when the plugin is initialized
+M.set_global_keymaps = function()
+  local keymaps = M.settings.keymaps
+
+  if keymaps.disable_all or keymaps.global.disable_all then
+    return
+  end
+
+  if keymaps.global.start_review then
+    vim.keymap.set("n", keymaps.global.start_review, function()
+      require("gitlab").review()
+    end, { desc = "Start Gitlab review", nowait = keymaps.global.start_review_nowait })
+  end
+
+  if keymaps.global.choose_merge_request then
+    vim.keymap.set("n", keymaps.global.choose_merge_request, function()
+      require("gitlab").choose_merge_request()
+    end, { desc = "Choose MR for review", nowait = keymaps.global.choose_merge_request_nowait })
+  end
+
+  if keymaps.global.summary then
+    vim.keymap.set("n", keymaps.global.summary, function()
+      require("gitlab").summary()
+    end, { desc = "Show MR summary", nowait = keymaps.global.summary_nowait })
+  end
+
+  if keymaps.global.approve then
+    vim.keymap.set("n", keymaps.global.approve, function()
+      require("gitlab").approve()
+    end, { desc = "Approve MR", nowait = keymaps.global.approve_nowait })
+  end
+
+  if keymaps.global.revoke then
+    vim.keymap.set("n", keymaps.global.revoke, function()
+      require("gitlab").revoke()
+    end, { desc = "Revoke approval", nowait = keymaps.global.revoke_nowait })
+  end
+
+  if keymaps.global.create_mr then
+    vim.keymap.set("n", keymaps.global.create_mr, function()
+      require("gitlab").create_mr()
+    end, { desc = "Create MR", nowait = keymaps.global.create_mr_nowait })
+  end
+
+  if keymaps.global.create_note then
+    vim.keymap.set("n", keymaps.global.create_note, function()
+      require("gitlab").create_note()
+    end, { desc = "Create MR note", nowait = keymaps.global.create_note_nowait })
+  end
+
+  if keymaps.global.toggle_discussions then
+    vim.keymap.set("n", keymaps.global.toggle_discussions, function()
+      require("gitlab").toggle_discussions()
+    end, { desc = "Toggle MR discussions", nowait = keymaps.global.toggle_discussions_nowait })
+  end
+
+  if keymaps.global.add_assignee then
+    vim.keymap.set("n", keymaps.global.add_assignee, function()
+      require("gitlab").add_assignee()
+    end, { desc = "Add MR assignee", nowait = keymaps.global.add_assignee_nowait })
+  end
+
+  if keymaps.global.delete_assignee then
+    vim.keymap.set("n", keymaps.global.delete_assignee, function()
+      require("gitlab").delete_assignee()
+    end, { desc = "Delete MR assignee", nowait = keymaps.global.delete_assignee_nowait })
+  end
+
+  if keymaps.global.add_label then
+    vim.keymap.set("n", keymaps.global.add_label, function()
+      require("gitlab").add_label()
+    end, { desc = "Add MR label", nowait = keymaps.global.add_label_nowait })
+  end
+
+  if keymaps.global.delete_label then
+    vim.keymap.set("n", keymaps.global.delete_label, function()
+      require("gitlab").delete_label()
+    end, { desc = "Delete MR label", nowait = keymaps.global.delete_label_nowait })
+  end
+
+  if keymaps.global.add_reviewer then
+    vim.keymap.set("n", keymaps.global.add_reviewer, function()
+      require("gitlab").add_reviewer()
+    end, { desc = "Add MR reviewer", nowait = keymaps.global.add_reviewer_nowait })
+  end
+
+  if keymaps.global.delete_reviewer then
+    vim.keymap.set("n", keymaps.global.delete_reviewer, function()
+      require("gitlab").delete_reviewer()
+    end, { desc = "Delete MR reviewer", nowait = keymaps.global.delete_reviewer_nowait })
+  end
+
+  if keymaps.global.pipeline then
+    vim.keymap.set("n", keymaps.global.pipeline, function()
+      require("gitlab").pipeline()
+    end, { desc = "Show MR pipeline status", nowait = keymaps.global.pipeline_nowait })
+  end
+
+  if keymaps.global.open_in_browser then
+    vim.keymap.set("n", keymaps.global.open_in_browser, function()
+      require("gitlab").open_in_browser()
+    end, { desc = "Open MR in browser", nowait = keymaps.global.open_in_browser_nowait })
+  end
+
+  if keymaps.global.merge then
+    vim.keymap.set("n", keymaps.global.merge, function()
+      require("gitlab").merge()
+    end, { desc = "Merge MR", nowait = keymaps.global.merge_nowait })
+  end
+
+  if keymaps.global.copy_mr_url then
+    vim.keymap.set("n", keymaps.global.copy_mr_url, function()
+      require("gitlab").copy_mr_url()
+    end, { desc = "Copy MR url", nowait = keymaps.global.copy_mr_url_nowait })
+  end
+
+  if keymaps.global.publish_all_drafts then
+    vim.keymap.set("n", keymaps.global.publish_all_drafts, function()
+      require("gitlab").publish_all_drafts()
+    end, { desc = "Publish all MR comment drafts", nowait = keymaps.global.publish_all_drafts_nowait })
+  end
+
+  if keymaps.global.toggle_draft_mode then
+    vim.keymap.set("n", keymaps.global.toggle_draft_mode, function()
+      require("gitlab").toggle_draft_mode()
+    end, { desc = "Toggle MR comment draft mode", nowait = keymaps.global.toggle_draft_mode_nowait })
+  end
+end
 
 -- Merges user settings into the default settings, overriding them
 M.merge_settings = function(args)
@@ -225,9 +397,43 @@ M.merge_settings = function(args)
     return false
   end
 
-  if M.settings.review_pane ~= nil then
+  local removed_fields_in_user_config = {}
+  local removed_settings_fields = {
+    "discussion_tree.add_emoji",
+    "discussion_tree.copy_node_url",
+    "discussion_tree.delete_comment",
+    "discussion_tree.delete_emoji",
+    "discussion_tree.edit_comment",
+    "discussion_tree.jump_to_file",
+    "discussion_tree.jump_to_reviewer",
+    "discussion_tree.open_in_browser",
+    "discussion_tree.publish_draft",
+    "discussion_tree.refresh_data",
+    "discussion_tree.reply",
+    "discussion_tree.switch_view",
+    "discussion_tree.toggle_all_discussions",
+    "discussion_tree.toggle_draft_mode",
+    "discussion_tree.toggle_node",
+    "discussion_tree.toggle_resolved",
+    "discussion_tree.toggle_resolved_discussions",
+    "discussion_tree.toggle_tree_type",
+    "discussion_tree.toggle_unresolved_discussions",
+    "help",
+    "popup.keymaps.next_field",
+    "popup.keymaps.prev_field",
+    "popup.perform_action",
+    "popup.perform_linewise_action",
+    "review_pane", -- Only relevant for the Delta reviewer
+  }
+  for _, field in ipairs(removed_settings_fields) do
+    if u.get_nested_field(M.settings, field) ~= nil then
+      table.insert(removed_fields_in_user_config, field)
+    end
+  end
+
+  if #removed_fields_in_user_config ~= 0 then
     u.notify(
-      "The review_pane field is only relevant for Delta, which has been deprecated, please remove it from your setup function",
+      "The following settings fields have been removed:\n" .. table.concat(removed_fields_in_user_config, "\n"),
       vim.log.levels.WARN
     )
   end
@@ -284,17 +490,21 @@ end
 
 -- These keymaps are buffer specific and are set dynamically when popups mount
 M.set_popup_keymaps = function(popup, action, linewise_action, opts)
+  if M.settings.keymaps.disable_all or M.settings.keymaps.popup.disable_all then
+    return
+  end
+
   if opts == nil then
     opts = {}
   end
-  if action ~= "Help" then -- Don't show help on the help popup
-    vim.keymap.set("n", M.settings.help, function()
+  if action ~= "Help" and M.settings.keymaps.help then -- Don't show help on the help popup
+    vim.keymap.set("n", M.settings.keymaps.help, function()
       local help = require("gitlab.actions.help")
       help.open()
-    end, { buffer = popup.bufnr, desc = "Open help" })
+    end, { buffer = popup.bufnr, desc = "Open help", nowait = M.settings.keymaps.help_nowait })
   end
-  if action ~= nil then
-    vim.keymap.set("n", M.settings.popup.perform_action, function()
+  if action ~= nil and M.settings.keymaps.popup.perform_action then
+    vim.keymap.set("n", M.settings.keymaps.popup.perform_action, function()
       local text = u.get_buffer_text(popup.bufnr)
       if opts.action_before_close then
         action(text, popup.bufnr)
@@ -303,16 +513,33 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
         exit(popup, opts)
         action(text, popup.bufnr)
       end
-    end, { buffer = popup.bufnr, desc = "Perform action" })
+    end, { buffer = popup.bufnr, desc = "Perform action", nowait = M.settings.keymaps.popup.perform_action_nowait })
   end
 
-  if linewise_action ~= nil then
-    vim.keymap.set("n", M.settings.popup.perform_linewise_action, function()
+  if linewise_action ~= nil and M.settings.keymaps.popup.perform_action then
+    vim.keymap.set("n", M.settings.keymaps.popup.perform_linewise_action, function()
       local bufnr = vim.api.nvim_get_current_buf()
       local linnr = vim.api.nvim_win_get_cursor(0)[1]
       local text = u.get_line_content(bufnr, linnr)
       linewise_action(text)
-    end, { buffer = popup.bufnr, desc = "Perform linewise action" })
+    end, {
+      buffer = popup.bufnr,
+      desc = "Perform linewise action",
+      nowait = M.settings.keymaps.popup.perform_linewise_action_nowait,
+    })
+  end
+
+  if M.settings.keymaps.popup.discard_changes then
+    vim.keymap.set("n", M.settings.keymaps.popup.discard_changes, function()
+      local temp_registers = M.settings.popup.temp_registers
+      M.settings.popup.temp_registers = {}
+      vim.cmd("quit!")
+      M.settings.popup.temp_registers = temp_registers
+    end, {
+      buffer = popup.bufnr,
+      desc = "Quit discarding changes",
+      nowait = M.settings.keymaps.popup.discard_changes_nowait,
+    })
   end
 
   if opts.save_to_temp_register then
