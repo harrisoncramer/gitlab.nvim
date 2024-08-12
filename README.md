@@ -25,7 +25,7 @@ To view these help docs and to get more detailed help information, please run `:
 
 1. Install Go
 2. Add configuration (see Installation section)
-5. Run `:lua require("gitlab").choose_merge_request()`
+3. Run `:lua require("gitlab").choose_merge_request()` or `:lua require("gitlab").review()` if already in review branch/worktree.
 
 This will checkout the branch locally, and open the plugin's reviewer pane.
 
