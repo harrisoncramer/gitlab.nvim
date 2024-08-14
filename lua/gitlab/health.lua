@@ -23,7 +23,10 @@ M.check = function()
 
   vim.health.start("gitlab.nvim")
   if state.settings.reviewer == "delta" then
-    table.insert(warnings, "Delta is no longer a supported reviewer, please use diffview and update your setup function")
+    table.insert(
+      warnings,
+      "Delta is no longer a supported reviewer, please use diffview and update your setup function"
+    )
   end
 
   local required_deps = {
@@ -38,7 +41,7 @@ M.check = function()
     {
       name = "sindrets/diffview.nvim",
       package = "diffview",
-    }
+    },
   }
 
   local recommended_deps = {
@@ -48,10 +51,9 @@ M.check = function()
     },
     {
       name = "nvim-tree/nvim-web-devicons",
-      package = "nvim-web-devicons"
-    }
+      package = "nvim-web-devicons",
+    },
   }
-
 
   local go_version_problem = check_go_version()
   if go_version_problem ~= nil then
@@ -109,8 +111,10 @@ M.check = function()
   end
 
   if #removed_fields_in_user_config ~= 0 then
-    table.insert(warnings,
-      "The following settings fields have been removed:\n" .. table.concat(removed_fields_in_user_config, "\n"))
+    table.insert(
+      warnings,
+      "The following settings fields have been removed:\n" .. table.concat(removed_fields_in_user_config, "\n")
+    )
   end
 
   if #errors > 0 then
