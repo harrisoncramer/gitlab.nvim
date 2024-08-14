@@ -377,69 +377,7 @@ end
 -- Merges user settings into the default settings, overriding them
 M.merge_settings = function(args)
   M.settings = u.merge(M.settings, args)
-
-  -- Check deprecated settings and alert users!
-  if M.settings.dialogue ~= nil then
-    u.notify("The dialogue field has been deprecated, please remove it from your setup function", vim.log.levels.WARN)
-  end
-
-  if M.settings.reviewer == "delta" then
-    u.notify(
-      "Delta is no longer a supported reviewer, please use diffview and update your setup function",
-      vim.log.levels.ERROR
-    )
-    return false
-  end
-
-  local diffview_ok, _ = pcall(require, "diffview")
-  if not diffview_ok then
-    u.notify("Please install diffview, it is required")
-    return false
-  end
-
-  local removed_fields_in_user_config = {}
-  local removed_settings_fields = {
-    "discussion_tree.add_emoji",
-    "discussion_tree.copy_node_url",
-    "discussion_tree.delete_comment",
-    "discussion_tree.delete_emoji",
-    "discussion_tree.edit_comment",
-    "discussion_tree.jump_to_file",
-    "discussion_tree.jump_to_reviewer",
-    "discussion_tree.open_in_browser",
-    "discussion_tree.publish_draft",
-    "discussion_tree.refresh_data",
-    "discussion_tree.reply",
-    "discussion_tree.switch_view",
-    "discussion_tree.toggle_all_discussions",
-    "discussion_tree.toggle_draft_mode",
-    "discussion_tree.toggle_node",
-    "discussion_tree.toggle_resolved",
-    "discussion_tree.toggle_resolved_discussions",
-    "discussion_tree.toggle_tree_type",
-    "discussion_tree.toggle_unresolved_discussions",
-    "help",
-    "popup.keymaps.next_field",
-    "popup.keymaps.prev_field",
-    "popup.perform_action",
-    "popup.perform_linewise_action",
-    "review_pane", -- Only relevant for the Delta reviewer
-  }
-  for _, field in ipairs(removed_settings_fields) do
-    if u.get_nested_field(M.settings, field) ~= nil then
-      table.insert(removed_fields_in_user_config, field)
-    end
-  end
-
-  if #removed_fields_in_user_config ~= 0 then
-    u.notify(
-      "The following settings fields have been removed:\n" .. table.concat(removed_fields_in_user_config, "\n"),
-      vim.log.levels.WARN
-    )
-  end
-
   M.settings.file_separator = (u.is_windows() and "\\" or "/")
-
   return true
 end
 
