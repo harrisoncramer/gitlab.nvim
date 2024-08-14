@@ -3,16 +3,16 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
 type ListMergeRequestRequest struct {
-  Label []string `json:"label"`
-  NotLabel []string `json:"notlabel"`
+	Label    []string `json:"label"`
+	NotLabel []string `json:"notlabel"`
 }
 
 type ListMergeRequestResponse struct {
@@ -35,18 +35,18 @@ func (a *api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
-  var listMergeRequestRequest ListMergeRequestRequest 
-  err = json.Unmarshal(body, &listMergeRequestRequest)
+	var listMergeRequestRequest ListMergeRequestRequest
+	err = json.Unmarshal(body, &listMergeRequestRequest)
 	if err != nil {
 		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
 	options := gitlab.ListProjectMergeRequestsOptions{
-		Scope: gitlab.Ptr("all"),
-		State: gitlab.Ptr("opened"),
-    Labels: (*gitlab.LabelOptions)(&listMergeRequestRequest.Label),
-    NotLabels: (*gitlab.LabelOptions)(&listMergeRequestRequest.NotLabel),
+		Scope:     gitlab.Ptr("all"),
+		State:     gitlab.Ptr("opened"),
+		Labels:    (*gitlab.LabelOptions)(&listMergeRequestRequest.Label),
+		NotLabels: (*gitlab.LabelOptions)(&listMergeRequestRequest.NotLabel),
 	}
 
 	mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)

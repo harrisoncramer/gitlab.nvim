@@ -620,13 +620,13 @@ M.dependencies = {
     method = "POST",
     body = function(argTable)
       local listArgs = {
-        thishastobehereorelsethiswillbeinterpretedasanarray = {}
+        thishastobehereorelsethiswillbeinterpretedasanarray = {},
       }
-      for k,v in pairs(argTable or {}) do
+      for k, v in pairs(argTable or {}) do
         listArgs[k] = v
       end
       return listArgs
-    end
+    end,
   },
   discussion_data = {
     -- key is missing here...
