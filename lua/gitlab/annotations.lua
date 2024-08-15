@@ -147,21 +147,22 @@
 ---@field connection_settings? ConnectionSettings -- Settings for the connection to Gitlab
 ---@field keymaps? Keymaps -- Keymaps for the plugin
 ---@field popup PopupSettings -- Settings for the popup windows
+---@field discussion_tree DiscussionSettings -- Settings for the popup windows
 
----@class ReviewerSettings
+---@class ReviewerSettings: table
 ---@field diffview? SettingsDiffview -- Settings for diffview (the dependency)
 
----@class SettingsDiffview
+---@class SettingsDiffview: table
 ---@field imply_local? boolean -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
 
----@class ConnectionSettings
+---@class ConnectionSettings: table
 ---@field insecure? boolean -- Like curl's --insecure option, ignore bad x509 certificates on connection
 
----@class DebugSettings
+---@class DebugSettings: table
 ---@field go_request? boolean -- Log the requests to Gitlab sent by the Go server
 ---@field go_response? boolean -- Log the responses received from Gitlab to the Go server
 
----@class PopupSettings
+---@class PopupSettings: table
 ---@field width? string -- The width of the popup, by default "40%"
 ---@field height? string The width of the popup, by default "60%"
 ---@field border? "rounded" | "single" | "double" | "solid"
@@ -173,6 +174,26 @@
 ---@field reply? table -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 }
 ---@field squash_message? string The default message when squashing a commit
 ---@field temp_registers? string[]  -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
+
+---@class DiscussionSettings: table
+---@field expanders? ExpanderOpts -- Customize the expander icons in the discussion tree
+---@field auto_open? boolean -- Automatically open when the reviewer is opened
+---@field default_view? string - Show "discussions" or "notes" by default
+---@field blacklist? table<string> -- List of usernames to remove from tree (bots, CI, etc)
+---@field keep_current_open? boolean -- If true, current discussion stays open even if it should otherwise be closed when toggling
+---@field position? "top" | "right" | "bottom" | "left"
+---@field size? string -- Size of split, default to "20%"
+---@field relative? "editor" | "window" -- Relative position of tree split
+---@field resolved? string -- Symbol to show next to resolved discussions
+---@field unresolved? '-', -- Symbol to show next to unresolved discussions
+---@field tree_type? string -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
+---@field draft_mode? boolean -- Whether comments are posted as drafts as part of a review
+---@field winbar? function -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
+
+---@class ExpanderOpts: table<string string>
+---@field expanded? string -- Icon for expanded discussion thread
+---@field collapsed? string -- Icon for collapsed discussion thread
+---@field indentation? string -- Indentation Icon
 
 ---@class Keymaps
 ---@field help? string -- Open a help popup for local keymaps when a relevant view is focused (popup, discussion panel, etc)
