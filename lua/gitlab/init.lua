@@ -29,7 +29,7 @@ local merge_requests_dep = state.dependencies.merge_requests
 local draft_notes_dep = state.dependencies.draft_notes
 local discussion_data = state.dependencies.discussion_data
 
----@param args Settings | {}
+---@param args Settings | {} | nil
 ---@return nil
 local function setup(args)
   if args == nil then
