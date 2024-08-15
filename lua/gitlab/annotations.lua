@@ -226,7 +226,6 @@
 ---@field go_request? boolean -- Log the requests to Gitlab sent by the Go server
 ---@field go_response? boolean -- Log the responses received from Gitlab to the Go server
 
-
 ---@class PopupSettings: table
 ---@field width? string -- The width of the popup, by default "40%"
 ---@field height? string The width of the popup, by default "60%"
