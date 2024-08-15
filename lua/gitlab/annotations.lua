@@ -191,7 +191,7 @@
 ---@field fork? ForkSettings
 
 ---@class ForkSettings: table
----@field enabled? boolean false, -- If making an MR from a fork
+---@field enabled? boolean -- If making an MR from a fork
 ---@field forked_project_id? number -- The Gitlab ID of the project you are merging into. If nil, will be prompted.
 
 ---@class TitleInputSettings: table
@@ -211,7 +211,7 @@
 
 ---@class IconsOpts: table
 ---@field comment? string -- The icon for comments, by default "→|",
----@field range? string " |", -- The icon for lines in ranged comments, by default " |"
+---@field range? string -- The icon for lines in ranged comments, by default " |"
 
 ---@class ReviewerSettings: table
 ---@field diffview? SettingsDiffview -- Settings for diffview (the dependency)
