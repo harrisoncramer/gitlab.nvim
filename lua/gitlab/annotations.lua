@@ -133,3 +133,18 @@
 ---@field commit_id string  -- This will always be ""
 ---@field line_code string
 ---@field position NotePosition
+---
+---
+--- Plugin Settings
+---
+---@class SettingsReviewer
+---@field diffview SettingsDiffview
+---@class SettingsDiffview
+---@field imply_local boolean
+---@class DebugSettings
+---@field go_request boolean
+---@field go_response boolean
+
+---@class Settings
+---@field attachment_dir string
+---@field reviewer_settings SettingsReviewer

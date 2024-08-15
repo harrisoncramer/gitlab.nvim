@@ -40,7 +40,7 @@ M.default_auth_provider = function()
   return auth_token, gitlab_url, err
 end
 
--- These are the default settings for the plugin
+--- These are the default settings for the plugin
 M.settings = {
   auth_provider = M.default_auth_provider,
   port = nil, -- choose random port
@@ -375,10 +375,12 @@ M.set_global_keymaps = function()
 end
 
 -- Merges user settings into the default settings, overriding them
+---@param args Settings
+---@return Settings
 M.merge_settings = function(args)
   M.settings = u.merge(M.settings, args)
   M.settings.file_separator = (u.is_windows() and "\\" or "/")
-  return true
+  return M.settings
 end
 
 M.print_settings = function()
