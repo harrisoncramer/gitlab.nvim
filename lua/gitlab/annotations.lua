@@ -1,5 +1,8 @@
 ---@meta diagnostics
 
+---@alias BorderEnum "rounded" | "single" | "double" | "solid"
+---@alias SeverityEnum "ERROR" | "WARN" | "INFO" | "HINT"
+
 ---@class Author
 ---@field id integer
 ---@field username string
@@ -146,8 +149,69 @@
 ---@field reviewer_settings? ReviewerSettings -- Settings for the reviewer view
 ---@field connection_settings? ConnectionSettings -- Settings for the connection to Gitlab
 ---@field keymaps? Keymaps -- Keymaps for the plugin
----@field popup PopupSettings -- Settings for the popup windows
----@field discussion_tree DiscussionSettings -- Settings for the popup windows
+---@field popup? PopupSettings -- Settings for the popup windows
+---@field discussion_tree? DiscussionSettings -- Settings for the popup windows
+---@field choose_merge_request? ChooseMergeRequestSettings -- Default settings when choosing a merge request
+---@field info? InfoSettings -- Settings for the "info" or "summary" view
+---@field discussion_signs? DiscussionSigns -- The settings for discussion signs/diagnostics
+---@field pipeline? PipelineSettings -- The settings for the pipeline popup
+---@field create_mr? CreateMrSettings -- The settings when creating an MR
+---@field colors? ColorSettings --- Colors settings for the plugin
+
+---@class DiscussionSigns: table
+---@field enabled? boolean -- Show diagnostics for gitlab comments in the reviewer
+---@field skip_resolved_discussion? boolean -- Show diagnostics for resolved discussions
+---@field severity? SeverityEnum
+---@field virtual_text? boolean -- Whether to show the comment text inline as floating virtual text
+---@field use_diagnostic_signs? boolean -- Show diagnostic sign (depending on the `severity` setting) along with the comment icon
+---@field priority? number -- Higher will override LSP warnings, etc
+---@field icons? IconsOpts -- Customize the icons shown with comments or notes
+
+---@class ColorSettings: table
+---@field discussion_tree? DiscussionTreeColors -- Colors for elements in the discussion tree
+
+---@class DiscussionTreeColors
+--- @field username? string
+--- @field mention? string
+--- @field date? string
+--- @field expander? string
+--- @field directory? string
+--- @field directory_icon? string
+--- @field file_name? string
+--- @field resolved? string
+--- @field unresolved? string
+--- @field draft? string
+
+---@class CreateMrSettings: table
+---@field target? string -- Default branch to target when creating an MR
+---@field template_file? string -- Default MR template in .gitlab/merge_request_templates
+---@field delete_branch? boolean -- Whether the source branch will be marked for deletion
+---@field squash? boolean -- Whether the commits will be marked for squashing
+---@field title_input? TitleInputSettings
+---@field fork? ForkSettings
+
+---@class ForkSettings: table
+---@field enabled? boolean false, -- If making an MR from a fork
+---@field forked_project_id? number -- The Gitlab ID of the project you are merging into. If nil, will be prompted.
+
+---@class TitleInputSettings: table
+---@field width? number
+---@field border? BorderEnum
+
+---@class PipelineSettings: table
+---@field created? string -- What to show for this pipeline status, by default "",
+---@field pending? string -- What to show for this pipeline status, by default "",
+---@field preparing? string -- What to show for this pipeline status, by default "",
+---@field scheduled? string -- What to show for this pipeline status, by default "",
+---@field running? string -- What to show for this pipeline status, by default "",
+---@field canceled? string -- What to show for this pipeline status, by default "↪",
+---@field skipped? string -- What to show for this pipeline status, by default "↪",
+---@field success? string -- What to show for this pipeline status, by default "✓",
+---@field failed? string -- What to show for this pipeline status, by default "",
+
+---@class IconsOpts: table
+---@field comment? string -- The icon for comments, by default "→|",
+---@field range? string " |", -- The icon for lines in ranged comments, by default " |"
 
 ---@class ReviewerSettings: table
 ---@field diffview? SettingsDiffview -- Settings for diffview (the dependency)
@@ -162,10 +226,11 @@
 ---@field go_request? boolean -- Log the requests to Gitlab sent by the Go server
 ---@field go_response? boolean -- Log the responses received from Gitlab to the Go server
 
+
 ---@class PopupSettings: table
 ---@field width? string -- The width of the popup, by default "40%"
 ---@field height? string The width of the popup, by default "60%"
----@field border? "rounded" | "single" | "double" | "solid"
+---@field border? BorderEnum
 ---@field opacity? number -- From 0.0 (fully transparent) to 1.0 (fully opaque)
 ---@field comment? table -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 },
 ---@field edit? table -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 }
@@ -174,6 +239,13 @@
 ---@field reply? table -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 }
 ---@field squash_message? string The default message when squashing a commit
 ---@field temp_registers? string[]  -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
+
+---@class ChooseMergeRequestSettings
+---@field open_reviewer? boolean -- Open the reviewer window automatically after switching merge requests
+
+---@class InfoSettings
+---@field horizontal? boolean -- Display metadata to the left of the summary rather than underneath
+---@field fields? ("author" | "created_at" | "updated_at" | "merge_status" | "draft" | "conflicts" | "assignees" | "reviewers" | "pipeline" | "branch" | "target_branch" | "delete_branch" | "squash" | "labels")[]
 
 ---@class DiscussionSettings: table
 ---@field expanders? ExpanderOpts -- Customize the expander icons in the discussion tree
