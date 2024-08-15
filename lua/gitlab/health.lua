@@ -135,7 +135,7 @@ M.check = function(return_results)
   end
 
   if #warnings + #errors == 0 then
-    vim.health.ok("Setup is okay!")
+    vim.health.ok("Gitlab plugin is okay!")
   end
 
   if return_results then
