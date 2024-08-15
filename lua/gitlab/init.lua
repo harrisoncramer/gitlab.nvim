@@ -17,6 +17,7 @@ local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
 local draft_notes = require("gitlab.actions.draft_notes")
 local labels = require("gitlab.actions.labels")
+local health = require("gitlab.health")
 
 local user = state.dependencies.user
 local info = state.dependencies.info
@@ -34,13 +35,18 @@ local function setup(args)
   if args == nil then
     args = {}
   end
-  server.build()                       -- Builds the Go binary if it doesn't exist
-  state.merge_settings(args)           -- Merges user settings with default settings
-  state.set_global_keymaps()           -- Sets keymaps that are not bound to a specific buffer
-  require("gitlab.colors")             -- Sets colors
+  server.build() -- Builds the Go binary if it doesn't exist
+  state.merge_settings(args) -- Merges user settings with default settings
+  state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
+  require("gitlab.colors") -- Sets colors
   reviewer.init()
   discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-  emoji.init()                         -- Read in emojis for lookup purposes
+  emoji.init() -- Read in emojis for lookup purposes
+
+  local is_healthy = health.check(true)
+  if not is_healthy then
+    u.notify("Plugin unhealthy, please run ':checkhealth gitlab' for details", vim.log.levels.WARN)
+  end
 end
 
 return {

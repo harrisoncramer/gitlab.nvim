@@ -17,11 +17,16 @@ local function check_go_version()
   end
 end
 
-M.check = function()
+---Checks the health of the plugin
+---@param return_results boolean
+M.check = function(return_results)
   local warnings = List.new({})
   local errors = List.new({})
 
-  vim.health.start("gitlab.nvim")
+  if not return_results then
+    vim.health.start("gitlab.nvim")
+  end
+
   if state.settings.reviewer == "delta" then
     table.insert(
       warnings,
@@ -131,6 +136,10 @@ M.check = function()
 
   if #warnings + #errors == 0 then
     vim.health.ok("Setup is okay!")
+  end
+
+  if return_results then
+    return #warnings + #errors == 0
   end
 end
 
