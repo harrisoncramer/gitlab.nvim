@@ -4,11 +4,13 @@ local git = require("gitlab.git")
 local u = require("gitlab.utils")
 local M = {}
 
----@class SwitchOpts
----@field open_reviewer boolean
+---@class ChooseMergeRequestOptions
+---@field open_reviewer? boolean
+---@field label? string[]
+---@field notlabel? string[]
 
 ---Opens up a select menu that lets you choose a different merge request.
----@param opts SwitchOpts|nil
+---@param opts ChooseMergeRequestOptions|nil
 M.choose_merge_request = function(opts)
   local has_clean_tree, clean_tree_err = git.has_clean_tree()
   if clean_tree_err ~= nil then

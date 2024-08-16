@@ -616,7 +616,18 @@ M.dependencies = {
     endpoint = "/merge_requests",
     key = "merge_requests",
     state = "MERGE_REQUESTS",
-    refresh = false,
+    refresh = true,
+    method = "POST",
+    body = function(opts)
+      local listArgs = {
+        label = opts and opts.label or {},
+        notlabel = opts and opts.notlabel or {},
+      }
+      for k, v in pairs(listArgs) do
+        listArgs[k] = v
+      end
+      return listArgs
+    end,
   },
   discussion_data = {
     -- key is missing here...
