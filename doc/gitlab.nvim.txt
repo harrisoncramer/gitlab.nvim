@@ -730,7 +730,7 @@ review. This command will automatically check out the feature branch locally
 and open the reviewer pane (this can be overridden with the `open_reviewer`
 parameter.
 You can also filter merge requests by specifying `label` and `notlabel`
-parameters
+parameters.
 >lua
   require("gitlab").choose_merge_request()
   require("gitlab").choose_merge_request({ open_reviewer = false })
