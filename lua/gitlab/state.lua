@@ -618,11 +618,12 @@ M.dependencies = {
     state = "MERGE_REQUESTS",
     refresh = true,
     method = "POST",
-    body = function(argTable)
+    body = function(opts)
       local listArgs = {
-        thishastobehereorelsethiswillbeinterpretedasanarray = {},
+        label = opts and opts.label or {},
+        notlabel = opts and opts.notlabel or {},
       }
-      for k, v in pairs(argTable or {}) do
+      for k, v in pairs(listArgs) do
         listArgs[k] = v
       end
       return listArgs
