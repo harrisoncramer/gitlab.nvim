@@ -9,13 +9,11 @@ import (
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
 )
 
-var mergeId = 3
-
 func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
 		client := mock_main.NewMockObj(t)
-		mock_main.WithMr(t, client, mergeId)
-		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -27,8 +25,8 @@ func TestApproveHandler(t *testing.T) {
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		client := mock_main.NewMockObj(t)
-		mock_main.WithMr(t, client, mergeId)
-		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPut, "/mr/approve", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -38,8 +36,8 @@ func TestApproveHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockObj(t)
-		mock_main.WithMr(t, client, mergeId)
-		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(nil, nil, errors.New("Some error from Gitlab"))
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, nil, errors.New("Some error from Gitlab"))
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -50,8 +48,8 @@ func TestApproveHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockObj(t)
-		mock_main.WithMr(t, client, mergeId)
-		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		server, _ := CreateRouterAndApi(client)

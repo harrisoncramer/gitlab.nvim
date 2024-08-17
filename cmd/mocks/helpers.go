@@ -10,6 +10,8 @@ import (
 
 type NoOp = []gitlab.RequestOptionFunc
 
+var MergeId = 3
+
 func NewListMrOptions() *gitlab.ListProjectMergeRequestsOptions {
 	return &gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.Ptr("all"),
