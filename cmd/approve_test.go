@@ -9,33 +9,16 @@ import (
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
 )
 
-func approveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
-	return &gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil
-}
-
-func approveMergeRequestNon200(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
-	return &gitlab.MergeRequestApprovals{}, makeResponse(http.StatusSeeOther), nil
-}
-
-func approveMergeRequestErr(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
-	return &gitlab.MergeRequestApprovals{}, nil, errors.New("Some error from Gitlab")
-}
+var mergeId = 3
 
 func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
-		mergeId := 3
-		mockObj := mock_main.NewMockObj(t)
+		client := mock_main.NewMockObj(t)
+		mock_main.WithMr(t, client, mergeId)
+		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
-		options := gitlab.ListProjectMergeRequestsOptions{
-			Scope:        gitlab.Ptr("all"),
-			State:        gitlab.Ptr("opened"),
-			SourceBranch: gitlab.Ptr(""),
-		}
-
-		mockObj.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
-		mockObj.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: mergeId}}, makeResponse(http.StatusOK), nil)
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(mockObj)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, SuccessResponse{})
 
 		assert(t, data.Message, "Approved MR")
@@ -43,23 +26,37 @@ func TestApproveHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
+		client := mock_main.NewMockObj(t)
+		mock_main.WithMr(t, client, mergeId)
+		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
+
 		request := makeRequest(t, http.MethodPut, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(fakeClient{approveMergeRequest: approveMergeRequest})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
+		client := mock_main.NewMockObj(t)
+		mock_main.WithMr(t, client, mergeId)
+		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(nil, nil, errors.New("Some error from Gitlab"))
+
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(fakeClient{approveMergeRequest: approveMergeRequestErr})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkErrorFromGitlab(t, *data, "Could not approve merge request")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
+		client := mock_main.NewMockObj(t)
+		mock_main.WithMr(t, client, mergeId)
+		client.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(nil, makeResponse(http.StatusSeeOther), nil)
+
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(fakeClient{approveMergeRequest: approveMergeRequestNon200})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkNon200(t, *data, "Could not approve merge request", "/mr/approve")
 	})
 }
