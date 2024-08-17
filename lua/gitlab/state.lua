@@ -57,7 +57,7 @@ M.settings = {
     },
   },
   connection_settings = {
-    insecure = true,
+    insecure = false,
     remote_branch = "origin",
   },
   attachment_dir = "",
