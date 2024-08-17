@@ -6,104 +6,132 @@ import (
 	"testing"
 
 	"github.com/xanzy/go-gitlab"
+	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
 )
 
-func createMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return &gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil
+var testCommentCreationData = PostCommentRequest{
+	Comment: "Some comment",
 }
 
-func createMergeRequestDiscussionNon200(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusSeeOther), nil
-}
-
-func createMergeRequestDiscussionErr(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+var testCommentDeletionData = DeleteCommentRequest{
+	NoteId:       3,
+	DiscussionId: "abc123",
 }
 
 func TestPostComment(t *testing.T) {
 	t.Run("Creates a new note (unlinked comment)", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussion})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().CreateMergeRequestDiscussion(
+			"",
+			mock_main.MergeId,
+			&gitlab.CreateMergeRequestDiscussionOptions{Body: gitlab.Ptr(testCommentCreationData.Comment)},
+		).Return(&gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, CommentResponse{})
+
 		assert(t, data.SuccessResponse.Message, "Comment created successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Creates a new comment", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{
+		// Re-create comment creation data to avoid mutating this variable in other tests
+		testCommentCreationData := PostCommentRequest{
+			Comment: "Some comment",
 			PositionData: PositionData{
-				FileName: "some_file.txt",
+				FileName: "file.txt",
 			},
-		})
-		server, _ := CreateRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussion})
-		data := serveRequest(t, server, request, CommentResponse{})
-		assert(t, data.SuccessResponse.Message, "Comment created successfully")
-		assert(t, data.SuccessResponse.Status, http.StatusOK)
-	})
+		}
 
-	t.Run("Creates a new multiline comment", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{
-			PositionData: PositionData{
-				FileName: "some_file.txt",
-				LineRange: &LineRange{
-					StartRange: &LinePosition{}, /* These would have real data */
-					EndRange:   &LinePosition{},
-				},
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().CreateMergeRequestDiscussion(
+			"",
+			mock_main.MergeId,
+			&gitlab.CreateMergeRequestDiscussionOptions{
+				Body:     gitlab.Ptr(testCommentCreationData.Comment),
+				Position: buildCommentPosition(CommentWithPosition{testCommentCreationData.PositionData}),
 			},
-		})
-		server, _ := CreateRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussion})
+		).Return(&gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, CommentResponse{})
 		assert(t, data.SuccessResponse.Message, "Comment created successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussionErr})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().CreateMergeRequestDiscussion(
+			"",
+			mock_main.MergeId,
+			&gitlab.CreateMergeRequestDiscussionOptions{Body: gitlab.Ptr(testCommentCreationData.Comment)},
+		).Return(nil, nil, errors.New("Some error from Gitlab"))
+
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkErrorFromGitlab(t, *data, "Could not create discussion")
 	})
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/comment", PostCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{createMergeRequestDiscussion: createMergeRequestDiscussionNon200})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().CreateMergeRequestDiscussion(
+			"",
+			mock_main.MergeId,
+			&gitlab.CreateMergeRequestDiscussionOptions{Body: gitlab.Ptr(testCommentCreationData.Comment)},
+		).Return(nil, makeResponse(http.StatusSeeOther), nil)
+
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkNon200(t, *data, "Could not create discussion", "/mr/comment")
 	})
 }
 
-func deleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return makeResponse(http.StatusOK), nil
-}
-
-func deleteMergeRequestDiscussionNoteErr(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return nil, errors.New("Some error from Gitlab")
-}
-
-func deleteMergeRequestDiscussionNoteNon200(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return makeResponse(http.StatusSeeOther), nil
-}
-
 func TestDeleteComment(t *testing.T) {
 	t.Run("Deletes a comment", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/comment", DeleteCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{deleteMergeRequestDiscussionNote: deleteMergeRequestDiscussionNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, CommentResponse{})
+
 		assert(t, data.SuccessResponse.Message, "Comment deleted successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/comment", DeleteCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{deleteMergeRequestDiscussionNote: deleteMergeRequestDiscussionNoteErr})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(nil, errors.New("Some error from Gitlab"))
+
+		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkErrorFromGitlab(t, *data, "Could not delete comment")
 	})
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/comment", DeleteCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{deleteMergeRequestDiscussionNote: deleteMergeRequestDiscussionNoteNon200})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(makeResponse(http.StatusSeeOther), nil)
+
+		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkNon200(t, *data, "Could not delete comment", "/mr/comment")
 	})
 }
