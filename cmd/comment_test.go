@@ -18,6 +18,12 @@ var testCommentDeletionData = DeleteCommentRequest{
 	DiscussionId: "abc123",
 }
 
+var testEditCommentData = EditCommentRequest{
+	Comment:      "Some comment",
+	NoteId:       3,
+	DiscussionId: "abc123",
+}
+
 func TestPostComment(t *testing.T) {
 	t.Run("Creates a new note (unlinked comment)", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
@@ -136,37 +142,48 @@ func TestDeleteComment(t *testing.T) {
 	})
 }
 
-func updateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return &gitlab.Note{}, makeResponse(http.StatusOK), nil
-}
-
-func updateMergeRequestDiscussionNoteErr(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
-}
-
-func updateMergeRequestDiscussionNoteNon200(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusSeeOther), nil
-}
-
 func TestEditComment(t *testing.T) {
 	t.Run("Edits a comment", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/comment", EditCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{updateMergeRequestDiscussionNote: updateMergeRequestDiscussionNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+			Body: gitlab.Ptr(testEditCommentData.Comment),
+		}
+		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(&gitlab.Note{}, makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, CommentResponse{})
+
 		assert(t, data.SuccessResponse.Message, "Comment updated successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/comment", EditCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{updateMergeRequestDiscussionNote: updateMergeRequestDiscussionNoteErr})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+			Body: gitlab.Ptr(testEditCommentData.Comment),
+		}
+		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(nil, nil, errors.New("Some error from Gitlab"))
+
+		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkErrorFromGitlab(t, *data, "Could not update comment")
 	})
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/comment", EditCommentRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{updateMergeRequestDiscussionNote: updateMergeRequestDiscussionNoteNon200})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client, mock_main.MergeId)
+		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+			Body: gitlab.Ptr(testEditCommentData.Comment),
+		}
+		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+
+		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not update comment", "/mr/comment")
 	})
