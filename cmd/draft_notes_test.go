@@ -29,6 +29,11 @@ var testUpdateDraftNoteOpts = gitlab.UpdateDraftNoteOptions{
 	Position: &gitlab.PositionOptions{},
 }
 
+var testDraftNotePublishRequest = DraftNotePublishRequest{
+	Note:       3,
+	PublishAll: false,
+}
+
 func TestListDraftNotes(t *testing.T) {
 	t.Run("Lists all draft notes", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
@@ -182,37 +187,46 @@ func TestEditDraftNote(t *testing.T) {
 	})
 }
 
-func publishDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return makeResponse(http.StatusOK), nil
-}
-
-func publishDraftNoteErr(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return nil, errors.New("Some error")
-}
-
 func TestPublishDraftNote(t *testing.T) {
 	t.Run("Should publish a draft note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{Note: 3, PublishAll: false})
-		server, _ := CreateRouterAndApi(fakeClient{
-			publishDraftNote: publishDraftNote,
-		})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().PublishDraftNote("", mock_main.MergeId, testDraftNotePublishRequest.Note).Return(makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note(s) published")
 		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Handles bad/missing ID", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: false})
-		server, _ := CreateRouterAndApi(fakeClient{publishDraftNote: publishDraftNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+
+		// Missing Note ID
+		testDraftNotePublishRequest := DraftNotePublishRequest{
+			PublishAll: false,
+		}
+
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Must provide Note ID")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
 
 	t.Run("Handles error", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: false, Note: 3})
-		server, _ := CreateRouterAndApi(fakeClient{publishDraftNote: publishDraftNoteErr})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().PublishDraftNote("", mock_main.MergeId, testDraftNotePublishRequest.Note).Return(nil, errorFromGitlab)
+
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		assert(t, data.Message, "Could not publish draft note(s)")
 		assert(t, data.Status, http.StatusInternalServerError)
 	})
