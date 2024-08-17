@@ -32,7 +32,7 @@ func TestCreateMr(t *testing.T) {
 		}
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
-		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFn})
+		server, _ := CreateRouterAndApi(fakeClient{createMrFn: createMrFn})
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "MR 'Some title' created")
 		assert(t, data.Status, http.StatusOK)
@@ -40,7 +40,7 @@ func TestCreateMr(t *testing.T) {
 
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/create_mr", CreateMrRequest{})
-		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFn})
+		server, _ := CreateRouterAndApi(fakeClient{createMrFn: createMrFn})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
@@ -54,7 +54,7 @@ func TestCreateMr(t *testing.T) {
 			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
-		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFnErr})
+		server, _ := CreateRouterAndApi(fakeClient{createMrFn: createMrFnErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not create MR")
 	})
@@ -68,7 +68,7 @@ func TestCreateMr(t *testing.T) {
 			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
-		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFnNon200})
+		server, _ := CreateRouterAndApi(fakeClient{createMrFn: createMrFnNon200})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not create MR", "/create_mr")
 	})
@@ -82,7 +82,7 @@ func TestCreateMr(t *testing.T) {
 			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
-		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFn})
+		server, _ := CreateRouterAndApi(fakeClient{createMrFn: createMrFn})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusBadRequest)
 		assert(t, data.Message, "Could not create MR")
@@ -98,7 +98,7 @@ func TestCreateMr(t *testing.T) {
 			Squash:       false,
 		}
 		request := makeRequest(t, http.MethodPost, "/create_mr", body)
-		server, _ := createRouterAndApi(fakeClient{createMrFn: createMrFn})
+		server, _ := CreateRouterAndApi(fakeClient{createMrFn: createMrFn})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Status, http.StatusBadRequest)
 		assert(t, data.Message, "Could not create MR")

@@ -19,7 +19,7 @@ to handle potential shutdown requests and incoming HTTP requests.
 */
 func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInfo) {
 
-	m, a := createRouterAndApi(client,
+	m, a := CreateRouterAndApi(client,
 		func(a *api) error {
 			a.projectInfo = projectInfo
 			return nil
@@ -96,12 +96,12 @@ type api struct {
 type optFunc func(a *api) error
 
 /*
-createRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
+CreateRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
 iterates over all option functions to configure API fields such as the project information and default
 file reader functionality
 */
 
-func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
+func CreateRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
 	m := http.NewServeMux()
 	a := api{
 		client:      client,

@@ -23,7 +23,7 @@ func getInfoErr(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsO
 func TestInfoHandler(t *testing.T) {
 	t.Run("Returns normal information", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
-		server, _ := createRouterAndApi(fakeClient{getMergeRequest: getInfo})
+		server, _ := CreateRouterAndApi(fakeClient{getMergeRequest: getInfo})
 		data := serveRequest(t, server, request, InfoResponse{})
 		assert(t, data.Info.Title, "Some Title")
 		assert(t, data.SuccessResponse.Message, "Merge requests retrieved")
@@ -32,21 +32,21 @@ func TestInfoHandler(t *testing.T) {
 
 	t.Run("Disallows non-GET method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/info", nil)
-		server, _ := createRouterAndApi(fakeClient{getMergeRequest: getInfo})
+		server, _ := CreateRouterAndApi(fakeClient{getMergeRequest: getInfo})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodGet)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
-		server, _ := createRouterAndApi(fakeClient{getMergeRequest: getInfoErr})
+		server, _ := CreateRouterAndApi(fakeClient{getMergeRequest: getInfoErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not get project info")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
-		server, _ := createRouterAndApi(fakeClient{getMergeRequest: getInfoNon200})
+		server, _ := CreateRouterAndApi(fakeClient{getMergeRequest: getInfoNon200})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not get project info", "/mr/info")
 	})

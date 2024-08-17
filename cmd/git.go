@@ -111,7 +111,7 @@ func RefreshProjectInfo() error {
 }
 
 /*
-The GetLatestCommitOnRemote function is attached during the createRouterAndApi call, since it needs to be called every time to get the latest commit.
+The GetLatestCommitOnRemote function is attached during the CreateRouterAndApi call, since it needs to be called every time to get the latest commit.
 */
 func GetLatestCommitOnRemote(a *api) (string, error) {
 	cmd := exec.Command("git", "log", "-1", "--format=%H", fmt.Sprintf("origin/%s", a.gitInfo.BranchName))

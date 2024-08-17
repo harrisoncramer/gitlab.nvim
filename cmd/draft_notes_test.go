@@ -19,7 +19,7 @@ func listDraftNotesErr(pid interface{}, mergeRequest int, opt *gitlab.ListDraftN
 func TestListDraftNotes(t *testing.T) {
 	t.Run("Lists all draft notes", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		server, _ := createRouterAndApi(fakeClient{listDraftNotes: listDraftNotes})
+		server, _ := CreateRouterAndApi(fakeClient{listDraftNotes: listDraftNotes})
 		data := serveRequest(t, server, request, ListDraftNotesResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Draft notes fetched successfully")
@@ -28,7 +28,7 @@ func TestListDraftNotes(t *testing.T) {
 
 	t.Run("Handles error", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		server, _ := createRouterAndApi(fakeClient{listDraftNotes: listDraftNotesErr})
+		server, _ := CreateRouterAndApi(fakeClient{listDraftNotes: listDraftNotesErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not get draft notes")
@@ -48,7 +48,7 @@ func createDraftNoteErr(pid interface{}, mergeRequestIID int, opt *gitlab.Create
 func TestPostDraftNote(t *testing.T) {
 	t.Run("Posts new draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
-		server, _ := createRouterAndApi(fakeClient{createDraftNote: createDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{createDraftNote: createDraftNote})
 
 		data := serveRequest(t, server, request, DraftNoteResponse{})
 
@@ -58,7 +58,7 @@ func TestPostDraftNote(t *testing.T) {
 
 	t.Run("Handles errors on draft note creation", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
-		server, _ := createRouterAndApi(fakeClient{createDraftNote: createDraftNoteErr})
+		server, _ := CreateRouterAndApi(fakeClient{createDraftNote: createDraftNoteErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not create draft note")
 		assert(t, data.Status, http.StatusInternalServerError)
@@ -77,7 +77,7 @@ func deleteDraftNoteErr(pid interface{}, mergeRequest int, note int, options ...
 func TestDeleteDraftNote(t *testing.T) {
 	t.Run("Deletes draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note deleted")
 		assert(t, data.Status, http.StatusOK)
@@ -85,7 +85,7 @@ func TestDeleteDraftNote(t *testing.T) {
 
 	t.Run("Handles error", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
+		server, _ := CreateRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not delete draft note")
 		assert(t, data.Status, http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func TestDeleteDraftNote(t *testing.T) {
 
 	t.Run("Handles bad ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/abc", nil)
-		server, _ := createRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not parse draft note ID")
 		assert(t, data.Status, http.StatusBadRequest)
@@ -107,7 +107,7 @@ func updateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.Up
 func TestEditDraftNote(t *testing.T) {
 	t.Run("Edits draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: "Some new note", Position: gitlab.PositionOptions{}})
-		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note updated")
 		assert(t, data.Status, http.StatusOK)
@@ -115,7 +115,7 @@ func TestEditDraftNote(t *testing.T) {
 
 	t.Run("Handles bad ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/abc", nil)
-		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not parse draft note ID")
 		assert(t, data.Status, http.StatusBadRequest)
@@ -123,7 +123,7 @@ func TestEditDraftNote(t *testing.T) {
 
 	t.Run("Handles empty note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: ""})
-		server, _ := createRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Must provide draft note text")
 		assert(t, data.Status, http.StatusBadRequest)
@@ -141,7 +141,7 @@ func publishDraftNoteErr(pid interface{}, mergeRequest int, note int, options ..
 func TestPublishDraftNote(t *testing.T) {
 	t.Run("Should publish a draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{Note: 3, PublishAll: false})
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			publishDraftNote: publishDraftNote,
 		})
 		data := serveRequest(t, server, request, SuccessResponse{})
@@ -151,7 +151,7 @@ func TestPublishDraftNote(t *testing.T) {
 
 	t.Run("Handles bad/missing ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: false})
-		server, _ := createRouterAndApi(fakeClient{publishDraftNote: publishDraftNote})
+		server, _ := CreateRouterAndApi(fakeClient{publishDraftNote: publishDraftNote})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Must provide Note ID")
 		assert(t, data.Status, http.StatusBadRequest)
@@ -159,7 +159,7 @@ func TestPublishDraftNote(t *testing.T) {
 
 	t.Run("Handles error", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: false, Note: 3})
-		server, _ := createRouterAndApi(fakeClient{publishDraftNote: publishDraftNoteErr})
+		server, _ := CreateRouterAndApi(fakeClient{publishDraftNote: publishDraftNoteErr})
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not publish draft note(s)")
 		assert(t, data.Status, http.StatusInternalServerError)
@@ -177,7 +177,7 @@ func publishAllDraftNotesErr(pid interface{}, mergeRequest int, options ...gitla
 func TestPublishAllDraftNotes(t *testing.T) {
 	t.Run("Should publish all draft notes", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			publishAllDraftNotes: publishAllDraftNotes,
 		})
 		data := serveRequest(t, server, request, SuccessResponse{})
@@ -187,7 +187,7 @@ func TestPublishAllDraftNotes(t *testing.T) {
 
 	t.Run("Should handle an error", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			publishAllDraftNotes: publishAllDraftNotesErr,
 		})
 		data := serveRequest(t, server, request, ErrorResponse{})

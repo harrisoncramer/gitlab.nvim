@@ -49,7 +49,7 @@ func withGitInfo(a *api) error {
 func TestPipelineHandler(t *testing.T) {
 	t.Run("Gets all pipeline jobs", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			listPipelineJobs:     listPipelineJobs,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
@@ -60,7 +60,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Disallows non-GET, non-POST methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/pipeline", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			listPipelineJobs:     listPipelineJobs,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
@@ -70,7 +70,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			listPipelineJobs:     listPipelineJobsErr,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
@@ -80,7 +80,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			listPipelineJobs:     listPipelineJobsNon200,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
@@ -90,7 +90,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/1", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			retryPipelineBuild:   retryPipelineBuildErr,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
@@ -100,7 +100,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Retriggers pipeline", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/1", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			retryPipelineBuild:   retryPipelineBuild,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
@@ -111,7 +111,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client on retrigger", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/1", nil)
-		server, _ := createRouterAndApi(fakeClient{
+		server, _ := CreateRouterAndApi(fakeClient{
 			retryPipelineBuild:   retryPipelineBuildNon200,
 			listProjectPipelines: listProjectPipelines,
 		}, withGitInfo)
