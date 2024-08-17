@@ -51,13 +51,14 @@ func (a *Api) GetLastPipeline(commit string) (*gitlab.PipelineInfo, error) {
 		Sort: gitlab.Ptr("desc"),
 	}
 
-	l.Page = 1
-	l.PerPage = 1
-
-	pipes, _, err := a.client.ListProjectPipelines(a.projectInfo.ProjectId, l)
+	pipes, res, err := a.client.ListProjectPipelines(a.projectInfo.ProjectId, l)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if res.StatusCode >= 300 {
+		return nil, errors.New("Could not get pipelines")
 	}
 
 	if len(pipes) == 0 {
@@ -74,7 +75,6 @@ func (a *Api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	commit, err := a.gitInfo.GetLatestCommitOnRemote(a)
 
 	if err != nil {
-		fmt.Println(err)
 		handleError(w, err, "Error getting commit on remote branch", http.StatusInternalServerError)
 		return
 	}
