@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -232,30 +231,28 @@ func TestPublishDraftNote(t *testing.T) {
 	})
 }
 
-func publishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return makeResponse(http.StatusOK), nil
-}
-
-func publishAllDraftNotesErr(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return nil, errors.New("Some error")
-}
-
 func TestPublishAllDraftNotes(t *testing.T) {
 	t.Run("Should publish all draft notes", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().PublishAllDraftNotes("", mock_main.MergeId).Return(makeResponse(http.StatusOK), nil)
+
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
-		server, _ := CreateRouterAndApi(fakeClient{
-			publishAllDraftNotes: publishAllDraftNotes,
-		})
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note(s) published")
 		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Should handle an error", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().PublishAllDraftNotes("", mock_main.MergeId).Return(nil, errorFromGitlab)
+
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
-		server, _ := CreateRouterAndApi(fakeClient{
-			publishAllDraftNotes: publishAllDraftNotesErr,
-		})
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not publish draft note(s)")
 		assert(t, data.Status, http.StatusInternalServerError)
