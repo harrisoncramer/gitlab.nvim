@@ -10,8 +10,6 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-type NoOp = []gitlab.RequestOptionFunc
-
 var MergeId = 3
 
 func NewListMrOptions() *gitlab.ListProjectMergeRequestsOptions {

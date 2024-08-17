@@ -49,11 +49,18 @@ func (a *Api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 		NotLabels: (*gitlab.LabelOptions)(&listMergeRequestRequest.NotLabel),
 	}
 
-	mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+
 	if err != nil {
 		handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
 		return
 	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/merge_requests"}, "Failed to list merge requests", res.StatusCode)
+		return
+	}
+
 	if len(mergeRequests) == 0 {
 		handleError(w, errors.New("No merge requests found"), "No merge requests found", http.StatusNotFound)
 		return
