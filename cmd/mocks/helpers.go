@@ -1,6 +1,8 @@
 package mock_main
 
 import (
+	bytes "bytes"
+	io "io"
 	"net/http"
 	"testing"
 
@@ -33,7 +35,7 @@ type MockOpts struct {
 	MergeId int
 }
 
-func NewMockObj(t *testing.T) *MockClientInterface {
+func NewMockClient(t *testing.T) *MockClientInterface {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockObj := NewMockClientInterface(ctrl)
@@ -51,4 +53,10 @@ func WithMr(t *testing.T, m *MockClientInterface, mergeId int) *MockClientInterf
 	m.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: mergeId}}, makeResponse(http.StatusOK), nil)
 
 	return m
+}
+
+type MockAttachmentReader struct{}
+
+func (mf MockAttachmentReader) ReadFile(path string) (io.Reader, error) {
+	return bytes.NewReader([]byte{}), nil
 }

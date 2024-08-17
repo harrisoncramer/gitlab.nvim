@@ -43,7 +43,7 @@ type CreateEmojiResponse struct {
 attachEmojisToApi reads the emojis from our external JSON file
 and attaches them to the API so that they can be looked up later
 */
-func attachEmojisToApi(a *api) error {
+func attachEmojisToApi(a *Api) error {
 
 	e, err := os.Executable()
 	if err != nil {
@@ -78,7 +78,7 @@ func attachEmojisToApi(a *api) error {
 Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
 Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
 */
-func (a *api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
+func (a *Api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
 	var wg sync.WaitGroup
 
 	emojis := make(map[int][]*gitlab.AwardEmoji)
@@ -131,7 +131,7 @@ func (a *api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.A
 	return emojis, nil
 }
 
-func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
@@ -145,7 +145,7 @@ func (a *api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* deleteEmojiFromNote deletes an emoji from a note based on the emoji (awardable) ID and the note's ID */
-func (a *api) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
+func (a *Api) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
 
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/awardable/note/")
 	ids := strings.Split(suffix, "/")
@@ -187,7 +187,7 @@ func (a *api) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* postEmojiOnNote adds an emojis to a note based on the note's ID */
-func (a *api) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
+func (a *Api) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)

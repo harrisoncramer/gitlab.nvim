@@ -11,7 +11,7 @@ import (
 
 func TestAssigneeHandler(t *testing.T) {
 	t.Run("Updates assignees", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		updatePayload := AssigneeUpdateRequest{Ids: []int{1, 2}}
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, &gitlab.UpdateMergeRequestOptions{AssigneeIDs: &updatePayload.Ids}).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
@@ -25,7 +25,7 @@ func TestAssigneeHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-PUT method", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		updatePayload := AssigneeUpdateRequest{Ids: []int{1, 2}}
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, &gitlab.UpdateMergeRequestOptions{AssigneeIDs: &updatePayload.Ids}).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
@@ -40,7 +40,7 @@ func TestAssigneeHandler(t *testing.T) {
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		updatePayload := AssigneeUpdateRequest{Ids: []int{1, 2}}
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, &gitlab.UpdateMergeRequestOptions{AssigneeIDs: &updatePayload.Ids}).Return(nil, nil, errors.New("Some error from Gitlab"))
@@ -54,7 +54,7 @@ func TestAssigneeHandler(t *testing.T) {
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		updatePayload := AssigneeUpdateRequest{Ids: []int{1, 2}}
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, &gitlab.UpdateMergeRequestOptions{AssigneeIDs: &updatePayload.Ids}).Return(nil, makeResponse(http.StatusSeeOther), nil)

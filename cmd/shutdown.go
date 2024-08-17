@@ -19,7 +19,7 @@ type ShutdownRequest struct {
 }
 
 /* shutdownHandler will shutdown the HTTP server and exit the process by signaling to the shutdown channel */
-func (a *api) shutdownHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)

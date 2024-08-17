@@ -12,7 +12,7 @@ type GitProjectInfo struct {
 	Namespace               string
 	ProjectName             string
 	BranchName              string
-	GetLatestCommitOnRemote func(a *api) (string, error)
+	GetLatestCommitOnRemote func(a *Api) (string, error)
 }
 
 /*
@@ -113,7 +113,7 @@ func RefreshProjectInfo() error {
 /*
 The GetLatestCommitOnRemote function is attached during the CreateRouterAndApi call, since it needs to be called every time to get the latest commit.
 */
-func GetLatestCommitOnRemote(a *api) (string, error) {
+func GetLatestCommitOnRemote(a *Api) (string, error) {
 	cmd := exec.Command("git", "log", "-1", "--format=%H", fmt.Sprintf("origin/%s", a.gitInfo.BranchName))
 
 	out, err := cmd.Output()

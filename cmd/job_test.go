@@ -11,7 +11,7 @@ import (
 
 func TestJobHandler(t *testing.T) {
 	t.Run("Should read a job trace file", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
@@ -24,7 +24,7 @@ func TestJobHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-GET methods", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/job", JobTraceRequest{})
@@ -35,7 +35,7 @@ func TestJobHandler(t *testing.T) {
 	})
 
 	t.Run("Should handle errors from Gitlab", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(nil, nil, errors.New("Some error from Gitlab"))
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
@@ -46,7 +46,7 @@ func TestJobHandler(t *testing.T) {
 	})
 
 	t.Run("Should handle non-200s", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})

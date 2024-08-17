@@ -38,8 +38,8 @@ func listProjectPipelines(pid interface{}, opt *gitlab.ListProjectPipelinesOptio
 	}, makeResponse(http.StatusOK), nil
 }
 
-func withGitInfo(a *api) error {
-	a.gitInfo.GetLatestCommitOnRemote = func(a *api) (string, error) {
+func withGitInfo(a *Api) error {
+	a.gitInfo.GetLatestCommitOnRemote = func(a *Api) (string, error) {
 		return "123abc", nil
 	}
 	a.gitInfo.BranchName = "some-feature"

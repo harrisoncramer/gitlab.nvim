@@ -11,7 +11,7 @@ import (
 
 func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
@@ -24,7 +24,7 @@ func TestApproveHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
@@ -35,7 +35,7 @@ func TestApproveHandler(t *testing.T) {
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, nil, errors.New("Some error from Gitlab"))
 
@@ -47,7 +47,7 @@ func TestApproveHandler(t *testing.T) {
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		client := mock_main.NewMockObj(t)
+		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, makeResponse(http.StatusSeeOther), nil)
 

@@ -20,7 +20,7 @@ type CreateMrRequest struct {
 }
 
 /* createMr creates a merge request */
-func (a *api) createMr(w http.ResponseWriter, r *http.Request) {
+func (a *Api) createMr(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 	if r.Method != http.MethodPost {
