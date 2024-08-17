@@ -8,10 +8,12 @@ import (
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
 )
 
+var jobId = 0
+
 func TestJobHandler(t *testing.T) {
 	t.Run("Should read a job trace file", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
+		client.EXPECT().GetTraceFile("", jobId).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		server, _ := CreateRouterAndApi(client)
@@ -24,7 +26,7 @@ func TestJobHandler(t *testing.T) {
 
 	t.Run("Disallows non-GET methods", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
+		client.EXPECT().GetTraceFile("", jobId).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/job", JobTraceRequest{})
 		server, _ := CreateRouterAndApi(client)
@@ -35,7 +37,7 @@ func TestJobHandler(t *testing.T) {
 
 	t.Run("Should handle errors from Gitlab", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().GetTraceFile("", jobId).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		server, _ := CreateRouterAndApi(client)
@@ -44,9 +46,9 @@ func TestJobHandler(t *testing.T) {
 		checkErrorFromGitlab(t, *data, "Could not get trace file for job")
 	})
 
-	t.Run("Should handle non-200s", func(t *testing.T) {
+	t.Run("Should handle non-2jobIdjobIds", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().GetTraceFile("", jobId).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		server, _ := CreateRouterAndApi(client)
