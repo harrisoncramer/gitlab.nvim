@@ -173,11 +173,7 @@ func checkServer(port int) error {
 
 /* Creates a TCP listener on the port specified by the user or a random port */
 func createListener() (l net.Listener) {
-	port := os.Args[2]
-	if port == "" {
-		port = "0"
-	}
-	addr := fmt.Sprintf("localhost:%s", port)
+	addr := fmt.Sprintf("localhost:%d", pluginOptions.Port)
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting server: %s\n", err)

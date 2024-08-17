@@ -9,20 +9,21 @@ local M = {}
 
 -- Starts the Go server and call the callback provided
 M.start = function(callback)
-  local empty_port = "''"
-  local port = state.settings.port or empty_port
+  local port = state.settings.port or 0
   local parsed_port = nil
   local callback_called = false
-  local command = string.format(
-    "%s %s %s %s '%s' %s '%s'",
-    state.settings.bin,
-    state.settings.gitlab_url,
-    port,
-    state.settings.auth_token,
-    vim.json.encode(state.settings.debug),
-    state.settings.log_path,
-    vim.json.encode(state.settings.connection_settings)
-  )
+
+  local go_server_settings = {
+    gitlab_url = state.settings.gitlab_url,
+    port = port,
+    auth_token = state.settings.auth_token,
+    debug = state.settings.debug,
+    log_path = state.settings.log_path,
+    connection_settings = state.settings.connection_settings,
+  }
+
+  local settings = vim.json.encode(go_server_settings)
+  local command = string.format("%s '%s'", state.settings.bin, settings)
 
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(_, data)
