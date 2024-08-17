@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/xanzy/go-gitlab"
+	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
 )
 
 func approveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
@@ -22,9 +23,21 @@ func approveMergeRequestErr(pid interface{}, mr int, opt *gitlab.ApproveMergeReq
 
 func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
+		mergeId := 3
+		mockObj := mock_main.NewMockObj(t)
+
+		options := gitlab.ListProjectMergeRequestsOptions{
+			Scope:        gitlab.Ptr("all"),
+			State:        gitlab.Ptr("opened"),
+			SourceBranch: gitlab.Ptr(""),
+		}
+
+		mockObj.EXPECT().ApproveMergeRequest("", mergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
+		mockObj.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: mergeId}}, makeResponse(http.StatusOK), nil)
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(fakeClient{approveMergeRequest: approveMergeRequest})
+		server, _ := CreateRouterAndApi(mockObj)
 		data := serveRequest(t, server, request, SuccessResponse{})
+
 		assert(t, data.Message, "Approved MR")
 		assert(t, data.Status, http.StatusOK)
 	})
