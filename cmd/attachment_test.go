@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"net/http"
 	"testing"
 
@@ -48,7 +47,7 @@ func TestAttachmentHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().UploadFile("", reader, attachmentTestRequestData.FileName).Return(nil, nil, errors.New("Some error from Gitlab"))
+		client.EXPECT().UploadFile("", reader, attachmentTestRequestData.FileName).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
 		router, _ := CreateRouterAndApi(client, withMockFileReader)

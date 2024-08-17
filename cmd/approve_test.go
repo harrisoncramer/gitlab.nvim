@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -37,7 +36,7 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
-		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, nil, errors.New("Some error from Gitlab"))
+		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		server, _ := CreateRouterAndApi(client)

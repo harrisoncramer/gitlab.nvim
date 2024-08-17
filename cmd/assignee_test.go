@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -43,7 +42,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
 		updatePayload := AssigneeUpdateRequest{Ids: []int{1, 2}}
-		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, &gitlab.UpdateMergeRequestOptions{AssigneeIDs: &updatePayload.Ids}).Return(nil, nil, errors.New("Some error from Gitlab"))
+		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, &gitlab.UpdateMergeRequestOptions{AssigneeIDs: &updatePayload.Ids}).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", AssigneeUpdateRequest{Ids: []int{1, 2}})
 		server, _ := CreateRouterAndApi(client)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -13,7 +12,7 @@ func listPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOpti
 }
 
 func listPipelineJobsErr(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+	return nil, nil, errorFromGitlab
 }
 
 func listPipelineJobsNon200(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error) {
@@ -25,7 +24,7 @@ func retryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.Request
 }
 
 func retryPipelineBuildErr(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+	return nil, nil, errorFromGitlab
 }
 
 func retryPipelineBuildNon200(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {

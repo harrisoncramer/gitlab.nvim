@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -13,7 +12,7 @@ func addMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion
 }
 
 func addMergeRequestDiscussionNoteErr(pid interface{}, mergeRequest int, discussion string, opt *gitlab.AddMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+	return nil, nil, errorFromGitlab
 }
 
 func addMergeRequestDiscussionNoteNon200(pid interface{}, mergeRequest int, discussion string, opt *gitlab.AddMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {

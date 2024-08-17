@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"net/http"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestJobHandler(t *testing.T) {
 
 	t.Run("Should handle errors from Gitlab", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(nil, nil, errors.New("Some error from Gitlab"))
+		client.EXPECT().GetTraceFile("", 0, mock_main.NoOp{}).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		server, _ := CreateRouterAndApi(client)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -40,7 +39,7 @@ func listMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.
 }
 
 func listMergeRequestDiscussionsErr(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+	return nil, nil, errorFromGitlab
 }
 
 func listMergeRequestDiscussionsNon200(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
@@ -52,7 +51,7 @@ func listMergeRequestAwardEmojiOnNote(pid interface{}, mr int, noteID int, opt *
 }
 
 func listMergeRequestAwardEmojiOnNoteFailure(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusBadRequest), errors.New("Some error from Gitlab")
+	return nil, makeResponse(http.StatusBadRequest), errorFromGitlab
 }
 
 func TestListDiscussionsHandler(t *testing.T) {

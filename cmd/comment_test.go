@@ -120,7 +120,7 @@ func TestDeleteComment(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client, mock_main.MergeId)
-		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(nil, errors.New("Some error from Gitlab"))
+		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
 		server, _ := CreateRouterAndApi(client)
@@ -165,7 +165,7 @@ func TestEditComment(t *testing.T) {
 		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
 			Body: gitlab.Ptr(testEditCommentData.Comment),
 		}
-		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(nil, nil, errors.New("Some error from Gitlab"))
+		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
 		server, _ := CreateRouterAndApi(client)

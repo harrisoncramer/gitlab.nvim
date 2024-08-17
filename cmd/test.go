@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 /*
 The FakeHandlerClient is used to create a fake gitlab client for testing our handlers, where the gitlab APIs are all mocked depending on what is provided during the variable initialization, so that we can simulate different responses from Gitlab
 */
+
+var errorFromGitlab = errors.New("Some error from Gitlab")
 
 type fakeClient struct {
 	createMrFn                         func(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
@@ -247,7 +250,7 @@ func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
 	t.Helper()
 	assert(t, data.Status, http.StatusInternalServerError)
 	assert(t, data.Message, msg)
-	assert(t, data.Details, "Some error from Gitlab")
+	assert(t, data.Details, errorFromGitlab.Error())
 }
 
 func checkBadMethod(t *testing.T, data ErrorResponse, methods ...string) {

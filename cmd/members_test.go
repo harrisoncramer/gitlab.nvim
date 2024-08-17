@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -13,7 +12,7 @@ func listAllProjectMembers(pid interface{}, opt *gitlab.ListProjectMembersOption
 }
 
 func listAllProjectMembersErr(pid interface{}, opt *gitlab.ListProjectMembersOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.ProjectMember, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+	return nil, nil, errorFromGitlab
 }
 
 func listAllProjectMembersNon200(pid interface{}, opt *gitlab.ListProjectMembersOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.ProjectMember, *gitlab.Response, error) {

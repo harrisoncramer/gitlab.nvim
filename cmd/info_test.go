@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
@@ -17,7 +16,7 @@ func getInfoNon200(pid interface{}, mergeRequest int, opt *gitlab.GetMergeReques
 }
 
 func getInfoErr(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
-	return nil, nil, errors.New("Some error from Gitlab")
+	return nil, nil, errorFromGitlab
 }
 
 func TestInfoHandler(t *testing.T) {
