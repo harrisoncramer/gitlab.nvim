@@ -20,6 +20,15 @@ var testPostDraftNoteOpts = gitlab.CreateDraftNoteOptions{
 	Note: &testPostDraftNoteRequestData.Comment,
 }
 
+var testUpdateDraftNoteRequest = UpdateDraftNoteRequest{
+	Note: "Some new note",
+}
+
+var testUpdateDraftNoteOpts = gitlab.UpdateDraftNoteOptions{
+	Note:     &testUpdateDraftNoteRequest.Note,
+	Position: &gitlab.PositionOptions{},
+}
+
 func TestListDraftNotes(t *testing.T) {
 	t.Run("Lists all draft notes", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
@@ -112,9 +121,9 @@ func TestDeleteDraftNote(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
 		urlId := "abc"
+
 		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%s", urlId), nil)
 		server, _ := CreateRouterAndApi(client)
-
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not parse draft note ID")
@@ -122,31 +131,52 @@ func TestDeleteDraftNote(t *testing.T) {
 	})
 }
 
-func updateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
-	return &gitlab.DraftNote{}, makeResponse(http.StatusOK), nil
-}
-
 func TestEditDraftNote(t *testing.T) {
 	t.Run("Edits draft note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: "Some new note", Position: gitlab.PositionOptions{}})
-		server, _ := CreateRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
-		data := serveRequest(t, server, request, SuccessResponse{})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		urlId := 10
+		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, &testUpdateDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%d", urlId), testUpdateDraftNoteRequest)
+		server, _ := CreateRouterAndApi(client)
+		data := serveRequest(t, server, request, DraftNoteResponse{})
+
 		assert(t, data.Message, "Draft note updated")
 		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Handles bad ID", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/abc", nil)
-		server, _ := CreateRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		urlId := "abc"
+		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, &testUpdateDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%s", urlId), testUpdateDraftNoteRequest)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		assert(t, data.Message, "Could not parse draft note ID")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
 
 	t.Run("Handles empty note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", UpdateDraftNoteRequest{Note: ""})
-		server, _ := CreateRouterAndApi(fakeClient{updateDraftNote: updateDraftNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		urlId := 10
+
+		testEmptyUpdateDraftNoteRequest := testUpdateDraftNoteRequest
+		testEmptyUpdateDraftNoteRequest.Note = ""
+
+		testEmptyUpdateDraftNoteOpts := testUpdateDraftNoteOpts
+		testEmptyUpdateDraftNoteOpts.Note = &testEmptyUpdateDraftNoteRequest.Note
+
+		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, &testEmptyUpdateDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%d", urlId), testEmptyUpdateDraftNoteRequest)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		assert(t, data.Message, "Must provide draft note text")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
