@@ -685,8 +685,11 @@ following to your config:
 
 TROUBLESHOOTING                                  *gitlab.nvim.troubleshooting*
 
-To check that the current settings of the plugin are configured correctly,~
-please run:~
+To check the health of the plugin and related dependencies, please run:
+>vim
+    :checkhealth gitlab
+<
+To print your current settings:
 >lua
     require("gitlab").print_settings()
 <
