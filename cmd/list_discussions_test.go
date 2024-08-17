@@ -6,59 +6,53 @@ import (
 	"time"
 
 	"github.com/xanzy/go-gitlab"
+	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
 
-func listMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
-	now := time.Now()
-	newer := now.Add(time.Second * 100)
-	discussions := []*gitlab.Discussion{
-		{
-			Notes: []*gitlab.Note{
-				{
-					CreatedAt: &now,
-					Type:      "DiffNote",
-					Author: Author{
-						Username: "hcramer",
-					},
+var now = time.Now()
+var newer = now.Add(time.Second * 100)
+var testListDiscussionsResponse = []*gitlab.Discussion{
+	{
+		Notes: []*gitlab.Note{
+			{
+				CreatedAt: &now,
+				Type:      "DiffNote",
+				Author: Author{
+					Username: "hcramer",
 				},
 			},
 		},
-		{
-			Notes: []*gitlab.Note{
-				{
-					CreatedAt: &newer,
-					Type:      "DiffNote",
-					Author: Author{
-						Username: "hcramer2",
-					},
+	},
+	{
+		Notes: []*gitlab.Note{
+			{
+				CreatedAt: &newer,
+				Type:      "DiffNote",
+				Author: Author{
+					Username: "hcramer2",
 				},
 			},
 		},
-	}
-	return discussions, makeResponse(http.StatusOK), nil
+	},
 }
 
-func listMergeRequestDiscussionsErr(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
-	return nil, nil, errorFromGitlab
-}
-
-func listMergeRequestDiscussionsNon200(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusSeeOther), nil
-}
-
-func listMergeRequestAwardEmojiOnNote(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
-	return []*gitlab.AwardEmoji{}, makeResponse(http.StatusOK), nil
-}
-
-func listMergeRequestAwardEmojiOnNoteFailure(pid interface{}, mr int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusBadRequest), errorFromGitlab
+var testListMrDiscussionOpts = gitlab.ListMergeRequestDiscussionsOptions{
+	Page:    1,
+	PerPage: 250,
 }
 
 func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Returns sorted discussions", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListMergeRequestAwardEmojiOnNote("", mock_main.MergeId, gomock.Any(), gomock.Any()).Return([]*gitlab.AwardEmoji{}, makeResponse(http.StatusOK), nil).Times(2)
+
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNote})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, DiscussionsResponse{})
+
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
@@ -66,9 +60,15 @@ func TestListDiscussionsHandler(t *testing.T) {
 	})
 
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListMergeRequestAwardEmojiOnNote("", mock_main.MergeId, gomock.Any(), gomock.Any()).Return([]*gitlab.AwardEmoji{}, makeResponse(http.StatusOK), nil).Times(2)
+
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer"}})
-		server, _ := CreateRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNote})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, DiscussionsResponse{})
+
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, len(data.Discussions), 1)
@@ -76,30 +76,51 @@ func TestListDiscussionsHandler(t *testing.T) {
 	})
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/discussions/list", DiscussionsRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+
+		request := makeRequest(t, http.MethodPut, "/mr/discussions/list", DiscussionsRequest{})
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(nil, nil, errorFromGitlab)
+
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsErr, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNote})
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not list discussions")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussionsNon200, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNote})
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not list discussions", "/mr/discussions/list")
 	})
 
 	t.Run("Handles error from emoji service", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListMergeRequestAwardEmojiOnNote("", mock_main.MergeId, gomock.Any(), gomock.Any()).Return(nil, nil, errorFromGitlab).Times(2)
+
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{listMergeRequestDiscussions: listMergeRequestDiscussions, listMergeRequestAwardEmojiOnNote: listMergeRequestAwardEmojiOnNoteFailure})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		checkErrorFromGitlab(t, *data, "Could not fetch emojis")
+
 	})
 }

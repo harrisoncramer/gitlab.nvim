@@ -68,7 +68,7 @@ func (a *Api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 		PerPage: 250,
 	}
 
-	discussions, res, err := a.client.ListMergeRequestDiscussions(a.projectInfo.ProjectId, a.projectInfo.MergeId, &mergeRequestDiscussionOptions, nil)
+	discussions, res, err := a.client.ListMergeRequestDiscussions(a.projectInfo.ProjectId, a.projectInfo.MergeId, &mergeRequestDiscussionOptions)
 
 	if err != nil {
 		handleError(w, err, "Could not list discussions", http.StatusInternalServerError)
