@@ -278,7 +278,7 @@ func (a *Api) updateDraftNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* listDraftNotes lists all draft notes for the currently authenticated user */
-func (a *Api) listDraftNotes(w http.ResponseWriter, r *http.Request) {
+func (a *Api) listDraftNotes(w http.ResponseWriter, _ *http.Request) {
 
 	opt := gitlab.ListDraftNotesOptions{}
 	draftNotes, res, err := a.client.ListDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)

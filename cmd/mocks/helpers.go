@@ -43,14 +43,14 @@ func NewMockClient(t *testing.T) *MockClientInterface {
 }
 
 /** Adds a handler to satisfy the withMrs middleware by returning an MR from that endpoint with the given ID */
-func WithMr(t *testing.T, m *MockClientInterface, mergeId int) *MockClientInterface {
+func WithMr(t *testing.T, m *MockClientInterface) *MockClientInterface {
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.Ptr("all"),
 		State:        gitlab.Ptr("opened"),
 		SourceBranch: gitlab.Ptr(""),
 	}
 
-	m.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: mergeId}}, makeResponse(http.StatusOK), nil)
+	m.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: MergeId}}, makeResponse(http.StatusOK), nil)
 
 	return m
 }

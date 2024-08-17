@@ -23,7 +23,7 @@ var testAcceptMergeRequestOpts = gitlab.AcceptMergeRequestOptions{
 func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Accepts and merges a merge request", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
@@ -36,7 +36,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/merge", testAcceptMergeRequestPayload)
@@ -48,7 +48,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
@@ -60,7 +60,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)

@@ -2,24 +2,32 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/xanzy/go-gitlab"
+	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
 )
 
-func listDraftNotes(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error) {
-	return []*gitlab.DraftNote{}, makeResponse(http.StatusOK), nil
+var listDraftNoteOpts = gitlab.ListDraftNotesOptions{}
+
+var testPostDraftNoteRequestData = PostDraftNoteRequest{
+	Comment: "Some comment",
 }
 
-func listDraftNotesErr(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusInternalServerError), errors.New("Some error")
+var testPostDraftNoteOpts = gitlab.CreateDraftNoteOptions{
+	Note: &testPostDraftNoteRequestData.Comment,
 }
 
 func TestListDraftNotes(t *testing.T) {
 	t.Run("Lists all draft notes", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListDraftNotes("", mock_main.MergeId, &listDraftNoteOpts).Return([]*gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		server, _ := CreateRouterAndApi(fakeClient{listDraftNotes: listDraftNotes})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ListDraftNotesResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Draft notes fetched successfully")
@@ -27,29 +35,28 @@ func TestListDraftNotes(t *testing.T) {
 	})
 
 	t.Run("Handles error", func(t *testing.T) {
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().ListDraftNotes("", mock_main.MergeId, &listDraftNoteOpts).Return(nil, nil, errorFromGitlab)
+
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		server, _ := CreateRouterAndApi(fakeClient{listDraftNotes: listDraftNotesErr})
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not get draft notes")
 		assert(t, data.Status, http.StatusInternalServerError)
-		assert(t, data.Details, "Some error")
+		assert(t, data.Details, errorFromGitlab.Error())
 	})
-}
-
-func createDraftNote(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
-	return &gitlab.DraftNote{}, makeResponse(http.StatusOK), nil
-}
-
-func createDraftNoteErr(pid interface{}, mergeRequestIID int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
-	return nil, makeResponse(http.StatusInternalServerError), errors.New("Some error")
 }
 
 func TestPostDraftNote(t *testing.T) {
 	t.Run("Posts new draft note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{createDraftNote: createDraftNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().CreateDraftNote("", mock_main.MergeId, &testPostDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, DraftNoteResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Draft note created successfully")
@@ -57,44 +64,59 @@ func TestPostDraftNote(t *testing.T) {
 	})
 
 	t.Run("Handles errors on draft note creation", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", PostDraftNoteRequest{})
-		server, _ := CreateRouterAndApi(fakeClient{createDraftNote: createDraftNoteErr})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		client.EXPECT().CreateDraftNote("", mock_main.MergeId, &testPostDraftNoteOpts).Return(nil, nil, errorFromGitlab)
+
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		assert(t, data.Message, "Could not create draft note")
 		assert(t, data.Status, http.StatusInternalServerError)
-		assert(t, data.Details, "Some error")
+		assert(t, data.Details, errorFromGitlab.Error())
 	})
-}
-
-func deleteDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return makeResponse(http.StatusOK), nil
-}
-
-func deleteDraftNoteErr(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
-	return makeResponse(http.StatusInternalServerError), errors.New("Something went wrong")
 }
 
 func TestDeleteDraftNote(t *testing.T) {
 	t.Run("Deletes draft note", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		server, _ := CreateRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
-		data := serveRequest(t, server, request, SuccessResponse{})
-		assert(t, data.Message, "Draft note deleted")
-		assert(t, data.Status, http.StatusOK)
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		urlId := 10
+		client.EXPECT().DeleteDraftNote("", mock_main.MergeId, urlId).Return(makeResponse(http.StatusOK), nil)
+
+		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%d", urlId), nil)
+		server, _ := CreateRouterAndApi(client)
+		data := serveRequest(t, server, request, DraftNoteResponse{})
+
+		assert(t, data.SuccessResponse.Message, "Draft note deleted")
+		assert(t, data.SuccessResponse.Status, http.StatusOK)
 	})
 
 	t.Run("Handles error", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		server, _ := CreateRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNoteErr})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		urlId := 10
+		client.EXPECT().DeleteDraftNote("", mock_main.MergeId, urlId).Return(nil, errorFromGitlab)
+
+		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%d", urlId), nil)
+		server, _ := CreateRouterAndApi(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		assert(t, data.Message, "Could not delete draft note")
 		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, data.Details, errorFromGitlab.Error())
 	})
 
 	t.Run("Handles bad ID", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/abc", nil)
-		server, _ := CreateRouterAndApi(fakeClient{deleteDraftNote: deleteDraftNote})
+		client := mock_main.NewMockClient(t)
+		mock_main.WithMr(t, client)
+		urlId := "abc"
+		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%s", urlId), nil)
+		server, _ := CreateRouterAndApi(client)
+
 		data := serveRequest(t, server, request, ErrorResponse{})
+
 		assert(t, data.Message, "Could not parse draft note ID")
 		assert(t, data.Status, http.StatusBadRequest)
 	})

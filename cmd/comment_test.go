@@ -27,7 +27,7 @@ var testEditCommentData = EditCommentRequest{
 func TestPostComment(t *testing.T) {
 	t.Run("Creates a new note (unlinked comment)", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
@@ -52,7 +52,7 @@ func TestPostComment(t *testing.T) {
 		}
 
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
@@ -72,7 +72,7 @@ func TestPostComment(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
@@ -88,7 +88,7 @@ func TestPostComment(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
@@ -106,7 +106,7 @@ func TestPostComment(t *testing.T) {
 func TestDeleteComment(t *testing.T) {
 	t.Run("Deletes a comment", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
@@ -119,7 +119,7 @@ func TestDeleteComment(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
@@ -131,7 +131,7 @@ func TestDeleteComment(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
@@ -145,7 +145,7 @@ func TestDeleteComment(t *testing.T) {
 func TestEditComment(t *testing.T) {
 	t.Run("Edits a comment", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
 			Body: gitlab.Ptr(testEditCommentData.Comment),
 		}
@@ -161,7 +161,7 @@ func TestEditComment(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
 			Body: gitlab.Ptr(testEditCommentData.Comment),
 		}
@@ -176,7 +176,7 @@ func TestEditComment(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		mock_main.WithMr(t, client, mock_main.MergeId)
+		mock_main.WithMr(t, client)
 		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
 			Body: gitlab.Ptr(testEditCommentData.Comment),
 		}
