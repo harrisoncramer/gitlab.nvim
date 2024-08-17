@@ -7,7 +7,6 @@ import (
 )
 
 type PluginOptions struct {
-	Insecure  bool   `json:"insecure"`
 	GitlabUrl string `json:"gitlab_url"`
 	Port      int    `json:"port"`
 	AuthToken string `json:"auth_token"`

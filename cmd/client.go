@@ -57,7 +57,7 @@ func initGitlabClient() (error, *Client) {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: pluginOptions.Insecure,
+			InsecureSkipVerify: pluginOptions.ConnectionSettings.Insecure,
 		},
 	}
 
