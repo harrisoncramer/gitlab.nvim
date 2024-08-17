@@ -12,6 +12,17 @@ import (
 
 var now = time.Now()
 var newer = now.Add(time.Second * 100)
+
+type Author struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	State     string `json:"state"`
+	AvatarURL string `json:"avatar_url"`
+	WebURL    string `json:"web_url"`
+}
+
 var testListDiscussionsResponse = []*gitlab.Discussion{
 	{
 		Notes: []*gitlab.Note{
