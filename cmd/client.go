@@ -130,12 +130,9 @@ func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err), nil
 	}
-	if project == nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err), nil
-	}
 
 	if project == nil {
-		return fmt.Errorf("No projects you are a member of contained remote URL %s", gitInfo.RemoteUrl), nil
+		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err), nil
 	}
 
 	projectId := fmt.Sprint(project.ID)
