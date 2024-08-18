@@ -19,24 +19,24 @@ to handle potential shutdown requests and incoming HTTP requests.
 */
 func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInfo) {
 
-	m, a := createRouterAndApi(client,
-		func(a *api) error {
+	m, a := CreateRouterAndApi(client,
+		func(a *Api) error {
 			a.projectInfo = projectInfo
 			return nil
 		},
-		func(a *api) error {
+		func(a *Api) error {
 			a.fileReader = attachmentReader{}
 			return nil
 		},
-		func(a *api) error {
+		func(a *Api) error {
 			a.gitInfo = &gitInfo
 			return nil
 		},
-		func(a *api) error {
+		func(a *Api) error {
 			err := attachEmojisToApi(a)
 			return err
 		},
-		func(a *api) error {
+		func(a *Api) error {
 			a.gitInfo.GetLatestCommitOnRemote = GetLatestCommitOnRemote
 			return nil
 		})
@@ -78,13 +78,13 @@ func startServer(client *Client, projectInfo *ProjectInfo, gitInfo GitProjectInf
 }
 
 /*
-The api struct contains common configuration that's accessible to all handlers, such as the gitlab
+The Api struct contains common configuration that's accessible to all handlers, such as the gitlab
 client, the project information, and the channels for signaling error or shutdown requests
 
-The handlers for different Gitlab operations are are all methods on the api struct and interact
+The handlers for different Gitlab operations are are all methods on the Api struct and interact
 with the client value, which is a go-gitlab client.
 */
-type api struct {
+type Api struct {
 	client      ClientInterface
 	projectInfo *ProjectInfo
 	gitInfo     *GitProjectInfo
@@ -93,17 +93,17 @@ type api struct {
 	sigCh       chan os.Signal
 }
 
-type optFunc func(a *api) error
+type optFunc func(a *Api) error
 
 /*
-createRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
+CreateRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
 iterates over all option functions to configure API fields such as the project information and default
 file reader functionality
 */
 
-func createRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, api) {
+func CreateRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, Api) {
 	m := http.NewServeMux()
-	a := api{
+	a := Api{
 		client:      client,
 		projectInfo: &ProjectInfo{},
 		gitInfo:     &GitProjectInfo{},
@@ -188,7 +188,7 @@ func createListener() (l net.Listener) {
 }
 
 /* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func (a *api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+func (a *Api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if a.projectInfo.MergeId != 0 {

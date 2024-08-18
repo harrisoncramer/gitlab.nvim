@@ -16,7 +16,7 @@ type JobTraceResponse struct {
 }
 
 /* jobHandler returns a string that shows the output of a specific job run in a Gitlab pipeline */
-func (a *api) jobHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) jobHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
