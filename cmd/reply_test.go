@@ -23,7 +23,7 @@ func TestReplyHandler(t *testing.T) {
 			"",
 			mock_main.MergeId,
 			testReplyRequest.DiscussionId,
-			gomock.Any(), // We are matching any requests to this endpoint, since the date is dynamic
+			gomock.Any(),
 		).Return(&gitlab.Note{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)

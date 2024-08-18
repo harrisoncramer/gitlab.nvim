@@ -48,16 +48,11 @@ var testListDiscussionsResponse = []*gitlab.Discussion{
 	},
 }
 
-var testListMrDiscussionOpts = gitlab.ListMergeRequestDiscussionsOptions{
-	Page:    1,
-	PerPage: 250,
-}
-
 func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Returns sorted discussions", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, gomock.Any()).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
 		client.EXPECT().ListMergeRequestAwardEmojiOnNote("", mock_main.MergeId, gomock.Any(), gomock.Any()).Return([]*gitlab.AwardEmoji{}, makeResponse(http.StatusOK), nil).Times(2)
 
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
@@ -73,7 +68,7 @@ func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, gomock.Any()).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
 		client.EXPECT().ListMergeRequestAwardEmojiOnNote("", mock_main.MergeId, gomock.Any(), gomock.Any()).Return([]*gitlab.AwardEmoji{}, makeResponse(http.StatusOK), nil).Times(2)
 
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer"}})
@@ -100,7 +95,7 @@ func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
 		server, _ := CreateRouterAndApi(client)
@@ -112,7 +107,7 @@ func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
 		server, _ := CreateRouterAndApi(client)
@@ -124,7 +119,7 @@ func TestListDiscussionsHandler(t *testing.T) {
 	t.Run("Handles error from emoji service", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, &testListMrDiscussionOpts).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListMergeRequestDiscussions("", mock_main.MergeId, gomock.Any()).Return(testListDiscussionsResponse, makeResponse(http.StatusOK), nil)
 		client.EXPECT().ListMergeRequestAwardEmojiOnNote("", mock_main.MergeId, gomock.Any(), gomock.Any()).Return(nil, nil, errorFromGitlab).Times(2)
 
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})

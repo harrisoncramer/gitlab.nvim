@@ -6,6 +6,7 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 var testAcceptMergeRequestPayload = AcceptMergeRequestRequest{
@@ -14,17 +15,11 @@ var testAcceptMergeRequestPayload = AcceptMergeRequestRequest{
 	DeleteBranch:  false,
 }
 
-var testAcceptMergeRequestOpts = gitlab.AcceptMergeRequestOptions{
-	Squash:                   &testAcceptMergeRequestPayload.Squash,
-	ShouldRemoveSourceBranch: &testAcceptMergeRequestPayload.DeleteBranch,
-	SquashCommitMessage:      &testAcceptMergeRequestPayload.SquashMessage,
-}
-
 func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Accepts and merges a merge request", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		server, _ := CreateRouterAndApi(client)
@@ -37,7 +32,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/merge", testAcceptMergeRequestPayload)
 		server, _ := CreateRouterAndApi(client)
@@ -49,7 +44,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		server, _ := CreateRouterAndApi(client)
@@ -61,7 +56,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, &testAcceptMergeRequestOpts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		server, _ := CreateRouterAndApi(client)

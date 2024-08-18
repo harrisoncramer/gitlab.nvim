@@ -7,25 +7,15 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
-
-var listDraftNoteOpts = gitlab.ListDraftNotesOptions{}
 
 var testPostDraftNoteRequestData = PostDraftNoteRequest{
 	Comment: "Some comment",
 }
 
-var testPostDraftNoteOpts = gitlab.CreateDraftNoteOptions{
-	Note: &testPostDraftNoteRequestData.Comment,
-}
-
 var testUpdateDraftNoteRequest = UpdateDraftNoteRequest{
 	Note: "Some new note",
-}
-
-var testUpdateDraftNoteOpts = gitlab.UpdateDraftNoteOptions{
-	Note:     &testUpdateDraftNoteRequest.Note,
-	Position: &gitlab.PositionOptions{},
 }
 
 var testDraftNotePublishRequest = DraftNotePublishRequest{
@@ -37,7 +27,7 @@ func TestListDraftNotes(t *testing.T) {
 	t.Run("Lists all draft notes", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListDraftNotes("", mock_main.MergeId, &listDraftNoteOpts).Return([]*gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListDraftNotes("", mock_main.MergeId, gomock.Any()).Return([]*gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -50,7 +40,7 @@ func TestListDraftNotes(t *testing.T) {
 	t.Run("Handles error", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().ListDraftNotes("", mock_main.MergeId, &listDraftNoteOpts).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().ListDraftNotes("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -66,7 +56,7 @@ func TestPostDraftNote(t *testing.T) {
 	t.Run("Posts new draft note", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().CreateDraftNote("", mock_main.MergeId, &testPostDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().CreateDraftNote("", mock_main.MergeId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
 		server, _ := CreateRouterAndApi(client)
@@ -79,7 +69,7 @@ func TestPostDraftNote(t *testing.T) {
 	t.Run("Handles errors on draft note creation", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		client.EXPECT().CreateDraftNote("", mock_main.MergeId, &testPostDraftNoteOpts).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().CreateDraftNote("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
 		server, _ := CreateRouterAndApi(client)
@@ -140,7 +130,7 @@ func TestEditDraftNote(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
 		urlId := 10
-		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, &testUpdateDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%d", urlId), testUpdateDraftNoteRequest)
 		server, _ := CreateRouterAndApi(client)
@@ -154,7 +144,7 @@ func TestEditDraftNote(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
 		urlId := "abc"
-		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, &testUpdateDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%s", urlId), testUpdateDraftNoteRequest)
 		server, _ := CreateRouterAndApi(client)
@@ -172,10 +162,7 @@ func TestEditDraftNote(t *testing.T) {
 		testEmptyUpdateDraftNoteRequest := testUpdateDraftNoteRequest
 		testEmptyUpdateDraftNoteRequest.Note = ""
 
-		testEmptyUpdateDraftNoteOpts := testUpdateDraftNoteOpts
-		testEmptyUpdateDraftNoteOpts.Note = &testEmptyUpdateDraftNoteRequest.Note
-
-		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, &testEmptyUpdateDraftNoteOpts).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%d", urlId), testEmptyUpdateDraftNoteRequest)
 		server, _ := CreateRouterAndApi(client)

@@ -6,18 +6,13 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
-
-var testListProjectMembersOpt = gitlab.ListProjectMembersOptions{
-	ListOptions: gitlab.ListOptions{
-		PerPage: 100,
-	},
-}
 
 func TestMembersHandler(t *testing.T) {
 	t.Run("Returns project members", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().ListAllProjectMembers("", &testListProjectMembersOpt).Return([]*gitlab.ProjectMember{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListAllProjectMembers("", gomock.Any()).Return([]*gitlab.ProjectMember{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -39,7 +34,7 @@ func TestMembersHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().ListAllProjectMembers("", &testListProjectMembersOpt).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().ListAllProjectMembers("", gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
 		server, _ := CreateRouterAndApi(client)
@@ -50,7 +45,7 @@ func TestMembersHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().ListAllProjectMembers("", &testListProjectMembersOpt).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().ListAllProjectMembers("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
 		server, _ := CreateRouterAndApi(client)

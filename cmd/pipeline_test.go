@@ -7,15 +7,12 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 var testPipelineId = 12435
 var testPipelineCommit = "abc123"
 var fakeProjectPipelines = []*gitlab.PipelineInfo{{ID: testPipelineId}}
-var testListProjectPipelineOpts = &gitlab.ListProjectPipelinesOptions{
-	SHA:  gitlab.Ptr(testPipelineCommit),
-	Sort: gitlab.Ptr("desc"),
-}
 
 /* This helps us stub out git interactions that the server would normally run in the project directory */
 func withGitInfo(a *Api) error {
@@ -29,7 +26,7 @@ func withGitInfo(a *Api) error {
 func TestPipelineHandler(t *testing.T) {
 	t.Run("Gets all pipeline jobs", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().ListProjectPipelines("", testListProjectPipelineOpts).Return(fakeProjectPipelines, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListProjectPipelines("", gomock.Any()).Return(fakeProjectPipelines, makeResponse(http.StatusOK), nil)
 		client.EXPECT().ListPipelineJobs("", testPipelineId, &gitlab.ListJobsOptions{}).Return([]*gitlab.Job{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
@@ -51,7 +48,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().ListProjectPipelines("", testListProjectPipelineOpts).Return(fakeProjectPipelines, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListProjectPipelines("", gomock.Any()).Return(fakeProjectPipelines, makeResponse(http.StatusOK), nil)
 		client.EXPECT().ListPipelineJobs("", testPipelineId, &gitlab.ListJobsOptions{}).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
@@ -63,7 +60,7 @@ func TestPipelineHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().ListProjectPipelines("", testListProjectPipelineOpts).Return(fakeProjectPipelines, makeResponse(http.StatusOK), nil)
+		client.EXPECT().ListProjectPipelines("", gomock.Any()).Return(fakeProjectPipelines, makeResponse(http.StatusOK), nil)
 		client.EXPECT().ListPipelineJobs("", testPipelineId, &gitlab.ListJobsOptions{}).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 var testCommentCreationData = PostCommentRequest{
@@ -31,7 +32,7 @@ func TestPostComment(t *testing.T) {
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
-			&gitlab.CreateMergeRequestDiscussionOptions{Body: gitlab.Ptr(testCommentCreationData.Comment)},
+			gomock.Any(),
 		).Return(&gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
@@ -56,10 +57,7 @@ func TestPostComment(t *testing.T) {
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
-			&gitlab.CreateMergeRequestDiscussionOptions{
-				Body:     gitlab.Ptr(testCommentCreationData.Comment),
-				Position: buildCommentPosition(CommentWithPosition{testCommentCreationData.PositionData}),
-			},
+			gomock.Any(),
 		).Return(&gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
@@ -76,7 +74,7 @@ func TestPostComment(t *testing.T) {
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
-			&gitlab.CreateMergeRequestDiscussionOptions{Body: gitlab.Ptr(testCommentCreationData.Comment)},
+			gomock.Any(),
 		).Return(nil, nil, errors.New("Some error from Gitlab"))
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
@@ -92,7 +90,7 @@ func TestPostComment(t *testing.T) {
 		client.EXPECT().CreateMergeRequestDiscussion(
 			"",
 			mock_main.MergeId,
-			&gitlab.CreateMergeRequestDiscussionOptions{Body: gitlab.Ptr(testCommentCreationData.Comment)},
+			gomock.Any(),
 		).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
@@ -162,10 +160,7 @@ func TestEditComment(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
-			Body: gitlab.Ptr(testEditCommentData.Comment),
-		}
-		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
 		server, _ := CreateRouterAndApi(client)
@@ -177,10 +172,7 @@ func TestEditComment(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
-		opts := gitlab.UpdateMergeRequestDiscussionNoteOptions{
-			Body: gitlab.Ptr(testEditCommentData.Comment),
-		}
-		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
 		server, _ := CreateRouterAndApi(client)

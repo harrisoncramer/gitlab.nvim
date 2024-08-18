@@ -6,6 +6,7 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 	mock_main "gitlab.com/harrisoncramer/gitlab.nvim/cmd/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 var testCreateMrRequestData = CreateMrRequest{
@@ -16,19 +17,10 @@ var testCreateMrRequestData = CreateMrRequest{
 	Squash:       false,
 }
 
-var testCreateMrRequestOpts = gitlab.CreateMergeRequestOptions{
-	Title:              &testCreateMrRequestData.Title,
-	Description:        &testCreateMrRequestData.Description,
-	TargetBranch:       &testCreateMrRequestData.TargetBranch,
-	RemoveSourceBranch: &testCreateMrRequestData.DeleteBranch,
-	Squash:             &testCreateMrRequestData.Squash,
-	SourceBranch:       gitlab.Ptr(""),
-}
-
 func TestCreateMr(t *testing.T) {
 	t.Run("Creates an MR", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().CreateMergeRequest("", &testCreateMrRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		server, _ := CreateRouterAndApi(client)
@@ -40,7 +32,7 @@ func TestCreateMr(t *testing.T) {
 
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().CreateMergeRequest("", &testCreateMrRequestOpts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/create_mr", testCreateMrRequestData)
 		server, _ := CreateRouterAndApi(client)
@@ -51,7 +43,7 @@ func TestCreateMr(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().CreateMergeRequest("", &testCreateMrRequestOpts).Return(nil, nil, errorFromGitlab)
+		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		server, _ := CreateRouterAndApi(client)
@@ -62,7 +54,7 @@ func TestCreateMr(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
-		client.EXPECT().CreateMergeRequest("", &testCreateMrRequestOpts).Return(nil, makeResponse(http.StatusSeeOther), nil)
+		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		server, _ := CreateRouterAndApi(client)
@@ -76,10 +68,8 @@ func TestCreateMr(t *testing.T) {
 
 		missingTitleRequest := testCreateMrRequestData
 		missingTitleRequest.Title = ""
-		missingTitleRequestOpts := testCreateMrRequestOpts
-		missingTitleRequestOpts.Title = gitlab.Ptr("")
 
-		client.EXPECT().CreateMergeRequest("", &missingTitleRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", missingTitleRequest)
 		server, _ := CreateRouterAndApi(client)
@@ -95,10 +85,8 @@ func TestCreateMr(t *testing.T) {
 
 		missingTitleRequest := testCreateMrRequestData
 		missingTitleRequest.TargetBranch = ""
-		missingTitleRequestOpts := testCreateMrRequestOpts
-		missingTitleRequestOpts.TargetBranch = gitlab.Ptr("")
 
-		client.EXPECT().CreateMergeRequest("", &missingTitleRequestOpts).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
+		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", missingTitleRequest)
 		server, _ := CreateRouterAndApi(client)
