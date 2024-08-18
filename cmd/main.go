@@ -16,8 +16,8 @@ type PluginOptions struct {
 		Response bool `json:"go_response"`
 	} `json:"debug"`
 	ConnectionSettings struct {
-		Insecure     bool   `json:"insecure"`
-		RemoteBranch string `json:"remote_branch"`
+		Insecure bool   `json:"insecure"`
+		Remote   string `json:"remote"`
 	} `json:"connection_settings"`
 }
 

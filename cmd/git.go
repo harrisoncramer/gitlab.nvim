@@ -90,7 +90,7 @@ func GetCurrentBranchNameFromNativeGitCmd() (res string, e error) {
 
 /* Gets the project SSH or HTTPS url */
 func GetProjectUrlFromNativeGitCmd() (string, error) {
-	cmd := exec.Command("git", "remote", "get-url", pluginOptions.ConnectionSettings.RemoteBranch)
+	cmd := exec.Command("git", "remote", "get-url", pluginOptions.ConnectionSettings.Remote)
 	url, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("Could not get remote")
@@ -101,10 +101,10 @@ func GetProjectUrlFromNativeGitCmd() (string, error) {
 
 /* Pulls down latest commit information from Gitlab */
 func RefreshProjectInfo() error {
-	cmd := exec.Command("git", "fetch", pluginOptions.ConnectionSettings.RemoteBranch)
+	cmd := exec.Command("git", "fetch", pluginOptions.ConnectionSettings.Remote)
 	_, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("Failed to run `git fetch %s`: %v", pluginOptions.ConnectionSettings.RemoteBranch, err)
+		return fmt.Errorf("Failed to run `git fetch %s`: %v", pluginOptions.ConnectionSettings.Remote, err)
 	}
 
 	return nil
@@ -114,11 +114,11 @@ func RefreshProjectInfo() error {
 The GetLatestCommitOnRemote function is attached during the CreateRouterAndApi call, since it needs to be called every time to get the latest commit.
 */
 func GetLatestCommitOnRemote(a *Api) (string, error) {
-	cmd := exec.Command("git", "log", "-1", "--format=%H", fmt.Sprintf("%s/%s", pluginOptions.ConnectionSettings.RemoteBranch, a.gitInfo.BranchName))
+	cmd := exec.Command("git", "log", "-1", "--format=%H", fmt.Sprintf("%s/%s", pluginOptions.ConnectionSettings.Remote, a.gitInfo.BranchName))
 
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Failed to run `git log -1 --format=%%H " + fmt.Sprintf("%s/%s", pluginOptions.ConnectionSettings.RemoteBranch, a.gitInfo.BranchName))
+		return "", fmt.Errorf("Failed to run `git log -1 --format=%%H " + fmt.Sprintf("%s/%s", pluginOptions.ConnectionSettings.Remote, a.gitInfo.BranchName))
 	}
 
 	commit := strings.TrimSpace(string(out))

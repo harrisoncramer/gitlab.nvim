@@ -161,7 +161,7 @@ you call this function with no values the defaults will be used:
       },
       connection_settings = {
         insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
-        remote_branch = "origin", -- The default remote branch that your MRs target
+        remote = "origin", -- The default remote that your MRs target
       },
       keymaps = {
         disable_all = false, -- Disable all mappings created by the plugin

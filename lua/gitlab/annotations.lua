@@ -142,7 +142,7 @@
 ---
 ---@class Settings
 ---@field port? number -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
----@field remote_branch "origin" | string -- The remote branch, "origin" by default
+---@field remote_branch "origin" | string -- The remote, "origin" by default
 ---@field log_path? string -- Log path for the Go server
 ---@field string? any -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
 ---@field debug? DebugSettings -- Which values to log

@@ -58,7 +58,7 @@ M.settings = {
   },
   connection_settings = {
     insecure = false,
-    remote_branch = "origin",
+    remote = "origin",
   },
   attachment_dir = "",
   keymaps = {
