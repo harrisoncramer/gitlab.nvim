@@ -15,7 +15,7 @@ type DiscussionResolveRequest struct {
 }
 
 /* discussionsResolveHandler sets a discussion to be "resolved" or not resolved, depending on the payload */
-func (a *api) discussionsResolveHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) discussionsResolveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)

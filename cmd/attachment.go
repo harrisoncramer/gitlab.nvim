@@ -46,7 +46,7 @@ func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
 }
 
 /* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
-func (a *api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

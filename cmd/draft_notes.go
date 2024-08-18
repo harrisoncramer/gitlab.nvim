@@ -52,7 +52,7 @@ func (draftNote DraftNoteWithPosition) GetPositionData() PositionData {
 }
 
 /* draftNoteHandler creates, edits, and deletes draft notes */
-func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodGet:
@@ -69,7 +69,7 @@ func (a *api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
+func (a *Api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
@@ -126,7 +126,7 @@ func (a *api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
 }
 
 /* postDraftNote creates a draft note */
-func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
+func (a *Api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -184,7 +184,7 @@ func (a *api) postDraftNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* deleteDraftNote deletes a draft note */
-func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
+func (a *Api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
 	id, err := strconv.Atoi(suffix)
 	if err != nil {
@@ -217,7 +217,7 @@ func (a *api) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* updateDraftNote edits the text of a draft comment */
-func (a *api) updateDraftNote(w http.ResponseWriter, r *http.Request) {
+func (a *Api) updateDraftNote(w http.ResponseWriter, r *http.Request) {
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
 	id, err := strconv.Atoi(suffix)
 	if err != nil {
@@ -278,7 +278,7 @@ func (a *api) updateDraftNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* listDraftNotes lists all draft notes for the currently authenticated user */
-func (a *api) listDraftNotes(w http.ResponseWriter, r *http.Request) {
+func (a *Api) listDraftNotes(w http.ResponseWriter, _ *http.Request) {
 
 	opt := gitlab.ListDraftNotesOptions{}
 	draftNotes, res, err := a.client.ListDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)

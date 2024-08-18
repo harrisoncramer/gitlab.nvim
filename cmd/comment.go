@@ -42,7 +42,7 @@ func (comment CommentWithPosition) GetPositionData() PositionData {
 }
 
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
-func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
@@ -58,7 +58,7 @@ func (a *api) commentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
-func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
+func (a *Api) deleteComment(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -99,7 +99,7 @@ func (a *api) deleteComment(w http.ResponseWriter, r *http.Request) {
 }
 
 /* postComment creates a note, multiline comment, or comment. */
-func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
+func (a *Api) postComment(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -156,7 +156,7 @@ func (a *api) postComment(w http.ResponseWriter, r *http.Request) {
 }
 
 /* editComment changes the text of a comment or changes it's resolved status. */
-func (a *api) editComment(w http.ResponseWriter, r *http.Request) {
+func (a *Api) editComment(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {

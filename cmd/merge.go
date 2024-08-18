@@ -15,7 +15,7 @@ type AcceptMergeRequestRequest struct {
 }
 
 /* acceptAndMergeHandler merges a given merge request into the target branch */
-func (a *api) acceptAndMergeHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) acceptAndMergeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 	if r.Method != http.MethodPost {

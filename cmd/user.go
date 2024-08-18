@@ -12,7 +12,7 @@ type UserResponse struct {
 	User *gitlab.User `json:"user"`
 }
 
-func (a *api) meHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) meHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
