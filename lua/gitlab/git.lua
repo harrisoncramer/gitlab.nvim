@@ -76,14 +76,14 @@ M.get_all_remote_branches = function()
   local u = require("gitlab.utils")
   local lines = u.lines_into_table(all_branches)
   return List.new(lines)
-      :map(function(line)
-        -- Trim the remote branch
-        return line:match(state.settings.connection_settings.remote .. "/(%S+)")
-      end)
-      :filter(function(branch)
-        -- Don't include the HEAD pointer
-        return not branch:match("^HEAD$")
-      end)
+    :map(function(line)
+      -- Trim the remote branch
+      return line:match(state.settings.connection_settings.remote .. "/(%S+)")
+    end)
+    :filter(function(branch)
+      -- Don't include the HEAD pointer
+      return not branch:match("^HEAD$")
+    end)
 end
 
 ---Return whether something
@@ -118,8 +118,10 @@ M.current_branch_up_to_date_on_remote = function(log_level)
 
   if not remote_up_to_date then
     require("gitlab.utils").notify(
-      string.format("You have local commits that are not on %s. Have you forgotten to push?",
-        state.settings.connection_settings.remote),
+      string.format(
+        "You have local commits that are not on %s. Have you forgotten to push?",
+        state.settings.connection_settings.remote
+      ),
       log_level
     )
   end
