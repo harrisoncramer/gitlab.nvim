@@ -111,7 +111,7 @@ M.check = function(return_results)
 
   for _, field in ipairs(removed_settings_fields) do
     if u.get_nested_field(state.settings, field) ~= nil then
-      vim.health.warn(warnings, field)
+      table.insert(removed_fields_in_user_config, field)
     end
   end
 
