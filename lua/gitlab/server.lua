@@ -9,7 +9,7 @@ local M = {}
 
 -- Starts the Go server and call the callback provided
 M.start = function(callback)
-  local port = state.settings.port or 0
+  local port = tonumber(state.settings.port) or 0
   local parsed_port = nil
   local callback_called = false
 
