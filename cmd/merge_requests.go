@@ -4,32 +4,60 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
+
+type ListMergeRequestRequest struct {
+	Label    []string `json:"label"`
+	NotLabel []string `json:"notlabel"`
+}
 
 type ListMergeRequestResponse struct {
 	SuccessResponse
 	MergeRequests []*gitlab.MergeRequest `json:"merge_requests"`
 }
 
-func (a *api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
+		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
+		return
+	}
 
-	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		handleError(w, err, "Could not read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+	var listMergeRequestRequest ListMergeRequestRequest
+	err = json.Unmarshal(body, &listMergeRequestRequest)
+	if err != nil {
+		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
 		return
 	}
 
 	options := gitlab.ListProjectMergeRequestsOptions{
-		Scope: gitlab.Ptr("all"),
-		State: gitlab.Ptr("opened"),
+		Scope:     gitlab.Ptr("all"),
+		State:     gitlab.Ptr("opened"),
+		Labels:    (*gitlab.LabelOptions)(&listMergeRequestRequest.Label),
+		NotLabels: (*gitlab.LabelOptions)(&listMergeRequestRequest.NotLabel),
 	}
 
-	mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+
 	if err != nil {
 		handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{endpoint: "/merge_requests"}, "Failed to list merge requests", res.StatusCode)
 		return
 	}
 
@@ -51,5 +79,4 @@ func (a *api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
-
 }

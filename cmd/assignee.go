@@ -23,7 +23,7 @@ type AssigneesRequestResponse struct {
 }
 
 /* assigneesHandler adds or removes assignees from a merge request. */
-func (a *api) assigneesHandler(w http.ResponseWriter, r *http.Request) {
+func (a *Api) assigneesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)

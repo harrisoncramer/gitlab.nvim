@@ -14,15 +14,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type DebugSettings struct {
-	GoRequest  bool `json:"go_request"`
-	GoResponse bool `json:"go_response"`
-}
-
-type ConnectionOptions struct {
-	Insecure bool `json:"insecure"`
-}
-
 type ProjectInfo struct {
 	ProjectId string
 	MergeId   int
@@ -46,53 +37,27 @@ type Client struct {
 /* initGitlabClient parses and validates the project settings and initializes the Gitlab client. */
 func initGitlabClient() (error, *Client) {
 
-	if len(os.Args) < 7 {
-		return errors.New("Must provide gitlab url, port, auth token, debug settings, log path, and connection settings"), nil
-	}
-
-	gitlabInstance := os.Args[1]
-	if gitlabInstance == "" {
+	if pluginOptions.GitlabUrl == "" {
 		return errors.New("GitLab instance URL cannot be empty"), nil
 	}
 
-	authToken := os.Args[3]
-	if authToken == "" {
-		return errors.New("Auth token cannot be empty"), nil
-	}
-
-	/* Parse debug settings and initialize logger handlers */
-	debugSettings := os.Args[4]
-	var debugObject DebugSettings
-	err := json.Unmarshal([]byte(debugSettings), &debugObject)
-	if err != nil {
-		return fmt.Errorf("Could not parse debug settings: %w, %s", err, debugSettings), nil
-	}
-
-	/* Parse connection options */
-	connectionSettings := os.Args[6]
-	var connectionObject ConnectionOptions
-	err = json.Unmarshal([]byte(connectionSettings), &connectionObject)
-	if err != nil {
-		return fmt.Errorf("Could not parse connection settings: %w, %s", err, connectionSettings), nil
-	}
-
-	var apiCustUrl = fmt.Sprintf(gitlabInstance + "/api/v4")
+	var apiCustUrl = fmt.Sprintf(pluginOptions.GitlabUrl + "/api/v4")
 
 	gitlabOptions := []gitlab.ClientOptionFunc{
 		gitlab.WithBaseURL(apiCustUrl),
 	}
 
-	if debugObject.GoRequest {
+	if pluginOptions.Debug.Request {
 		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(requestLogger))
 	}
 
-	if debugObject.GoResponse {
+	if pluginOptions.Debug.Response {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
 	}
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: connectionObject.Insecure,
+			InsecureSkipVerify: pluginOptions.ConnectionSettings.Insecure,
 		},
 	}
 
@@ -100,7 +65,7 @@ func initGitlabClient() (error, *Client) {
 	retryClient.HTTPClient.Transport = tr
 	gitlabOptions = append(gitlabOptions, gitlab.WithHTTPClient(retryClient.HTTPClient))
 
-	client, err := gitlab.NewClient(authToken, gitlabOptions...)
+	client, err := gitlab.NewClient(pluginOptions.AuthToken, gitlabOptions...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create client: %v", err), nil
@@ -130,12 +95,9 @@ func initProjectSettings(c *Client, gitInfo GitProjectInfo) (error, *ProjectInfo
 	if err != nil {
 		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err), nil
 	}
-	if project == nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err), nil
-	}
 
 	if project == nil {
-		return fmt.Errorf("No projects you are a member of contained remote URL %s", gitInfo.RemoteUrl), nil
+		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err), nil
 	}
 
 	projectId := fmt.Sprint(project.ID)
@@ -195,15 +157,14 @@ var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, 
 }
 
 func openLogFile() *os.File {
-	logFile := os.Args[5]
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(pluginOptions.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Printf("Log file %s does not exist", logFile)
+			log.Printf("Log file %s does not exist", pluginOptions.LogPath)
 		} else if os.IsPermission(err) {
-			log.Printf("Permission denied for log file %s", logFile)
+			log.Printf("Permission denied for log file %s", pluginOptions.LogPath)
 		} else {
-			log.Printf("Error opening log file %s: %v", logFile, err)
+			log.Printf("Error opening log file %s: %v", pluginOptions.LogPath, err)
 		}
 
 		os.Exit(1)
