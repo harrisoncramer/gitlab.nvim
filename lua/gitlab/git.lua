@@ -64,6 +64,7 @@ end
 ---Return the list of names of all remote-tracking branches or an empty list.
 ---@return table, string|nil
 M.get_all_remote_branches = function()
+  local state = require("gitlab.state")
   local all_branches, err = M.branches({ "--remotes" })
   if err ~= nil then
     return {}, err
@@ -76,8 +77,8 @@ M.get_all_remote_branches = function()
   local lines = u.lines_into_table(all_branches)
   return List.new(lines)
     :map(function(line)
-      -- Trim "origin/"
-      return line:match("origin/(%S+)")
+      -- Trim the remote branch
+      return line:match(state.settings.connection_settings.remote .. "/(%S+)")
     end)
     :filter(function(branch)
       -- Don't include the HEAD pointer
@@ -96,6 +97,7 @@ end
 ---@param log_level integer
 ---@return boolean|nil
 M.current_branch_up_to_date_on_remote = function(log_level)
+  local state = require("gitlab.state")
   local current_branch = M.get_current_branch()
   local handle = io.popen("git branch -r --contains " .. current_branch .. " 2>&1")
   if not handle then
@@ -110,13 +112,16 @@ M.current_branch_up_to_date_on_remote = function(log_level)
   handle:close()
 
   local current_head_on_remote = List.new(remote_branches_with_current_head):filter(function(line)
-    return line == "  origin/" .. current_branch
+    return line == string.format("  %s/", state.settings.connection_settings.remote) .. current_branch
   end)
   local remote_up_to_date = #current_head_on_remote == 1
 
   if not remote_up_to_date then
     require("gitlab.utils").notify(
-      "You have local commits that are not on origin. Have you forgotten to push?",
+      string.format(
+        "You have local commits that are not on %s. Have you forgotten to push?",
+        state.settings.connection_settings.remote
+      ),
       log_level
     )
   end

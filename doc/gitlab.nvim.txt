@@ -55,10 +55,6 @@ QUICK START                                          *gitlab.nvim.quick-start*
 
 This will checkout the branch locally, and up the plugin's reviewer pane.
 
-NOTE: At the moment, the plugin assumes that the remote where you want to
-merge your feature branch is called "origin".
-
-
 INSTALLATION                                        *gitlab.nvim.installation*
 
 With Lazy:
@@ -165,6 +161,7 @@ you call this function with no values the defaults will be used:
       },
       connection_settings = {
         insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
+        remote = "origin", -- The default remote that your MRs target
       },
       keymaps = {
         disable_all = false, -- Disable all mappings created by the plugin

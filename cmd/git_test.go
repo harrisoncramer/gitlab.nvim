@@ -249,7 +249,7 @@ func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 }
 
 func TestRefreshGitRemote_FailToRefreshRemote(t *testing.T) {
-	expectedErrNestedMsg := "error when fetching origin commits"
+	expectedErrNestedMsg := "error when fetching commits"
 	_, actualErr := extractGitInfo(
 		func() error {
 			return errors.New(expectedErrNestedMsg)
