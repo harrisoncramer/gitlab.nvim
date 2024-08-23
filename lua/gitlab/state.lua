@@ -52,6 +52,10 @@ M.settings = {
   config_path = nil,
   reviewer = "diffview",
   reviewer_settings = {
+    no_diagnostic_actions = {
+      warn = true,
+      jump = true,
+    },
     diffview = {
       imply_local = false,
     },
