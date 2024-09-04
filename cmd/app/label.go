@@ -28,8 +28,18 @@ type LabelsRequestResponse struct {
 	Labels []Label `json:"labels"`
 }
 
+type LabelManager interface {
+	UpdateMergeRequest(interface{}, int, *gitlab.UpdateMergeRequestOptions, ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	ListLabels(interface{}, *gitlab.ListLabelsOptions, ...gitlab.RequestOptionFunc) ([]*gitlab.Label, *gitlab.Response, error)
+}
+
+type labelService struct {
+	data
+	client LabelManager
+}
+
 /* labelsHandler adds or removes labels from a merge request, and returns all labels for the current project */
-func (a *Api) labelHandler(w http.ResponseWriter, r *http.Request) {
+func (a labelService) handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.getLabels(w, r)
@@ -42,7 +52,7 @@ func (a *Api) labelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *Api) getLabels(w http.ResponseWriter, r *http.Request) {
+func (a labelService) getLabels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	labels, res, err := a.client.ListLabels(a.projectInfo.ProjectId, &gitlab.ListLabelsOptions{})
@@ -82,7 +92,7 @@ func (a *Api) getLabels(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a *Api) updateLabels(w http.ResponseWriter, r *http.Request) {
+func (a labelService) updateLabels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
