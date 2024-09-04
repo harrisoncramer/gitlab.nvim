@@ -4,24 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app"
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
-type PluginOptions struct {
-	GitlabUrl string `json:"gitlab_url"`
-	Port      int    `json:"port"`
-	AuthToken string `json:"auth_token"`
-	LogPath   string `json:"log_path"`
-	Debug     struct {
-		Request  bool `json:"go_request"`
-		Response bool `json:"go_response"`
-	} `json:"debug"`
-	ConnectionSettings struct {
-		Insecure bool   `json:"insecure"`
-		Remote   string `json:"remote"`
-	} `json:"connection_settings"`
-}
-
-var pluginOptions PluginOptions
+var pluginOptions app.PluginOptions
 
 func main() {
 	log.SetFlags(0)
@@ -31,20 +19,20 @@ func main() {
 		log.Fatalf("Failure parsing plugin settings: %v", err)
 	}
 
-	gitInfo, err := extractGitInfo(RefreshProjectInfo, GetProjectUrlFromNativeGitCmd, GetCurrentBranchNameFromNativeGitCmd)
+	gitInfo, err := git.ExtractGitInfo(pluginOptions.ConnectionSettings.Remote)
 	if err != nil {
 		log.Fatalf("Failure initializing plugin: %v", err)
 	}
 
-	err, client := initGitlabClient()
+	err, client := app.InitGitlabClient()
 	if err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	err, projectInfo := initProjectSettings(client, gitInfo)
+	err, projectInfo := app.InitProjectSettings(client, gitInfo)
 	if err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
-	startServer(client, projectInfo, gitInfo)
+	app.StartServer(client, projectInfo, gitInfo)
 }
