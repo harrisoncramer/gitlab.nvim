@@ -40,7 +40,7 @@ func TestPostComment(t *testing.T) {
 	var testCommentCreationData = PostCommentRequest{Comment: "Some comment"}
 	t.Run("Creates a new note (unlinked comment)", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		svc := commentService{emptyProjectData, fakeCommentClient{}}
+		svc := commentService{testProjectData, fakeCommentClient{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment created successfully")
 		assert(t, data.Status, http.StatusOK)
@@ -54,7 +54,7 @@ func TestPostComment(t *testing.T) {
 			},
 		}
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		svc := commentService{emptyProjectData, fakeCommentClient{}}
+		svc := commentService{testProjectData, fakeCommentClient{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment created successfully")
 		assert(t, data.Status, http.StatusOK)
@@ -62,14 +62,14 @@ func TestPostComment(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		svc := commentService{emptyProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}
+		svc := commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not create discussion")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		svc := commentService{emptyProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}
+		svc := commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not create discussion", "/mr/comment")
 	})
@@ -79,21 +79,21 @@ func TestDeleteComment(t *testing.T) {
 	var testCommentDeletionData = DeleteCommentRequest{NoteId: 3, DiscussionId: "abc123"}
 	t.Run("Deletes a comment", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
-		svc := commentService{emptyProjectData, fakeCommentClient{}}
+		svc := commentService{testProjectData, fakeCommentClient{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment deleted successfully")
 		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
-		svc := commentService{emptyProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}
+		svc := commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not delete comment")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
-		svc := commentService{emptyProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}
+		svc := commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not delete comment", "/mr/comment")
 	})
@@ -103,21 +103,21 @@ func TestEditComment(t *testing.T) {
 	var testEditCommentData = EditCommentRequest{Comment: "Some comment", NoteId: 3, DiscussionId: "abc123"}
 	t.Run("Edits a comment", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
-		svc := commentService{emptyProjectData, fakeCommentClient{}}
+		svc := commentService{testProjectData, fakeCommentClient{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment updated successfully")
 		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
-		svc := commentService{emptyProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}
+		svc := commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not update comment")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
-		svc := commentService{emptyProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}
+		svc := commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not update comment", "/mr/comment")
 	})

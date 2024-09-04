@@ -36,7 +36,7 @@ func TestAttachmentHandler(t *testing.T) {
 
 	t.Run("Returns 200-status response after upload", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		svc := attachmentService{emptyProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
+		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "File uploaded successfully")
@@ -44,20 +44,20 @@ func TestAttachmentHandler(t *testing.T) {
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/attachment", nil)
-		svc := attachmentService{emptyProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
+		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
 		data := getFailData(t, svc, request)
 		checkBadMethod(t, data, http.MethodPost)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		svc := attachmentService{emptyProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{errFromGitlab: true}}}
+		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{errFromGitlab: true}}}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not upload some_file_name to Gitlab")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		svc := attachmentService{emptyProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{status: http.StatusSeeOther}}}
+		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{status: http.StatusSeeOther}}}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not upload some_file_name to Gitlab", "/attachment")
 	})

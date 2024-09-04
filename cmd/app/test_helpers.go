@@ -75,9 +75,14 @@ func makeResponse(status int) *gitlab.Response {
 	}
 }
 
-var emptyProjectData = data{
+var testProjectData = data{
 	projectInfo: &ProjectInfo{},
-	gitInfo:     &git.GitProjectInfo{},
+	gitInfo: &git.GitProjectInfo{
+		BranchName: "some-branch",
+		GetLatestCommitOnRemote: func(remote, branchName string) (string, error) {
+			return "abc123", nil
+		},
+	},
 }
 
 func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request) SuccessResponse {

@@ -12,7 +12,7 @@ type GitProjectInfo struct {
 	Namespace               string
 	ProjectName             string
 	BranchName              string
-	GetLatestCommitOnRemote func(string, string) (string, error)
+	GetLatestCommitOnRemote func(remote string, branchName string) (string, error)
 }
 
 /*

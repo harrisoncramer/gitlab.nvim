@@ -40,7 +40,7 @@ func TestJobHandler(t *testing.T) {
 	t.Run("Should read a job trace file", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		client := fakeTraceFileGetter{}
-		svc := traceFileService{emptyProjectData, client}
+		svc := traceFileService{testProjectData, client}
 		data := getTraceFileData(t, svc, request)
 		assert(t, data.Message, "Log file read")
 		assert(t, data.Status, http.StatusOK)
@@ -49,14 +49,14 @@ func TestJobHandler(t *testing.T) {
 	t.Run("Disallows non-GET methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/job", JobTraceRequest{})
 		client := fakeTraceFileGetter{}
-		svc := traceFileService{emptyProjectData, client}
+		svc := traceFileService{testProjectData, client}
 		data := getFailData(t, svc, request)
 		checkBadMethod(t, data, http.MethodGet)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		client := fakeTraceFileGetter{testBase{errFromGitlab: true}}
-		svc := traceFileService{emptyProjectData, client}
+		svc := traceFileService{testProjectData, client}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not get trace file for job")
 	})
@@ -64,7 +64,7 @@ func TestJobHandler(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		client := fakeTraceFileGetter{testBase{status: http.StatusSeeOther}}
-		svc := traceFileService{emptyProjectData, client}
+		svc := traceFileService{testProjectData, client}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not get trace file for job", "/job")
 	})

@@ -68,7 +68,7 @@ func getDiscussionsList(t *testing.T, svc ServiceWithHandler, request *http.Requ
 func TestListDiscussions(t *testing.T) {
 	t.Run("Returns sorted discussions", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{emptyProjectData, fakeDiscussionsLister{}}
+		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -78,7 +78,7 @@ func TestListDiscussions(t *testing.T) {
 
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer"}})
-		svc := discussionsListerService{emptyProjectData, fakeDiscussionsLister{}}
+		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -87,25 +87,25 @@ func TestListDiscussions(t *testing.T) {
 	})
 	t.Run("Disallows non-GET methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{emptyProjectData, fakeDiscussionsLister{}}
+		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
 		data := getFailData(t, svc, request)
 		checkBadMethod(t, data, http.MethodPost)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{emptyProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}}
+		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not list discussions")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{emptyProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}}
+		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not list discussions", "/mr/discussions/list")
 	})
 	t.Run("Handles error from emoji service", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{emptyProjectData, fakeDiscussionsLister{badEmojiResponse: true}}
+		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{badEmojiResponse: true}}
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not fetch emojis")
 		assert(t, data.Details, "Some error from emoji service")

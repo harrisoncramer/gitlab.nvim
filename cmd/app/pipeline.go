@@ -93,7 +93,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	pipeline, err := a.GetLastPipeline(commit)
 
 	if err != nil {
-		handleError(w, err, fmt.Sprintf("Gitlab failed to get latest pipeline for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Failed to get latest pipeline for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
