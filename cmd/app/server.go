@@ -95,7 +95,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 
 	// m.HandleFunc("/mr/approve", withMr(a.approveHandler))
 	// m.HandleFunc("/mr/comment", withMr(a.commentHandler))
-	// m.HandleFunc("/mr/merge", withMr(a.acceptAndMergeHandler))
+	m.HandleFunc("/mr/merge", withMr(mergeRequestAccepterService{d, gitlabClient}, d, gitlabClient))
 	m.HandleFunc("/mr/discussions/list", withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient))
 	m.HandleFunc("/mr/discussions/resolve", withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient))
 	m.HandleFunc("/mr/info", withMr(infoService{d, gitlabClient}, d, gitlabClient))

@@ -14,8 +14,17 @@ type AcceptMergeRequestRequest struct {
 	DeleteBranch  bool   `json:"delete_branch"`
 }
 
+type MergeRequestAccepter interface {
+	AcceptMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.AcceptMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+type mergeRequestAccepterService struct {
+	data
+	client *Client
+}
+
 /* acceptAndMergeHandler merges a given merge request into the target branch */
-func (a *Api) acceptAndMergeHandler(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestAccepterService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 	if r.Method != http.MethodPost {
