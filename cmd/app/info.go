@@ -12,8 +12,17 @@ type InfoResponse struct {
 	Info *gitlab.MergeRequest `json:"info"`
 }
 
+type MergeRequestGetter interface {
+	GetMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.GetMergeRequestsOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+type infoService struct {
+	data
+	client *Client
+}
+
 /* infoHandler fetches infomation about the current git project. The data returned here is used in many other API calls */
-func (a *Api) infoHandler(w http.ResponseWriter, r *http.Request) {
+func (a infoService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
