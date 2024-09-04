@@ -20,8 +20,17 @@ type ReplyResponse struct {
 	Note *gitlab.Note `json:"note"`
 }
 
+type ReplyManager interface {
+	AddMergeRequestDiscussionNote(interface{}, int, string, *gitlab.AddMergeRequestDiscussionNoteOptions, ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
+}
+
+type replyService struct {
+	data
+	client ReplyManager
+}
+
 /* replyHandler sends a reply to a note or comment */
-func (a *Api) replyHandler(w http.ResponseWriter, r *http.Request) {
+func (a replyService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
