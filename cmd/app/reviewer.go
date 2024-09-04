@@ -22,8 +22,17 @@ type ReviewersRequestResponse struct {
 	Reviewers []int `json:"reviewers"`
 }
 
+type MergeRequestUpdater interface {
+	UpdateMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+type reviewerService struct {
+	data
+	client MergeRequestUpdater
+}
+
 /* reviewersHandler adds or removes reviewers from an MR */
-func (a *Api) reviewersHandler(w http.ResponseWriter, r *http.Request) {
+func (a reviewerService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
