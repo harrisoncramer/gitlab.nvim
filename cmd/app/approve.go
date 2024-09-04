@@ -13,7 +13,7 @@ type MergeRequestApprover interface {
 
 type mergeRequestApproverService struct {
 	data
-	client *Client
+	client MergeRequestApprover
 }
 
 /* approveHandler approves a merge request. */

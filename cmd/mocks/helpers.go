@@ -1,4 +1,4 @@
-package mock_main
+package mocks
 
 import (
 	bytes "bytes"
@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	gitlab "github.com/xanzy/go-gitlab"
-	gomock "go.uber.org/mock/gomock"
 )
 
 var MergeId = 3
@@ -33,24 +32,26 @@ type MockOpts struct {
 	MergeId int
 }
 
-func NewMockClient(t *testing.T) *MockClientInterface {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockObj := NewMockClientInterface(ctrl)
-	return mockObj
+type Returner interface {
+	Return([]*gitlab.MergeRequest, *gitlab.Response) ([]*gitlab.MergeRequest, *gitlab.Response, error)
+}
+type Lister interface {
+	ListProjectMergeRequests(string, *gitlab.ListProjectMergeRequestsOptions) Returner
 }
 
-/** Adds a handler to satisfy the withMrs middleware by returning an MR from that endpoint with the given ID */
-func WithMr(t *testing.T, m *MockClientInterface) *MockClientInterface {
+type Blah interface {
+	EXPECT() Lister
+}
+
+// Adds a handler to satisfy the withMrs middleware by returning an MR from that endpoint with the given ID */
+func WithMr[T Blah](t *testing.T, m T) {
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:        gitlab.Ptr("all"),
 		State:        gitlab.Ptr("opened"),
 		SourceBranch: gitlab.Ptr(""),
 	}
 
-	m.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: MergeId}}, makeResponse(http.StatusOK), nil)
-
-	return m
+	m.EXPECT().ListProjectMergeRequests("", &options).Return([]*gitlab.MergeRequest{{IID: MergeId}}, makeResponse(http.StatusOK))
 }
 
 type MockAttachmentReader struct{}

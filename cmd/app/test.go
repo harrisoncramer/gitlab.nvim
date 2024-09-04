@@ -95,3 +95,8 @@ func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
 	assert(t, data.Message, msg)
 	assert(t, data.Details, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
 }
+
+type mockShutdownHandler struct{}
+
+func (m mockShutdownHandler) WatchForShutdown(server *http.Server)                   {}
+func (m mockShutdownHandler) shutdownHandler(w http.ResponseWriter, r *http.Request) {}
