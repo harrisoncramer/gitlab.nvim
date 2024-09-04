@@ -20,7 +20,7 @@ type MergeRequestAccepter interface {
 
 type mergeRequestAccepterService struct {
 	data
-	client *Client
+	client MergeRequestAccepter
 }
 
 /* acceptAndMergeHandler merges a given merge request into the target branch */
