@@ -25,7 +25,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ListMergeRequestResponse{})
 
 		assert(t, data.Message, "Merge requests fetched successfully")
@@ -38,7 +38,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		client.EXPECT().ListProjectMergeRequests("", gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Failed to list merge requests")
@@ -51,7 +51,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		client.EXPECT().ListProjectMergeRequests("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Failed to list merge requests")
@@ -64,7 +64,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		client.EXPECT().ListProjectMergeRequests("", gomock.Any()).Return([]*gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ListMergeRequestResponse{})
 
 		assert(t, data.Message, "No merge requests found")

@@ -24,7 +24,7 @@ type MergeRequestCreator interface {
 }
 
 type mergeRequestCreatorService struct {
-	commonHandlerData
+	data
 	client MergeRequestCreator
 }
 

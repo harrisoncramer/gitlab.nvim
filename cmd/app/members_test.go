@@ -15,7 +15,7 @@ func TestMembersHandler(t *testing.T) {
 		client.EXPECT().ListAllProjectMembers("", gomock.Any()).Return([]*gitlab.ProjectMember{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ProjectMembersResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Project members retrieved")
@@ -26,7 +26,7 @@ func TestMembersHandler(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 
 		request := makeRequest(t, http.MethodPost, "/project/members", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodGet)
@@ -37,7 +37,7 @@ func TestMembersHandler(t *testing.T) {
 		client.EXPECT().ListAllProjectMembers("", gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not retrieve project members")
@@ -48,7 +48,7 @@ func TestMembersHandler(t *testing.T) {
 		client.EXPECT().ListAllProjectMembers("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not retrieve project members", "/project/members")

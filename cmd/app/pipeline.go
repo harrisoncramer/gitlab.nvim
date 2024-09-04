@@ -33,7 +33,7 @@ type PipelineManager interface {
 }
 
 type pipelineService struct {
-	commonHandlerData
+	data
 	client PipelineManager
 }
 

@@ -30,7 +30,7 @@ func TestListDraftNotes(t *testing.T) {
 		client.EXPECT().ListDraftNotes("", mock_main.MergeId, gomock.Any()).Return([]*gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ListDraftNotesResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Draft notes fetched successfully")
@@ -43,7 +43,7 @@ func TestListDraftNotes(t *testing.T) {
 		client.EXPECT().ListDraftNotes("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not get draft notes")
@@ -59,7 +59,7 @@ func TestPostDraftNote(t *testing.T) {
 		client.EXPECT().CreateDraftNote("", mock_main.MergeId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, DraftNoteResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Draft note created successfully")
@@ -72,7 +72,7 @@ func TestPostDraftNote(t *testing.T) {
 		client.EXPECT().CreateDraftNote("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not create draft note")
@@ -89,7 +89,7 @@ func TestDeleteDraftNote(t *testing.T) {
 		client.EXPECT().DeleteDraftNote("", mock_main.MergeId, urlId).Return(makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%d", urlId), nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, DraftNoteResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Draft note deleted")
@@ -103,7 +103,7 @@ func TestDeleteDraftNote(t *testing.T) {
 		client.EXPECT().DeleteDraftNote("", mock_main.MergeId, urlId).Return(nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%d", urlId), nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not delete draft note")
@@ -117,7 +117,7 @@ func TestDeleteDraftNote(t *testing.T) {
 		urlId := "abc"
 
 		request := makeRequest(t, http.MethodDelete, fmt.Sprintf("/mr/draft_notes/%s", urlId), nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not parse draft note ID")
@@ -133,7 +133,7 @@ func TestEditDraftNote(t *testing.T) {
 		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%d", urlId), testUpdateDraftNoteRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, DraftNoteResponse{})
 
 		assert(t, data.Message, "Draft note updated")
@@ -147,7 +147,7 @@ func TestEditDraftNote(t *testing.T) {
 		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%s", urlId), testUpdateDraftNoteRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not parse draft note ID")
@@ -165,7 +165,7 @@ func TestEditDraftNote(t *testing.T) {
 		client.EXPECT().UpdateDraftNote("", mock_main.MergeId, urlId, gomock.Any()).Return(&gitlab.DraftNote{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, fmt.Sprintf("/mr/draft_notes/%d", urlId), testEmptyUpdateDraftNoteRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Must provide draft note text")
@@ -180,7 +180,7 @@ func TestPublishDraftNote(t *testing.T) {
 		client.EXPECT().PublishDraftNote("", mock_main.MergeId, testDraftNotePublishRequest.Note).Return(makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note(s) published")
@@ -197,7 +197,7 @@ func TestPublishDraftNote(t *testing.T) {
 		}
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Must provide Note ID")
@@ -210,7 +210,7 @@ func TestPublishDraftNote(t *testing.T) {
 		client.EXPECT().PublishDraftNote("", mock_main.MergeId, testDraftNotePublishRequest.Note).Return(nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Message, "Could not publish draft note(s)")
@@ -225,7 +225,7 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		client.EXPECT().PublishAllDraftNotes("", mock_main.MergeId).Return(makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "Draft note(s) published")
@@ -238,7 +238,7 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		client.EXPECT().PublishAllDraftNotes("", mock_main.MergeId).Return(nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", DraftNotePublishRequest{PublishAll: true})
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		assert(t, data.Message, "Could not publish draft note(s)")

@@ -75,7 +75,7 @@ type DraftNotePublisher interface {
 }
 
 type draftNoteService struct {
-	commonHandlerData
+	data
 	client DraftNotePublisher
 }
 

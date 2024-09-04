@@ -23,7 +23,7 @@ type TraceFileGetter interface {
 }
 
 type traceFileService struct {
-	commonHandlerData
+	data
 	client TraceFileGetter
 }
 

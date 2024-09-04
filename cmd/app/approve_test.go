@@ -15,7 +15,7 @@ func TestApproveHandler(t *testing.T) {
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, SuccessResponse{})
 
 		assert(t, data.Message, "Approved MR")
@@ -28,7 +28,7 @@ func TestApproveHandler(t *testing.T) {
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(&gitlab.MergeRequestApprovals{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPut, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
 	})
@@ -39,7 +39,7 @@ func TestApproveHandler(t *testing.T) {
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not approve merge request")
@@ -51,7 +51,7 @@ func TestApproveHandler(t *testing.T) {
 		client.EXPECT().ApproveMergeRequest("", mock_main.MergeId, nil, nil).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not approve merge request", "/mr/approve")

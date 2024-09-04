@@ -18,7 +18,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, AssigneeUpdateResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Assignees updated")
@@ -31,7 +31,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/assignee", nil)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusMethodNotAllowed)
@@ -45,7 +45,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusInternalServerError)
@@ -59,7 +59,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client.EXPECT().UpdateMergeRequest("", mock_main.MergeId, gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusSeeOther)

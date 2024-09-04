@@ -14,7 +14,7 @@ func TestInfoHandler(t *testing.T) {
 		mock_main.WithMr(t, client)
 		client.EXPECT().GetMergeRequest("", mock_main.MergeId, &gitlab.GetMergeRequestsOptions{}).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
 		data := serveRequest(t, server, request, InfoResponse{})
 
@@ -26,7 +26,7 @@ func TestInfoHandler(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		mock_main.WithMr(t, client)
 
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		request := makeRequest(t, http.MethodPost, "/mr/info", nil)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
@@ -38,7 +38,7 @@ func TestInfoHandler(t *testing.T) {
 		mock_main.WithMr(t, client)
 		client.EXPECT().GetMergeRequest("", mock_main.MergeId, &gitlab.GetMergeRequestsOptions{}).Return(nil, nil, errorFromGitlab)
 
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
@@ -50,7 +50,7 @@ func TestInfoHandler(t *testing.T) {
 		mock_main.WithMr(t, client)
 		client.EXPECT().GetMergeRequest("", mock_main.MergeId, &gitlab.GetMergeRequestsOptions{}).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
 
 		data := serveRequest(t, server, request, ErrorResponse{})

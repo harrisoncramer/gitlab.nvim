@@ -17,7 +17,7 @@ type MeGetter interface {
 }
 
 type meService struct {
-	commonHandlerData
+	data
 	client MeGetter
 }
 

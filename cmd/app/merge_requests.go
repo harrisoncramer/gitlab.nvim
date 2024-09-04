@@ -25,7 +25,7 @@ type MergeRequestLister interface {
 }
 
 type mergeRequestListerService struct {
-	commonHandlerData
+	data
 	client MergeRequestLister
 }
 

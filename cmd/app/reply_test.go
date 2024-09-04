@@ -27,7 +27,7 @@ func TestReplyHandler(t *testing.T) {
 		).Return(&gitlab.Note{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ReplyResponse{})
 		assert(t, data.SuccessResponse.Message, "Replied to comment")
@@ -39,7 +39,7 @@ func TestReplyHandler(t *testing.T) {
 		mock_main.WithMr(t, client)
 
 		request := makeRequest(t, http.MethodPut, "/mr/reply", testReplyRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodPost)
@@ -56,7 +56,7 @@ func TestReplyHandler(t *testing.T) {
 		).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not leave reply")
@@ -73,7 +73,7 @@ func TestReplyHandler(t *testing.T) {
 		).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not leave reply", "/mr/reply")

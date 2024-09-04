@@ -17,7 +17,7 @@ type ProjectMemberLister interface {
 }
 
 type projectListerService struct {
-	commonHandlerData
+	data
 	client ProjectMemberLister
 }
 

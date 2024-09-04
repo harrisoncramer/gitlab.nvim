@@ -23,7 +23,7 @@ func TestCreateMr(t *testing.T) {
 		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 
 		data := serveRequest(t, server, request, SuccessResponse{})
 		assert(t, data.Message, "MR 'Some title' created")
@@ -35,7 +35,7 @@ func TestCreateMr(t *testing.T) {
 		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/create_mr", testCreateMrRequestData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkBadMethod(t, *data, http.MethodPost)
@@ -46,7 +46,7 @@ func TestCreateMr(t *testing.T) {
 		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not create MR")
@@ -57,7 +57,7 @@ func TestCreateMr(t *testing.T) {
 		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not create MR", "/create_mr")
@@ -72,7 +72,7 @@ func TestCreateMr(t *testing.T) {
 		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", missingTitleRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusBadRequest)
@@ -89,7 +89,7 @@ func TestCreateMr(t *testing.T) {
 		client.EXPECT().CreateMergeRequest("", gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/create_mr", missingTitleRequest)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		assert(t, data.Status, http.StatusBadRequest)

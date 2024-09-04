@@ -27,7 +27,7 @@ func TestAttachmentHandler(t *testing.T) {
 		client.EXPECT().UploadFile("", reader, attachmentTestRequestData.FileName).Return(&gitlab.ProjectFile{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		router, _ := CreateRouterAndApi(client, withMockFileReader)
+		router, _ := CreateRouter(client, withMockFileReader)
 		data := serveRequest(t, router, request, AttachmentResponse{})
 
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -39,7 +39,7 @@ func TestAttachmentHandler(t *testing.T) {
 		client.EXPECT().UploadFile("", reader, attachmentTestRequestData.FileName).Return(&gitlab.ProjectFile{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPut, "/attachment", attachmentTestRequestData)
-		router, _ := CreateRouterAndApi(client, withMockFileReader)
+		router, _ := CreateRouter(client, withMockFileReader)
 		data := serveRequest(t, router, request, ErrorResponse{})
 
 		checkBadMethod(t, *data, http.MethodPost)
@@ -50,7 +50,7 @@ func TestAttachmentHandler(t *testing.T) {
 		client.EXPECT().UploadFile("", reader, attachmentTestRequestData.FileName).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		router, _ := CreateRouterAndApi(client, withMockFileReader)
+		router, _ := CreateRouter(client, withMockFileReader)
 
 		data := serveRequest(t, router, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not upload some_file_name to Gitlab")
@@ -61,7 +61,7 @@ func TestAttachmentHandler(t *testing.T) {
 		client.EXPECT().UploadFile("", reader, attachmentTestRequestData.FileName).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		router, _ := CreateRouterAndApi(client, withMockFileReader)
+		router, _ := CreateRouter(client, withMockFileReader)
 
 		data := serveRequest(t, router, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not upload some_file_name to Gitlab", "/attachment")

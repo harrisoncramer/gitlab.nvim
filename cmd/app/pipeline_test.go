@@ -30,7 +30,7 @@ func TestPipelineHandler(t *testing.T) {
 		client.EXPECT().ListPipelineJobs("", testPipelineId, &gitlab.ListJobsOptions{}).Return([]*gitlab.Job{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 		data := serveRequest(t, server, request, GetPipelineAndJobsResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Pipeline retrieved")
@@ -40,7 +40,7 @@ func TestPipelineHandler(t *testing.T) {
 	t.Run("Disallows non-GET, non-POST methods", func(t *testing.T) {
 		client := mock_main.NewMockClient(t)
 		request := makeRequest(t, http.MethodPatch, "/pipeline", nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkBadMethod(t, *data, http.MethodGet, http.MethodPost)
@@ -52,7 +52,7 @@ func TestPipelineHandler(t *testing.T) {
 		client.EXPECT().ListPipelineJobs("", testPipelineId, &gitlab.ListJobsOptions{}).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not get pipeline jobs")
@@ -64,7 +64,7 @@ func TestPipelineHandler(t *testing.T) {
 		client.EXPECT().ListPipelineJobs("", testPipelineId, &gitlab.ListJobsOptions{}).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not get pipeline jobs", "/pipeline")
@@ -75,7 +75,7 @@ func TestPipelineHandler(t *testing.T) {
 		client.EXPECT().RetryPipelineBuild("", testPipelineId).Return(&gitlab.Pipeline{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, fmt.Sprintf("/pipeline/trigger/%d", testPipelineId), nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 
 		data := serveRequest(t, server, request, GetPipelineAndJobsResponse{})
 		assert(t, data.SuccessResponse.Message, "Pipeline retriggered")
@@ -87,7 +87,7 @@ func TestPipelineHandler(t *testing.T) {
 		client.EXPECT().RetryPipelineBuild("", testPipelineId).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, fmt.Sprintf("/pipeline/trigger/%d", testPipelineId), nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not retrigger pipeline", "/pipeline")
@@ -98,7 +98,7 @@ func TestPipelineHandler(t *testing.T) {
 		client.EXPECT().RetryPipelineBuild("", testPipelineId).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, fmt.Sprintf("/pipeline/trigger/%d", testPipelineId), nil)
-		server, _ := CreateRouterAndApi(client, withGitInfo)
+		server := CreateRouter(client, withGitInfo)
 
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkErrorFromGitlab(t, *data, "Could not retrigger pipeline")

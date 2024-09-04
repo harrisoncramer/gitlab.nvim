@@ -22,19 +22,18 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjec
 		sigCh: make(chan os.Signal, 1),
 	}
 
-	m, _ := CreateRouterAndApi(
+	r := CreateRouter(
 		client,
 		projectInfo,
 		s,
-		func(a *Api) error { a.projectInfo = projectInfo; return nil },
-		func(a *Api) error { a.fileReader = attachmentReader{}; return nil },
-		func(a *Api) error { a.GitInfo = &GitInfo; return nil },
-		func(a *Api) error { err := attachEmojisToApi(a); return err },
-		func(a *Api) error { a.GitInfo.GetLatestCommitOnRemote = git.GetLatestCommitOnRemote; return nil },
+		func(a *data) error { a.projectInfo = projectInfo; return nil },
+		func(a *data) error { a.gitInfo = &GitInfo; return nil },
+		func(a *data) error { err := attachEmojisToApi(a); return err },
+		func(a *data) error { a.gitInfo.GetLatestCommitOnRemote = git.GetLatestCommitOnRemote; return nil },
 	)
 	l := createListener()
 
-	server := &http.Server{Handler: m}
+	server := &http.Server{Handler: r}
 
 	/* Starts the Go server */
 	go func() {
@@ -64,44 +63,30 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjec
 }
 
 /*
-The Api struct contains common configuration that's accessible to all handlers, such as the gitlab
-client, the project information, and the channels for signaling error or shutdown requests
-
-The handlers for different Gitlab operations are are all methods on the Api struct and interact
-with the client value, which is a go-gitlab client.
-*/
-type Api struct {
-	client      ClientInterface
-	projectInfo *ProjectInfo
-	GitInfo     *git.GitProjectInfo
-	fileReader  FileReader
-	emojiMap    EmojiMap
-}
-
-type optFunc func(a *commonHandlerData) error
-
-/*
 CreateRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
 iterates over all option functions to configure API fields such as the project information and default
 file reader functionality
 */
 
-type commonHandlerData struct {
+type data struct {
 	projectInfo *ProjectInfo
 	gitInfo     *git.GitProjectInfo
+	emojiMap    EmojiMap
 }
 
-func CreateRouterAndApi(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) (*http.ServeMux, commonHandlerData) {
+type optFunc func(a *data) error
+
+func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) *http.ServeMux {
 	m := http.NewServeMux()
 
-	c := commonHandlerData{
+	d := data{
 		projectInfo: &ProjectInfo{},
 		gitInfo:     &git.GitProjectInfo{},
 	}
 
 	/* Mutates the API struct as necessary with configuration functions */
 	for _, optFunc := range optFuncs {
-		err := optFunc(&c)
+		err := optFunc(&d)
 		if err != nil {
 			panic(err)
 		}
@@ -122,21 +107,21 @@ func CreateRouterAndApi(gitlabClient *Client, projectInfo *ProjectInfo, s Shutdo
 	// m.HandleFunc("/mr/revoke", withMr(a.revokeHandler))
 	// m.HandleFunc("/mr/awardable/note/", withMr(a.emojiNoteHandler))
 	// m.HandleFunc("/mr/draft_notes/", withMr(a.draftNoteHandler))
-	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNoteService{commonHandlerData: c, client: gitlabClient}.handler, c, gitlabClient))
+	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNoteService{d, gitlabClient}.handler, d, gitlabClient))
 
-	m.HandleFunc("/pipeline", pipelineService{commonHandlerData: c, client: gitlabClient}.handler)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{commonHandlerData: c, client: gitlabClient}.handler)
-	m.HandleFunc("/users/me", meService{commonHandlerData: c, client: gitlabClient}.handler)
-	m.HandleFunc("/attachment", attachmentService{commonHandlerData: c, fileReader: attachmentReader{}}.handler)
-	m.HandleFunc("/create_mr", mergeRequestCreatorService{commonHandlerData: c, client: gitlabClient}.handler)
-	m.HandleFunc("/job", traceFileService{commonHandlerData: c, client: gitlabClient}.handler)
-	m.HandleFunc("/project/members", projectListerService{commonHandlerData: c, client: gitlabClient}.handler)
-	m.HandleFunc("/merge_requests", mergeRequestListerService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient}.handler)
+	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient}.handler)
+	m.HandleFunc("/users/me", meService{d, gitlabClient}.handler)
+	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.handler)
+	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.handler)
+	m.HandleFunc("/job", traceFileService{d, gitlabClient}.handler)
+	m.HandleFunc("/project/members", projectListerService{d, gitlabClient}.handler)
+	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.handler)
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
-	return m, c
+	return m
 }
 
 /* Used to check whether the server has started yet */
@@ -171,7 +156,7 @@ func createListener() (l net.Listener) {
 }
 
 /* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func withMr(next http.HandlerFunc, c commonHandlerData, client MergeRequestLister) http.HandlerFunc {
+func withMr(next http.HandlerFunc, c data, client MergeRequestLister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// If the merge request is already attached, skip the middleware logic
 		if c.projectInfo.MergeId == 0 {

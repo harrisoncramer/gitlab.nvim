@@ -16,7 +16,7 @@ func TestJobHandler(t *testing.T) {
 		client.EXPECT().GetTraceFile("", jobId).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, JobTraceResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Log file read")
@@ -29,7 +29,7 @@ func TestJobHandler(t *testing.T) {
 		client.EXPECT().GetTraceFile("", jobId).Return(bytes.NewReader([]byte("Some data")), makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/job", JobTraceRequest{})
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkBadMethod(t, *data, http.MethodGet)
@@ -40,7 +40,7 @@ func TestJobHandler(t *testing.T) {
 		client.EXPECT().GetTraceFile("", jobId).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not get trace file for job")
@@ -51,7 +51,7 @@ func TestJobHandler(t *testing.T) {
 		client.EXPECT().GetTraceFile("", jobId).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not get trace file for job", "/job")

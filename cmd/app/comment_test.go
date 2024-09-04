@@ -36,7 +36,7 @@ func TestPostComment(t *testing.T) {
 		).Return(&gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, CommentResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Comment created successfully")
@@ -62,7 +62,7 @@ func TestPostComment(t *testing.T) {
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, CommentResponse{})
 		assert(t, data.SuccessResponse.Message, "Comment created successfully")
 		assert(t, data.SuccessResponse.Status, http.StatusOK)
@@ -78,7 +78,7 @@ func TestPostComment(t *testing.T) {
 		).Return(nil, nil, errors.New("Some error from Gitlab"))
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not create discussion")
@@ -94,7 +94,7 @@ func TestPostComment(t *testing.T) {
 		).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not create discussion", "/mr/comment")
@@ -108,7 +108,7 @@ func TestDeleteComment(t *testing.T) {
 		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, CommentResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Comment deleted successfully")
@@ -121,7 +121,7 @@ func TestDeleteComment(t *testing.T) {
 		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not delete comment")
@@ -133,7 +133,7 @@ func TestDeleteComment(t *testing.T) {
 		client.EXPECT().DeleteMergeRequestDiscussionNote("", mock_main.MergeId, testCommentDeletionData.DiscussionId, testCommentDeletionData.NoteId).Return(makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not delete comment", "/mr/comment")
@@ -150,7 +150,7 @@ func TestEditComment(t *testing.T) {
 		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, &opts).Return(&gitlab.Note{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, CommentResponse{})
 
 		assert(t, data.SuccessResponse.Message, "Comment updated successfully")
@@ -163,7 +163,7 @@ func TestEditComment(t *testing.T) {
 		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not update comment")
@@ -175,7 +175,7 @@ func TestEditComment(t *testing.T) {
 		client.EXPECT().UpdateMergeRequestDiscussionNote("", mock_main.MergeId, testEditCommentData.DiscussionId, testEditCommentData.NoteId, gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 		checkNon200(t, *data, "Could not update comment", "/mr/comment")
 	})

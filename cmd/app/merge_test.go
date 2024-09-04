@@ -22,7 +22,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, SuccessResponse{})
 
 		assert(t, data.Message, "MR merged successfully")
@@ -35,7 +35,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(&gitlab.MergeRequest{}, makeResponse(http.StatusOK), nil)
 
 		request := makeRequest(t, http.MethodPatch, "/mr/merge", testAcceptMergeRequestPayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkBadMethod(t, *data, http.MethodPost)
@@ -47,7 +47,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(nil, nil, errorFromGitlab)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkErrorFromGitlab(t, *data, "Could not merge MR")
@@ -59,7 +59,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		client.EXPECT().AcceptMergeRequest("", mock_main.MergeId, gomock.Any()).Return(nil, makeResponse(http.StatusSeeOther), nil)
 
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
-		server, _ := CreateRouterAndApi(client)
+		server := CreateRouter(client)
 		data := serveRequest(t, server, request, ErrorResponse{})
 
 		checkNon200(t, *data, "Could not merge MR", "/mr/merge")
