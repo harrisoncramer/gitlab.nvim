@@ -15,10 +15,6 @@ import (
 	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
-/*
-The FakeHandlerClient is used to create a fake gitlab client for testing our handlers, where the gitlab APIs are all mocked depending on what is provided during the variable initialization, so that we can simulate different responses from Gitlab
-*/
-
 var errorFromGitlab = errors.New("Some error from Gitlab")
 
 /* The assert function is a helper function used to check two comparables */
