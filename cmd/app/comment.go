@@ -41,6 +41,16 @@ func (comment CommentWithPosition) GetPositionData() PositionData {
 	return comment.PositionData
 }
 
+type CommentHandler interface {
+	postComment(w http.ResponseWriter, r *http.Request)
+	editComment(w http.ResponseWriter, r *http.Request)
+	deleteComment(w http.ResponseWriter, r *http.Request)
+}
+
+func pipelineHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
 func (a *Api) commentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

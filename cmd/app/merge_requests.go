@@ -20,7 +20,16 @@ type ListMergeRequestResponse struct {
 	MergeRequests []*gitlab.MergeRequest `json:"merge_requests"`
 }
 
-func (a *Api) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
+type MergeRequestLister interface {
+	ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+type mergeRequestLister struct {
+	client      MergeRequestLister
+	projectInfo *ProjectInfo
+}
+
+func (a mergeRequestLister) mergeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

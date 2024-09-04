@@ -35,8 +35,8 @@ type Client struct {
 	*gitlab.DraftNotesService
 }
 
-/* InitGitlabClient parses and validates the project settings and initializes the Gitlab client. */
-func InitGitlabClient() (error, *Client) {
+/* NewClient parses and validates the project settings and initializes the Gitlab client. */
+func NewClient() (error, *Client) {
 
 	if pluginOptions.GitlabUrl == "" {
 		return errors.New("GitLab instance URL cannot be empty"), nil

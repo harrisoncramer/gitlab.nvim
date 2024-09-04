@@ -1,16 +1,13 @@
 package app
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/xanzy/go-gitlab"
 	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
@@ -20,28 +17,22 @@ to handle potential shutdown requests and incoming HTTP requests.
 */
 func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjectInfo) {
 
-	m, a := CreateRouterAndApi(client,
-		func(a *Api) error {
-			a.projectInfo = projectInfo
-			return nil
-		},
-		func(a *Api) error {
-			a.fileReader = attachmentReader{}
-			return nil
-		},
-		func(a *Api) error {
-			a.GitInfo = &GitInfo
-			return nil
-		},
-		func(a *Api) error {
-			err := attachEmojisToApi(a)
-			return err
-		},
-		func(a *Api) error {
-			a.GitInfo.GetLatestCommitOnRemote = git.GetLatestCommitOnRemote
-			return nil
-		})
+	s := shutdown{
+		sigCh: make(chan os.Signal, 1),
+	}
+
+	m, _ := CreateRouterAndApi(
+		client,
+		projectInfo,
+		s,
+		func(a *Api) error { a.projectInfo = projectInfo; return nil },
+		func(a *Api) error { a.fileReader = attachmentReader{}; return nil },
+		func(a *Api) error { a.GitInfo = &GitInfo; return nil },
+		func(a *Api) error { err := attachEmojisToApi(a); return err },
+		func(a *Api) error { a.GitInfo.GetLatestCommitOnRemote = git.GetLatestCommitOnRemote; return nil },
+	)
 	l := createListener()
+
 	server := &http.Server{Handler: m}
 
 	/* Starts the Go server */
@@ -68,14 +59,7 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjec
 	fmt.Println("Server started on port: ", port)
 
 	/* Handles shutdown requests */
-	<-a.sigCh
-	err = server.Shutdown(context.Background())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Server could not shut down gracefully: %s\n", err)
-		os.Exit(1)
-	} else {
-		os.Exit(0)
-	}
+	s.WatchForShutdown(server)
 }
 
 /*
@@ -91,7 +75,6 @@ type Api struct {
 	GitInfo     *git.GitProjectInfo
 	fileReader  FileReader
 	emojiMap    EmojiMap
-	sigCh       chan os.Signal
 }
 
 type optFunc func(a *Api) error
@@ -102,7 +85,7 @@ iterates over all option functions to configure API fields such as the project i
 file reader functionality
 */
 
-func CreateRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.ServeMux, Api) {
+func CreateRouterAndApi(client *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) (*http.ServeMux, Api) {
 	m := http.NewServeMux()
 	a := Api{
 		client:      client,
@@ -110,7 +93,6 @@ func CreateRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		GitInfo:     &git.GitProjectInfo{},
 		fileReader:  nil,
 		emojiMap:    EmojiMap{},
-		sigCh:       make(chan os.Signal, 1),
 	}
 
 	/* Mutates the API struct as necessary with configuration functions */
@@ -121,33 +103,31 @@ func CreateRouterAndApi(client ClientInterface, optFuncs ...optFunc) (*http.Serv
 		}
 	}
 
-	m.HandleFunc("/mr/approve", a.withMr(a.approveHandler))
-	m.HandleFunc("/mr/comment", a.withMr(a.commentHandler))
-	m.HandleFunc("/mr/merge", a.withMr(a.acceptAndMergeHandler))
-	m.HandleFunc("/mr/discussions/list", a.withMr(a.listDiscussionsHandler))
-	m.HandleFunc("/mr/discussions/resolve", a.withMr(a.discussionsResolveHandler))
-	m.HandleFunc("/mr/info", a.withMr(a.infoHandler))
-	m.HandleFunc("/mr/assignee", a.withMr(a.assigneesHandler))
-	m.HandleFunc("/mr/summary", a.withMr(a.summaryHandler))
-	m.HandleFunc("/mr/reviewer", a.withMr(a.reviewersHandler))
-	m.HandleFunc("/mr/revisions", a.withMr(a.revisionsHandler))
-	m.HandleFunc("/mr/reply", a.withMr(a.replyHandler))
-	m.HandleFunc("/mr/label", a.withMr(a.labelHandler))
-	m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
-	m.HandleFunc("/mr/awardable/note/", a.withMr(a.emojiNoteHandler))
-	m.HandleFunc("/mr/draft_notes/", a.withMr(a.draftNoteHandler))
-	m.HandleFunc("/mr/draft_notes/publish", a.withMr(a.draftNotePublisher))
-
-	m.HandleFunc("/pipeline", a.pipelineHandler)
-	m.HandleFunc("/pipeline/trigger/", a.pipelineHandler)
-	m.HandleFunc("/users/me", a.meHandler)
-	m.HandleFunc("/attachment", a.attachmentHandler)
-	m.HandleFunc("/create_mr", a.createMr)
-	m.HandleFunc("/job", a.jobHandler)
-	m.HandleFunc("/project/members", a.projectMembersHandler)
-	m.HandleFunc("/shutdown", a.shutdownHandler)
-	m.HandleFunc("/merge_requests", a.mergeRequestsHandler)
-
+	// m.HandleFunc("/mr/approve", a.withMr(a.approveHandler))
+	// m.HandleFunc("/mr/comment", a.withMr(a.commentHandler))
+	// m.HandleFunc("/mr/merge", a.withMr(a.acceptAndMergeHandler))
+	// m.HandleFunc("/mr/discussions/list", a.withMr(a.listDiscussionsHandler))
+	// m.HandleFunc("/mr/discussions/resolve", a.withMr(a.discussionsResolveHandler))
+	// m.HandleFunc("/mr/info", a.withMr(a.infoHandler))
+	// m.HandleFunc("/mr/assignee", a.withMr(a.assigneesHandler))
+	// m.HandleFunc("/mr/summary", a.withMr(a.summaryHandler))
+	// m.HandleFunc("/mr/reviewer", a.withMr(a.reviewersHandler))
+	// m.HandleFunc("/mr/revisions", a.withMr(a.revisionsHandler))
+	// m.HandleFunc("/mr/reply", a.withMr(a.replyHandler))
+	// m.HandleFunc("/mr/label", a.withMr(a.labelHandler))
+	// m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
+	// m.HandleFunc("/mr/awardable/note/", a.withMr(a.emojiNoteHandler))
+	// m.HandleFunc("/mr/draft_notes/", a.withMr(a.draftNoteHandler))
+	// m.HandleFunc("/mr/draft_notes/publish", a.withMr(a.draftNotePublisher))
+	// m.HandleFunc("/pipeline", a.pipelineHandler)
+	// m.HandleFunc("/pipeline/trigger/", a.pipelineHandler)
+	// m.HandleFunc("/users/me", a.meHandler)
+	// m.HandleFunc("/attachment", a.attachmentHandler)
+	// m.HandleFunc("/create_mr", a.createMr)
+	// m.HandleFunc("/job", a.jobHandler)
+	// m.HandleFunc("/project/members", a.projectMembersHandler)
+	m.HandleFunc("/shutdown", s.shutdownHandler)
+	m.HandleFunc("/merge_requests", mergeRequestLister{client: client, projectInfo: projectInfo}.mergeRequestsHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return m, a
@@ -185,39 +165,39 @@ func createListener() (l net.Listener) {
 }
 
 /* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func (a *Api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		if a.projectInfo.MergeId != 0 {
-			f(w, r)
-			return
-		}
-
-		options := gitlab.ListProjectMergeRequestsOptions{
-			Scope:        gitlab.Ptr("all"),
-			State:        gitlab.Ptr("opened"),
-			SourceBranch: &a.GitInfo.BranchName,
-		}
-
-		mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
-		if err != nil {
-			handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
-			return
-		}
-
-		if len(mergeRequests) == 0 {
-			handleError(w, fmt.Errorf("No merge requests found for branch '%s'", a.GitInfo.BranchName), "No merge requests found", http.StatusBadRequest)
-			return
-		}
-
-		mergeId := strconv.Itoa(mergeRequests[0].IID)
-		mergeIdInt, err := strconv.Atoi(mergeId)
-		if err != nil {
-			handleError(w, err, "Could not convert merge ID to integer", http.StatusBadRequest)
-			return
-		}
-
-		a.projectInfo.MergeId = mergeIdInt
-		f(w, r)
-	}
-}
+// func (a *Api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+//
+// 		if a.projectInfo.MergeId != 0 {
+// 			f(w, r)
+// 			return
+// 		}
+//
+// 		options := gitlab.ListProjectMergeRequestsOptions{
+// 			Scope:        gitlab.Ptr("all"),
+// 			State:        gitlab.Ptr("opened"),
+// 			SourceBranch: &a.GitInfo.BranchName,
+// 		}
+//
+// 		mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+// 		if err != nil {
+// 			handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
+// 			return
+// 		}
+//
+// 		if len(mergeRequests) == 0 {
+// 			handleError(w, fmt.Errorf("No merge requests found for branch '%s'", a.GitInfo.BranchName), "No merge requests found", http.StatusBadRequest)
+// 			return
+// 		}
+//
+// 		mergeId := strconv.Itoa(mergeRequests[0].IID)
+// 		mergeIdInt, err := strconv.Atoi(mergeId)
+// 		if err != nil {
+// 			handleError(w, err, "Could not convert merge ID to integer", http.StatusBadRequest)
+// 			return
+// 		}
+//
+// 		a.projectInfo.MergeId = mergeIdInt
+// 		f(w, r)
+// 	}
+// }

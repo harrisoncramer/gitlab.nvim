@@ -24,7 +24,7 @@ func main() {
 		log.Fatalf("Failure initializing plugin: %v", err)
 	}
 
-	err, client := app.InitGitlabClient()
+	err, client := app.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
