@@ -40,7 +40,9 @@ type CreateEmojiResponse struct {
 }
 
 type EmojiManager interface {
+	DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 	ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
+	CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error)
 }
 
 type emojiService struct {
@@ -48,99 +50,7 @@ type emojiService struct {
 	client EmojiManager
 }
 
-/*
-attachEmojis reads the emojis from our external JSON file
-and attaches them to the data so that they can be looked up later
-*/
-func attachEmojis(a *data, fr FileReader) error {
-
-	e, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	binPath := path.Dir(e)
-	filePath := fmt.Sprintf("%s/config/emojis.json", binPath)
-
-	reader, err := fr.ReadFile(filePath)
-
-	if err != nil {
-		return fmt.Errorf("Could not find emojis at %s", filePath)
-	}
-
-	bytes, err := io.ReadAll(reader)
-	if err != nil {
-		return errors.New("Could not read emoji file")
-	}
-
-	var emojiMap EmojiMap
-	err = json.Unmarshal(bytes, &emojiMap)
-	if err != nil {
-		return errors.New("Could not unmarshal emojis")
-	}
-
-	a.emojiMap = emojiMap
-	return nil
-}
-
-/*
-Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
-Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
-*/
-func (a emojiService) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
-	var wg sync.WaitGroup
-
-	emojis := make(map[int][]*gitlab.AwardEmoji)
-	mu := &sync.Mutex{}
-	errs := make(chan error, len(noteIDs))
-	emojiChan := make(chan struct {
-		noteID int
-		emojis []*gitlab.AwardEmoji
-	}, len(noteIDs))
-
-	for _, noteID := range noteIDs {
-		wg.Add(1)
-		go func(noteID int) {
-			defer wg.Done()
-			emojis, _, err := a.client.ListMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteID, &gitlab.ListAwardEmojiOptions{})
-			if err != nil {
-				errs <- err
-				return
-			}
-			emojiChan <- struct {
-				noteID int
-				emojis []*gitlab.AwardEmoji
-			}{noteID, emojis}
-		}(noteID)
-	}
-
-	/* Close the channels when all goroutines finish */
-	go func() {
-		wg.Wait()
-		close(errs)
-		close(emojiChan)
-	}()
-
-	/* Collect emojis */
-	for e := range emojiChan {
-		mu.Lock()
-		emojis[e.noteID] = e.emojis
-		mu.Unlock()
-	}
-
-	/* Check if any errors occurred */
-	if len(errs) > 0 {
-		for err := range errs {
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return emojis, nil
-}
-
-func (a emojiService) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
+func (a emojiService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
@@ -240,4 +150,96 @@ func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
+}
+
+/*
+attachEmojis reads the emojis from our external JSON file
+and attaches them to the data so that they can be looked up later
+*/
+func attachEmojis(a *data, fr FileReader) error {
+
+	e, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	binPath := path.Dir(e)
+	filePath := fmt.Sprintf("%s/config/emojis.json", binPath)
+
+	reader, err := fr.ReadFile(filePath)
+
+	if err != nil {
+		return fmt.Errorf("Could not find emojis at %s", filePath)
+	}
+
+	bytes, err := io.ReadAll(reader)
+	if err != nil {
+		return errors.New("Could not read emoji file")
+	}
+
+	var emojiMap EmojiMap
+	err = json.Unmarshal(bytes, &emojiMap)
+	if err != nil {
+		return errors.New("Could not unmarshal emojis")
+	}
+
+	a.emojiMap = emojiMap
+	return nil
+}
+
+/*
+Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
+Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
+*/
+func (a emojiService) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
+	var wg sync.WaitGroup
+
+	emojis := make(map[int][]*gitlab.AwardEmoji)
+	mu := &sync.Mutex{}
+	errs := make(chan error, len(noteIDs))
+	emojiChan := make(chan struct {
+		noteID int
+		emojis []*gitlab.AwardEmoji
+	}, len(noteIDs))
+
+	for _, noteID := range noteIDs {
+		wg.Add(1)
+		go func(noteID int) {
+			defer wg.Done()
+			emojis, _, err := a.client.ListMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteID, &gitlab.ListAwardEmojiOptions{})
+			if err != nil {
+				errs <- err
+				return
+			}
+			emojiChan <- struct {
+				noteID int
+				emojis []*gitlab.AwardEmoji
+			}{noteID, emojis}
+		}(noteID)
+	}
+
+	/* Close the channels when all goroutines finish */
+	go func() {
+		wg.Wait()
+		close(errs)
+		close(emojiChan)
+	}()
+
+	/* Collect emojis */
+	for e := range emojiChan {
+		mu.Lock()
+		emojis[e.noteID] = e.emojis
+		mu.Unlock()
+	}
+
+	/* Check if any errors occurred */
+	if len(errs) > 0 {
+		for err := range errs {
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return emojis, nil
 }

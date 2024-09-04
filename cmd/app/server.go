@@ -106,7 +106,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	// m.HandleFunc("/mr/reply", withMr(a.replyHandler))
 	// m.HandleFunc("/mr/label", withMr(a.labelHandler))
 	// m.HandleFunc("/mr/revoke", withMr(a.revokeHandler))
-	// m.HandleFunc("/mr/awardable/note/", withMr(a.emojiNoteHandler))
+	m.HandleFunc("/mr/awardable/note/", withMr(emojiService{d, gitlabClient}.handler, d, gitlabClient))
 	m.HandleFunc("/mr/draft_notes/", withMr(draftNoteService{d, gitlabClient}.handler, d, gitlabClient))
 	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNotePublisherService{d, gitlabClient}.handler, d, gitlabClient))
 
