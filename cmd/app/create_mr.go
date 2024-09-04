@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 type CreateMrRequest struct {
@@ -19,8 +20,18 @@ type CreateMrRequest struct {
 	TargetProjectID int    `json:"forked_project_id,omitempty"`
 }
 
+type MergeRequestCreator interface {
+	CreateMergeRequest(pid interface{}, opt *gitlab.CreateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+}
+
+type mergeRequestCreatorService struct {
+	client      MergeRequestCreator
+	projectInfo *ProjectInfo
+	gitInfo     *git.GitProjectInfo
+}
+
 /* createMr creates a merge request */
-func (a *Api) createMr(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestCreatorService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 	if r.Method != http.MethodPost {
@@ -55,7 +66,7 @@ func (a *Api) createMr(w http.ResponseWriter, r *http.Request) {
 		Title:              &createMrRequest.Title,
 		Description:        &createMrRequest.Description,
 		TargetBranch:       &createMrRequest.TargetBranch,
-		SourceBranch:       &a.GitInfo.BranchName,
+		SourceBranch:       &a.gitInfo.BranchName,
 		RemoveSourceBranch: &createMrRequest.DeleteBranch,
 		Squash:             &createMrRequest.Squash,
 	}

@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 type FileReader interface {
@@ -45,8 +47,18 @@ func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
 	return reader, nil
 }
 
+type FileUploader interface {
+	UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
+}
+
+type attachmentService struct {
+	client      FileUploader
+	fileReader  FileReader
+	projectInfo *ProjectInfo
+}
+
 /* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
-func (a *Api) attachmentHandler(w http.ResponseWriter, r *http.Request) {
+func (a attachmentService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

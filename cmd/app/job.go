@@ -1,9 +1,12 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 type JobTraceRequest struct {
@@ -15,8 +18,17 @@ type JobTraceResponse struct {
 	File string `json:"file"`
 }
 
+type TraceFileGetter interface {
+	GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
+}
+
+type traceFileService struct {
+	client      TraceFileGetter
+	projectInfo *ProjectInfo
+}
+
 /* jobHandler returns a string that shows the output of a specific job run in a Gitlab pipeline */
-func (a *Api) jobHandler(w http.ResponseWriter, r *http.Request) {
+func (a traceFileService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
