@@ -41,18 +41,19 @@ func (comment CommentWithPosition) GetPositionData() PositionData {
 	return comment.PositionData
 }
 
-type CommentHandler interface {
-	postComment(w http.ResponseWriter, r *http.Request)
-	editComment(w http.ResponseWriter, r *http.Request)
-	deleteComment(w http.ResponseWriter, r *http.Request)
+type CommentManager interface {
+	CreateMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
+	UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
+	DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 }
 
-func pipelineHandler(w http.ResponseWriter, r *http.Request) {
-
+type commentService struct {
+	data
+	client CommentManager
 }
 
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
-func (a *Api) commentHandler(w http.ResponseWriter, r *http.Request) {
+func (a commentService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
@@ -68,7 +69,7 @@ func (a *Api) commentHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
-func (a *Api) deleteComment(w http.ResponseWriter, r *http.Request) {
+func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -109,7 +110,7 @@ func (a *Api) deleteComment(w http.ResponseWriter, r *http.Request) {
 }
 
 /* postComment creates a note, multiline comment, or comment. */
-func (a *Api) postComment(w http.ResponseWriter, r *http.Request) {
+func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -166,7 +167,7 @@ func (a *Api) postComment(w http.ResponseWriter, r *http.Request) {
 }
 
 /* editComment changes the text of a comment or changes it's resolved status. */
-func (a *Api) editComment(w http.ResponseWriter, r *http.Request) {
+func (a commentService) editComment(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
