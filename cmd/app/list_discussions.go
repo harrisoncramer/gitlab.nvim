@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"sync"
 
 	"encoding/json"
 
@@ -37,11 +38,21 @@ func (n SortableDiscussions) Swap(i, j int) {
 	n[i], n[j] = n[j], n[i]
 }
 
+type DiscussionsLister interface {
+	ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error)
+	ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
+}
+
+type discussionsListerService struct {
+	data
+	client DiscussionsLister
+}
+
 /*
 listDiscussionsHandler lists all discusions for a given merge request, both those linked and unlinked to particular points in the code.
 The responses are sorted by date created, and blacklisted users are not included
 */
-func (a *Api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
+func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
@@ -135,4 +146,61 @@ func (a *Api) listDiscussionsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
+}
+
+/*
+Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
+Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
+*/
+func (a discussionsListerService) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
+	var wg sync.WaitGroup
+
+	emojis := make(map[int][]*gitlab.AwardEmoji)
+	mu := &sync.Mutex{}
+	errs := make(chan error, len(noteIDs))
+	emojiChan := make(chan struct {
+		noteID int
+		emojis []*gitlab.AwardEmoji
+	}, len(noteIDs))
+
+	for _, noteID := range noteIDs {
+		wg.Add(1)
+		go func(noteID int) {
+			defer wg.Done()
+			emojis, _, err := a.client.ListMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteID, &gitlab.ListAwardEmojiOptions{})
+			if err != nil {
+				errs <- err
+				return
+			}
+			emojiChan <- struct {
+				noteID int
+				emojis []*gitlab.AwardEmoji
+			}{noteID, emojis}
+		}(noteID)
+	}
+
+	/* Close the channels when all goroutines finish */
+	go func() {
+		wg.Wait()
+		close(errs)
+		close(emojiChan)
+	}()
+
+	/* Collect emojis */
+	for e := range emojiChan {
+		mu.Lock()
+		emojis[e.noteID] = e.emojis
+		mu.Unlock()
+	}
+
+	/* Check if any errors occurred */
+	if len(errs) > 0 {
+		for err := range errs {
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return emojis, nil
 }
