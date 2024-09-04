@@ -93,7 +93,7 @@ func (a draftNoteService) listDraftNotes(w http.ResponseWriter, _ *http.Request)
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft/comment"}, "Could not get draft notes", res.StatusCode)
+		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not get draft notes", res.StatusCode)
 		return
 	}
 
@@ -187,7 +187,7 @@ func (a draftNoteService) deleteDraftNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not delete draft note", res.StatusCode)
+		handleError(w, GenericError{endpoint: fmt.Sprintf("/mr/draft_notes/%d", id)}, "Could not delete draft note", res.StatusCode)
 		return
 	}
 
@@ -245,7 +245,7 @@ func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not update draft note", res.StatusCode)
+		handleError(w, GenericError{endpoint: fmt.Sprintf("/mr/draft_notes/%d", id)}, "Could not update draft note", res.StatusCode)
 		return
 	}
 
