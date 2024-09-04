@@ -39,6 +39,15 @@ type CreateEmojiResponse struct {
 	Emoji *gitlab.AwardEmoji
 }
 
+type EmojiManager interface {
+	ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
+}
+
+type emojiService struct {
+	data
+	client EmojiManager
+}
+
 /*
 attachEmojis reads the emojis from our external JSON file
 and attaches them to the data so that they can be looked up later
@@ -78,7 +87,7 @@ func attachEmojis(a *data, fr FileReader) error {
 Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
 Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
 */
-func (a *Api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
+func (a emojiService) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
 	var wg sync.WaitGroup
 
 	emojis := make(map[int][]*gitlab.AwardEmoji)
@@ -131,7 +140,7 @@ func (a *Api) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.A
 	return emojis, nil
 }
 
-func (a *Api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
+func (a emojiService) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
@@ -145,7 +154,7 @@ func (a *Api) emojiNoteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* deleteEmojiFromNote deletes an emoji from a note based on the emoji (awardable) ID and the note's ID */
-func (a *Api) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
+func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
 
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/awardable/note/")
 	ids := strings.Split(suffix, "/")
@@ -187,7 +196,7 @@ func (a *Api) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request) {
 }
 
 /* postEmojiOnNote adds an emojis to a note based on the note's ID */
-func (a *Api) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
+func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
