@@ -3,10 +3,21 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/xanzy/go-gitlab"
 )
 
+type MergeRequestApprover interface {
+	ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error)
+}
+
+type mergeRequestApproverService struct {
+	data
+	client *Client
+}
+
 /* approveHandler approves a merge request. */
-func (a *Api) approveHandler(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestAccepterService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
