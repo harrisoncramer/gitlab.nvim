@@ -1,13 +1,10 @@
 package app
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 type fakeApprover struct{}
@@ -19,20 +16,9 @@ func (f fakeApprover) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.A
 func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		d := data{
-			projectInfo: &ProjectInfo{},
-			gitInfo:     &git.GitProjectInfo{},
-		}
 		client := fakeApprover{}
-		svc := mergeRequestApproverService{d, client}
-		res := httptest.NewRecorder()
-		svc.handler(res, request)
-
-		var data SuccessResponse
-		err := json.Unmarshal(res.Body.Bytes(), &data)
-		if err != nil {
-			t.Error(err)
-		}
+		svc := mergeRequestApproverService{emptyProjectData, client}
+		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Approved MR")
 		assert(t, data.Status, http.StatusOK)
 	})

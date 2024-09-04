@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 /*
@@ -72,6 +73,24 @@ func makeResponse(status int) *gitlab.Response {
 			StatusCode: status,
 		},
 	}
+}
+
+var emptyProjectData = data{
+	projectInfo: &ProjectInfo{},
+	gitInfo:     &git.GitProjectInfo{},
+}
+
+func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request) SuccessResponse {
+	res := httptest.NewRecorder()
+	svc.handler(res, request)
+
+	var data SuccessResponse
+	err := json.Unmarshal(res.Body.Bytes(), &data)
+	if err != nil {
+		t.Error(err)
+	}
+
+	return data
 }
 
 func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
