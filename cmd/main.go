@@ -15,6 +15,8 @@ func main() {
 	log.SetFlags(0)
 
 	err := json.Unmarshal([]byte(os.Args[1]), &pluginOptions)
+	app.SetPluginOptions(pluginOptions)
+
 	if err != nil {
 		log.Fatalf("Failure parsing plugin settings: %v", err)
 	}

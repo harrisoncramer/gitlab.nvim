@@ -126,8 +126,9 @@ func CreateRouterAndApi(client *Client, projectInfo *ProjectInfo, s ShutdownHand
 	// m.HandleFunc("/create_mr", a.createMr)
 	// m.HandleFunc("/job", a.jobHandler)
 	// m.HandleFunc("/project/members", a.projectMembersHandler)
-	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.HandleFunc("/merge_requests", mergeRequestLister{client: client, projectInfo: projectInfo}.mergeRequestsHandler)
+
+	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return m, a
