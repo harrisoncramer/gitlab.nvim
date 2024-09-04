@@ -3,6 +3,7 @@ package app
 import (
 	"io"
 	"net/http"
+	"slices"
 	"sort"
 	"sync"
 
@@ -97,7 +98,7 @@ func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request
 	var linkedDiscussions []*gitlab.Discussion
 
 	for _, discussion := range discussions {
-		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) > -1 {
+		if discussion.Notes == nil || len(discussion.Notes) == 0 || slices.Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) {
 			continue
 		}
 		for _, note := range discussion.Notes {
