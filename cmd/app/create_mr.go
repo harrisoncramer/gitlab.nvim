@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 type CreateMrRequest struct {
@@ -25,9 +24,7 @@ type MergeRequestCreator interface {
 }
 
 type mergeRequestCreatorService struct {
-	client      MergeRequestCreator
-	projectInfo *ProjectInfo
-	gitInfo     *git.GitProjectInfo
+	clientWithInfo
 }
 
 /* createMr creates a merge request */
@@ -75,7 +72,7 @@ func (a mergeRequestCreatorService) handler(w http.ResponseWriter, r *http.Reque
 		opts.TargetProjectID = gitlab.Ptr(createMrRequest.TargetProjectID)
 	}
 
-	_, res, err := a.client.CreateMergeRequest(a.projectInfo.ProjectId, &opts)
+	_, res, err := a.gitlabClient.CreateMergeRequest(a.projectInfo.ProjectId, &opts)
 
 	if err != nil {
 		handleError(w, err, "Could not create MR", http.StatusInternalServerError)

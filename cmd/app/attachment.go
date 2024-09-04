@@ -52,9 +52,8 @@ type FileUploader interface {
 }
 
 type attachmentService struct {
-	client      FileUploader
-	fileReader  FileReader
-	projectInfo *ProjectInfo
+	clientWithInfo
+	fileReader FileReader
 }
 
 /* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
@@ -88,7 +87,7 @@ func (a attachmentService) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
+	projectFile, res, err := a.gitlabClient.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
 	if err != nil {
 		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
 		return

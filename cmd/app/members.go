@@ -17,8 +17,7 @@ type ProjectMemberLister interface {
 }
 
 type projectListerService struct {
-	client      ProjectMemberLister
-	projectInfo *ProjectInfo
+	clientWithInfo
 }
 
 /* projectMembersHandler returns all members of the current Gitlab project */
@@ -36,7 +35,7 @@ func (a projectListerService) handler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	projectMembers, res, err := a.client.ListAllProjectMembers(a.projectInfo.ProjectId, &projectMemberOptions)
+	projectMembers, res, err := a.gitlabClient.ListAllProjectMembers(a.projectInfo.ProjectId, &projectMemberOptions)
 
 	if err != nil {
 		handleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)

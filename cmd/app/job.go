@@ -23,8 +23,7 @@ type TraceFileGetter interface {
 }
 
 type traceFileService struct {
-	client      TraceFileGetter
-	projectInfo *ProjectInfo
+	clientWithInfo
 }
 
 /* jobHandler returns a string that shows the output of a specific job run in a Gitlab pipeline */
@@ -51,7 +50,7 @@ func (a traceFileService) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reader, res, err := a.client.GetTraceFile(a.projectInfo.ProjectId, jobTraceRequest.JobId)
+	reader, res, err := a.gitlabClient.GetTraceFile(a.projectInfo.ProjectId, jobTraceRequest.JobId)
 
 	if err != nil {
 		handleError(w, err, "Could not get trace file for job", http.StatusInternalServerError)

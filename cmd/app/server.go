@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/xanzy/go-gitlab"
 	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
@@ -77,7 +78,7 @@ type Api struct {
 	emojiMap    EmojiMap
 }
 
-type optFunc func(a *Api) error
+type optFunc func(a *clientWithInfo) error
 
 /*
 CreateRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
@@ -85,19 +86,32 @@ iterates over all option functions to configure API fields such as the project i
 file reader functionality
 */
 
-func CreateRouterAndApi(client *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) (*http.ServeMux, Api) {
+type clientWithInfo struct {
+	gitlabClient *Client
+	projectInfo  *ProjectInfo
+	gitInfo      *git.GitProjectInfo
+}
+
+func CreateRouterAndApi(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) (*http.ServeMux, clientWithInfo) {
 	m := http.NewServeMux()
-	a := Api{
-		client:      client,
-		projectInfo: &ProjectInfo{},
-		GitInfo:     &git.GitProjectInfo{},
-		fileReader:  nil,
-		emojiMap:    EmojiMap{},
+
+	// a := Api{
+	// 	client:      client,
+	// 	projectInfo: &ProjectInfo{},
+	// 	GitInfo:     &git.GitProjectInfo{},
+	// 	fileReader:  nil,
+	// 	emojiMap:    EmojiMap{},
+	// }
+
+	c := clientWithInfo{
+		gitlabClient: gitlabClient,
+		projectInfo:  &ProjectInfo{},
+		gitInfo:      &git.GitProjectInfo{},
 	}
 
 	/* Mutates the API struct as necessary with configuration functions */
 	for _, optFunc := range optFuncs {
-		err := optFunc(&a)
+		err := optFunc(&c)
 		if err != nil {
 			panic(err)
 		}
@@ -119,19 +133,19 @@ func CreateRouterAndApi(client *Client, projectInfo *ProjectInfo, s ShutdownHand
 	// m.HandleFunc("/mr/awardable/note/", a.withMr(a.emojiNoteHandler))
 	// m.HandleFunc("/mr/draft_notes/", a.withMr(a.draftNoteHandler))
 	// m.HandleFunc("/mr/draft_notes/publish", a.withMr(a.draftNotePublisher))
-	m.HandleFunc("/pipeline", pipelineService{client: client, projectInfo: projectInfo, gitInfo: a.GitInfo}.handler)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{client: client, projectInfo: projectInfo, gitInfo: a.GitInfo}.handler)
-	m.HandleFunc("/users/me", meService{client: client, projectInfo: projectInfo}.handler)
-	m.HandleFunc("/attachment", attachmentService{client: client, projectInfo: projectInfo, fileReader: attachmentReader{}}.handler)
-	m.HandleFunc("/create_mr", mergeRequestCreatorService{client: client, projectInfo: projectInfo, gitInfo: a.GitInfo}.handler)
-	m.HandleFunc("/job", traceFileService{client: client, projectInfo: projectInfo}.handler)
-	m.HandleFunc("/project/members", projectListerService{client: client, projectInfo: projectInfo}.handler)
-	m.HandleFunc("/merge_requests", mergeRequestListerService{client: client, projectInfo: projectInfo}.handler)
+	m.HandleFunc("/pipeline", pipelineService{c}.handler)
+	m.HandleFunc("/pipeline/trigger/", pipelineService{c}.handler)
+	m.HandleFunc("/users/me", meService{c}.handler)
+	m.HandleFunc("/attachment", attachmentService{clientWithInfo: c, fileReader: attachmentReader{}}.handler)
+	m.HandleFunc("/create_mr", mergeRequestCreatorService{c}.handler)
+	m.HandleFunc("/job", traceFileService{c}.handler)
+	m.HandleFunc("/project/members", projectListerService{c}.handler)
+	m.HandleFunc("/merge_requests", withMr(mergeRequestListerService{c}.handler, c))
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
-	return m, a
+	return m, c
 }
 
 /* Used to check whether the server has started yet */
@@ -166,39 +180,33 @@ func createListener() (l net.Listener) {
 }
 
 /* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-// func (a *Api) withMr(f func(w http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-//
-// 		if a.projectInfo.MergeId != 0 {
-// 			f(w, r)
-// 			return
-// 		}
-//
-// 		options := gitlab.ListProjectMergeRequestsOptions{
-// 			Scope:        gitlab.Ptr("all"),
-// 			State:        gitlab.Ptr("opened"),
-// 			SourceBranch: &a.GitInfo.BranchName,
-// 		}
-//
-// 		mergeRequests, _, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
-// 		if err != nil {
-// 			handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
-// 			return
-// 		}
-//
-// 		if len(mergeRequests) == 0 {
-// 			handleError(w, fmt.Errorf("No merge requests found for branch '%s'", a.GitInfo.BranchName), "No merge requests found", http.StatusBadRequest)
-// 			return
-// 		}
-//
-// 		mergeId := strconv.Itoa(mergeRequests[0].IID)
-// 		mergeIdInt, err := strconv.Atoi(mergeId)
-// 		if err != nil {
-// 			handleError(w, err, "Could not convert merge ID to integer", http.StatusBadRequest)
-// 			return
-// 		}
-//
-// 		a.projectInfo.MergeId = mergeIdInt
-// 		f(w, r)
-// 	}
-// }
+func withMr(next http.HandlerFunc, client clientWithInfo) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// If the merge request is already attached, skip the middleware logic
+		if client.projectInfo.MergeId == 0 {
+			options := gitlab.ListProjectMergeRequestsOptions{
+				Scope:        gitlab.Ptr("all"),
+				State:        gitlab.Ptr("opened"),
+				SourceBranch: &client.gitInfo.BranchName,
+			}
+
+			mergeRequests, _, err := client.gitlabClient.ListProjectMergeRequests(client.projectInfo.ProjectId, &options)
+			if err != nil {
+				handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
+				return
+			}
+
+			if len(mergeRequests) == 0 {
+				err := fmt.Errorf("No merge requests found for branch '%s'", client.gitInfo.BranchName)
+				handleError(w, err, "No merge requests found", http.StatusBadRequest)
+				return
+			}
+
+			mergeIdInt := mergeRequests[0].IID
+			client.projectInfo.MergeId = mergeIdInt
+		}
+
+		// Call the next handler if middleware succeeds
+		next(w, r)
+	}
+}
