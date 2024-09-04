@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 type RetriggerPipelineResponse struct {
@@ -26,11 +27,23 @@ type GetPipelineAndJobsResponse struct {
 	Pipeline PipelineWithJobs `json:"latest_pipeline"`
 }
 
+type PipelineManager interface {
+	ListProjectPipelines(pid interface{}, opt *gitlab.ListProjectPipelinesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.PipelineInfo, *gitlab.Response, error)
+	ListPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
+	RetryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
+}
+
+type pipelineService struct {
+	client      PipelineManager
+	projectInfo *ProjectInfo
+	gitInfo     *git.GitProjectInfo
+}
+
 /*
 pipelineHandler fetches information about the current pipeline, and retriggers a pipeline run. For more detailed information
 about a given job in a pipeline, see the jobHandler function
 */
-func (a *Api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
+func (a pipelineService) handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.GetPipelineAndJobs(w, r)
@@ -44,7 +57,7 @@ func (a *Api) pipelineHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 /* Gets the latest pipeline for a given commit, returns an error if there is no pipeline */
-func (a *Api) GetLastPipeline(commit string) (*gitlab.PipelineInfo, error) {
+func (a pipelineService) GetLastPipeline(commit string) (*gitlab.PipelineInfo, error) {
 
 	l := &gitlab.ListProjectPipelinesOptions{
 		SHA:  gitlab.Ptr(commit),
@@ -69,10 +82,10 @@ func (a *Api) GetLastPipeline(commit string) (*gitlab.PipelineInfo, error) {
 }
 
 /* Gets the latest pipeline and job information for the current branch */
-func (a *Api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
+func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	commit, err := a.GitInfo.GetLatestCommitOnRemote(pluginOptions.ConnectionSettings.Remote, a.GitInfo.BranchName)
+	commit, err := a.gitInfo.GetLatestCommitOnRemote(pluginOptions.ConnectionSettings.Remote, a.gitInfo.BranchName)
 
 	if err != nil {
 		handleError(w, err, "Error getting commit on remote branch", http.StatusInternalServerError)
@@ -82,12 +95,12 @@ func (a *Api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	pipeline, err := a.GetLastPipeline(commit)
 
 	if err != nil {
-		handleError(w, err, fmt.Sprintf("Gitlab failed to get latest pipeline for %s branch", a.GitInfo.BranchName), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Gitlab failed to get latest pipeline for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
 	if pipeline == nil {
-		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.GitInfo.BranchName), http.StatusInternalServerError)
+		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
@@ -121,7 +134,7 @@ func (a *Api) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *Api) RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
+func (a pipelineService) RetriggerPipeline(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := strings.TrimPrefix(r.URL.Path, "/pipeline/trigger/")
