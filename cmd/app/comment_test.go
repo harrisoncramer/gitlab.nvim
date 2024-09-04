@@ -36,11 +36,10 @@ func (f fakeCommentClient) DeleteMergeRequestDiscussionNote(pid interface{}, mer
 	return resp, err
 }
 
+// var testCommentDeletionData = DeleteCommentRequest{NoteId: 3, DiscussionId: "abc123"}
+// var testEditCommentData = EditCommentRequest{Comment: "Some comment", NoteId: 3, DiscussionId: "abc123"}
 func TestPostComment(t *testing.T) {
 	var testCommentCreationData = PostCommentRequest{Comment: "Some comment"}
-	// var testCommentDeletionData = DeleteCommentRequest{NoteId: 3, DiscussionId: "abc123"}
-	// var testEditCommentData = EditCommentRequest{Comment: "Some comment", NoteId: 3, DiscussionId: "abc123"}
-
 	t.Run("Creates a new note (unlinked comment)", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := commentService{emptyProjectData, fakeCommentClient{}}
@@ -49,31 +48,20 @@ func TestPostComment(t *testing.T) {
 		assert(t, data.Status, http.StatusOK)
 	})
 
-	//		t.Run("Creates a new comment", func(t *testing.T) {
-	//			// Re-create comment creation data to avoid mutating this variable in other tests
-	//			testCommentCreationData := PostCommentRequest{
-	//				Comment: "Some comment",
-	//				PositionData: PositionData{
-	//					FileName: "file.txt",
-	//				},
-	//			}
-	//
-	//			client := mock_main.NewMockClient(t)
-	//			mock_main.WithMr(t, client)
-	//			client.EXPECT().CreateMergeRequestDiscussion(
-	//				"",
-	//				mock_main.MergeId,
-	//				gomock.Any(),
-	//			).Return(&gitlab.Discussion{Notes: []*gitlab.Note{{}}}, makeResponse(http.StatusOK), nil)
-	//
-	//			request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
-	//
-	//			server := CreateRouter(client)
-	//			data := serveRequest(t, server, request, CommentResponse{})
-	//			assert(t, data.SuccessResponse.Message, "Comment created successfully")
-	//			assert(t, data.SuccessResponse.Status, http.StatusOK)
-	//		})
-	//
+	t.Run("Creates a new comment", func(t *testing.T) {
+		testCommentCreationData := PostCommentRequest{ // Re-create comment creation data to avoid mutating this variable in other tests
+			Comment: "Some comment",
+			PositionData: PositionData{
+				FileName: "file.txt",
+			},
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+		svc := commentService{emptyProjectData, fakeCommentClient{}}
+		data := getSuccessData(t, svc, request)
+		assert(t, data.Message, "Comment created successfully")
+		assert(t, data.Status, http.StatusOK)
+	})
+
 	//		t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 	//			client := mock_main.NewMockClient(t)
 	//			mock_main.WithMr(t, client)
