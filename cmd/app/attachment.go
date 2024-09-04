@@ -52,7 +52,7 @@ type FileUploader interface {
 }
 
 type attachmentService struct {
-	clientWithInfo
+	info
 	fileReader FileReader
 }
 

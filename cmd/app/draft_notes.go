@@ -69,7 +69,17 @@ func (a *Api) draftNoteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *Api) draftNotePublisher(w http.ResponseWriter, r *http.Request) {
+type DraftNotePublisher interface {
+	PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	PublishDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+}
+
+type draftNoteService struct {
+	commonHandlerData
+	client DraftNotePublisher
+}
+
+func (a draftNoteService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

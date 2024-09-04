@@ -33,7 +33,8 @@ type PipelineManager interface {
 }
 
 type pipelineService struct {
-	clientWithInfo
+	commonHandlerData
+	client PipelineManager
 }
 
 /*
@@ -61,7 +62,7 @@ func (a pipelineService) GetLastPipeline(commit string) (*gitlab.PipelineInfo, e
 		Sort: gitlab.Ptr("desc"),
 	}
 
-	pipes, res, err := a.gitlabClient.ListProjectPipelines(a.projectInfo.ProjectId, l)
+	pipes, res, err := a.client.ListProjectPipelines(a.projectInfo.ProjectId, l)
 
 	if err != nil {
 		return nil, err
@@ -101,7 +102,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	jobs, res, err := a.gitlabClient.ListPipelineJobs(a.projectInfo.ProjectId, pipeline.ID, &gitlab.ListJobsOptions{})
+	jobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, pipeline.ID, &gitlab.ListJobsOptions{})
 
 	if err != nil {
 		handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
@@ -142,7 +143,7 @@ func (a pipelineService) RetriggerPipeline(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	pipeline, res, err := a.gitlabClient.RetryPipelineBuild(a.projectInfo.ProjectId, idInt)
+	pipeline, res, err := a.client.RetryPipelineBuild(a.projectInfo.ProjectId, idInt)
 
 	if err != nil {
 		handleError(w, err, "Could not retrigger pipeline", http.StatusInternalServerError)

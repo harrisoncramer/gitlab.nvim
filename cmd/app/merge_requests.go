@@ -25,7 +25,8 @@ type MergeRequestLister interface {
 }
 
 type mergeRequestListerService struct {
-	clientWithInfo
+	commonHandlerData
+	client MergeRequestLister
 }
 
 func (a mergeRequestListerService) handler(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +58,7 @@ func (a mergeRequestListerService) handler(w http.ResponseWriter, r *http.Reques
 		NotLabels: (*gitlab.LabelOptions)(&listMergeRequestRequest.NotLabel),
 	}
 
-	mergeRequests, res, err := a.gitlabClient.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
 
 	if err != nil {
 		handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)

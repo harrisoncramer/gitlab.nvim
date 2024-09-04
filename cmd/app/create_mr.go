@@ -24,7 +24,8 @@ type MergeRequestCreator interface {
 }
 
 type mergeRequestCreatorService struct {
-	clientWithInfo
+	commonHandlerData
+	client MergeRequestCreator
 }
 
 /* createMr creates a merge request */
@@ -72,7 +73,7 @@ func (a mergeRequestCreatorService) handler(w http.ResponseWriter, r *http.Reque
 		opts.TargetProjectID = gitlab.Ptr(createMrRequest.TargetProjectID)
 	}
 
-	_, res, err := a.gitlabClient.CreateMergeRequest(a.projectInfo.ProjectId, &opts)
+	_, res, err := a.client.CreateMergeRequest(a.projectInfo.ProjectId, &opts)
 
 	if err != nil {
 		handleError(w, err, "Could not create MR", http.StatusInternalServerError)

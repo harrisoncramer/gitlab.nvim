@@ -17,7 +17,8 @@ type MeGetter interface {
 }
 
 type meService struct {
-	clientWithInfo
+	commonHandlerData
+	client MeGetter
 }
 
 func (a meService) handler(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +29,7 @@ func (a meService) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, res, err := a.gitlabClient.CurrentUser()
+	user, res, err := a.client.CurrentUser()
 
 	if err != nil {
 		handleError(w, err, "Failed to get current user", http.StatusInternalServerError)

@@ -78,7 +78,7 @@ type Api struct {
 	emojiMap    EmojiMap
 }
 
-type optFunc func(a *clientWithInfo) error
+type optFunc func(a *commonHandlerData) error
 
 /*
 CreateRouterAndApi wires up the router and attaches all handlers to their respective routes. It also
@@ -86,27 +86,17 @@ iterates over all option functions to configure API fields such as the project i
 file reader functionality
 */
 
-type clientWithInfo struct {
-	gitlabClient *Client
-	projectInfo  *ProjectInfo
-	gitInfo      *git.GitProjectInfo
+type commonHandlerData struct {
+	projectInfo *ProjectInfo
+	gitInfo     *git.GitProjectInfo
 }
 
-func CreateRouterAndApi(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) (*http.ServeMux, clientWithInfo) {
+func CreateRouterAndApi(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) (*http.ServeMux, commonHandlerData) {
 	m := http.NewServeMux()
 
-	// a := Api{
-	// 	client:      client,
-	// 	projectInfo: &ProjectInfo{},
-	// 	GitInfo:     &git.GitProjectInfo{},
-	// 	fileReader:  nil,
-	// 	emojiMap:    EmojiMap{},
-	// }
-
-	c := clientWithInfo{
-		gitlabClient: gitlabClient,
-		projectInfo:  &ProjectInfo{},
-		gitInfo:      &git.GitProjectInfo{},
+	c := commonHandlerData{
+		projectInfo: &ProjectInfo{},
+		gitInfo:     &git.GitProjectInfo{},
 	}
 
 	/* Mutates the API struct as necessary with configuration functions */
@@ -117,30 +107,31 @@ func CreateRouterAndApi(gitlabClient *Client, projectInfo *ProjectInfo, s Shutdo
 		}
 	}
 
-	// m.HandleFunc("/mr/approve", a.withMr(a.approveHandler))
-	// m.HandleFunc("/mr/comment", a.withMr(a.commentHandler))
-	// m.HandleFunc("/mr/merge", a.withMr(a.acceptAndMergeHandler))
-	// m.HandleFunc("/mr/discussions/list", a.withMr(a.listDiscussionsHandler))
-	// m.HandleFunc("/mr/discussions/resolve", a.withMr(a.discussionsResolveHandler))
-	// m.HandleFunc("/mr/info", a.withMr(a.infoHandler))
-	// m.HandleFunc("/mr/assignee", a.withMr(a.assigneesHandler))
-	// m.HandleFunc("/mr/summary", a.withMr(a.summaryHandler))
-	// m.HandleFunc("/mr/reviewer", a.withMr(a.reviewersHandler))
-	// m.HandleFunc("/mr/revisions", a.withMr(a.revisionsHandler))
-	// m.HandleFunc("/mr/reply", a.withMr(a.replyHandler))
-	// m.HandleFunc("/mr/label", a.withMr(a.labelHandler))
-	// m.HandleFunc("/mr/revoke", a.withMr(a.revokeHandler))
-	// m.HandleFunc("/mr/awardable/note/", a.withMr(a.emojiNoteHandler))
-	// m.HandleFunc("/mr/draft_notes/", a.withMr(a.draftNoteHandler))
-	// m.HandleFunc("/mr/draft_notes/publish", a.withMr(a.draftNotePublisher))
-	m.HandleFunc("/pipeline", pipelineService{c}.handler)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{c}.handler)
-	m.HandleFunc("/users/me", meService{c}.handler)
-	m.HandleFunc("/attachment", attachmentService{clientWithInfo: c, fileReader: attachmentReader{}}.handler)
-	m.HandleFunc("/create_mr", mergeRequestCreatorService{c}.handler)
-	m.HandleFunc("/job", traceFileService{c}.handler)
-	m.HandleFunc("/project/members", projectListerService{c}.handler)
-	m.HandleFunc("/merge_requests", withMr(mergeRequestListerService{c}.handler, c))
+	// m.HandleFunc("/mr/approve", withMr(a.approveHandler))
+	// m.HandleFunc("/mr/comment", withMr(a.commentHandler))
+	// m.HandleFunc("/mr/merge", withMr(a.acceptAndMergeHandler))
+	// m.HandleFunc("/mr/discussions/list", withMr(a.listDiscussionsHandler))
+	// m.HandleFunc("/mr/discussions/resolve", withMr(a.discussionsResolveHandler))
+	// m.HandleFunc("/mr/info", withMr(a.infoHandler))
+	// m.HandleFunc("/mr/assignee", withMr(a.assigneesHandler))
+	// m.HandleFunc("/mr/summary", withMr(a.summaryHandler))
+	// m.HandleFunc("/mr/reviewer", withMr(a.reviewersHandler))
+	// m.HandleFunc("/mr/revisions", withMr(a.revisionsHandler))
+	// m.HandleFunc("/mr/reply", withMr(a.replyHandler))
+	// m.HandleFunc("/mr/label", withMr(a.labelHandler))
+	// m.HandleFunc("/mr/revoke", withMr(a.revokeHandler))
+	// m.HandleFunc("/mr/awardable/note/", withMr(a.emojiNoteHandler))
+	// m.HandleFunc("/mr/draft_notes/", withMr(a.draftNoteHandler))
+	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNoteService{commonHandlerData: c, client: gitlabClient}.handler, c, gitlabClient))
+
+	m.HandleFunc("/pipeline", pipelineService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/pipeline/trigger/", pipelineService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/users/me", meService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/attachment", attachmentService{commonHandlerData: c, fileReader: attachmentReader{}}.handler)
+	m.HandleFunc("/create_mr", mergeRequestCreatorService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/job", traceFileService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/project/members", projectListerService{commonHandlerData: c, client: gitlabClient}.handler)
+	m.HandleFunc("/merge_requests", mergeRequestListerService{commonHandlerData: c, client: gitlabClient}.handler)
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
@@ -180,30 +171,30 @@ func createListener() (l net.Listener) {
 }
 
 /* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func withMr(next http.HandlerFunc, client clientWithInfo) http.HandlerFunc {
+func withMr(next http.HandlerFunc, c commonHandlerData, client MergeRequestLister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// If the merge request is already attached, skip the middleware logic
-		if client.projectInfo.MergeId == 0 {
+		if c.projectInfo.MergeId == 0 {
 			options := gitlab.ListProjectMergeRequestsOptions{
 				Scope:        gitlab.Ptr("all"),
 				State:        gitlab.Ptr("opened"),
-				SourceBranch: &client.gitInfo.BranchName,
+				SourceBranch: &c.gitInfo.BranchName,
 			}
 
-			mergeRequests, _, err := client.gitlabClient.ListProjectMergeRequests(client.projectInfo.ProjectId, &options)
+			mergeRequests, _, err := client.ListProjectMergeRequests(c.projectInfo.ProjectId, &options)
 			if err != nil {
 				handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
 				return
 			}
 
 			if len(mergeRequests) == 0 {
-				err := fmt.Errorf("No merge requests found for branch '%s'", client.gitInfo.BranchName)
+				err := fmt.Errorf("No merge requests found for branch '%s'", c.gitInfo.BranchName)
 				handleError(w, err, "No merge requests found", http.StatusBadRequest)
 				return
 			}
 
 			mergeIdInt := mergeRequests[0].IID
-			client.projectInfo.MergeId = mergeIdInt
+			c.projectInfo.MergeId = mergeIdInt
 		}
 
 		// Call the next handler if middleware succeeds
