@@ -18,7 +18,7 @@ type MergeRequestGetter interface {
 
 type infoService struct {
 	data
-	client *Client
+	client MergeRequestGetter
 }
 
 /* infoHandler fetches infomation about the current git project. The data returned here is used in many other API calls */
