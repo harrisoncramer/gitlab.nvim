@@ -18,7 +18,12 @@ type SummaryUpdateResponse struct {
 	MergeRequest *gitlab.MergeRequest `json:"mr"`
 }
 
-func (a *Api) summaryHandler(w http.ResponseWriter, r *http.Request) {
+type summaryService struct {
+	data
+	client MergeRequestUpdater
+}
+
+func (a summaryService) handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {
