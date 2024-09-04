@@ -7,25 +7,22 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type fakeApprover struct {
-	errFromGitlab bool
-	status        int
+type fakeApproverClient struct {
+	testBase
 }
 
-func (f fakeApprover) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
-	if f.errFromGitlab {
-		return nil, nil, errorFromGitlab
+func (f fakeApproverClient) ApproveMergeRequest(pid interface{}, mr int, opt *gitlab.ApproveMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequestApprovals, *gitlab.Response, error) {
+	resp, err := f.handleGitlabError()
+	if err != nil {
+		return nil, nil, err
 	}
-	if f.status == 0 {
-		f.status = 200
-	}
-	return &gitlab.MergeRequestApprovals{}, makeResponse(f.status), nil
+	return &gitlab.MergeRequestApprovals{}, resp, nil
 }
 
 func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		client := fakeApprover{}
+		client := fakeApproverClient{}
 		svc := mergeRequestApproverService{emptyProjectData, client}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Approved MR")
@@ -34,7 +31,7 @@ func TestApproveHandler(t *testing.T) {
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/approve", nil)
-		client := fakeApprover{}
+		client := fakeApproverClient{}
 		svc := mergeRequestApproverService{emptyProjectData, client}
 		data := getFailData(t, svc, request)
 		checkBadMethod(t, data, http.MethodPost)
@@ -42,7 +39,7 @@ func TestApproveHandler(t *testing.T) {
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		client := fakeApprover{errFromGitlab: true}
+		client := fakeApproverClient{testBase{errFromGitlab: true}}
 		svc := mergeRequestApproverService{emptyProjectData, client}
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not approve merge request")
@@ -50,7 +47,7 @@ func TestApproveHandler(t *testing.T) {
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
-		client := fakeApprover{status: http.StatusSeeOther}
+		client := fakeApproverClient{testBase{status: http.StatusSeeOther}}
 		svc := mergeRequestApproverService{emptyProjectData, client}
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not approve merge request", "/mr/approve")

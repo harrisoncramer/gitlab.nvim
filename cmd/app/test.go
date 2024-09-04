@@ -89,8 +89,35 @@ func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request)
 	if err != nil {
 		t.Error(err)
 	}
-
 	return data
+}
+
+func getFailData(t *testing.T, svc ServiceWithHandler, request *http.Request) ErrorResponse {
+	res := httptest.NewRecorder()
+	svc.handler(res, request)
+
+	var data ErrorResponse
+	err := json.Unmarshal(res.Body.Bytes(), &data)
+	if err != nil {
+		t.Error(err)
+	}
+	return data
+}
+
+type testBase struct {
+	errFromGitlab bool
+	status        int
+}
+
+// Helper for easily mocking bad responses or errors from Gitlab
+func (f *testBase) handleGitlabError() (*gitlab.Response, error) {
+	if f.errFromGitlab {
+		return nil, errorFromGitlab
+	}
+	if f.status == 0 {
+		f.status = 200
+	}
+	return makeResponse(f.status), nil
 }
 
 func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
