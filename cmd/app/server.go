@@ -22,13 +22,14 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjec
 		sigCh: make(chan os.Signal, 1),
 	}
 
+	fr := attachmentReader{}
 	r := CreateRouter(
 		client,
 		projectInfo,
 		s,
 		func(a *data) error { a.projectInfo = projectInfo; return nil },
 		func(a *data) error { a.gitInfo = &GitInfo; return nil },
-		func(a *data) error { err := attachEmojisToApi(a); return err },
+		func(a *data) error { err := attachEmojis(a, fr); return err },
 		func(a *data) error { a.gitInfo.GetLatestCommitOnRemote = git.GetLatestCommitOnRemote; return nil },
 	)
 	l := createListener()
@@ -106,8 +107,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	// m.HandleFunc("/mr/label", withMr(a.labelHandler))
 	// m.HandleFunc("/mr/revoke", withMr(a.revokeHandler))
 	// m.HandleFunc("/mr/awardable/note/", withMr(a.emojiNoteHandler))
-	// m.HandleFunc("/mr/draft_notes/", withMr(a.draftNoteHandler))
-	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNoteService{d, gitlabClient}.handler, d, gitlabClient))
+	m.HandleFunc("/mr/draft_notes/", withMr(draftNoteService{d, gitlabClient}.handler, d, gitlabClient))
+	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNotePublisherService{d, gitlabClient}.handler, d, gitlabClient))
 
 	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient}.handler)
 	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient}.handler)

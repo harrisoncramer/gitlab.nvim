@@ -40,10 +40,10 @@ type CreateEmojiResponse struct {
 }
 
 /*
-attachEmojisToApi reads the emojis from our external JSON file
-and attaches them to the API so that they can be looked up later
+attachEmojis reads the emojis from our external JSON file
+and attaches them to the data so that they can be looked up later
 */
-func attachEmojisToApi(a *Api) error {
+func attachEmojis(a *data, fr FileReader) error {
 
 	e, err := os.Executable()
 	if err != nil {
@@ -53,7 +53,7 @@ func attachEmojisToApi(a *Api) error {
 	binPath := path.Dir(e)
 	filePath := fmt.Sprintf("%s/config/emojis.json", binPath)
 
-	reader, err := a.fileReader.ReadFile(filePath)
+	reader, err := fr.ReadFile(filePath)
 
 	if err != nil {
 		return fmt.Errorf("Could not find emojis at %s", filePath)
