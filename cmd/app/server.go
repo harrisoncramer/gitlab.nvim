@@ -116,7 +116,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.handler)
 	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.handler)
 	m.HandleFunc("/job", traceFileService{d, gitlabClient}.handler)
-	m.HandleFunc("/project/members", projectListerService{d, gitlabClient}.handler)
+	m.HandleFunc("/project/members", projectMemberService{d, gitlabClient}.handler)
 	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.handler)
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
