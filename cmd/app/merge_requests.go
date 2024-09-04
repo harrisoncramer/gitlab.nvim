@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -61,7 +60,7 @@ func (a mergeRequestListerService) handler(w http.ResponseWriter, r *http.Reques
 	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
 
 	if err != nil {
-		handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
+		handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
 		return
 	}
 
