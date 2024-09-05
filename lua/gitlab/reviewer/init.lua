@@ -276,8 +276,9 @@ M.set_callback_for_reviewer_enter = function(callback)
   })
 end
 
----Create the line-wise visual selection in the range of the motion and execute the gitlab.nvim API
----function. After that, restore the cursor position and the original operatorfunc.
+---Create the line-wise visual selection in the range of the motion (or on the [count] number of
+---lines) and execute the gitlab.nvim API function. After that, restore the cursor position and the
+---original operatorfunc.
 ---@param callback string Name of the gitlab.nvim API function to call
 M.execute_callback = function(callback)
   return function()
@@ -299,7 +300,9 @@ local function execute_operatorfunc(cb)
   M.old_winnr = vim.api.nvim_get_current_win()
   M.old_cursor_position = vim.api.nvim_win_get_cursor(M.old_winnr)
   vim.opt.operatorfunc = ("v:lua.require'gitlab.reviewer'.execute_callback'%s'"):format(cb)
-  vim.api.nvim_feedkeys("g@", "n", false)
+  -- Use the operator count before motion to allow, e.g., 2cc == c2c
+  local count = M.operator_count > 0 and tostring(M.operator_count) or ""
+  vim.api.nvim_feedkeys("g@" .. count, "n", false)
 end
 
 ---Set keymaps for creating comments, suggestions and for jumping to discussion tree.
@@ -308,16 +311,21 @@ end
 local set_keymaps = function(bufnr, keymaps)
   -- Set mappings for creating comments
   if keymaps.reviewer.create_comment ~= false then
-    vim.keymap.set(
-      "o",
-      keymaps.reviewer.create_comment,
-      "$",
-      { buffer = bufnr, desc = "Create comment for current line", nowait = keymaps.reviewer.create_comment_nowait }
-    )
+    -- Set keymap for repeated operator keybinding
+    vim.keymap.set("o", keymaps.reviewer.create_comment, function()
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "j" } }, {})
+    end, {
+      buffer = bufnr,
+      desc = "Create comment for [count] lines",
+      nowait = keymaps.reviewer.create_comment_nowait,
+    })
+
+    -- Set operator keybinding
     vim.keymap.set(
       "n",
       keymaps.reviewer.create_comment,
       function()
+        M.operator_count = vim.v.count
         execute_operatorfunc("create_multiline_comment")
       end,
       { buffer = bufnr, desc = "Create comment for range of motion", nowait = keymaps.reviewer.create_comment_nowait }
@@ -333,18 +341,27 @@ local set_keymaps = function(bufnr, keymaps)
 
   -- Set mappings for creating suggestions
   if keymaps.reviewer.create_suggestion ~= false then
-    vim.keymap.set("o", keymaps.reviewer.create_suggestion, "$", {
+    -- Set keymap for repeated operator keybinding
+    vim.keymap.set("o", keymaps.reviewer.create_suggestion, function()
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "j" } }, {})
+    end, {
       buffer = bufnr,
-      desc = "Create suggestion for current line",
+      desc = "Create suggestion for [count] lines",
       nowait = keymaps.reviewer.create_suggestion_nowait,
     })
+
+    -- Set operator keybinding
     vim.keymap.set("n", keymaps.reviewer.create_suggestion, function()
+      M.operator_count = vim.v.count
+      M.operator = keymaps.reviewer.create_suggestion
       execute_operatorfunc("create_comment_suggestion")
     end, {
       buffer = bufnr,
       desc = "Create suggestion for range of motion",
       nowait = keymaps.reviewer.create_suggestion_nowait,
     })
+
+    -- Set visual mode keybinding
     vim.keymap.set("v", keymaps.reviewer.create_suggestion, function()
       require("gitlab").create_comment_suggestion()
     end, {
