@@ -1,6 +1,7 @@
 local M = {}
 
 local u = require("gitlab.utils")
+local event = require("nui.utils.autocmd").event
 local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
@@ -18,11 +19,15 @@ M.open = function()
   local longest_line = u.get_longest_string(help_content_lines)
   local help_popup =
     Popup(u.create_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines + 3, 60))
+  help_popup:on(event.BufLeave, function()
+    help_popup:unmount()
+  end)
   help_popup:mount()
 
   state.set_popup_keymaps(help_popup, "Help", nil)
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, #help_content_lines, false, help_content_lines)
+  u.switch_can_edit_buf(currentBuffer, false)
 end
 
 return M
