@@ -38,11 +38,10 @@ $ go fmt ./...
 $ golangci-lint run
 ```
 
-If you are writing tests and have added something to the Go client, you can re-generate the mocked client like so:
+If you are writing tests and have added something to the Go client, you can test with:
 
 ```bash
-$ go install go.uber.org/mock/mockgen@latest # Install the mockgen CLI on your machine
-$ mockgen -source cmd/types.go > cmd/mocks/fake_client.go
+$ make test
 ```
 
 For changes to the Lua codebase: We use <a href="https://github.com/JohnnyMorganz/StyLua">stylua</a> for formatting and <a href="https://github.com/mpeterv/luacheck">luacheck</a> for linting. Run these commands in the root of the repository:
