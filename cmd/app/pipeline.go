@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/xanzy/go-gitlab"
+	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 type RetriggerPipelineResponse struct {
@@ -34,7 +35,8 @@ type PipelineManager interface {
 
 type pipelineService struct {
 	data
-	client PipelineManager
+	client     PipelineManager
+	gitService git.GitManager
 }
 
 /*
@@ -83,7 +85,7 @@ func (a pipelineService) GetLastPipeline(commit string) (*gitlab.PipelineInfo, e
 func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	commit, err := a.gitInfo.GetLatestCommitOnRemote(pluginOptions.ConnectionSettings.Remote, a.gitInfo.BranchName)
+	commit, err := a.gitService.GetLatestCommitOnRemote(pluginOptions.ConnectionSettings.Remote, a.gitInfo.BranchName)
 
 	if err != nil {
 		handleError(w, err, "Error getting commit on remote branch", http.StatusInternalServerError)

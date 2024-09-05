@@ -2,271 +2,218 @@ package git
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 )
 
+type FakeGitManager struct {
+	RemoteUrl   string
+	BranchName  string
+	ProjectName string
+	Namespace   string
+}
+
+func (f FakeGitManager) RefreshProjectInfo(remote string) error {
+	return nil
+}
+
+func (f FakeGitManager) GetCurrentBranchNameFromNativeGitCmd() (string, error) {
+	return f.BranchName, nil
+}
+
+func (f FakeGitManager) GetLatestCommitOnRemote(remote string, branchName string) (string, error) {
+	return "", nil
+}
+
+func (f FakeGitManager) GetProjectUrlFromNativeGitCmd(string) (url string, err error) {
+	return f.RemoteUrl, nil
+}
+
+type TestCase struct {
+	desc        string
+	branch      string
+	projectName string
+	namespace   string
+	remote      string
+}
+
 func TestExtractGitInfo_Success(t *testing.T) {
-	getCurrentBranchName := func() (string, error) {
-		return "feature/abc", nil
-	}
-	refreshGitInfo := func() error {
-		return nil
-	}
-	testCases := []struct {
-		getProjectRemoteUrl func() (string, error)
-		expected            GitProjectInfo
-		desc                string
-	}{
+	testCases := []TestCase{
 		{
-			desc: "Project configured in SSH under a single folder",
-			getProjectRemoteUrl: func() (string, error) {
-				return "git@custom-gitlab.com:namespace-1/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "git@custom-gitlab.com:namespace-1/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in SSH under a single folder",
+			remote:      "git@custom-gitlab.com:namespace-1/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in SSH under a single folder without .git extension",
-			getProjectRemoteUrl: func() (string, error) {
-				return "git@custom-gitlab.com:namespace-1/project-name", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "git@custom-gitlab.com:namespace-1/project-name",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in SSH under a single folder without .git extension",
+			remote:      "git@custom-gitlab.com:namespace-1/project-name",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in SSH under one nested folder",
-			getProjectRemoteUrl: func() (string, error) {
-				return "git@custom-gitlab.com:namespace-1/namespace-2/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "git@custom-gitlab.com:namespace-1/namespace-2/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1/namespace-2",
-			},
+			desc:        "Project configured in SSH under one nested folder",
+			remote:      "git@custom-gitlab.com:namespace-1/namespace-2/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1/namespace-2",
 		},
 		{
-			desc: "Project configured in SSH under two nested folders",
-			getProjectRemoteUrl: func() (string, error) {
-				return "git@custom-gitlab.com:namespace-1/namespace-2/namespace-3/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "git@custom-gitlab.com:namespace-1/namespace-2/namespace-3/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1/namespace-2/namespace-3",
-			},
+			desc:        "Project configured in SSH under two nested folders",
+			remote:      "git@custom-gitlab.com:namespace-1/namespace-2/namespace-3/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1/namespace-2/namespace-3",
 		},
 		{
-			desc: "Project configured in SSH:// under a single folder",
-			getProjectRemoteUrl: func() (string, error) {
-				return "ssh://custom-gitlab.com/namespace-1/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "ssh://custom-gitlab.com/namespace-1/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in SSH:// under a single folder",
+			remote:      "ssh://custom-gitlab.com/namespace-1/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in SSH:// under a single folder without .git extension",
-			getProjectRemoteUrl: func() (string, error) {
-				return "ssh://custom-gitlab.com/namespace-1/project-name", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "ssh://custom-gitlab.com/namespace-1/project-name",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in SSH:// under a single folder without .git extension",
+			remote:      "ssh://custom-gitlab.com/namespace-1/project-name",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in SSH:// under two nested folders",
-			getProjectRemoteUrl: func() (string, error) {
-				return "ssh://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "ssh://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1/namespace-2/namespace-3",
-			},
+			desc:        "Project configured in SSH:// under two nested folders",
+			remote:      "ssh://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1/namespace-2/namespace-3",
 		},
 		{
-			desc: "Project configured in SSH:// and have a custom port",
-			getProjectRemoteUrl: func() (string, error) {
-				return "ssh://custom-gitlab.com:2222/namespace-1/project-name", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "ssh://custom-gitlab.com:2222/namespace-1/project-name",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in SSH:// and have a custom port",
+			remote:      "ssh://custom-gitlab.com:2222/namespace-1/project-name",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in HTTP and under a single folder without .git extension",
-			getProjectRemoteUrl: func() (string, error) {
-				return "http://custom-gitlab.com/namespace-1/project-name", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "http://custom-gitlab.com/namespace-1/project-name",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in HTTP and under a single folder without .git extension",
+			remote:      "http://custom-gitlab.com/namespace-1/project-name",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in HTTPS and under a single folder",
-			getProjectRemoteUrl: func() (string, error) {
-				return "https://custom-gitlab.com/namespace-1/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "https://custom-gitlab.com/namespace-1/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1",
-			},
+			desc:        "Project configured in HTTPS and under a single folder",
+			remote:      "https://custom-gitlab.com/namespace-1/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
 		},
 		{
-			desc: "Project configured in HTTPS and under a nested folder",
-			getProjectRemoteUrl: func() (string, error) {
-				return "https://custom-gitlab.com/namespace-1/namespace-2/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "https://custom-gitlab.com/namespace-1/namespace-2/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1/namespace-2",
-			},
+			desc:        "Project configured in HTTPS and under a nested folder",
+			remote:      "https://custom-gitlab.com/namespace-1/namespace-2/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1/namespace-2",
 		},
 		{
-			desc: "Project configured in HTTPS and under two nested folders",
-			getProjectRemoteUrl: func() (string, error) {
-				return "https://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git", nil
-			},
-			expected: GitProjectInfo{
-				RemoteUrl:   "https://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
-				BranchName:  "feature/abc",
-				ProjectName: "project-name",
-				Namespace:   "namespace-1/namespace-2/namespace-3",
-			},
+			desc:        "Project configured in HTTPS and under two nested folders",
+			remote:      "https://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1/namespace-2/namespace-3",
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			actual, err := ExtractGitInfo()
+			g := FakeGitManager{
+				Namespace:   tC.namespace,
+				ProjectName: tC.projectName,
+				BranchName:  tC.branch,
+				RemoteUrl:   tC.remote,
+			}
+			data, err := NewGitData(tC.remote, g)
 			if err != nil {
 				t.Errorf("No error was expected, got %s", err)
 			}
-			if actual.RemoteUrl != tC.expected.RemoteUrl {
-				t.Errorf("\nExpected Remote URL: %s\nActual:   %s", tC.expected.RemoteUrl, actual.RemoteUrl)
+			if data.RemoteUrl != tC.remote {
+				t.Errorf("\nExpected Remote URL: %s\nActual:   %s", tC.remote, data.RemoteUrl)
 			}
-			if actual.BranchName != tC.expected.BranchName {
-				t.Errorf("\nExpected Branch Name: %s\nActual:   %s", tC.expected.BranchName, actual.BranchName)
+			if data.BranchName != tC.branch {
+				t.Errorf("\nExpected Branch Name: %s\nActual:   %s", tC.branch, data.BranchName)
 			}
-			if actual.ProjectName != tC.expected.ProjectName {
-				t.Errorf("\nExpected Project Name: %s\nActual:   %s", tC.expected.ProjectName, actual.ProjectName)
+			if data.ProjectName != tC.projectName {
+				t.Errorf("\nExpected Project Name: %s\nActual:   %s", tC.projectName, data.ProjectName)
 			}
-			if actual.Namespace != tC.expected.Namespace {
-				t.Errorf("\nExpected Namespace: %s\nActual:   %s", tC.expected.Namespace, actual.Namespace)
+			if data.Namespace != tC.namespace {
+				t.Errorf("\nExpected Namespace: %s\nActual:   %s", tC.namespace, data.Namespace)
 			}
 		})
 	}
+}
+
+type FailTestCase struct {
+	desc        string
+	errMsg      string
+	expectedErr string
+}
+
+type failingUrlManager struct {
+	errMsg string
+	FakeGitManager
+}
+
+func (f failingUrlManager) GetProjectUrlFromNativeGitCmd(string) (string, error) {
+	return "", errors.New(f.errMsg)
 }
 
 func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
-	getCurrentBranchName := func() (string, error) {
-		return "feature/abc", nil
+	tC := FailTestCase{
+		desc:        "Error returned by function to get the project remote url",
+		errMsg:      "Some error",
+		expectedErr: "Could not get project Url: Some error",
 	}
-	refreshGitInfo := func() error {
-		return nil
-	}
-	testCases := []struct {
-		getProjectRemoteUrl  func() (string, error)
-		expectedErrorMessage string
-		desc                 string
-	}{
-		{
-			desc: "Error returned by function to get the project remote url",
-			getProjectRemoteUrl: func() (string, error) {
-				return "", errors.New("error when getting project remote url")
-			},
-			expectedErrorMessage: "Could not get project Url: error when getting project remote url",
-		},
-		{
-			desc: "Invalid project remote url",
-			getProjectRemoteUrl: func() (string, error) {
-				return "git@invalid", nil
-			},
-			expectedErrorMessage: "Invalid Git URL format: git@invalid",
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			_, actualErr := ExtractGitInfo(refreshGitInfo, tC.getProjectRemoteUrl, getCurrentBranchName)
-			if actualErr == nil {
-				t.Errorf("Expected an error, got none")
-			}
-			if actualErr.Error() != tC.expectedErrorMessage {
-				t.Errorf("\nExpected: %s\nActual:   %s", tC.expectedErrorMessage, actualErr.Error())
-			}
-		})
-	}
+	t.Run(tC.desc, func(t *testing.T) {
+		g := failingUrlManager{
+			errMsg: tC.errMsg,
+		}
+		_, err := NewGitData("", g)
+		if err == nil {
+			t.Errorf("Expected an error, got none")
+		}
+		if err.Error() != tC.expectedErr {
+			t.Errorf("\nExpected: %s\nActual:   %s", tC.expectedErr, err.Error())
+		}
+	})
+}
+
+type failingBranchManager struct {
+	errMsg string
+	FakeGitManager
+}
+
+func (f failingBranchManager) GetCurrentBranchNameFromNativeGitCmd() (string, error) {
+	return "", errors.New(f.errMsg)
 }
 
 func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
-	expectedErrNestedMsg := "error when getting current branch name"
-
-	refreshGitInfo := func() error {
-		return nil
+	tC := FailTestCase{
+		desc:        "Error returned by function to get the project remote url",
+		errMsg:      "Some error",
+		expectedErr: "Failed to get current branch: Some error",
 	}
-	_, actualErr := ExtractGitInfo(refreshGitInfo,
-		func() (string, error) {
-			return "git@custom-gitlab.com:namespace/project.git", nil
-		},
-		func() (string, error) {
-			return "", errors.New(expectedErrNestedMsg)
-		})
-
-	if actualErr == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	expectedErr := fmt.Errorf("Failed to get current branch: %s", expectedErrNestedMsg)
-	if actualErr.Error() != expectedErr.Error() {
-		t.Errorf("\nExpected: %s\nActual:   %s", expectedErr, actualErr)
-	}
-}
-
-func TestRefreshGitRemote_FailToRefreshRemote(t *testing.T) {
-	expectedErrNestedMsg := "error when fetching commits"
-	_, actualErr := ExtractGitInfo(
-		func() error {
-			return errors.New(expectedErrNestedMsg)
-		},
-		func() (string, error) {
-			return "git@custom-gitlab.com:namespace/project.git", nil
-		},
-		func() (string, error) {
-			return "feature/abc", nil
-		},
-	)
-
-	if actualErr == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	expectedErr := fmt.Errorf("Could not get latest information from remote: %s", expectedErrNestedMsg)
-	if actualErr.Error() != expectedErr.Error() {
-		t.Errorf("\nExpected: %s\nActual:   %s", expectedErr, actualErr)
-	}
+	t.Run(tC.desc, func(t *testing.T) {
+		g := failingBranchManager{
+			FakeGitManager: FakeGitManager{
+				RemoteUrl: "git@custom-gitlab.com:namespace-1/project-name.git",
+			},
+			errMsg: tC.errMsg,
+		}
+		_, err := NewGitData("", g)
+		if err == nil {
+			t.Errorf("Expected an error, got none")
+		}
+		if err.Error() != tC.expectedErr {
+			t.Errorf("\nExpected: %s\nActual:   %s", tC.expectedErr, err.Error())
+		}
+	})
 }

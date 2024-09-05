@@ -7,19 +7,27 @@ import (
 	"strings"
 )
 
-type GitProjectInfo struct {
-	RemoteUrl               string
-	Namespace               string
-	ProjectName             string
-	BranchName              string
-	GetLatestCommitOnRemote func(remote string, branchName string) (string, error)
+type GitManager interface {
+	RefreshProjectInfo(remote string) error
+	GetProjectUrlFromNativeGitCmd(remote string) (url string, err error)
+	GetCurrentBranchNameFromNativeGitCmd() (string, error)
+	GetLatestCommitOnRemote(remote string, branchName string) (string, error)
 }
+
+type GitData struct {
+	RemoteUrl   string
+	Namespace   string
+	ProjectName string
+	BranchName  string
+}
+
+type Git struct{}
 
 /*
 projectPath returns the Gitlab project full path, which isn't necessarily the same as its name.
 See https://docs.gitlab.com/ee/api/rest/index.html#namespaced-path-encoding for more information.
 */
-func (g GitProjectInfo) ProjectPath() string {
+func (g GitData) ProjectPath() string {
 	return g.Namespace + "/" + g.ProjectName
 }
 
@@ -28,15 +36,15 @@ Extracts information about the current repository and returns
 it to the client for initialization. The current directory must be a valid
 Gitlab project and the branch must be a feature branch
 */
-func ExtractGitInfo(remote string) (GitProjectInfo, error) {
-	err := RefreshProjectInfo(remote)
+func NewGitData(remote string, g GitManager) (GitData, error) {
+	err := g.RefreshProjectInfo(remote)
 	if err != nil {
-		return GitProjectInfo{}, fmt.Errorf("Could not get latest information from remote: %v", err)
+		return GitData{}, fmt.Errorf("Could not get latest information from remote: %v", err)
 	}
 
-	url, err := GetProjectUrlFromNativeGitCmd(remote)
+	url, err := g.GetProjectUrlFromNativeGitCmd(remote)
 	if err != nil {
-		return GitProjectInfo{}, fmt.Errorf("Could not get project Url: %v", err)
+		return GitData{}, fmt.Errorf("Could not get project Url: %v", err)
 	}
 
 	/*
@@ -54,18 +62,18 @@ func ExtractGitInfo(remote string) (GitProjectInfo, error) {
 	re := regexp.MustCompile(`(?:^https?:\/\/|^ssh:\/\/|^git@)(?:[^\/:]+)(?::\d+)?[\/:](.*)\/([^\/]+?)(?:\.git)?$`)
 	matches := re.FindStringSubmatch(url)
 	if len(matches) != 3 {
-		return GitProjectInfo{}, fmt.Errorf("Invalid Git URL format: %s", url)
+		return GitData{}, fmt.Errorf("Invalid Git URL format: %s", url)
 	}
 
 	namespace := matches[1]
 	projectName := matches[2]
 
-	branchName, err := GetCurrentBranchNameFromNativeGitCmd()
+	branchName, err := g.GetCurrentBranchNameFromNativeGitCmd()
 	if err != nil {
-		return GitProjectInfo{}, fmt.Errorf("Failed to get current branch: %v", err)
+		return GitData{}, fmt.Errorf("Failed to get current branch: %v", err)
 	}
 
-	return GitProjectInfo{
+	return GitData{
 			RemoteUrl:   url,
 			Namespace:   namespace,
 			ProjectName: projectName,
@@ -75,7 +83,7 @@ func ExtractGitInfo(remote string) (GitProjectInfo, error) {
 }
 
 /* Gets the current branch name */
-func GetCurrentBranchNameFromNativeGitCmd() (res string, e error) {
+func (g Git) GetCurrentBranchNameFromNativeGitCmd() (res string, e error) {
 	gitCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 
 	output, err := gitCmd.Output()
@@ -89,7 +97,7 @@ func GetCurrentBranchNameFromNativeGitCmd() (res string, e error) {
 }
 
 /* Gets the project SSH or HTTPS url */
-func GetProjectUrlFromNativeGitCmd(remote string) (string, error) {
+func (g Git) GetProjectUrlFromNativeGitCmd(remote string) (string, error) {
 	cmd := exec.Command("git", "remote", "get-url", remote)
 	url, err := cmd.Output()
 	if err != nil {
@@ -100,7 +108,7 @@ func GetProjectUrlFromNativeGitCmd(remote string) (string, error) {
 }
 
 /* Pulls down latest commit information from Gitlab */
-func RefreshProjectInfo(remote string) error {
+func (g Git) RefreshProjectInfo(remote string) error {
 	cmd := exec.Command("git", "fetch", remote)
 	_, err := cmd.Output()
 	if err != nil {
@@ -110,7 +118,7 @@ func RefreshProjectInfo(remote string) error {
 	return nil
 }
 
-func GetLatestCommitOnRemote(remote string, branchName string) (string, error) {
+func (g Git) GetLatestCommitOnRemote(remote string, branchName string) (string, error) {
 	cmd := exec.Command("git", "log", "-1", "--format=%H", fmt.Sprintf("%s/%s", remote, branchName))
 
 	out, err := cmd.Output()

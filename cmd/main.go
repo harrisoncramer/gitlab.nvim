@@ -21,7 +21,9 @@ func main() {
 		log.Fatalf("Failure parsing plugin settings: %v", err)
 	}
 
-	gitInfo, err := git.ExtractGitInfo(pluginOptions.ConnectionSettings.Remote)
+	gitManager := git.Git{}
+	gitData, err := git.NewGitData(pluginOptions.ConnectionSettings.Remote, gitManager)
+
 	if err != nil {
 		log.Fatalf("Failure initializing plugin: %v", err)
 	}
@@ -31,10 +33,10 @@ func main() {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	err, projectInfo := app.InitProjectSettings(client, gitInfo)
+	err, projectInfo := app.InitProjectSettings(client, gitData)
 	if err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}
 
-	app.StartServer(client, projectInfo, gitInfo)
+	app.StartServer(client, projectInfo, gitData)
 }

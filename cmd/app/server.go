@@ -16,7 +16,7 @@ import (
 startSever starts the server and runs concurrent goroutines
 to handle potential shutdown requests and incoming HTTP requests.
 */
-func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjectInfo) {
+func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitData) {
 
 	s := shutdown{
 		sigCh: make(chan os.Signal, 1),
@@ -30,7 +30,6 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitProjec
 		func(a *data) error { a.projectInfo = projectInfo; return nil },
 		func(a *data) error { a.gitInfo = &GitInfo; return nil },
 		func(a *data) error { err := attachEmojis(a, fr); return err },
-		func(a *data) error { a.gitInfo.GetLatestCommitOnRemote = git.GetLatestCommitOnRemote; return nil },
 	)
 	l := createListener()
 
@@ -71,7 +70,7 @@ file reader functionality
 
 type data struct {
 	projectInfo *ProjectInfo
-	gitInfo     *git.GitProjectInfo
+	gitInfo     *git.GitData
 	emojiMap    EmojiMap
 }
 
@@ -82,7 +81,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 
 	d := data{
 		projectInfo: &ProjectInfo{},
-		gitInfo:     &git.GitProjectInfo{},
+		gitInfo:     &git.GitData{},
 	}
 
 	/* Mutates the API struct as necessary with configuration functions */
@@ -110,8 +109,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/draft_notes/", withMr(draftNoteService{d, gitlabClient}, d, gitlabClient))
 	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient))
 
-	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient}.handler)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient}.handler)
+	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient, git.Git{}}.handler)
+	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient, git.Git{}}.handler)
 	m.HandleFunc("/users/me", meService{d, gitlabClient}.handler)
 	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.handler)
 	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.handler)

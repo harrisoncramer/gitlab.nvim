@@ -46,22 +46,6 @@ func makeRequest(t *testing.T, method string, endpoint string, body any) *http.R
 	return request
 }
 
-/* Serves and parses the JSON from an endpoint into the given type */
-func serveRequest[T any](t *testing.T, s *http.ServeMux, request *http.Request, i T) *T {
-	t.Helper()
-	recorder := httptest.NewRecorder()
-	s.ServeHTTP(recorder, request)
-	result := recorder.Result()
-	decoder := json.NewDecoder(result.Body)
-	err := decoder.Decode(&i)
-	if err != nil {
-		t.Fatal(err)
-		return nil
-	}
-
-	return &i
-}
-
 /* Make response makes a simple response value with the right status code */
 func makeResponse(status int) *gitlab.Response {
 	return &gitlab.Response{
@@ -73,11 +57,8 @@ func makeResponse(status int) *gitlab.Response {
 
 var testProjectData = data{
 	projectInfo: &ProjectInfo{},
-	gitInfo: &git.GitProjectInfo{
+	gitInfo: &git.GitData{
 		BranchName: "some-branch",
-		GetLatestCommitOnRemote: func(remote, branchName string) (string, error) {
-			return "abc123", nil
-		},
 	},
 }
 
@@ -143,7 +124,25 @@ func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
 	assert(t, data.Details, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
 }
 
-type mockShutdownHandler struct{}
+type FakeGitManager struct {
+	RemoteUrl   string
+	BranchName  string
+	ProjectName string
+	Namespace   string
+}
 
-func (m mockShutdownHandler) WatchForShutdown(server *http.Server)                   {}
-func (m mockShutdownHandler) shutdownHandler(w http.ResponseWriter, r *http.Request) {}
+func (f FakeGitManager) RefreshProjectInfo(remote string) error {
+	return nil
+}
+
+func (f FakeGitManager) GetCurrentBranchNameFromNativeGitCmd() (string, error) {
+	return f.BranchName, nil
+}
+
+func (f FakeGitManager) GetLatestCommitOnRemote(remote string, branchName string) (string, error) {
+	return "", nil
+}
+
+func (f FakeGitManager) GetProjectUrlFromNativeGitCmd(string) (url string, err error) {
+	return f.RemoteUrl, nil
+}

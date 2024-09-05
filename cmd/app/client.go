@@ -88,7 +88,7 @@ func NewClient() (error, *Client) {
 }
 
 /* InitProjectSettings fetch the project ID using the client */
-func InitProjectSettings(c *Client, gitInfo git.GitProjectInfo) (error, *ProjectInfo) {
+func InitProjectSettings(c *Client, gitInfo git.GitData) (error, *ProjectInfo) {
 
 	opt := gitlab.GetProjectOptions{}
 	project, _, err := c.GetProject(gitInfo.ProjectPath(), &opt)
