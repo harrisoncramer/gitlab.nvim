@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 	"github.com/xanzy/go-gitlab"
-	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 /*

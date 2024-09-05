@@ -1,10 +1,10 @@
-module gitlab.com/harrisoncramer/gitlab.nvim
+module github.com/harrisoncramer/gitlab.nvim
 
 go 1.19
 
 require (
-	github.com/hashicorp/go-retryablehttp v0.7.2
-	github.com/xanzy/go-gitlab v0.102.0
+	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/xanzy/go-gitlab v0.108.0
 )
 
 require (

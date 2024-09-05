@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app"
-	"gitlab.com/harrisoncramer/gitlab.nvim/cmd/app/git"
+	"github.com/harrisoncramer/gitlab.nvim/cmd/app"
+	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 var pluginOptions app.PluginOptions
