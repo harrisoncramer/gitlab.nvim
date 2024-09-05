@@ -155,10 +155,7 @@ you call this function with no values the defaults will be used:
       debug = { go_request = false, go_response = false }, -- Which values to log
       attachment_dir = nil, -- The local directory for files (see the "summary" section)
       reviewer_settings = {
-        no_diagnostic_actions = { -- What to do when pressing `move_to_discussion_tree` keybinding on line with no diagnostic.
-          warn = true, -- Show a warning if true, otherwise do nothing.
-          jump = true, -- Jump to last position in discussion tree if true, otherwise stay in reviewer.
-        },
+        jump_with_no_diagnostics = false, -- Jump to last position in discussion tree if true, otherwise stay in reviewer and show warning.
         diffview = {
           imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
         },

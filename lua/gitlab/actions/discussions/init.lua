@@ -202,14 +202,11 @@ M.move_to_discussion_tree = function()
   end
 
   if #d == 0 then
-    local warning = "No diagnostics for this line."
-    if state.settings.reviewer_settings.no_diagnostic_actions.jump then
-      warning = warning .. " Jumping to last position in discussion tree."
+    if state.settings.reviewer_settings.jump_with_no_diagnostics then
       vim.api.nvim_win_set_cursor(M.split.winid, { M.last_row, M.last_column })
       vim.api.nvim_set_current_win(M.split.winid)
-    end
-    if state.settings.reviewer_settings.no_diagnostic_actions.warn then
-      u.notify(warning, vim.log.levels.WARN)
+    else
+      u.notify("No diagnostics for this line.", vim.log.levels.WARN)
     end
     return
   elseif #d > 1 then
