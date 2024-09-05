@@ -3,7 +3,6 @@ package app
 import (
 	"io"
 	"net/http"
-	"slices"
 	"sort"
 	"sync"
 
@@ -11,6 +10,15 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 )
+
+func Contains[T comparable](elems []T, v T) bool {
+	for _, s := range elems {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
 
 type DiscussionsRequest struct {
 	Blacklist []string `json:"blacklist"`
@@ -98,7 +106,7 @@ func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request
 	var linkedDiscussions []*gitlab.Discussion
 
 	for _, discussion := range discussions {
-		if discussion.Notes == nil || len(discussion.Notes) == 0 || slices.Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) {
+		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) {
 			continue
 		}
 		for _, note := range discussion.Notes {
