@@ -202,7 +202,12 @@ M.move_to_discussion_tree = function()
   end
 
   if #d == 0 then
-    u.notify("No diagnostics for this line", vim.log.levels.WARN)
+    if state.settings.reviewer_settings.jump_with_no_diagnostics then
+      vim.api.nvim_win_set_cursor(M.split.winid, { M.last_row, M.last_column })
+      vim.api.nvim_set_current_win(M.split.winid)
+    else
+      u.notify("No diagnostics for this line.", vim.log.levels.WARN)
+    end
     return
   elseif #d > 1 then
     vim.ui.select(d, {
@@ -517,6 +522,13 @@ M.create_split_and_bufs = function()
 
   local linked_bufnr = vim.api.nvim_create_buf(true, false)
   local unlinked_bufnr = vim.api.nvim_create_buf(true, false)
+
+  vim.api.nvim_create_autocmd("WinLeave", {
+    buffer = linked_bufnr,
+    callback = function()
+      M.last_row, M.last_column = unpack(vim.api.nvim_win_get_cursor(0))
+    end,
+  })
 
   return split, linked_bufnr, unlinked_bufnr
 end

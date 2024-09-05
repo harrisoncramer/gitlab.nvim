@@ -155,6 +155,7 @@ you call this function with no values the defaults will be used:
       debug = { go_request = false, go_response = false }, -- Which values to log
       attachment_dir = nil, -- The local directory for files (see the "summary" section)
       reviewer_settings = {
+        jump_with_no_diagnostics = false, -- Jump to last position in discussion tree if true, otherwise stay in reviewer and show warning.
         diffview = {
           imply_local = false, -- If true, will attempt to use --imply_local option when calling |:DiffviewOpen|
         },
@@ -651,22 +652,31 @@ Reviewer keybindings ~
 Most of the keybindings `gitlab.nvim` sets are normal mode mappings, with the
 exception of `keymaps.reviewer.create_comment` and
 `keymaps.reviewer.create_suggestion` which work in both normal and visual
-mode. In normal mode, these keybindings are |operator|s that accept a |motion|
-(with an optional |count|). E.g., `c2j` will create a comment for the current
-and the next 2 lines. Similarly, `sip` will create a suggestion for the "inner
-paragraph". The operator forces |linewise| visual selection, so it works
-correctly even if the motion itself works |characterwise| (e.g., |i(| for
-selecting the inner parentheses block).
+mode. In normal mode, these keybindings are |operator|s that must be followed
+by a |motion|.
+
+Either the operator or the motion can be preceded by a count, so that `3sj` is
+equivalent to `s3j`, and they both create a comment for the current line and
+three more lines downwards. Similarly, both `2s`|ap| and `s2`|ap| create a suggestion
+for two "outer" paragraphs. 
+
+The operators force |linewise| visual selection, so they work correctly even
+if the motion itself works |characterwise| (e.g., |i(| for selecting the inner
+parentheses block).
+
+To create a comment or suggestion for the current line, just duplicate the
+keybinding: `cc` and `ss`. This also accepts a count, so you can use `2cc` or
+`c2c` to create a comment on two lines. The same logic applies also when you
+change these keybindings, e.g., to something like `<leader>c`.
 
 The keybindings also work in visual mode, e.g., if you first want to make
 sure you are commenting on the right text segment/object, you can do `v4j` to
 visually select the current and the next 4 lines, followed by either `c` for a
 normal comment or `s` for a suggestion.
 
-To create a comment or suggestion for the current line, just duplicate the
-keybinding: `cc` and `ss`. Alternatively, you can use any motion that moves on
-that line only, e.g., `c$`. The same logic applies also when you change these
-keybindings, e.g., to something like `<leader>c`.
+NOTE: Due to limitations of the Nvim API, unlike with builtin operators `d`, `c`,
+etc., the operator count and motion count are NOT |multiplied|, so that the key
+presses `3s2s` are not equivalent to `6ss`, but result in `s32s`.
 
 Delay in keybindings ~
 
