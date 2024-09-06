@@ -168,6 +168,7 @@ func withMr(svc ServiceWithHandler, c data, client MergeRequestLister) http.Hand
 				Scope:        gitlab.Ptr("all"),
 				State:        gitlab.Ptr("opened"),
 				SourceBranch: &c.gitInfo.BranchName,
+				TargetBranch: pluginOptions.ChosenTargetBranch,
 			}
 
 			mergeRequests, _, err := client.ListProjectMergeRequests(c.projectInfo.ProjectId, &options)
@@ -179,6 +180,12 @@ func withMr(svc ServiceWithHandler, c data, client MergeRequestLister) http.Hand
 			if len(mergeRequests) == 0 {
 				err := fmt.Errorf("No merge requests found for branch '%s'", c.gitInfo.BranchName)
 				handleError(w, err, "No merge requests found", http.StatusBadRequest)
+				return
+			}
+
+			if len(mergeRequests) > 1 {
+				err := errors.New("Please call gitlab.choose_merge_request()")
+				handleError(w, err, "Multiple MRs found", http.StatusBadRequest)
 				return
 			}
 

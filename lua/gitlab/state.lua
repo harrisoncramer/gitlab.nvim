@@ -247,6 +247,10 @@ M.unlinked_discussion_tree = {
   unresolved_expanded = false,
 }
 
+-- Used to set a specific target when choosing a merge request, due to the fact
+-- that it's technically possible to have multiple target branches
+M.chosen_target_branch = nil
+
 -- These keymaps are set globally when the plugin is initialized
 M.set_global_keymaps = function()
   local keymaps = M.settings.keymaps
