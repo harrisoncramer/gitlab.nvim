@@ -565,6 +565,9 @@ M.dependencies = {
     refresh = true,
     method = "POST",
     body = function(opts)
+      if opts then
+        opts.open_reviewer_field = nil
+      end
       return opts or vim.json.decode('{}')
     end,
   },
