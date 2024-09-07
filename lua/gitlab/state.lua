@@ -572,7 +572,7 @@ M.dependencies = {
         opts["not[label]"] = opts.notlabel
         opts.notlabel = nil
       end
-      return opts or vim.json.decode('{}')
+      return opts or vim.json.decode("{}")
     end,
   },
   discussion_data = {
