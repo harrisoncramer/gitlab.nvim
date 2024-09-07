@@ -45,6 +45,7 @@ M.choose_merge_request = function(opts)
       end
 
       vim.schedule(function()
+        state.chosen_target_branch = choice.target_branch
         require("gitlab.server").restart(function()
           if opts.open_reviewer then
             require("gitlab").review()
