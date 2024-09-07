@@ -26,7 +26,7 @@ func (f fakeMergeRequestLister) ListProjectMergeRequests(pid interface{}, opt *g
 }
 
 func TestMergeRequestHandler(t *testing.T) {
-	var testListMergeRequestsRequest = ListMergeRequestRequest{Label: []string{}, NotLabel: []string{}}
+	var testListMergeRequestsRequest = gitlab.ListProjectMergeRequestsOptions{}
 	t.Run("Should fetch merge requests", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := mergeRequestListerService{testProjectData, fakeMergeRequestLister{}}

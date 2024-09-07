@@ -52,7 +52,7 @@ func (a labelService) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a labelService) getLabels(w http.ResponseWriter, r *http.Request) {
+func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	labels, res, err := a.client.ListLabels(a.projectInfo.ProjectId, &gitlab.ListLabelsOptions{})

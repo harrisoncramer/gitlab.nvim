@@ -565,18 +565,17 @@ M.dependencies = {
     refresh = true,
     method = "POST",
     body = function(opts)
-      local listArgs = {
-        label = opts and opts.label or {},
-        notlabel = opts and opts.notlabel or {},
-      }
-      for k, v in pairs(listArgs) do
-        listArgs[k] = v
+      if opts then
+        opts.open_reviewer_field = nil
       end
-      return listArgs
+      if opts.notlabel then -- Legacy: Migrate use of notlabel to not[label], per API
+        opts["not[label]"] = opts.notlabel
+        opts.notlabel = nil
+      end
+      return opts or vim.json.decode("{}")
     end,
   },
   discussion_data = {
-    -- key is missing here...
     endpoint = "/mr/discussions/list",
     state = "DISCUSSION_DATA",
     refresh = false,

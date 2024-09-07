@@ -66,6 +66,14 @@ M.open = function()
     u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end
 
+  if state.INFO.state == "closed" then
+    u.notify(string.format("This MR was closed on %s", u.format_date(state.INFO.closed_at)), vim.log.levels.WARN)
+  end
+
+  if state.INFO.state == "merged" then
+    u.notify(string.format("This MR was merged on %s", u.format_date(state.INFO.merged_at)), vim.log.levels.WARN)
+  end
+
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
     u.notify(
       "Diagnostics are now configured as settings.discussion_signs, see :h gitlab.nvim.signs-and-diagnostics",

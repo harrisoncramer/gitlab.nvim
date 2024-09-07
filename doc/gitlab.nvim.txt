@@ -739,22 +739,23 @@ Choose a merge request from a list of those open in your current project to
 review. This command will automatically check out the feature branch locally
 and open the reviewer pane (this can be overridden with the `open_reviewer`
 parameter.
+
 You can also filter merge requests by specifying `label` and `notlabel`
-parameters.
+parameters, or any other parameter included in list MRs API.
+
+By default, the endpoint will return all open merge requests.
 >lua
   require("gitlab").choose_merge_request()
   require("gitlab").choose_merge_request({ open_reviewer = false })
-  require("gitlab").choose_merge_request({ label = {"include_mrs_with_label"} })
-  require("gitlab").choose_merge_request({ notlabel = {"exclude_mrs_with_label"} })
+  require("gitlab").choose_merge_request({ labels = {"include_mrs_with_label"} })
+  require("gitlab").choose_merge_request({ ["[not]labels"] = {"exclude_mrs_with_label"} })
 <
     Parameters: ~
         • {opts}: (table|nil) Keyword arguments to configure the checkout.
             • {open_reviewer}: (boolean) Whether to open the reviewer after
             switching branches. True by default.
-            • {label}: (table<string>) Return merge requests with *including* matching labels
-            • {notlabel}: (table<string>) Return merge requests *excluding*
-              matching label
-<
+            • {labels}: (table<string>) Return merge requests with *including* matching labels
+            • Etc, see: https://docs.gitlab.com/ee/api/merge_requests.html#list-merge-requests
                                                                 *gitlab.nvim.review*
 gitlab.review() ~
 
