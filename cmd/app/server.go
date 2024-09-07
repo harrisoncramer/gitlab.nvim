@@ -166,7 +166,6 @@ func withMr(svc ServiceWithHandler, c data, client MergeRequestLister) http.Hand
 		if c.projectInfo.MergeId == 0 {
 			options := gitlab.ListProjectMergeRequestsOptions{
 				Scope:        gitlab.Ptr("all"),
-				State:        gitlab.Ptr("opened"),
 				SourceBranch: &c.gitInfo.BranchName,
 				TargetBranch: pluginOptions.ChosenTargetBranch,
 			}
