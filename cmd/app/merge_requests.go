@@ -10,8 +10,9 @@ import (
 )
 
 type ListMergeRequestRequest struct {
-	Label    []string `json:"label"`
-	NotLabel []string `json:"notlabel"`
+	Label    *gitlab.LabelOptions `json:"label"`
+	NotLabel *gitlab.LabelOptions `json:"notlabel"`
+	State    *string              `json:"state,omitempty"`
 }
 
 type ListMergeRequestResponse struct {
@@ -50,11 +51,15 @@ func (a mergeRequestListerService) handler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if listMergeRequestRequest.State == nil {
+		listMergeRequestRequest.State = gitlab.Ptr("opened")
+	}
+
 	options := gitlab.ListProjectMergeRequestsOptions{
 		Scope:     gitlab.Ptr("all"),
-		State:     gitlab.Ptr("opened"),
-		Labels:    (*gitlab.LabelOptions)(&listMergeRequestRequest.Label),
-		NotLabels: (*gitlab.LabelOptions)(&listMergeRequestRequest.NotLabel),
+		State:     listMergeRequestRequest.State,
+		Labels:    listMergeRequestRequest.Label,
+		NotLabels: listMergeRequestRequest.NotLabel,
 	}
 
 	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
