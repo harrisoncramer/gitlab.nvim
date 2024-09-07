@@ -566,8 +566,8 @@ M.dependencies = {
     method = "POST",
     body = function(opts)
       local listArgs = {
-        label = opts and opts.label or {},
-        notlabel = opts and opts.notlabel or {},
+        labels = opts and opts.labels or {},
+        ["not[labels]"] = opts and opts.not_labels or {},
       }
       for k, v in pairs(listArgs) do
         listArgs[k] = v

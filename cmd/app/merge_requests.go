@@ -9,12 +9,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type ListMergeRequestRequest struct {
-	Label    *gitlab.LabelOptions `json:"label"`
-	NotLabel *gitlab.LabelOptions `json:"notlabel"`
-	State    *string              `json:"state,omitempty"`
-}
-
 type ListMergeRequestResponse struct {
 	SuccessResponse
 	MergeRequests []*gitlab.MergeRequest `json:"merge_requests"`
@@ -44,7 +38,7 @@ func (a mergeRequestListerService) handler(w http.ResponseWriter, r *http.Reques
 	}
 
 	defer r.Body.Close()
-	var listMergeRequestRequest ListMergeRequestRequest
+	var listMergeRequestRequest gitlab.ListProjectMergeRequestsOptions
 	err = json.Unmarshal(body, &listMergeRequestRequest)
 	if err != nil {
 		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
@@ -55,14 +49,11 @@ func (a mergeRequestListerService) handler(w http.ResponseWriter, r *http.Reques
 		listMergeRequestRequest.State = gitlab.Ptr("opened")
 	}
 
-	options := gitlab.ListProjectMergeRequestsOptions{
-		Scope:     gitlab.Ptr("all"),
-		State:     listMergeRequestRequest.State,
-		Labels:    listMergeRequestRequest.Label,
-		NotLabels: listMergeRequestRequest.NotLabel,
+	if listMergeRequestRequest.Scope == nil {
+		listMergeRequestRequest.Scope = gitlab.Ptr("all")
 	}
 
-	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &options)
+	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &listMergeRequestRequest)
 
 	if err != nil {
 		handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
