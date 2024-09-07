@@ -565,14 +565,7 @@ M.dependencies = {
     refresh = true,
     method = "POST",
     body = function(opts)
-      local listArgs = {
-        labels = opts and opts.labels or {},
-        ["not[labels]"] = opts and opts.not_labels or {},
-      }
-      for k, v in pairs(listArgs) do
-        listArgs[k] = v
-      end
-      return listArgs
+      return opts or vim.json.decode('{}')
     end,
   },
   discussion_data = {
