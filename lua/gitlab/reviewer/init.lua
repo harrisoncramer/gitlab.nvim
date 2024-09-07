@@ -67,12 +67,12 @@ M.open = function()
   end
 
   if state.INFO.state == "closed" then
-    u.notify(string.format("This was closed on %s", u.format_date(state.INFO.closed_at)),
+    u.notify(string.format("This MR was closed on %s", u.format_date(state.INFO.closed_at)),
       vim.log.levels.WARN)
   end
 
   if state.INFO.state == "merged" then
-    u.notify(string.format("This was merged on %s", u.format_date(state.INFO.merged_at)),
+    u.notify(string.format("This MR was merged on %s", u.format_date(state.INFO.merged_at)),
       vim.log.levels.WARN)
   end
 
