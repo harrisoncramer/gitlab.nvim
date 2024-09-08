@@ -102,12 +102,18 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 	}
 
 	var mergeRequests []*gitlab.MergeRequest
+	existingIds := make(map[int]bool)
 	var errs []error
 	for res := range mrChan {
 		if res.err != nil {
 			errs = append(errs, res.err)
 		} else {
-			mergeRequests = append(mergeRequests, res.mrs...)
+			for _, mr := range res.mrs {
+				if !existingIds[mr.ID] {
+					mergeRequests = append(mergeRequests, mr)
+					existingIds[mr.ID] = true
+				}
+			}
 		}
 	}
 
