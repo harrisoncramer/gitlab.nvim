@@ -117,10 +117,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/job", traceFileService{d, gitlabClient}.handler)
 	m.HandleFunc("/project/members", projectMemberService{d, gitlabClient}.handler)
 	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.handler)
-	m.HandleFunc(
-		"/merge_requests_by_username",
-		mergeRequestListerByUsernameService{d, gitlabClient}.handler,
-	)
+	m.HandleFunc("/merge_requests_by_username", mergeRequestListerByUsernameService{d, gitlabClient}.handler)
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))

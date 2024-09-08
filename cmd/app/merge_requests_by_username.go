@@ -129,7 +129,7 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusOK)
 	response := ListMergeRequestResponse{
 		SuccessResponse: SuccessResponse{
-			Message: "Merge requests fetched successfully",
+			Message: fmt.Sprintf("Merge requests fetched for %s", request.Username),
 			Status:  http.StatusOK,
 		},
 		MergeRequests: mergeRequests,

@@ -51,6 +51,7 @@ func makeResponse(status int) *gitlab.Response {
 	return &gitlab.Response{
 		Response: &http.Response{
 			StatusCode: status,
+			Body:       http.NoBody,
 		},
 	}
 }
