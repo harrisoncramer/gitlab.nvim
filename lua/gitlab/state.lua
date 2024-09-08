@@ -5,6 +5,7 @@
 
 local git = require("gitlab.git")
 local u = require("gitlab.utils")
+local List = require("gitlab.utils.list")
 local M = {}
 
 M.emoji_map = nil
@@ -43,6 +44,7 @@ end
 --- These are the default settings for the plugin
 M.settings = {
   auth_provider = M.default_auth_provider,
+  file_separator = u.path_separator,
   port = nil, -- choose random port
   debug = {
     go_request = false,
@@ -247,6 +249,10 @@ M.unlinked_discussion_tree = {
   unresolved_expanded = false,
 }
 
+-- Used to set a specific target when choosing a merge request, due to the fact
+-- that it's technically possible to have multiple target branches
+M.chosen_target_branch = nil
+
 -- These keymaps are set globally when the plugin is initialized
 M.set_global_keymaps = function()
   local keymaps = M.settings.keymaps
@@ -381,7 +387,6 @@ end
 ---@return Settings
 M.merge_settings = function(args)
   M.settings = u.merge(M.settings, args)
-  M.settings.file_separator = (u.is_windows() and "\\" or "/")
   return M.settings
 end
 
@@ -561,18 +566,35 @@ M.dependencies = {
     refresh = true,
     method = "POST",
     body = function(opts)
-      local listArgs = {
-        label = opts and opts.label or {},
-        notlabel = opts and opts.notlabel or {},
-      }
-      for k, v in pairs(listArgs) do
-        listArgs[k] = v
+      if opts then
+        opts.open_reviewer_field = nil
       end
-      return listArgs
+      if opts and opts.notlabel then -- Legacy: Migrate use of notlabel to not[label], per API
+        opts["not[label]"] = opts.notlabel
+        opts.notlabel = nil
+      end
+      return opts or vim.json.decode("{}")
+    end,
+  },
+  merge_requests_by_username = {
+    endpoint = "/merge_requests_by_username",
+    key = "merge_requests",
+    state = "MERGE_REQUESTS",
+    refresh = true,
+    method = "POST",
+    body = function(opts)
+      local members = List.new(M.PROJECT_MEMBERS)
+      local user = members:find(function(usr)
+        return usr.username == opts.username
+      end)
+      if user == nil then
+        error("Invalid payload, user could not be found!")
+      end
+      opts.user_id = user.id
+      return opts
     end,
   },
   discussion_data = {
-    -- key is missing here...
     endpoint = "/mr/discussions/list",
     state = "DISCUSSION_DATA",
     refresh = false,

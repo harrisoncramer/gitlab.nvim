@@ -20,7 +20,10 @@ M.start = function(callback)
     debug = state.settings.debug,
     log_path = state.settings.log_path,
     connection_settings = state.settings.connection_settings,
+    chosen_target_branch = state.chosen_target_branch,
   }
+
+  state.chosen_target_branch = nil -- Do not let this interfere with subsequent reviewer.open() calls
 
   local settings = vim.json.encode(go_server_settings)
   local command = string.format("%s '%s'", state.settings.bin, settings)
@@ -117,7 +120,7 @@ M.shutdown = function(cb)
   end)
 end
 
--- Restarts the Go server and clears out all gitlab.nvim state
+---Restarts the Go server and clears out all gitlab.nvim state
 M.restart = function(cb)
   if not state.go_server_running then
     vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)

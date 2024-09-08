@@ -19,6 +19,7 @@ jobs:
         with:
           version: v1.54
           only-new-issues: true
+          skip-cache: true
   go_test:
     name: Test Go 🧪 
     needs: [go_lint]

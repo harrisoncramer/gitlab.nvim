@@ -7,7 +7,7 @@ compile:
 	@cd cmd && go build -o bin && mv bin ../bin
 ## test: run golang project tests
 test:
-	@cd cmd && go test
+	@cd cmd/app && go test
 
 .PHONY: help
 all: help
