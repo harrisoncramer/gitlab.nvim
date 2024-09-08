@@ -49,12 +49,12 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 	}
 
 	if request.Username == "" {
-		handleError(w, errors.New("Username is required"), "Username is a required payload field", http.StatusBadRequest)
+		handleError(w, errors.New("username is a required payload field"), "username is required", http.StatusBadRequest)
 		return
 	}
 
 	if request.UserId == 0 {
-		handleError(w, errors.New("Could not find User ID of user"), "User ID is a required payload field", http.StatusBadRequest)
+		handleError(w, errors.New("user_id is a required payload field"), "user_id is required", http.StatusBadRequest)
 		return
 	}
 
@@ -117,12 +117,12 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 		for _, err := range errs {
 			combinedErr += err.Error() + "; "
 		}
-		handleError(w, errors.New(combinedErr), "Some error occurred", http.StatusInternalServerError)
+		handleError(w, errors.New(combinedErr), "An error occurred", http.StatusInternalServerError)
 		return
 	}
 
 	if len(mergeRequests) == 0 {
-		handleError(w, errors.New(fmt.Sprintf("%s did not have any MRs", request.Username)), "No MRs found", http.StatusBadRequest)
+		handleError(w, errors.New(fmt.Sprintf("%s did not have any MRs", request.Username)), "No MRs found", http.StatusNotFound)
 		return
 	}
 
@@ -148,7 +148,7 @@ func (a mergeRequestListerByUsernameService) getMrs(payload *gitlab.ListProjectM
 	}
 
 	if res.StatusCode >= 300 {
-		return []*gitlab.MergeRequest{}, GenericError{endpoint: "/merge_requests"}
+		return []*gitlab.MergeRequest{}, GenericError{endpoint: "/merge_requests_by_username"}
 	}
 
 	defer res.Body.Close()
