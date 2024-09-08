@@ -581,10 +581,8 @@ M.dependencies = {
     state = "MERGE_REQUESTS",
     refresh = true,
     method = "POST",
-    body = function(username)
-      return {
-        username = username
-      }
+    body = function(opts)
+      return opts or vim.json.decode("{}")
     end,
   },
   discussion_data = {

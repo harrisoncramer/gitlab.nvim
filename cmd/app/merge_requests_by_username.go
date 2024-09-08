@@ -36,9 +36,8 @@ type mergeRequestListerByUsernameService struct {
 }
 
 type MergeRequestByUsernameRequest struct {
-	Username string  `json:"username"`
-	State    *string `json:"state,omitempty"`
-	Scope    *string `json:"scope,omitempty"`
+	Username string `json:"username"`
+	State    string `json:"state,omitempty"`
 }
 
 func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *http.Request) {
@@ -63,17 +62,26 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 		return
 	}
 
+	if request.Username == "" {
+		handleError(w, errors.New("Username is required"), "Username is a required payload field", http.StatusBadRequest)
+		return
+	}
+
+	if request.State == "" {
+		request.State = "opened"
+	}
+
 	// Assignee needs the ID of the assignee...
 	payloads := []gitlab.ListProjectMergeRequestsOptions{
 		{
-			State:          request.State,
-			Scope:          request.Scope,
 			AuthorUsername: gitlab.Ptr(request.Username),
+			State:          gitlab.Ptr(request.State),
+			Scope:          gitlab.Ptr("all"),
 		},
 		{
-			State:            request.State,
-			Scope:            request.Scope,
 			ReviewerUsername: gitlab.Ptr(request.Username),
+			State:            gitlab.Ptr(request.State),
+			Scope:            gitlab.Ptr("all"),
 		},
 	}
 
