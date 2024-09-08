@@ -103,7 +103,8 @@ return {
   data = data.data,
   print_settings = state.print_settings,
   choose_merge_request = async.sequence({ merge_requests_dep }, merge_requests.choose_merge_request),
-  merge_requests_by_username = async.sequence({ merge_requests_by_username_dep }, merge_requests.choose_merge_request),
+  merge_requests_by_username = async.sequence({ project_members, merge_requests_by_username_dep },
+    merge_requests.choose_merge_request),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then

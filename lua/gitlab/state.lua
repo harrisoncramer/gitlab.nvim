@@ -5,6 +5,7 @@
 
 local git = require("gitlab.git")
 local u = require("gitlab.utils")
+local List = require("gitlab.utils.list")
 local M = {}
 
 M.emoji_map = nil
@@ -582,7 +583,15 @@ M.dependencies = {
     refresh = true,
     method = "POST",
     body = function(opts)
-      return opts or vim.json.decode("{}")
+      local members = List.new(M.PROJECT_MEMBERS)
+      local user = members:find(function(usr)
+        return usr.username == opts.username
+      end)
+      if user == nil then
+        error("Invalid payload, user could not be found!")
+      end
+      opts.user_id = user.id
+      return opts
     end,
   },
   discussion_data = {
