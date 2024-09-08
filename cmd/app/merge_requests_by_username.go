@@ -127,7 +127,7 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 	}
 
 	if len(mergeRequests) == 0 {
-		handleError(w, errors.New(fmt.Sprintf("%s did not have any MRs", request.Username)), "No MRs found", http.StatusNotFound)
+		handleError(w, fmt.Errorf("%s did not have any MRs", request.Username), "No MRs found", http.StatusNotFound)
 		return
 	}
 
