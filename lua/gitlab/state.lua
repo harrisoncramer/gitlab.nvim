@@ -43,6 +43,7 @@ end
 --- These are the default settings for the plugin
 M.settings = {
   auth_provider = M.default_auth_provider,
+  file_separator = u.path_separator,
   port = nil, -- choose random port
   debug = {
     go_request = false,
@@ -385,7 +386,6 @@ end
 ---@return Settings
 M.merge_settings = function(args)
   M.settings = u.merge(M.settings, args)
-  M.settings.file_separator = (u.is_windows() and "\\" or "/")
   return M.settings
 end
 

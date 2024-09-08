@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -21,7 +20,7 @@ func (a mergeRequestListerByUsernameService) callAPI(payload *gitlab.ListProject
 
 	defer res.Body.Close()
 
-	return mrs, nil
+	return mrs, err
 }
 
 type MergeRequestListerByUsername interface {
@@ -75,21 +74,32 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 		},
 	}
 
-	mrChan := make(chan []*gitlab.MergeRequest, len(payloads))
+	type apiResponse struct {
+		mrs []*gitlab.MergeRequest
+		err error
+	}
 
+	mrChan := make(chan apiResponse, len(payloads))
 	for _, payload := range payloads {
 		go func(p gitlab.ListProjectMergeRequestsOptions) {
 			mrs, err := a.callAPI(&p)
-			if err != nil {
-				fmt.Println("Oh no")
-			}
-			mrChan <- mrs
+			mrChan <- apiResponse{mrs, err}
 		}(payload)
 	}
 
 	var mergeRequests []*gitlab.MergeRequest
-	for mrs := range mrChan {
-		mergeRequests = append(mergeRequests, mrs...)
+	var errs []error
+	for res := range mrChan {
+		if res.err != nil {
+			errs = append(errs, res.err)
+		} else {
+			mergeRequests = append(mergeRequests, res.mrs...)
+		}
+	}
+
+	if len(errs) > 0 {
+		handleError(w, err, "Some error occurred", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

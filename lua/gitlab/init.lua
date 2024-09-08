@@ -36,13 +36,13 @@ local function setup(args)
   if args == nil then
     args = {}
   end
-  server.build() -- Builds the Go binary if it doesn't exist
-  state.merge_settings(args) -- Merges user settings with default settings
-  state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
-  require("gitlab.colors") -- Sets colors
+  server.build()                       -- Builds the Go binary if it doesn't exist
+  state.merge_settings(args)           -- Merges user settings with default settings
+  state.set_global_keymaps()           -- Sets keymaps that are not bound to a specific buffer
+  require("gitlab.colors")             -- Sets colors
   reviewer.init()
   discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-  emoji.init() -- Read in emojis for lookup purposes
+  emoji.init()                         -- Read in emojis for lookup purposes
 
   local is_healthy = health.check(true)
   if not is_healthy then
@@ -103,7 +103,7 @@ return {
   data = data.data,
   print_settings = state.print_settings,
   choose_merge_request = async.sequence({ merge_requests_dep }, merge_requests.choose_merge_request),
-  merge_requests_by_username = merge_requests_by_username.merge_requests_by_username,
+  merge_requests_by_username = async.sequence({}, merge_requests_by_username.merge_requests_by_username),
   open_in_browser = async.sequence({ info }, function()
     local web_url = u.get_web_url()
     if web_url ~= nil then
