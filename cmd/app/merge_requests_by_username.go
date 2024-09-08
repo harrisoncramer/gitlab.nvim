@@ -2,8 +2,11 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/xanzy/go-gitlab"
 )
@@ -80,8 +83,16 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 	}
 
 	mrChan := make(chan apiResponse, len(payloads))
+	wg := sync.WaitGroup{}
+	go func() {
+		wg.Wait()
+		close(mrChan)
+	}()
+
 	for _, payload := range payloads {
+		wg.Add(1)
 		go func(p gitlab.ListProjectMergeRequestsOptions) {
+			defer wg.Done()
 			mrs, err := a.callAPI(&p)
 			mrChan <- apiResponse{mrs, err}
 		}(payload)
@@ -98,7 +109,16 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 	}
 
 	if len(errs) > 0 {
-		handleError(w, err, "Some error occurred", http.StatusInternalServerError)
+		combinedErr := ""
+		for _, err := range errs {
+			combinedErr += err.Error() + "; "
+		}
+		handleError(w, errors.New(combinedErr), "Some error occurred", http.StatusInternalServerError)
+		return
+	}
+
+	if len(mergeRequests) == 0 {
+		handleError(w, errors.New(fmt.Sprintf("%s did not have any MRs", request.Username)), "No MRs found", http.StatusBadRequest)
 		return
 	}
 

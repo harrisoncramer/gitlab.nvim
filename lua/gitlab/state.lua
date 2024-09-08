@@ -575,6 +575,18 @@ M.dependencies = {
       return opts or vim.json.decode("{}")
     end,
   },
+  merge_requests_by_username = {
+    endpoint = "/merge_requests_by_username",
+    key = "merge_requests",
+    state = "MERGE_REQUESTS",
+    refresh = true,
+    method = "POST",
+    body = function(username)
+      return {
+        username = username
+      }
+    end,
+  },
   discussion_data = {
     endpoint = "/mr/discussions/list",
     state = "DISCUSSION_DATA",
