@@ -569,7 +569,7 @@ M.dependencies = {
       if opts then
         opts.open_reviewer_field = nil
       end
-      if opts.notlabel then -- Legacy: Migrate use of notlabel to not[label], per API
+      if opts and opts.notlabel then -- Legacy: Migrate use of notlabel to not[label], per API
         opts["not[label]"] = opts.notlabel
         opts.notlabel = nil
       end
