@@ -62,7 +62,6 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 		request.State = "opened"
 	}
 
-	// Assignee needs the ID of the assignee...
 	payloads := []gitlab.ListProjectMergeRequestsOptions{
 		{
 			AuthorUsername: gitlab.Ptr(request.Username),
