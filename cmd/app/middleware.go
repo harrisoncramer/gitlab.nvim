@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/xanzy/go-gitlab"
@@ -30,8 +31,9 @@ type validatorMiddleware struct {
 	payload  any
 }
 
-func (p validatorMiddleware) ServeHTTP(next http.Handler) http.Handler {
+func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -66,7 +68,7 @@ func (p validatorMiddleware) ServeHTTP(next http.Handler) http.Handler {
 }
 
 func validatePayload(payload any) mw {
-	return validatorMiddleware{validate: validate, payload: payload}.ServeHTTP
+	return validatorMiddleware{validate: validate, payload: payload}.handle
 }
 
 // Logs the request to the Go server, if enabled
@@ -115,4 +117,30 @@ func withMr(next http.Handler, c data, client MergeRequestLister) http.Handler {
 		// Call the next handler if middleware succeeds
 		next.ServeHTTP(w, r)
 	})
+}
+
+type methodMiddleware struct {
+	validate *validator.Validate
+	methods  []string
+}
+
+func (m methodMiddleware) handle(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method := r.Method
+		for _, acceptableMethod := range m.methods {
+			if method == acceptableMethod {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
+		handleError(w, InvalidRequestError{}, fmt.Sprintf("Expected: %s", strings.Join(m.methods, "; ")), http.StatusMethodNotAllowed)
+	})
+}
+
+func validateMethods(methods ...string) mw {
+	return methodMiddleware{
+		methods: methods,
+	}.handle
 }
