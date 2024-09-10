@@ -58,7 +58,7 @@ type attachmentService struct {
 }
 
 /* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
-func (a attachmentService) handler(w http.ResponseWriter, r *http.Request) {
+func (a attachmentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

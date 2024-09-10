@@ -14,9 +14,9 @@ type fakeTraceFileGetter struct {
 	testBase
 }
 
-func getTraceFileData(t *testing.T, svc ServiceWithHandler, request *http.Request) JobTraceResponse {
+func getTraceFileData(t *testing.T, svc http.Handler, request *http.Request) JobTraceResponse {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data JobTraceResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)

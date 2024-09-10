@@ -26,7 +26,7 @@ type MergeRequestByUsernameRequest struct {
 	State    string `json:"state,omitempty"`
 }
 
-func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

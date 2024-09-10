@@ -22,7 +22,7 @@ type infoService struct {
 }
 
 /* infoHandler fetches infomation about the current git project. The data returned here is used in many other API calls */
-func (a infoService) handler(w http.ResponseWriter, r *http.Request) {
+func (a infoService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)

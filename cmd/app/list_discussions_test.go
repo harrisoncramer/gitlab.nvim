@@ -53,9 +53,9 @@ func (f fakeDiscussionsLister) ListMergeRequestAwardEmojiOnNote(pid interface{},
 	return []*gitlab.AwardEmoji{}, resp, err
 }
 
-func getDiscussionsList(t *testing.T, svc ServiceWithHandler, request *http.Request) DiscussionsResponse {
+func getDiscussionsList(t *testing.T, svc http.Handler, request *http.Request) DiscussionsResponse {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data DiscussionsResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)

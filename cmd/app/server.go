@@ -109,15 +109,15 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/draft_notes/", withMr(draftNoteService{d, gitlabClient}, d, gitlabClient))
 	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient))
 
-	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient, git.Git{}}.handler)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient, git.Git{}}.handler)
-	m.HandleFunc("/users/me", meService{d, gitlabClient}.handler)
-	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.handler)
-	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.handler)
-	m.HandleFunc("/job", traceFileService{d, gitlabClient}.handler)
-	m.HandleFunc("/project/members", projectMemberService{d, gitlabClient}.handler)
-	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.handler)
-	m.HandleFunc("/merge_requests_by_username", mergeRequestListerByUsernameService{d, gitlabClient}.handler)
+	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient, git.Git{}}.ServeHTTP)
+	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient, git.Git{}}.ServeHTTP)
+	m.HandleFunc("/users/me", meService{d, gitlabClient}.ServeHTTP)
+	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.ServeHTTP)
+	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.ServeHTTP)
+	m.HandleFunc("/job", traceFileService{d, gitlabClient}.ServeHTTP)
+	m.HandleFunc("/project/members", projectMemberService{d, gitlabClient}.ServeHTTP)
+	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.ServeHTTP)
+	m.HandleFunc("/merge_requests_by_username", mergeRequestListerByUsernameService{d, gitlabClient}.ServeHTTP)
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
@@ -156,12 +156,8 @@ func createListener() (l net.Listener) {
 	return l
 }
 
-type ServiceWithHandler interface {
-	handler(http.ResponseWriter, *http.Request)
-}
-
 /* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func withMr(svc ServiceWithHandler, c data, client MergeRequestLister) http.HandlerFunc {
+func withMr(svc http.Handler, c data, client MergeRequestLister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// If the merge request is already attached, skip the middleware logic
 		if c.projectInfo.MergeId == 0 {
@@ -194,6 +190,6 @@ func withMr(svc ServiceWithHandler, c data, client MergeRequestLister) http.Hand
 		}
 
 		// Call the next handler if middleware succeeds
-		svc.handler(w, r)
+		svc.ServeHTTP(w, r)
 	}
 }

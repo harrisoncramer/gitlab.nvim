@@ -19,7 +19,7 @@ type draftNotePublisherService struct {
 	client DraftNotePublisher
 }
 
-func (a draftNotePublisherService) handler(w http.ResponseWriter, r *http.Request) {
+func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

@@ -29,7 +29,7 @@ type mergeRequestCreatorService struct {
 }
 
 /* createMr creates a merge request */
-func (a mergeRequestCreatorService) handler(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
 	if r.Method != http.MethodPost {

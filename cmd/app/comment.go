@@ -53,7 +53,7 @@ type commentService struct {
 }
 
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
-func (a commentService) handler(w http.ResponseWriter, r *http.Request) {
+func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:

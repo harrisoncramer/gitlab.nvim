@@ -63,9 +63,9 @@ var testProjectData = data{
 	},
 }
 
-func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request) SuccessResponse {
+func getSuccessData(t *testing.T, svc http.Handler, request *http.Request) SuccessResponse {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data SuccessResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)
@@ -75,9 +75,9 @@ func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request)
 	return data
 }
 
-func getFailData(t *testing.T, svc ServiceWithHandler, request *http.Request) ErrorResponse {
+func getFailData(t *testing.T, svc http.Handler, request *http.Request) ErrorResponse {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data ErrorResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)

@@ -32,7 +32,7 @@ type reviewerService struct {
 }
 
 /* reviewersHandler adds or removes reviewers from an MR */
-func (a reviewerService) handler(w http.ResponseWriter, r *http.Request) {
+func (a reviewerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPut {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)

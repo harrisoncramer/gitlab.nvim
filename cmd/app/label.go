@@ -39,7 +39,7 @@ type labelService struct {
 }
 
 /* labelsHandler adds or removes labels from a merge request, and returns all labels for the current project */
-func (a labelService) handler(w http.ResponseWriter, r *http.Request) {
+func (a labelService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.getLabels(w, r)

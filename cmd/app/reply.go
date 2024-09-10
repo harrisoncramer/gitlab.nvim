@@ -30,7 +30,7 @@ type replyService struct {
 }
 
 /* replyHandler sends a reply to a note or comment */
-func (a replyService) handler(w http.ResponseWriter, r *http.Request) {
+func (a replyService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

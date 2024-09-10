@@ -48,7 +48,7 @@ type emojiService struct {
 	client EmojiManager
 }
 
-func (a emojiService) handler(w http.ResponseWriter, r *http.Request) {
+func (a emojiService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:

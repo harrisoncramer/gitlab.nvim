@@ -43,7 +43,7 @@ type pipelineService struct {
 pipelineHandler fetches information about the current pipeline, and retriggers a pipeline run. For more detailed information
 about a given job in a pipeline, see the jobHandler function
 */
-func (a pipelineService) handler(w http.ResponseWriter, r *http.Request) {
+func (a pipelineService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.GetPipelineAndJobs(w, r)

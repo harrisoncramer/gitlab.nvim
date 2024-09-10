@@ -17,7 +17,7 @@ type mergeRequestApproverService struct {
 }
 
 /* approveHandler approves a merge request. */
-func (a mergeRequestApproverService) handler(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestApproverService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

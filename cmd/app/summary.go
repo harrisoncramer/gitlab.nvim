@@ -23,7 +23,7 @@ type summaryService struct {
 	client MergeRequestUpdater
 }
 
-func (a summaryService) handler(w http.ResponseWriter, r *http.Request) {
+func (a summaryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPut {

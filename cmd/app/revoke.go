@@ -17,7 +17,7 @@ type mergeRequestRevokerService struct {
 }
 
 /* revokeHandler revokes approval for the current merge request */
-func (a mergeRequestRevokerService) handler(w http.ResponseWriter, r *http.Request) {
+func (a mergeRequestRevokerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)

@@ -64,7 +64,7 @@ type draftNoteService struct {
 }
 
 /* draftNoteHandler creates, edits, and deletes draft notes */
-func (a draftNoteService) handler(w http.ResponseWriter, r *http.Request) {
+func (a draftNoteService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodGet:
