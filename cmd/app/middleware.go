@@ -1,20 +1,72 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/xanzy/go-gitlab"
 )
 
+type mw func(http.Handler) http.Handler
+
 // Wraps a series of middleware around the base handler.
 // The middlewares should call the serveHTTP method on their http.Handler argument to pass along the request.
-func middleware(h http.Handler, middlewares ...func(http.Handler) http.Handler) http.HandlerFunc {
+func middleware(h http.Handler, middlewares ...mw) http.HandlerFunc {
 	for _, middleware := range middlewares {
 		h = middleware(h)
 	}
 	return h.ServeHTTP
+}
+
+var validate = validator.New()
+
+type validatorMiddleware struct {
+	validate *validator.Validate
+	payload  any
+}
+
+func (p validatorMiddleware) ServeHTTP(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			handleError(w, err, "Could not read request body", http.StatusBadRequest)
+			return
+		}
+
+		err = json.Unmarshal(body, &p.payload)
+		if err != nil {
+			handleError(w, err, "Could not parse JSON request body", http.StatusBadRequest)
+			return
+		}
+
+		err = p.validate.Struct(p.payload)
+		if err != nil {
+			switch err.(type) {
+			case validator.ValidationErrors:
+				handleError(w, err, "Invalid payload", http.StatusBadRequest)
+				return
+			case *validator.InvalidValidationError:
+				handleError(w, err, "Invalid validation error", http.StatusInternalServerError)
+				return
+
+			}
+		}
+
+		// Pass the parsed data so we don't have to re-parse it in the handler
+		ctx := context.WithValue(r.Context(), "payload", p.payload)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func validatePayload(payload any) mw {
+	return validatorMiddleware{validate: validate, payload: payload}.ServeHTTP
 }
 
 // Logs the request to the Go server, if enabled

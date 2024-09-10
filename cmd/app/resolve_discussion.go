@@ -3,16 +3,10 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
-
-type DiscussionResolveRequest struct {
-	DiscussionID string `json:"discussion_id"`
-	Resolved     bool   `json:"resolved"`
-}
 
 type DiscussionResolver interface {
 	ResolveMergeRequestDiscussion(pid interface{}, mergeRequest int, discussion string, opt *gitlab.ResolveMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
@@ -21,6 +15,11 @@ type DiscussionResolver interface {
 type discussionsResolutionService struct {
 	data
 	client DiscussionResolver
+}
+
+type DiscussionResolveRequest struct {
+	DiscussionID string `json:"discussion_id" validate:"required"`
+	Resolved     bool   `json:"resolved"`
 }
 
 /* discussionsResolveHandler sets a discussion to be "resolved" or not resolved, depending on the payload */
@@ -32,31 +31,17 @@ func (a discussionsResolutionService) ServeHTTP(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var resolveDiscussionRequest DiscussionResolveRequest
-	err = json.Unmarshal(body, &resolveDiscussionRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value("payload").(*DiscussionResolveRequest)
 
 	_, res, err := a.client.ResolveMergeRequestDiscussion(
 		a.projectInfo.ProjectId,
 		a.projectInfo.MergeId,
-		resolveDiscussionRequest.DiscussionID,
-		&gitlab.ResolveMergeRequestDiscussionOptions{Resolved: &resolveDiscussionRequest.Resolved},
+		payload.DiscussionID,
+		&gitlab.ResolveMergeRequestDiscussionOptions{Resolved: &payload.Resolved},
 	)
 
 	friendlyName := "unresolve"
-	if resolveDiscussionRequest.Resolved {
+	if payload.Resolved {
 		friendlyName = "resolve"
 	}
 

@@ -110,6 +110,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/discussions/resolve", middleware(
 		withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient),
 		logMiddleware,
+		validatePayload(&DiscussionResolveRequest{}),
 	))
 	m.HandleFunc("/mr/info", middleware(
 		withMr(infoService{d, gitlabClient}, d, gitlabClient),
