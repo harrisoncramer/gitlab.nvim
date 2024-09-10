@@ -6,8 +6,10 @@ type PluginOptions struct {
 	AuthToken string `json:"auth_token"`
 	LogPath   string `json:"log_path"`
 	Debug     struct {
-		Request  bool `json:"go_request"`
-		Response bool `json:"go_response"`
+		Request        bool `json:"request"`
+		Response       bool `json:"response"`
+		GitlabRequest  bool `json:"gitlab_request"`
+		GitlabResponse bool `json:"gitlab_response"`
 	} `json:"debug"`
 	ChosenTargetBranch *string `json:"chosen_target_branch,omitempty"`
 	ConnectionSettings struct {

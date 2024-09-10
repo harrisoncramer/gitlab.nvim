@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"os"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
@@ -48,12 +47,19 @@ func NewClient() (error, *Client) {
 		gitlab.WithBaseURL(apiCustUrl),
 	}
 
-	if pluginOptions.Debug.Request {
-		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(requestLogger))
+	if pluginOptions.Debug.GitlabRequest {
+		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(
+			func(l retryablehttp.Logger, r *http.Request, i int) {
+				logRequest(r)
+			},
+		))
 	}
 
-	if pluginOptions.Debug.Response {
-		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(responseLogger))
+	if pluginOptions.Debug.GitlabResponse {
+		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(func(l retryablehttp.Logger, response *http.Response) {
+			logResponse(response)
+		},
+		))
 	}
 
 	tr := &http.Transport{
@@ -122,39 +128,6 @@ func handleError(w http.ResponseWriter, err error, message string, status int) {
 	if err != nil {
 		handleError(w, err, "Could not encode error response", http.StatusInternalServerError)
 	}
-}
-
-var requestLogger retryablehttp.RequestLogHook = func(l retryablehttp.Logger, r *http.Request, i int) {
-	file := openLogFile()
-	defer file.Close()
-
-	token := r.Header.Get("Private-Token")
-	r.Header.Set("Private-Token", "REDACTED")
-	res, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		log.Fatalf("Error dumping request: %v", err)
-		os.Exit(1)
-	}
-	r.Header.Set("Private-Token", token)
-
-	_, err = file.Write([]byte("\n-- REQUEST --\n")) //nolint:all
-	_, err = file.Write(res)                         //nolint:all
-	_, err = file.Write([]byte("\n"))                //nolint:all
-}
-
-var responseLogger retryablehttp.ResponseLogHook = func(l retryablehttp.Logger, response *http.Response) {
-	file := openLogFile()
-	defer file.Close()
-
-	res, err := httputil.DumpResponse(response, true)
-	if err != nil {
-		log.Fatalf("Error dumping response: %v", err)
-		os.Exit(1)
-	}
-
-	_, err = file.Write([]byte("\n-- RESPONSE --\n")) //nolint:all
-	_, err = file.Write(res)                          //nolint:all
-	_, err = file.Write([]byte("\n"))                 //nolint:all
 }
 
 func openLogFile() *os.File {
