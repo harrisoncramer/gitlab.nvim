@@ -37,3 +37,20 @@ func logResponse(r *http.Response) {
 	_, err = file.Write(res)                          //nolint:all
 	_, err = file.Write([]byte("\n"))                 //nolint:all
 }
+
+func openLogFile() *os.File {
+	file, err := os.OpenFile(pluginOptions.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("Log file %s does not exist", pluginOptions.LogPath)
+		} else if os.IsPermission(err) {
+			log.Printf("Permission denied for log file %s", pluginOptions.LogPath)
+		} else {
+			log.Printf("Error opening log file %s: %v", pluginOptions.LogPath, err)
+		}
+
+		os.Exit(1)
+	}
+
+	return file
+}

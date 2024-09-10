@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
-	"github.com/xanzy/go-gitlab"
 )
 
 /*
@@ -92,32 +91,106 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		}
 	}
 
-	m.HandleFunc("/mr/approve", withMr(mergeRequestApproverService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/comment", withMr(commentService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/merge", withMr(mergeRequestAccepterService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/discussions/list", withMr(discussionsListerService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/discussions/resolve", withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/info", withMr(infoService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/assignee", withMr(assigneesService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/summary", withMr(summaryService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/reviewer", withMr(reviewerService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/revisions", withMr(revisionsService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/reply", withMr(replyService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/label", withMr(labelService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/revoke", withMr(mergeRequestRevokerService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/awardable/note/", withMr(emojiService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/draft_notes/", withMr(draftNoteService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient))
-
-	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient, git.Git{}}.ServeHTTP)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient, git.Git{}}.ServeHTTP)
-	m.HandleFunc("/users/me", meService{d, gitlabClient}.ServeHTTP)
-	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.ServeHTTP)
-	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.ServeHTTP)
-	m.HandleFunc("/job", traceFileService{d, gitlabClient}.ServeHTTP)
-	m.HandleFunc("/project/members", projectMemberService{d, gitlabClient}.ServeHTTP)
-	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.ServeHTTP)
-	m.HandleFunc("/merge_requests_by_username", mergeRequestListerByUsernameService{d, gitlabClient}.ServeHTTP)
+	m.HandleFunc("/mr/approve", middleware(
+		withMr(mergeRequestApproverService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/comment", middleware(
+		withMr(commentService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/merge", middleware(
+		withMr(mergeRequestAccepterService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/discussions/list", middleware(
+		withMr(discussionsListerService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/discussions/resolve", middleware(
+		withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/info", middleware(
+		withMr(infoService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/assignee", middleware(
+		withMr(assigneesService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/summary", middleware(
+		withMr(summaryService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/reviewer", middleware(
+		withMr(reviewerService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/revisions", middleware(
+		withMr(revisionsService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/reply", middleware(
+		withMr(replyService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/label", middleware(
+		withMr(labelService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/revoke", middleware(
+		withMr(mergeRequestRevokerService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/awardable/note/", middleware(
+		withMr(emojiService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/draft_notes/", middleware(
+		withMr(draftNoteService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/mr/draft_notes/publish", middleware(
+		withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient),
+		logMiddleware,
+	))
+	m.HandleFunc("/pipeline", middleware(
+		pipelineService{d, gitlabClient, git.Git{}},
+		logMiddleware,
+	))
+	m.HandleFunc("/pipeline/trigger/", middleware(
+		pipelineService{d, gitlabClient, git.Git{}},
+		logMiddleware,
+	))
+	m.HandleFunc("/users/me", middleware(
+		meService{d, gitlabClient},
+		logMiddleware,
+	))
+	m.HandleFunc("/attachment", middleware(
+		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
+		logMiddleware,
+	))
+	m.HandleFunc("/create_mr", middleware(
+		mergeRequestCreatorService{d, gitlabClient},
+		logMiddleware,
+	))
+	m.HandleFunc("/job", middleware(
+		traceFileService{d, gitlabClient},
+		logMiddleware,
+	))
+	m.HandleFunc("/project/members", middleware(
+		projectMemberService{d, gitlabClient},
+		logMiddleware,
+	))
+	m.HandleFunc("/merge_requests", middleware(
+		mergeRequestListerService{d, gitlabClient},
+		logMiddleware,
+	))
+	m.HandleFunc("/merge_requests_by_username", middleware(
+		mergeRequestListerByUsernameService{d, gitlabClient},
+		logMiddleware,
+	))
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
@@ -154,42 +227,4 @@ func createListener() (l net.Listener) {
 	}
 
 	return l
-}
-
-/* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func withMr(svc http.Handler, c data, client MergeRequestLister) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// If the merge request is already attached, skip the middleware logic
-		if c.projectInfo.MergeId == 0 {
-			options := gitlab.ListProjectMergeRequestsOptions{
-				Scope:        gitlab.Ptr("all"),
-				SourceBranch: &c.gitInfo.BranchName,
-				TargetBranch: pluginOptions.ChosenTargetBranch,
-			}
-
-			mergeRequests, _, err := client.ListProjectMergeRequests(c.projectInfo.ProjectId, &options)
-			if err != nil {
-				handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
-				return
-			}
-
-			if len(mergeRequests) == 0 {
-				err := fmt.Errorf("No merge requests found for branch '%s'", c.gitInfo.BranchName)
-				handleError(w, err, "No merge requests found", http.StatusBadRequest)
-				return
-			}
-
-			if len(mergeRequests) > 1 {
-				err := errors.New("Please call gitlab.choose_merge_request()")
-				handleError(w, err, "Multiple MRs found", http.StatusBadRequest)
-				return
-			}
-
-			mergeIdInt := mergeRequests[0].IID
-			c.projectInfo.MergeId = mergeIdInt
-		}
-
-		// Call the next handler if middleware succeeds
-		svc.ServeHTTP(w, r)
-	}
 }

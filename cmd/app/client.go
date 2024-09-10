@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 	"github.com/hashicorp/go-retryablehttp"
@@ -112,7 +110,6 @@ func InitProjectSettings(c *Client, gitInfo git.GitData) (error, *ProjectInfo) {
 	return nil, &ProjectInfo{
 		ProjectId: projectId,
 	}
-
 }
 
 /* handleError is a utililty handler that returns errors to the client along with their statuses and messages */
@@ -128,21 +125,4 @@ func handleError(w http.ResponseWriter, err error, message string, status int) {
 	if err != nil {
 		handleError(w, err, "Could not encode error response", http.StatusInternalServerError)
 	}
-}
-
-func openLogFile() *os.File {
-	file, err := os.OpenFile(pluginOptions.LogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("Log file %s does not exist", pluginOptions.LogPath)
-		} else if os.IsPermission(err) {
-			log.Printf("Permission denied for log file %s", pluginOptions.LogPath)
-		} else {
-			log.Printf("Error opening log file %s: %v", pluginOptions.LogPath, err)
-		}
-
-		os.Exit(1)
-	}
-
-	return file
 }
