@@ -43,11 +43,8 @@ func (a infoService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := InfoResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Merge requests retrieved",
-			Status:  http.StatusOK,
-		},
-		Info: mr,
+		SuccessResponse: SuccessResponse{Message: "Merge requests retrieved"},
+		Info:            mr,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

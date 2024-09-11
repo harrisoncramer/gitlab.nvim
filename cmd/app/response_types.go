@@ -12,7 +12,6 @@ type ErrorResponse struct {
 
 type SuccessResponse struct {
 	Message string `json:"message"`
-	Status  int    `json:"status"`
 }
 
 type GenericError struct {

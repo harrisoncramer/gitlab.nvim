@@ -33,7 +33,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		svc := mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Merge requests fetched for hcramer")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Should handle no merge requests", func(t *testing.T) {

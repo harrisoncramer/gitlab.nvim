@@ -41,7 +41,6 @@ func TestPipelineGetter(t *testing.T) {
 		svc := pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Pipeline retrieved")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Disallows non-GET, non-POST methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/pipeline", nil)
@@ -69,7 +68,6 @@ func TestPipelineTrigger(t *testing.T) {
 		svc := pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Pipeline retriggered")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/3", nil)

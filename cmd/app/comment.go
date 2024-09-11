@@ -63,10 +63,7 @@ func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Comment deleted successfully",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Comment deleted successfully"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -118,12 +115,9 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Comment created successfully",
-			Status:  http.StatusOK,
-		},
-		Comment:    discussion.Notes[0],
-		Discussion: discussion,
+		SuccessResponse: SuccessResponse{Message: "Comment created successfully"},
+		Comment:         discussion.Notes[0],
+		Discussion:      discussion,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -162,11 +156,8 @@ func (a commentService) editComment(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Comment updated successfully",
-			Status:  http.StatusOK,
-		},
-		Comment: note,
+		SuccessResponse: SuccessResponse{Message: "Comment updated successfully"},
+		Comment:         note,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

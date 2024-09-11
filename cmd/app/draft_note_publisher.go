@@ -64,10 +64,7 @@ func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Draft note(s) published",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Draft note(s) published"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

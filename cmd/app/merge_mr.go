@@ -47,10 +47,7 @@ func (a mergeRequestAccepterService) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	response := SuccessResponse{
-		Status:  http.StatusOK,
-		Message: "MR merged successfully",
-	}
+	response := SuccessResponse{Message: "MR merged successfully"}
 
 	w.WriteHeader(http.StatusOK)
 

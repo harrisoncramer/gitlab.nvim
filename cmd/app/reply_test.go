@@ -27,7 +27,6 @@ func TestReplyHandler(t *testing.T) {
 		svc := replyService{testProjectData, fakeReplyManager{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Replied to comment")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)

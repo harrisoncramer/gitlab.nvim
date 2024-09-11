@@ -92,10 +92,7 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Emoji deleted",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Emoji deleted"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -137,11 +134,8 @@ func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := CreateEmojiResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Merge requests retrieved",
-			Status:  http.StatusOK,
-		},
-		Emoji: awardEmoji,
+		SuccessResponse: SuccessResponse{Message: "Merge requests retrieved"},
+		Emoji:           awardEmoji,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

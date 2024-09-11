@@ -46,11 +46,8 @@ func (a revisionsService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := RevisionsResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Revisions fetched successfully",
-			Status:  http.StatusOK,
-		},
-		Revisions: versionInfo,
+		SuccessResponse: SuccessResponse{Message: "Revisions fetched successfully"},
+		Revisions:       versionInfo,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

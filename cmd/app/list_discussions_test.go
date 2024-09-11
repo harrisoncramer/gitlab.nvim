@@ -71,7 +71,6 @@ func TestListDiscussions(t *testing.T) {
 		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.Message, "Discussions retrieved")
-		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
 		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer")
 	})
@@ -81,7 +80,6 @@ func TestListDiscussions(t *testing.T) {
 		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
-		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, len(data.Discussions), 1)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2")
 	})

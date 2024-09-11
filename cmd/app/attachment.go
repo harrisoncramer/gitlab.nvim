@@ -100,13 +100,10 @@ func (a attachmentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := AttachmentResponse{
-		SuccessResponse: SuccessResponse{
-			Status:  http.StatusOK,
-			Message: "File uploaded successfully",
-		},
-		Markdown: projectFile.Markdown,
-		Alt:      projectFile.Alt,
-		Url:      projectFile.URL,
+		SuccessResponse: SuccessResponse{Message: "File uploaded successfully"},
+		Markdown:        projectFile.Markdown,
+		Alt:             projectFile.Alt,
+		Url:             projectFile.URL,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

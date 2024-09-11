@@ -53,7 +53,6 @@ func TestPostComment(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment created successfully")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Creates a new comment", func(t *testing.T) {
@@ -77,7 +76,6 @@ func TestPostComment(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment created successfully")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
@@ -132,7 +130,6 @@ func TestDeleteComment(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment deleted successfully")
-		assert(t, data.Status, http.StatusOK)
 	})
 }
 
@@ -153,6 +150,5 @@ func TestEditComment(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment updated successfully")
-		assert(t, data.Status, http.StatusOK)
 	})
 }

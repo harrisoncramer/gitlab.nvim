@@ -32,7 +32,6 @@ func TestCreateMr(t *testing.T) {
 		svc := mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR 'Some title' created")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Disallows non-POST methods", func(t *testing.T) {

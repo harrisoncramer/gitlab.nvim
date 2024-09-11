@@ -38,7 +38,6 @@ func TestAttachmentHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
 		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "File uploaded successfully")
 	})
 

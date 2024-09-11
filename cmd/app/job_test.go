@@ -43,7 +43,6 @@ func TestJobHandler(t *testing.T) {
 		svc := traceFileService{testProjectData, client}
 		data := getTraceFileData(t, svc, request)
 		assert(t, data.Message, "Log file read")
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.File, "Some data")
 	})
 	t.Run("Disallows non-GET methods", func(t *testing.T) {

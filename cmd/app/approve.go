@@ -31,10 +31,7 @@ func (a mergeRequestApproverService) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Approved MR",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Approved MR"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

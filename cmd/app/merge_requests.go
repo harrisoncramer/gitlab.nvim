@@ -72,11 +72,8 @@ func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusOK)
 	response := ListMergeRequestResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Merge requests fetched successfully",
-			Status:  http.StatusOK,
-		},
-		MergeRequests: mergeRequests,
+		SuccessResponse: SuccessResponse{Message: "Merge requests fetched successfully"},
+		MergeRequests:   mergeRequests,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

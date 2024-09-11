@@ -51,11 +51,8 @@ func (a projectMemberService) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 
 	response := ProjectMembersResponse{
-		SuccessResponse: SuccessResponse{
-			Status:  http.StatusOK,
-			Message: "Project members retrieved",
-		},
-		ProjectMembers: projectMembers,
+		SuccessResponse: SuccessResponse{Message: "Project members retrieved"},
+		ProjectMembers:  projectMembers,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

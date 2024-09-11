@@ -38,10 +38,7 @@ func (a mergeRequestRevokerService) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Success! Revoked MR approval",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Success! Revoked MR approval"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

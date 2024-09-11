@@ -35,7 +35,6 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR merged successfully")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/merge", testAcceptMergeRequestPayload)

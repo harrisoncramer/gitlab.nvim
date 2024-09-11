@@ -24,7 +24,6 @@ func TestPublishDraftNote(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
 		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note(s) published")
 	})
 	t.Run("Disallows non-POST method", func(t *testing.T) {
@@ -56,7 +55,6 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
 		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note(s) published")
 	})
 	t.Run("Disallows non-POST method", func(t *testing.T) {

@@ -24,7 +24,6 @@ func TestMembersHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
 		svc := projectMemberService{testProjectData, fakeMemberLister{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Project members retrieved")
 	})
 	t.Run("Disallows non-GET methods", func(t *testing.T) {

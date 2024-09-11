@@ -78,11 +78,8 @@ func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := LabelsRequestResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Labels updated",
-			Status:  http.StatusOK,
-		},
-		Labels: convertedLabels,
+		SuccessResponse: SuccessResponse{Message: "Labels updated"},
+		Labels:          convertedLabels,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -126,11 +123,8 @@ func (a labelService) updateLabels(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := LabelUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Labels updated",
-			Status:  http.StatusOK,
-		},
-		Labels: mr.Labels,
+		SuccessResponse: SuccessResponse{Message: "Labels updated"},
+		Labels:          mr.Labels,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

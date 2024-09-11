@@ -31,7 +31,6 @@ func TestMergeRequestHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := mergeRequestListerService{testProjectData, fakeMergeRequestLister{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Merge requests fetched successfully")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {

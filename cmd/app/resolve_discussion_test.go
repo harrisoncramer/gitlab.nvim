@@ -37,7 +37,6 @@ func TestResolveDiscussion(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Discussion resolved")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Unresolves a discussion", func(t *testing.T) {
@@ -53,7 +52,6 @@ func TestResolveDiscussion(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Discussion unresolved")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Requires a discussion ID", func(t *testing.T) {

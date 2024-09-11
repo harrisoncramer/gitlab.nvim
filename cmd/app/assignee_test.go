@@ -33,7 +33,6 @@ func TestAssigneeHandler(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Assignees updated")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Disallows non-PUT method", func(t *testing.T) {

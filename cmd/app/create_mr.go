@@ -85,10 +85,7 @@ func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	response := SuccessResponse{
-		Status:  http.StatusOK,
-		Message: fmt.Sprintf("MR '%s' created", createMrRequest.Title),
-	}
+	response := SuccessResponse{Message: fmt.Sprintf("MR '%s' created", createMrRequest.Title)}
 
 	w.WriteHeader(http.StatusOK)
 

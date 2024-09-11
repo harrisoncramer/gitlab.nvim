@@ -99,11 +99,8 @@ func (a draftNoteService) listDraftNotes(w http.ResponseWriter, _ *http.Request)
 
 	w.WriteHeader(http.StatusOK)
 	response := ListDraftNotesResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Draft notes fetched successfully",
-			Status:  http.StatusOK,
-		},
-		DraftNotes: draftNotes,
+		SuccessResponse: SuccessResponse{Message: "Draft notes fetched successfully"},
+		DraftNotes:      draftNotes,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -157,11 +154,8 @@ func (a draftNoteService) postDraftNote(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusOK)
 	response := DraftNoteResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Draft note created successfully",
-			Status:  http.StatusOK,
-		},
-		DraftNote: draftNote,
+		SuccessResponse: SuccessResponse{Message: "Draft note created successfully"},
+		DraftNote:       draftNote,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -192,10 +186,7 @@ func (a draftNoteService) deleteDraftNote(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Draft note deleted",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Draft note deleted"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -251,11 +242,8 @@ func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusOK)
 	response := DraftNoteResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Draft note updated",
-			Status:  http.StatusOK,
-		},
-		DraftNote: draftNote,
+		SuccessResponse: SuccessResponse{Message: "Draft note updated"},
+		DraftNote:       draftNote,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

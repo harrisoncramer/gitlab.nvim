@@ -48,11 +48,8 @@ func (a assigneesService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := AssigneeUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Assignees updated",
-			Status:  http.StatusOK,
-		},
-		Assignees: mr.Assignees,
+		SuccessResponse: SuccessResponse{Message: "Assignees updated"},
+		Assignees:       mr.Assignees,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

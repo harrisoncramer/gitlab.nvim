@@ -44,7 +44,6 @@ func TestListDraftNotes(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
 		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft notes fetched successfully")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {
@@ -67,7 +66,6 @@ func TestPostDraftNote(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
 		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note created successfully")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {
@@ -89,7 +87,6 @@ func TestDeleteDraftNote(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
 		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note deleted")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {
@@ -119,7 +116,6 @@ func TestEditDraftNote(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", testUpdateDraftNoteRequest)
 		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note updated")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {

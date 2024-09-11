@@ -49,10 +49,7 @@ func (a discussionsResolutionService) ServeHTTP(w http.ResponseWriter, r *http.R
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: fmt.Sprintf("Discussion %sd", friendlyName),
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: fmt.Sprintf("Discussion %sd", friendlyName)}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

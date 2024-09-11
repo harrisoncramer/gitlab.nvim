@@ -118,10 +118,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusOK)
 	response := GetPipelineAndJobsResponse{
-		SuccessResponse: SuccessResponse{
-			Status:  http.StatusOK,
-			Message: "Pipeline retrieved",
-		},
+		SuccessResponse: SuccessResponse{Message: "Pipeline retrieved"},
 		Pipeline: PipelineWithJobs{
 			LatestPipeline: pipeline,
 			Jobs:           jobs,
@@ -159,11 +156,8 @@ func (a pipelineService) RetriggerPipeline(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusOK)
 	response := RetriggerPipelineResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Pipeline retriggered",
-			Status:  http.StatusOK,
-		},
-		LatestPipeline: pipeline,
+		SuccessResponse: SuccessResponse{Message: "Pipeline retriggered"},
+		LatestPipeline:  pipeline,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

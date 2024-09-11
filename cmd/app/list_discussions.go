@@ -142,10 +142,7 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Discussions retrieved",
-			Status:  http.StatusOK,
-		},
+		SuccessResponse:     SuccessResponse{Message: "Discussions retrieved"},
 		Discussions:         linkedDiscussions,
 		UnlinkedDiscussions: unlinkedDiscussions,
 		Emojis:              emojis,

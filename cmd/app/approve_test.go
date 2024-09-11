@@ -31,7 +31,6 @@ func TestApproveHandler(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Approved MR")
-		assert(t, data.Status, http.StatusOK)
 	})
 
 	t.Run("Disallows non-POST method", func(t *testing.T) {

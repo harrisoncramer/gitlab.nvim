@@ -133,11 +133,8 @@ func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r 
 
 	w.WriteHeader(http.StatusOK)
 	response := ListMergeRequestResponse{
-		SuccessResponse: SuccessResponse{
-			Message: fmt.Sprintf("Merge requests fetched for %s", request.Username),
-			Status:  http.StatusOK,
-		},
-		MergeRequests: mergeRequests,
+		SuccessResponse: SuccessResponse{Message: fmt.Sprintf("Merge requests fetched for %s", request.Username)},
+		MergeRequests:   mergeRequests,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

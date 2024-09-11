@@ -73,11 +73,8 @@ func (a replyService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := ReplyResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Replied to comment",
-			Status:  http.StatusOK,
-		},
-		Note: note,
+		SuccessResponse: SuccessResponse{Message: "Replied to comment"},
+		Note:            note,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

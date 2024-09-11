@@ -42,11 +42,8 @@ func (a meService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := UserResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "User fetched successfully",
-			Status:  http.StatusOK,
-		},
-		User: user,
+		SuccessResponse: SuccessResponse{Message: "User fetched successfully"},
+		User:            user,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

@@ -71,11 +71,8 @@ func (a reviewerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := ReviewerUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Reviewers updated",
-			Status:  http.StatusOK,
-		},
-		Reviewers: mr.Reviewers,
+		SuccessResponse: SuccessResponse{Message: "Reviewers updated"},
+		Reviewers:       mr.Reviewers,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

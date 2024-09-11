@@ -71,11 +71,8 @@ func (a traceFileService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := JobTraceResponse{
-		SuccessResponse: SuccessResponse{
-			Status:  http.StatusOK,
-			Message: "Log file read",
-		},
-		File: string(file),
+		SuccessResponse: SuccessResponse{Message: "Log file read"},
+		File:            string(file),
 	}
 
 	err = json.NewEncoder(w).Encode(response)

@@ -26,7 +26,6 @@ func TestInfoHandler(t *testing.T) {
 		svc := infoService{testProjectData, fakeMergeRequestGetter{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Merge requests retrieved")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Disallows non-GET methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/info", nil)

@@ -65,11 +65,8 @@ func (a summaryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	response := SummaryUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Summary updated",
-			Status:  http.StatusOK,
-		},
-		MergeRequest: mr,
+		SuccessResponse: SuccessResponse{Message: "Summary updated"},
+		MergeRequest:    mr,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
