@@ -112,10 +112,10 @@ func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
 
 func checkBadMethod(t *testing.T, data ErrorResponse, methods ...string) {
 	t.Helper()
+
 	assert(t, data.Status, http.StatusMethodNotAllowed)
-	assert(t, data.Details, "Invalid request type")
-	expectedMethods := strings.Join(methods, " or ")
-	assert(t, data.Message, fmt.Sprintf("Expected %s", expectedMethods))
+	assert(t, data.Message, "Invalid request type")
+	assert(t, data.Details, fmt.Sprintf("Expected: %s", strings.Join(methods, "; ")))
 }
 
 func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {

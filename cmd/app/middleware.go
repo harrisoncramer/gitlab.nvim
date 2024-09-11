@@ -33,7 +33,6 @@ type validatorMiddleware struct {
 
 func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -73,6 +72,7 @@ func validatePayload(payload any) mw {
 // Logs the request to the Go server, if enabled
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		if pluginOptions.Debug.Request {
 			logRequest(r)
 		}

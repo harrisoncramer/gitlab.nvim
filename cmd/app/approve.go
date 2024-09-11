@@ -18,13 +18,6 @@ type mergeRequestApproverService struct {
 
 /* approveHandler approves a merge request. */
 func (a mergeRequestApproverService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
 	_, res, err := a.client.ApproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
 	if err != nil {
