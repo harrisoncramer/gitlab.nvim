@@ -98,16 +98,20 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/mr/comment", middleware(
 		withMr(commentService{d, gitlabClient}, d, gitlabClient),
-		validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-		validatePayload(methodToPayload{
+		validatePayloads(methodToPayload{
 			http.MethodPost:   &PostCommentRequest{},
 			http.MethodDelete: &DeleteCommentRequest{},
 			http.MethodPatch:  &EditCommentRequest{},
 		}),
+		validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 		logMiddleware,
 	))
 	m.HandleFunc("/mr/merge", middleware(
 		withMr(mergeRequestAccepterService{d, gitlabClient}, d, gitlabClient),
+		validatePayloads(methodToPayload{
+			http.MethodPost: &AcceptMergeRequestRequest{},
+		}),
+		validateMethods(http.MethodPost),
 		logMiddleware,
 	))
 	m.HandleFunc("/mr/discussions/list", middleware(
@@ -116,7 +120,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/mr/discussions/resolve", middleware(
 		withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient),
-		validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+		validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 		validateMethods(http.MethodPut),
 		logMiddleware,
 	))
@@ -126,7 +130,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/mr/assignee", middleware(
 		withMr(assigneesService{d, gitlabClient}, d, gitlabClient),
-		validatePayload(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+		validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 		validateMethods(http.MethodPut),
 		logMiddleware,
 	))

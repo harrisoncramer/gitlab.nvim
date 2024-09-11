@@ -24,26 +24,54 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	var testAcceptMergeRequestPayload = AcceptMergeRequestRequest{Squash: false, SquashMessage: "Squash me!", DeleteBranch: false}
 	t.Run("Accepts and merges a merge request", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
-		svc := mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}}
+		svc := middleware(
+			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{
+				http.MethodPost: &AcceptMergeRequestRequest{},
+			}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR merged successfully")
 		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/merge", testAcceptMergeRequestPayload)
-		svc := mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}}
+		svc := middleware(
+			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{
+				http.MethodPost: &AcceptMergeRequestRequest{},
+			}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getFailData(t, svc, request)
 		checkBadMethod(t, data, http.MethodPost)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
-		svc := mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{errFromGitlab: true}}}
+		svc := middleware(
+			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{
+				http.MethodPost: &AcceptMergeRequestRequest{},
+			}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not merge MR")
 	})
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
-		svc := mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{status: http.StatusSeeOther}}}
+		svc := middleware(
+			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{status: http.StatusSeeOther}}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{
+				http.MethodPost: &AcceptMergeRequestRequest{},
+			}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not merge MR", "/mr/merge")
 	})

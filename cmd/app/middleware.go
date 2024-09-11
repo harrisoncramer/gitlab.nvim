@@ -69,7 +69,7 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 	})
 }
 
-func validatePayload(mtp methodToPayload) mw {
+func validatePayloads(mtp methodToPayload) mw {
 	return validatorMiddleware{validate: validate, methodToPayload: mtp}.handle
 }
 

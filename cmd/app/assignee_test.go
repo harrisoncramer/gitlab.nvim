@@ -26,7 +26,7 @@ func TestAssigneeHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
 		svc := middleware(
 			withMr(assigneesService{testProjectData, fakeAssigneeClient{}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)
@@ -39,7 +39,7 @@ func TestAssigneeHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/assignee", nil)
 		svc := middleware(
 			withMr(assigneesService{testProjectData, fakeAssigneeClient{}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)
@@ -52,7 +52,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client := fakeAssigneeClient{testBase{errFromGitlab: true}}
 		svc := middleware(
 			withMr(assigneesService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)
@@ -65,7 +65,7 @@ func TestAssigneeHandler(t *testing.T) {
 		client := fakeAssigneeClient{testBase{status: http.StatusSeeOther}}
 		svc := middleware(
 			withMr(assigneesService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)

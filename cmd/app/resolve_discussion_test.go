@@ -29,7 +29,7 @@ func TestResolveDiscussion(t *testing.T) {
 	t.Run("Resolves a discussion", func(t *testing.T) {
 		svc := middleware(
 			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)
@@ -44,7 +44,7 @@ func TestResolveDiscussion(t *testing.T) {
 		payload.Resolved = false
 		svc := middleware(
 			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)
@@ -59,7 +59,7 @@ func TestResolveDiscussion(t *testing.T) {
 		payload.DiscussionID = ""
 		svc := middleware(
 			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)
@@ -73,7 +73,7 @@ func TestResolveDiscussion(t *testing.T) {
 	t.Run("Disallows non-PUT method", func(t *testing.T) {
 		svc := middleware(
 			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodGet),
 			logMiddleware,
 		)
@@ -87,7 +87,7 @@ func TestResolveDiscussion(t *testing.T) {
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		svc := middleware(
 			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{testBase: testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
-			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
 		)

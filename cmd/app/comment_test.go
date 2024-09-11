@@ -42,12 +42,12 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
 			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			validatePayload(methodToPayload{
+			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
+			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 			logMiddleware,
 		)
 		data := getSuccessData(t, svc, request)
@@ -65,12 +65,12 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
 			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			validatePayload(methodToPayload{
+			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
+			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 			logMiddleware,
 		)
 		data := getSuccessData(t, svc, request)
@@ -82,12 +82,12 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
 			withMr(commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			validatePayload(methodToPayload{
+			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
+			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 			logMiddleware,
 		)
 		data := getFailData(t, svc, request)
@@ -98,12 +98,12 @@ func TestPostComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
 			withMr(commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}, testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			validatePayload(methodToPayload{
+			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
+			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 			logMiddleware,
 		)
 		data := getFailData(t, svc, request)
@@ -117,12 +117,12 @@ func TestDeleteComment(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
 		svc := middleware(
 			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			validatePayload(methodToPayload{
+			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
+			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 			logMiddleware,
 		)
 		data := getSuccessData(t, svc, request)
@@ -137,12 +137,12 @@ func TestEditComment(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
 		svc := middleware(
 			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			validatePayload(methodToPayload{
+			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
+			validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 			logMiddleware,
 		)
 		data := getSuccessData(t, svc, request)
