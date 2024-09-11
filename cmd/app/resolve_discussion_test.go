@@ -75,4 +75,16 @@ func TestResolveDiscussion(t *testing.T) {
 		assert(t, data.Details, "Expected: GET")
 		assert(t, data.Status, http.StatusMethodNotAllowed)
 	})
+
+	t.Run("Handles error from Gitlab", func(t *testing.T) {
+		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{testBase: testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
+			logMiddleware,
+			validateMethods(http.MethodPut),
+			validatePayload(&DiscussionResolveRequest{}))
+		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
+		data := getFailData(t, svc, request)
+		assert(t, data.Message, "Could not resolve discussion")
+		assert(t, data.Details, "Some error from Gitlab")
+		assert(t, data.Status, http.StatusInternalServerError)
+	})
 }
