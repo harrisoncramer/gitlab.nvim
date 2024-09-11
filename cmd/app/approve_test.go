@@ -23,9 +23,11 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{}
-		svc := middleware(withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+		svc := middleware(
+			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			validateMethods(http.MethodPost),
 			logMiddleware,
-			validateMethods(http.MethodPost))
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Approved MR")
 		assert(t, data.Status, http.StatusOK)
@@ -34,9 +36,11 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Disallows non-POST method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/approve", nil)
 		client := fakeApproverClient{}
-		svc := middleware(withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+		svc := middleware(
+			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			validateMethods(http.MethodPost),
 			logMiddleware,
-			validateMethods(http.MethodPost))
+		)
 		data := getFailData(t, svc, request)
 		checkBadMethod(t, data, http.MethodPost)
 	})
@@ -44,9 +48,11 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{errFromGitlab: true}}
-		svc := middleware(withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+		svc := middleware(
+			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			validateMethods(http.MethodPost),
 			logMiddleware,
-			validateMethods(http.MethodPost))
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not approve merge request")
 	})
@@ -54,9 +60,11 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{status: http.StatusSeeOther}}
-		svc := middleware(withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+		svc := middleware(
+			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			validateMethods(http.MethodPost),
 			logMiddleware,
-			validateMethods(http.MethodPost))
+		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not approve merge request", "/mr/approve")
 	})

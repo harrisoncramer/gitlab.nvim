@@ -27,10 +27,12 @@ func TestResolveDiscussion(t *testing.T) {
 	}
 
 	t.Run("Resolves a discussion", func(t *testing.T) {
-		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			logMiddleware,
+		svc := middleware(
+			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
-			validatePayload(&DiscussionResolveRequest{}))
+			logMiddleware,
+		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Discussion resolved")
@@ -40,10 +42,12 @@ func TestResolveDiscussion(t *testing.T) {
 	t.Run("Unresolves a discussion", func(t *testing.T) {
 		payload := testResolveMergeRequestPayload
 		payload.Resolved = false
-		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			logMiddleware,
+		svc := middleware(
+			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
-			validatePayload(&DiscussionResolveRequest{}))
+			logMiddleware,
+		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Discussion unresolved")
@@ -53,10 +57,12 @@ func TestResolveDiscussion(t *testing.T) {
 	t.Run("Requires a discussion ID", func(t *testing.T) {
 		payload := testResolveMergeRequestPayload
 		payload.DiscussionID = ""
-		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			logMiddleware,
+		svc := middleware(
+			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
-			validatePayload(&DiscussionResolveRequest{}))
+			logMiddleware,
+		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
@@ -65,10 +71,12 @@ func TestResolveDiscussion(t *testing.T) {
 	})
 
 	t.Run("Disallows non-PUT method", func(t *testing.T) {
-		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
-			logMiddleware,
+		svc := middleware(
+			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodGet),
-			validatePayload(&DiscussionResolveRequest{}))
+			logMiddleware,
+		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid request type")
@@ -77,10 +85,12 @@ func TestResolveDiscussion(t *testing.T) {
 	})
 
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
-		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{testBase: testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
-			logMiddleware,
+		svc := middleware(
+			withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{testBase: testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
+			validatePayload(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			validateMethods(http.MethodPut),
-			validatePayload(&DiscussionResolveRequest{}))
+			logMiddleware,
+		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not resolve discussion")

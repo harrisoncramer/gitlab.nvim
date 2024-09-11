@@ -26,9 +26,11 @@ func middleware(h http.Handler, middlewares ...mw) http.HandlerFunc {
 
 var validate = validator.New()
 
+type methodToPayload map[string]any
+
 type validatorMiddleware struct {
-	validate *validator.Validate
-	payload  any
+	validate        *validator.Validate
+	methodToPayload methodToPayload
 }
 
 func (p validatorMiddleware) handle(next http.Handler) http.Handler {
@@ -39,13 +41,15 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 			return
 		}
 
-		err = json.Unmarshal(body, &p.payload)
+		payload := p.methodToPayload[r.Method]
+		err = json.Unmarshal(body, &payload)
+
 		if err != nil {
 			handleError(w, err, "Could not parse JSON request body", http.StatusBadRequest)
 			return
 		}
 
-		err = p.validate.Struct(p.payload)
+		err = p.validate.Struct(payload)
 		if err != nil {
 			switch err := err.(type) {
 			case validator.ValidationErrors:
@@ -58,15 +62,15 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 		}
 
 		// Pass the parsed data so we don't have to re-parse it in the handler
-		ctx := context.WithValue(r.Context(), "payload", p.payload)
+		ctx := context.WithValue(r.Context(), "payload", payload)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
 	})
 }
 
-func validatePayload(payload any) mw {
-	return validatorMiddleware{validate: validate, payload: payload}.handle
+func validatePayload(mtp methodToPayload) mw {
+	return validatorMiddleware{validate: validate, methodToPayload: mtp}.handle
 }
 
 // Logs the request to the Go server, if enabled
