@@ -134,7 +134,7 @@ func (m methodMiddleware) handle(next http.Handler) http.Handler {
 		}
 
 		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		handleError(w, InvalidRequestError{}, fmt.Sprintf("Expected: %s", strings.Join(m.methods, "; ")), http.StatusMethodNotAllowed)
+		handleError(w, InvalidRequestError{fmt.Sprintf("Expected: %s", strings.Join(m.methods, "; "))}, "Invalid request type", http.StatusMethodNotAllowed)
 	})
 }
 

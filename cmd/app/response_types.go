@@ -23,8 +23,8 @@ func (e GenericError) Error() string {
 	return fmt.Sprintf("An error occurred on the %s endpoint", e.endpoint)
 }
 
-type InvalidRequestError struct{}
+type InvalidRequestError struct{ msg string }
 
 func (e InvalidRequestError) Error() string {
-	return "Invalid request type"
+	return e.msg
 }

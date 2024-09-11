@@ -63,4 +63,16 @@ func TestResolveDiscussion(t *testing.T) {
 		assert(t, data.Details, "DiscussionID is required")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
+
+	t.Run("Disallows non-PUT method", func(t *testing.T) {
+		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			logMiddleware,
+			validateMethods(http.MethodGet),
+			validatePayload(&DiscussionResolveRequest{}))
+		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
+		data := getFailData(t, svc, request)
+		assert(t, data.Message, "Invalid request type")
+		assert(t, data.Details, "Expected: GET")
+		assert(t, data.Status, http.StatusMethodNotAllowed)
+	})
 }
