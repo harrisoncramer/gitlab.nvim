@@ -8,36 +8,10 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type PostCommentRequest struct {
-	Comment string `json:"comment"`
-	PositionData
-}
-
-type DeleteCommentRequest struct {
-	NoteId       int    `json:"note_id"`
-	DiscussionId string `json:"discussion_id"`
-}
-
-type EditCommentRequest struct {
-	Comment      string `json:"comment"`
-	NoteId       int    `json:"note_id"`
-	DiscussionId string `json:"discussion_id"`
-	Resolved     bool   `json:"resolved"`
-}
-
 type CommentResponse struct {
 	SuccessResponse
 	Comment    *gitlab.Note       `json:"note"`
 	Discussion *gitlab.Discussion `json:"discussion"`
-}
-
-/* CommentWithPosition is a comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based comments. */
-type CommentWithPosition struct {
-	PositionData PositionData
-}
-
-func (comment CommentWithPosition) GetPositionData() PositionData {
-	return comment.PositionData
 }
 
 type CommentManager interface {
@@ -67,6 +41,11 @@ func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type DeleteCommentRequest struct {
+	NoteId       int    `json:"note_id"`
+	DiscussionId string `json:"discussion_id"`
+}
+
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
 func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	payload := r.Context().Value("payload").(*DeleteCommentRequest)
@@ -93,6 +72,20 @@ func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
+}
+
+type PostCommentRequest struct {
+	Comment string `json:"comment"`
+	PositionData
+}
+
+/* CommentWithPosition is a comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based comments. */
+type CommentWithPosition struct {
+	PositionData PositionData
+}
+
+func (comment CommentWithPosition) GetPositionData() PositionData {
+	return comment.PositionData
 }
 
 /* postComment creates a note, multiline comment, or comment. */
@@ -137,6 +130,13 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
+}
+
+type EditCommentRequest struct {
+	Comment      string `json:"comment"`
+	NoteId       int    `json:"note_id"`
+	DiscussionId string `json:"discussion_id"`
+	Resolved     bool   `json:"resolved"`
 }
 
 /* editComment changes the text of a comment or changes it's resolved status. */
