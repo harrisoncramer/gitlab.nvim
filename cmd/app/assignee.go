@@ -2,7 +2,7 @@ package app
 
 import (
 	"encoding/json"
-	"io"
+	"errors"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -17,11 +17,6 @@ type AssigneeUpdateResponse struct {
 	Assignees []*gitlab.BasicUser `json:"assignees"`
 }
 
-type AssigneesRequestResponse struct {
-	SuccessResponse
-	Assignees []int `json:"assignees"`
-}
-
 type assigneesService struct {
 	data
 	client MergeRequestUpdater
@@ -29,25 +24,11 @@ type assigneesService struct {
 
 /* assigneesHandler adds or removes assignees from a merge request. */
 func (a assigneesService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPut {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
-		return
-	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+	assigneeUpdateRequest, ok := r.Context().Value("payload").(*AssigneeUpdateRequest)
 
-	defer r.Body.Close()
-	var assigneeUpdateRequest AssigneeUpdateRequest
-	err = json.Unmarshal(body, &assigneeUpdateRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+	if !ok {
+		handleError(w, errors.New("Could not get payload from context"), "Bad payload", http.StatusInternalServerError)
 		return
 	}
 
