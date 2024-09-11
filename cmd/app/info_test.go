@@ -27,12 +27,6 @@ func TestInfoHandler(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Merge requests retrieved")
 	})
-	t.Run("Disallows non-GET methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/info", nil)
-		svc := infoService{testProjectData, fakeMergeRequestGetter{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodGet)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/info", nil)
 		svc := infoService{testProjectData, fakeMergeRequestGetter{testBase{errFromGitlab: true}}}

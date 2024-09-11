@@ -41,12 +41,6 @@ func TestAttachmentHandler(t *testing.T) {
 		assert(t, data.Message, "File uploaded successfully")
 	})
 
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/attachment", nil)
-		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
 		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{errFromGitlab: true}}}

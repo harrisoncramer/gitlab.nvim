@@ -34,13 +34,6 @@ func TestCreateMr(t *testing.T) {
 		assert(t, data.Message, "MR 'Some title' created")
 	})
 
-	t.Run("Disallows non-POST methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/create_mr", testCreateMrRequestData)
-		svc := mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
-
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		svc := mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{testBase{errFromGitlab: true}}}

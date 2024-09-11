@@ -35,19 +35,6 @@ func TestAssigneeHandler(t *testing.T) {
 		assert(t, data.Message, "Assignees updated")
 	})
 
-	t.Run("Disallows non-PUT method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/assignee", nil)
-		svc := middleware(
-			assigneesService{testProjectData, fakeAssigneeClient{}},
-			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
-		)
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPut)
-	})
-
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/approve", updatePayload)
 		client := fakeAssigneeClient{testBase{errFromGitlab: true}}

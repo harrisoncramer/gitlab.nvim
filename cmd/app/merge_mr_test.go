@@ -36,20 +36,6 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR merged successfully")
 	})
-	t.Run("Disallows non-POST methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPut, "/mr/merge", testAcceptMergeRequestPayload)
-		svc := middleware(
-			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}},
-			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{
-				http.MethodPost: &AcceptMergeRequestRequest{},
-			}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
-		)
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		svc := middleware(

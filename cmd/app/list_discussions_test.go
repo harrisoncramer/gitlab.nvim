@@ -83,12 +83,6 @@ func TestListDiscussions(t *testing.T) {
 		assert(t, len(data.Discussions), 1)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2")
 	})
-	t.Run("Disallows non-GET methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
 		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}}

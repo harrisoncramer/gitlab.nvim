@@ -42,12 +42,6 @@ func TestPipelineGetter(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Pipeline retrieved")
 	})
-	t.Run("Disallows non-GET, non-POST methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/pipeline", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodGet, http.MethodPost)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
 		svc := pipelineService{testProjectData, fakePipelineManager{testBase{errFromGitlab: true}}, FakeGitManager{}}

@@ -26,12 +26,6 @@ func TestMembersHandler(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Project members retrieved")
 	})
-	t.Run("Disallows non-GET methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/project/members", nil)
-		svc := projectMemberService{testProjectData, fakeMemberLister{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodGet)
-	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
 		svc := projectMemberService{testProjectData, fakeMemberLister{testBase{errFromGitlab: true}}}

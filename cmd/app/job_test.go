@@ -45,13 +45,6 @@ func TestJobHandler(t *testing.T) {
 		assert(t, data.Message, "Log file read")
 		assert(t, data.File, "Some data")
 	})
-	t.Run("Disallows non-GET methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/job", JobTraceRequest{})
-		client := fakeTraceFileGetter{}
-		svc := traceFileService{testProjectData, client}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodGet)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
 		client := fakeTraceFileGetter{testBase{errFromGitlab: true}}

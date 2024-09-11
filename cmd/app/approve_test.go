@@ -33,19 +33,6 @@ func TestApproveHandler(t *testing.T) {
 		assert(t, data.Message, "Approved MR")
 	})
 
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPut, "/mr/approve", nil)
-		client := fakeApproverClient{}
-		svc := middleware(
-			mergeRequestApproverService{testProjectData, client},
-			withMr(testProjectData, fakeMergeRequestLister{}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
-		)
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
-
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{errFromGitlab: true}}

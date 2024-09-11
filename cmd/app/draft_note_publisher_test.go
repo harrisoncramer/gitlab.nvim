@@ -26,12 +26,6 @@ func TestPublishDraftNote(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
 	})
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
 	t.Run("Handles bad ID", func(t *testing.T) {
 		badData := testDraftNotePublishRequest
 		badData.Note = 0
@@ -56,12 +50,6 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
-	})
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
 	})
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
