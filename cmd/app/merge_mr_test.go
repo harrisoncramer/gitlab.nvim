@@ -25,7 +25,8 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Accepts and merges a merge request", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		svc := middleware(
-			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
@@ -39,7 +40,8 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Disallows non-POST methods", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/merge", testAcceptMergeRequestPayload)
 		svc := middleware(
-			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
@@ -52,7 +54,8 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		svc := middleware(
-			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
@@ -65,7 +68,8 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/merge", testAcceptMergeRequestPayload)
 		svc := middleware(
-			withMr(mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{status: http.StatusSeeOther}}}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{status: http.StatusSeeOther}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),

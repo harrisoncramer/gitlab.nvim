@@ -92,12 +92,14 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	}
 
 	m.HandleFunc("/mr/approve", middleware(
-		withMr(mergeRequestApproverService{d, gitlabClient}, d, gitlabClient),
+		mergeRequestApproverService{d, gitlabClient}, // These functions are called from bottom to top...
+		withMr(d, gitlabClient),
 		validateMethods(http.MethodPost),
 		logMiddleware,
 	))
 	m.HandleFunc("/mr/comment", middleware(
-		withMr(commentService{d, gitlabClient}, d, gitlabClient),
+		commentService{d, gitlabClient},
+		withMr(d, gitlabClient),
 		validatePayloads(methodToPayload{
 			http.MethodPost:   &PostCommentRequest{},
 			http.MethodDelete: &DeleteCommentRequest{},
@@ -106,106 +108,106 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 		logMiddleware,
 	))
-	m.HandleFunc("/mr/merge", middleware(
-		withMr(mergeRequestAccepterService{d, gitlabClient}, d, gitlabClient),
-		validatePayloads(methodToPayload{
-			http.MethodPost: &AcceptMergeRequestRequest{},
-		}),
-		validateMethods(http.MethodPost),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/discussions/list", middleware(
-		withMr(discussionsListerService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/discussions/resolve", middleware(
-		withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient),
-		validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
-		validateMethods(http.MethodPut),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/info", middleware(
-		withMr(infoService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/assignee", middleware(
-		withMr(assigneesService{d, gitlabClient}, d, gitlabClient),
-		validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
-		validateMethods(http.MethodPut),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/summary", middleware(
-		withMr(summaryService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/reviewer", middleware(
-		withMr(reviewerService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/revisions", middleware(
-		withMr(revisionsService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/reply", middleware(
-		withMr(replyService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/label", middleware(
-		withMr(labelService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/revoke", middleware(
-		withMr(mergeRequestRevokerService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/awardable/note/", middleware(
-		withMr(emojiService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/draft_notes/", middleware(
-		withMr(draftNoteService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/mr/draft_notes/publish", middleware(
-		withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient),
-		logMiddleware,
-	))
-	m.HandleFunc("/pipeline", middleware(
-		pipelineService{d, gitlabClient, git.Git{}},
-		logMiddleware,
-	))
-	m.HandleFunc("/pipeline/trigger/", middleware(
-		pipelineService{d, gitlabClient, git.Git{}},
-		logMiddleware,
-	))
-	m.HandleFunc("/users/me", middleware(
-		meService{d, gitlabClient},
-		logMiddleware,
-	))
-	m.HandleFunc("/attachment", middleware(
-		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
-		logMiddleware,
-	))
-	m.HandleFunc("/create_mr", middleware(
-		mergeRequestCreatorService{d, gitlabClient},
-		logMiddleware,
-	))
-	m.HandleFunc("/job", middleware(
-		traceFileService{d, gitlabClient},
-		logMiddleware,
-	))
-	m.HandleFunc("/project/members", middleware(
-		projectMemberService{d, gitlabClient},
-		logMiddleware,
-	))
-	m.HandleFunc("/merge_requests", middleware(
-		mergeRequestListerService{d, gitlabClient},
-		logMiddleware,
-	))
-	m.HandleFunc("/merge_requests_by_username", middleware(
-		mergeRequestListerByUsernameService{d, gitlabClient},
-		logMiddleware,
-	))
+
+	// m.HandleFunc("/mr/merge", middleware(
+	// 	mergeRequestAccepterService{d, gitlabClient},
+	// 	withMr(d, gitlabClient),
+	// 	validatePayloads(methodToPayload{http.MethodPost: &AcceptMergeRequestRequest{}}),
+	// 	validateMethods(http.MethodPost),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/discussions/list", middleware(
+	// 	withMr(discussionsListerService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/discussions/resolve", middleware(
+	// 	withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient),
+	// 	validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+	// 	validateMethods(http.MethodPut),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/info", middleware(
+	// 	withMr(infoService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/assignee", middleware(
+	// 	withMr(assigneesService{d, gitlabClient}, d, gitlabClient),
+	// 	validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+	// 	validateMethods(http.MethodPut),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/summary", middleware(
+	// 	withMr(summaryService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/reviewer", middleware(
+	// 	withMr(reviewerService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/revisions", middleware(
+	// 	withMr(revisionsService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/reply", middleware(
+	// 	withMr(replyService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/label", middleware(
+	// 	withMr(labelService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/revoke", middleware(
+	// 	withMr(mergeRequestRevokerService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/awardable/note/", middleware(
+	// 	withMr(emojiService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/draft_notes/", middleware(
+	// 	withMr(draftNoteService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/mr/draft_notes/publish", middleware(
+	// 	withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient),
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/pipeline", middleware(
+	// 	pipelineService{d, gitlabClient, git.Git{}},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/pipeline/trigger/", middleware(
+	// 	pipelineService{d, gitlabClient, git.Git{}},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/users/me", middleware(
+	// 	meService{d, gitlabClient},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/attachment", middleware(
+	// 	attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/create_mr", middleware(
+	// 	mergeRequestCreatorService{d, gitlabClient},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/job", middleware(
+	// 	traceFileService{d, gitlabClient},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/project/members", middleware(
+	// 	projectMemberService{d, gitlabClient},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/merge_requests", middleware(
+	// 	mergeRequestListerService{d, gitlabClient},
+	// 	logMiddleware,
+	// ))
+	// m.HandleFunc("/merge_requests_by_username", middleware(
+	// 	mergeRequestListerByUsernameService{d, gitlabClient},
+	// 	logMiddleware,
+	// ))
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))

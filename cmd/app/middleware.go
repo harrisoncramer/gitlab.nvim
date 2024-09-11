@@ -15,7 +15,7 @@ import (
 
 type mw func(http.Handler) http.Handler
 
-// Wraps a series of middleware around the base handler.
+// Wraps a series of middleware around the base handler. Functions are called from bottom to top.
 // The middlewares should call the serveHTTP method on their http.Handler argument to pass along the request.
 func middleware(h http.Handler, middlewares ...mw) http.HandlerFunc {
 	for _, middleware := range middlewares {
@@ -84,25 +84,30 @@ func logMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+type withMrMiddleware struct {
+	data   data
+	client MergeRequestLister
+}
+
 /* Gets the current merge request ID and attaches it to the projectInfo */
-func withMr(next http.Handler, c data, client MergeRequestLister) http.Handler {
+func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// If the merge request is already attached, skip the middleware logic
-		if c.projectInfo.MergeId == 0 {
+		if m.data.projectInfo.MergeId == 0 {
 			options := gitlab.ListProjectMergeRequestsOptions{
 				Scope:        gitlab.Ptr("all"),
-				SourceBranch: &c.gitInfo.BranchName,
+				SourceBranch: &m.data.gitInfo.BranchName,
 				TargetBranch: pluginOptions.ChosenTargetBranch,
 			}
 
-			mergeRequests, _, err := client.ListProjectMergeRequests(c.projectInfo.ProjectId, &options)
+			mergeRequests, _, err := m.client.ListProjectMergeRequests(m.data.projectInfo.ProjectId, &options)
 			if err != nil {
 				handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
 				return
 			}
 
 			if len(mergeRequests) == 0 {
-				err := fmt.Errorf("No merge requests found for branch '%s'", c.gitInfo.BranchName)
+				err := fmt.Errorf("No merge requests found for branch '%s'", m.data.gitInfo.BranchName)
 				handleError(w, err, "No merge requests found", http.StatusBadRequest)
 				return
 			}
@@ -114,12 +119,16 @@ func withMr(next http.Handler, c data, client MergeRequestLister) http.Handler {
 			}
 
 			mergeIdInt := mergeRequests[0].IID
-			c.projectInfo.MergeId = mergeIdInt
+			m.data.projectInfo.MergeId = mergeIdInt
 		}
 
 		// Call the next handler if middleware succeeds
 		next.ServeHTTP(w, r)
 	})
+}
+
+func withMr(data data, client MergeRequestLister) mw {
+	return withMrMiddleware{data, client}.handle
 }
 
 type methodMiddleware struct {

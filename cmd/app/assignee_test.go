@@ -25,7 +25,8 @@ func TestAssigneeHandler(t *testing.T) {
 	t.Run("Updates assignees", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
 		svc := middleware(
-			withMr(assigneesService{testProjectData, fakeAssigneeClient{}}, testProjectData, fakeMergeRequestLister{}),
+			assigneesService{testProjectData, fakeAssigneeClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
@@ -38,7 +39,8 @@ func TestAssigneeHandler(t *testing.T) {
 	t.Run("Disallows non-PUT method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/assignee", nil)
 		svc := middleware(
-			withMr(assigneesService{testProjectData, fakeAssigneeClient{}}, testProjectData, fakeMergeRequestLister{}),
+			assigneesService{testProjectData, fakeAssigneeClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
@@ -51,7 +53,8 @@ func TestAssigneeHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/approve", updatePayload)
 		client := fakeAssigneeClient{testBase{errFromGitlab: true}}
 		svc := middleware(
-			withMr(assigneesService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			assigneesService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,
@@ -64,7 +67,8 @@ func TestAssigneeHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/approve", updatePayload)
 		client := fakeAssigneeClient{testBase{status: http.StatusSeeOther}}
 		svc := middleware(
-			withMr(assigneesService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			assigneesService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			validateMethods(http.MethodPut),
 			logMiddleware,

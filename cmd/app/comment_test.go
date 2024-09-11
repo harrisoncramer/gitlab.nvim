@@ -41,7 +41,8 @@ func TestPostComment(t *testing.T) {
 	t.Run("Creates a new note (unlinked comment)", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
-			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
@@ -64,7 +65,8 @@ func TestPostComment(t *testing.T) {
 		}
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
-			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
@@ -81,7 +83,8 @@ func TestPostComment(t *testing.T) {
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
-			withMr(commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}}, testProjectData, fakeMergeRequestLister{}),
+			commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
@@ -97,7 +100,8 @@ func TestPostComment(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
-			withMr(commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}}, testProjectData, fakeMergeRequestLister{}),
+			commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
@@ -116,7 +120,8 @@ func TestDeleteComment(t *testing.T) {
 	t.Run("Deletes a comment", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/comment", testCommentDeletionData)
 		svc := middleware(
-			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},
@@ -136,7 +141,8 @@ func TestEditComment(t *testing.T) {
 	t.Run("Edits a comment", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/comment", testEditCommentData)
 		svc := middleware(
-			withMr(commentService{testProjectData, fakeCommentClient{}}, testProjectData, fakeMergeRequestLister{}),
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validatePayloads(methodToPayload{
 				http.MethodPost:   &PostCommentRequest{},
 				http.MethodDelete: &DeleteCommentRequest{},

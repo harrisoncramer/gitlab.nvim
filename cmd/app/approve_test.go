@@ -24,7 +24,8 @@ func TestApproveHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{}
 		svc := middleware(
-			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validateMethods(http.MethodPost),
 			logMiddleware,
 		)
@@ -37,7 +38,8 @@ func TestApproveHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/approve", nil)
 		client := fakeApproverClient{}
 		svc := middleware(
-			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validateMethods(http.MethodPost),
 			logMiddleware,
 		)
@@ -49,7 +51,8 @@ func TestApproveHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{errFromGitlab: true}}
 		svc := middleware(
-			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validateMethods(http.MethodPost),
 			logMiddleware,
 		)
@@ -61,7 +64,8 @@ func TestApproveHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{status: http.StatusSeeOther}}
 		svc := middleware(
-			withMr(mergeRequestApproverService{testProjectData, client}, testProjectData, fakeMergeRequestLister{}),
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
 			validateMethods(http.MethodPost),
 			logMiddleware,
 		)
