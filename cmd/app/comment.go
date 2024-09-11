@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -70,22 +69,9 @@ func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
 func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value("payload").(*DeleteCommentRequest)
 
-	defer r.Body.Close()
-
-	var deleteCommentRequest DeleteCommentRequest
-	err = json.Unmarshal(body, &deleteCommentRequest)
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
-
-	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.DiscussionId, payload.NoteId)
 
 	if err != nil {
 		handleError(w, err, "Could not delete comment", http.StatusInternalServerError)
@@ -111,30 +97,17 @@ func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 
 /* postComment creates a note, multiline comment, or comment. */
 func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var postCommentRequest PostCommentRequest
-	err = json.Unmarshal(body, &postCommentRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value("payload").(*PostCommentRequest)
 
 	opt := gitlab.CreateMergeRequestDiscussionOptions{
-		Body: &postCommentRequest.Comment,
+		Body: &payload.Comment,
 	}
 
 	/* If we are leaving a comment on a line, leave position. Otherwise,
 	we are leaving a note (unlinked comment) */
 
-	if postCommentRequest.FileName != "" {
-		commentWithPositionData := CommentWithPosition{postCommentRequest.PositionData}
+	if payload.FileName != "" {
+		commentWithPositionData := CommentWithPosition{payload.PositionData}
 		opt.Position = buildCommentPosition(commentWithPositionData)
 	}
 
@@ -168,26 +141,14 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 
 /* editComment changes the text of a comment or changes it's resolved status. */
 func (a commentService) editComment(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
 
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
+	payload := r.Context().Value("payload").(*EditCommentRequest)
+
+	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+		Body: gitlab.Ptr(payload.Comment),
 	}
 
-	defer r.Body.Close()
-
-	var editCommentRequest EditCommentRequest
-	err = json.Unmarshal(body, &editCommentRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
-
-	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
-	options.Body = gitlab.Ptr(editCommentRequest.Comment)
-
-	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.DiscussionId, payload.NoteId, &options)
 
 	if err != nil {
 		handleError(w, err, "Could not update comment", http.StatusInternalServerError)

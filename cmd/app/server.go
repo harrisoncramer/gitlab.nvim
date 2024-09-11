@@ -99,6 +99,11 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/comment", middleware(
 		withMr(commentService{d, gitlabClient}, d, gitlabClient),
 		validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
+		validatePayload(methodToPayload{
+			http.MethodPost:   &PostCommentRequest{},
+			http.MethodDelete: &DeleteCommentRequest{},
+			http.MethodPatch:  &EditCommentRequest{},
+		}),
 		logMiddleware,
 	))
 	m.HandleFunc("/mr/merge", middleware(
