@@ -48,14 +48,13 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 
 		err = p.validate.Struct(p.payload)
 		if err != nil {
-			switch err.(type) {
+			switch err := err.(type) {
 			case validator.ValidationErrors:
-				handleError(w, err, "Invalid payload", http.StatusBadRequest)
+				handleError(w, formatValidationErrors(err), "Invalid payload", http.StatusBadRequest)
 				return
 			case *validator.InvalidValidationError:
 				handleError(w, err, "Invalid validation error", http.StatusInternalServerError)
 				return
-
 			}
 		}
 
@@ -143,4 +142,22 @@ func validateMethods(methods ...string) mw {
 	return methodMiddleware{
 		methods: methods,
 	}.handle
+}
+
+// Helper function to format validation errors into more readable strings
+func formatValidationErrors(errors validator.ValidationErrors) error {
+	var s strings.Builder
+	for i, e := range errors {
+		if i > 0 {
+			s.WriteString("; ")
+		}
+		switch e.Tag() {
+		case "required":
+			s.WriteString(fmt.Sprintf("%s is required", e.Field()))
+		default:
+			s.WriteString(fmt.Sprintf("The field '%s' failed on validation on the '%s' tag", e.Field(), e.Tag()))
+		}
+	}
+
+	return fmt.Errorf(s.String())
 }

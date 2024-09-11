@@ -25,6 +25,7 @@ func TestResolveDiscussion(t *testing.T) {
 		DiscussionID: "abc123",
 		Resolved:     true,
 	}
+
 	t.Run("Resolves a discussion", func(t *testing.T) {
 		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
 			logMiddleware,
@@ -34,5 +35,32 @@ func TestResolveDiscussion(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Discussion resolved")
 		assert(t, data.Status, http.StatusOK)
+	})
+
+	t.Run("Unresolves a discussion", func(t *testing.T) {
+		payload := testResolveMergeRequestPayload
+		payload.Resolved = false
+		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			logMiddleware,
+			validateMethods(http.MethodPut),
+			validatePayload(&DiscussionResolveRequest{}))
+		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
+		data := getSuccessData(t, svc, request)
+		assert(t, data.Message, "Discussion unresolved")
+		assert(t, data.Status, http.StatusOK)
+	})
+
+	t.Run("Requires a discussion ID", func(t *testing.T) {
+		payload := testResolveMergeRequestPayload
+		payload.DiscussionID = ""
+		svc := middleware(withMr(discussionsResolutionService{testProjectData, fakeDiscussionResolver{}}, testProjectData, fakeMergeRequestLister{}),
+			logMiddleware,
+			validateMethods(http.MethodPut),
+			validatePayload(&DiscussionResolveRequest{}))
+		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
+		data := getFailData(t, svc, request)
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "DiscussionID is required")
+		assert(t, data.Status, http.StatusBadRequest)
 	})
 }
