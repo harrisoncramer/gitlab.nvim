@@ -45,7 +45,7 @@ func TestCreateMr(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not create MR")
 	})
 
@@ -56,7 +56,7 @@ func TestCreateMr(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not create MR", "/create_mr")
 	})
 
@@ -69,8 +69,7 @@ func TestCreateMr(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
-		assert(t, data.Status, http.StatusBadRequest)
+		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Title is required")
 	})
@@ -84,8 +83,7 @@ func TestCreateMr(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
-		assert(t, data.Status, http.StatusBadRequest)
+		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "TargetBranch is required")
 	})

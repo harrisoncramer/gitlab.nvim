@@ -101,7 +101,7 @@ func TestListDiscussions(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not list discussions")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestListDiscussions(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not list discussions", "/mr/discussions/list")
 	})
 	t.Run("Handles error from emoji service", func(t *testing.T) {
@@ -123,7 +123,7 @@ func TestListDiscussions(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not fetch emojis")
 		assert(t, data.Details, "Some error from emoji service")
 	})

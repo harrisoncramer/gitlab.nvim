@@ -66,7 +66,7 @@ func TestListDraftNotes(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not get draft notes")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestListDraftNotes(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not get draft notes", "/mr/draft_notes/")
 	})
 }
@@ -132,9 +132,9 @@ func TestDeleteDraftNote(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not parse draft note ID")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 }
 
@@ -165,9 +165,9 @@ func TestEditDraftNote(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not parse draft note ID")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 	t.Run("Handles empty note", func(t *testing.T) {
 		requestData := testUpdateDraftNoteRequest
@@ -182,9 +182,9 @@ func TestEditDraftNote(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Note is required")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 }

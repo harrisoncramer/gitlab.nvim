@@ -49,9 +49,9 @@ func TestMergeRequestHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Failed to list merge requests")
-		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, status, http.StatusInternalServerError)
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
@@ -60,9 +60,9 @@ func TestMergeRequestHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		checkNon200(t, data, "Failed to list merge requests", "/merge_requests")
-		assert(t, data.Status, http.StatusSeeOther)
+		assert(t, status, http.StatusSeeOther)
 	})
 	t.Run("Should handle not having any merge requests with 404", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
@@ -71,8 +71,8 @@ func TestMergeRequestHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "No merge requests found")
-		assert(t, data.Status, http.StatusNotFound)
+		assert(t, status, http.StatusNotFound)
 	})
 }

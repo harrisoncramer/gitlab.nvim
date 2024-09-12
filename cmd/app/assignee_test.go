@@ -43,7 +43,7 @@ func TestAssigneeHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			withMethodCheck(http.MethodPut),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not modify merge request assignees")
 	})
 
@@ -56,7 +56,7 @@ func TestAssigneeHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 			withMethodCheck(http.MethodPut),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not modify merge request assignees", "/mr/assignee")
 	})
 }

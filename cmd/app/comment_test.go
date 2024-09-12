@@ -88,7 +88,7 @@ func TestPostComment(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not create discussion")
 	})
 
@@ -104,7 +104,7 @@ func TestPostComment(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not create discussion", "/mr/comment")
 	})
 }

@@ -52,7 +52,7 @@ func TestAttachmentHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not upload some_file_name to Gitlab")
 	})
 
@@ -63,7 +63,7 @@ func TestAttachmentHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not upload some_file_name to Gitlab", "/attachment")
 	})
 }

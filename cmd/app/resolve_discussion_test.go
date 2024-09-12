@@ -62,10 +62,10 @@ func TestResolveDiscussion(t *testing.T) {
 			withMethodCheck(http.MethodPut),
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "DiscussionID is required")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
@@ -76,9 +76,9 @@ func TestResolveDiscussion(t *testing.T) {
 			withMethodCheck(http.MethodPut),
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not resolve discussion")
 		assert(t, data.Details, "Some error from Gitlab")
-		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, status, http.StatusInternalServerError)
 	})
 }

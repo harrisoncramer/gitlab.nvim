@@ -46,10 +46,10 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "No MRs found")
 		assert(t, data.Details, "hcramer did not have any MRs")
-		assert(t, data.Status, http.StatusNotFound)
+		assert(t, status, http.StatusNotFound)
 	})
 
 	t.Run("Should require username", func(t *testing.T) {
@@ -61,10 +61,10 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Username is required")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 
 	t.Run("Should require User ID for assignee call", func(t *testing.T) {
@@ -76,10 +76,10 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "UserId is required")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 
 	t.Run("Should handle error from Gitlab", func(t *testing.T) {
@@ -89,10 +89,10 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
 		assert(t, data.Details, strings.Repeat("Some error from Gitlab; ", 3))
-		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, status, http.StatusInternalServerError)
 	})
 
 	t.Run("Handles non-200 from Gitlab", func(t *testing.T) {
@@ -102,9 +102,9 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
 		assert(t, data.Details, strings.Repeat("An error occurred on the /merge_requests_by_username endpoint; ", 3))
-		assert(t, data.Status, http.StatusInternalServerError)
+		assert(t, status, http.StatusInternalServerError)
 	})
 }

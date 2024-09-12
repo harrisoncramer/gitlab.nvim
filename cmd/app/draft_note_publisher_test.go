@@ -39,7 +39,7 @@ func TestPublishDraftNote(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
 	})
 }
@@ -65,7 +65,7 @@ func TestPublishAllDraftNotes(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
 	})
 }

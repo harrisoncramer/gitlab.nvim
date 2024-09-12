@@ -36,7 +36,7 @@ func TestInfoHandler(t *testing.T) {
 			infoService{testProjectData, fakeMergeRequestGetter{testBase{errFromGitlab: true}}},
 			withMethodCheck(http.MethodGet),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not get project info")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
@@ -45,7 +45,7 @@ func TestInfoHandler(t *testing.T) {
 			infoService{testProjectData, fakeMergeRequestGetter{testBase{status: http.StatusSeeOther}}},
 			withMethodCheck(http.MethodGet),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not get project info", "/mr/info")
 	})
 }

@@ -75,7 +75,7 @@ func getSuccessData(t *testing.T, svc http.Handler, request *http.Request) Succe
 	return data
 }
 
-func getFailData(t *testing.T, svc http.Handler, request *http.Request) ErrorResponse {
+func getFailData(t *testing.T, svc http.Handler, request *http.Request) (errResponse ErrorResponse, status int) {
 	res := httptest.NewRecorder()
 	svc.ServeHTTP(res, request)
 
@@ -84,7 +84,7 @@ func getFailData(t *testing.T, svc http.Handler, request *http.Request) ErrorRes
 	if err != nil {
 		t.Error(err)
 	}
-	return data
+	return data, res.Result().StatusCode
 }
 
 type testBase struct {

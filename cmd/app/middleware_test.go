@@ -26,19 +26,19 @@ func TestMethodMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
 		mw := withMethodCheck(http.MethodPost)
 		handler := middleware(fakeHandler{}, mw)
-		data := getFailData(t, handler, request)
+		data, status := getFailData(t, handler, request)
 		assert(t, data.Message, "Invalid request type")
 		assert(t, data.Details, "Expected: POST")
-		assert(t, data.Status, http.StatusMethodNotAllowed)
+		assert(t, status, http.StatusMethodNotAllowed)
 	})
 	t.Run("Fails bad method with multiple", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
 		mw := withMethodCheck(http.MethodPost, http.MethodPatch)
 		handler := middleware(fakeHandler{}, mw)
-		data := getFailData(t, handler, request)
+		data, status := getFailData(t, handler, request)
 		assert(t, data.Message, "Invalid request type")
 		assert(t, data.Details, "Expected: POST; PATCH")
-		assert(t, data.Status, http.StatusMethodNotAllowed)
+		assert(t, status, http.StatusMethodNotAllowed)
 	})
 	t.Run("Allows ok method through", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
@@ -71,8 +71,8 @@ func TestWithMrMiddleware(t *testing.T) {
 		}
 		mw := withMr(d, fakeMergeRequestLister{emptyResponse: true})
 		handler := middleware(fakeHandler{}, mw)
-		data := getFailData(t, handler, request)
-		assert(t, data.Status, http.StatusNotFound)
+		data, status := getFailData(t, handler, request)
+		assert(t, status, http.StatusNotFound)
 		assert(t, data.Message, "No MRs Found")
 		assert(t, data.Details, "Branch 'foo' does not have any merge requests")
 	})
@@ -84,8 +84,8 @@ func TestWithMrMiddleware(t *testing.T) {
 		}
 		mw := withMr(d, fakeMergeRequestLister{multipleMrs: true})
 		handler := middleware(fakeHandler{}, mw)
-		data := getFailData(t, handler, request)
-		assert(t, data.Status, http.StatusBadRequest)
+		data, status := getFailData(t, handler, request)
+		assert(t, status, http.StatusBadRequest)
 		assert(t, data.Message, "Multiple MRs found")
 		assert(t, data.Details, "Please call gitlab.choose_merge_request()")
 	})
@@ -94,13 +94,13 @@ func TestWithMrMiddleware(t *testing.T) {
 func TestValidatorMiddleware(t *testing.T) {
 	t.Run("Should error with missing field", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{}) // No Foo field
-		data := getFailData(t, middleware(
+		data, status := getFailData(t, middleware(
 			fakeHandler{},
 			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
 		), request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Foo is required")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 	t.Run("Should allow valid payload through", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{Foo: "Some payload"})

@@ -40,7 +40,7 @@ func TestApproveHandler(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not approve merge request")
 	})
 
@@ -52,7 +52,7 @@ func TestApproveHandler(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not approve merge request", "/mr/approve")
 	})
 }

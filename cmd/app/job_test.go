@@ -54,7 +54,7 @@ func TestJobHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
 			withMethodCheck(http.MethodGet),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not get trace file for job")
 	})
 
@@ -65,7 +65,7 @@ func TestJobHandler(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
 			withMethodCheck(http.MethodGet),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not get trace file for job", "/job")
 	})
 }

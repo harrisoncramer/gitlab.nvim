@@ -45,7 +45,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not merge MR")
 	})
 	t.Run("Handles non-200s from Gitlab", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 			}),
 			withMethodCheck(http.MethodPost),
 		)
-		data := getFailData(t, svc, request)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not merge MR", "/mr/merge")
 	})
 }
