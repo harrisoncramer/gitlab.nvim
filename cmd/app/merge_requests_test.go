@@ -10,6 +10,7 @@ import (
 type fakeMergeRequestLister struct {
 	testBase
 	emptyResponse bool
+	multipleMrs   bool
 }
 
 func (f fakeMergeRequestLister) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
@@ -20,6 +21,10 @@ func (f fakeMergeRequestLister) ListProjectMergeRequests(pid interface{}, opt *g
 
 	if f.emptyResponse {
 		return []*gitlab.MergeRequest{}, resp, err
+	}
+
+	if f.multipleMrs {
+		return []*gitlab.MergeRequest{{IID: 10}, {IID: 11}}, resp, err
 	}
 
 	return []*gitlab.MergeRequest{{IID: 10}}, resp, err

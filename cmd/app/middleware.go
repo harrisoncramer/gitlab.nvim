@@ -107,8 +107,8 @@ func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 			}
 
 			if len(mergeRequests) == 0 {
-				err := fmt.Errorf("No merge requests found for branch '%s'", m.data.gitInfo.BranchName)
-				handleError(w, err, "No merge requests found", http.StatusBadRequest)
+				err := fmt.Errorf("Branch '%s' does not have any merge requests", m.data.gitInfo.BranchName)
+				handleError(w, err, "No MRs Found", http.StatusNotFound)
 				return
 			}
 

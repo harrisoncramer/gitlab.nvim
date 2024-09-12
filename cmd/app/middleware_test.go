@@ -59,4 +59,30 @@ func TestWithMrMiddleware(t *testing.T) {
 			t.FailNow()
 		}
 	})
+	t.Run("Handles when there are no MRs", func(t *testing.T) {
+		request := makeRequest(t, http.MethodGet, "/foo", nil)
+		d := data{
+			projectInfo: &ProjectInfo{},
+			gitInfo:     &git.GitData{BranchName: "foo"},
+		}
+		mw := withMr(d, fakeMergeRequestLister{emptyResponse: true})
+		handler := middleware(fakeHandler{}, mw)
+		data := getFailData(t, handler, request)
+		assert(t, data.Status, http.StatusNotFound)
+		assert(t, data.Message, "No MRs Found")
+		assert(t, data.Details, "Branch 'foo' does not have any merge requests")
+	})
+	t.Run("Handles when there are too many MRs", func(t *testing.T) {
+		request := makeRequest(t, http.MethodGet, "/foo", nil)
+		d := data{
+			projectInfo: &ProjectInfo{},
+			gitInfo:     &git.GitData{BranchName: "foo"},
+		}
+		mw := withMr(d, fakeMergeRequestLister{multipleMrs: true})
+		handler := middleware(fakeHandler{}, mw)
+		data := getFailData(t, handler, request)
+		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, data.Message, "Multiple MRs found")
+		assert(t, data.Details, "Please call gitlab.choose_merge_request()")
+	})
 }
