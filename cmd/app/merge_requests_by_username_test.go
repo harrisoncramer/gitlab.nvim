@@ -62,8 +62,8 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
-		assert(t, data.Message, "username is required")
-		assert(t, data.Details, "username is a required payload field")
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "Username is required")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
 
@@ -77,8 +77,8 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
-		assert(t, data.Message, "user_id is required")
-		assert(t, data.Details, "user_id is a required payload field")
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "UserId is required")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
 

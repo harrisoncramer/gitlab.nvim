@@ -67,7 +67,7 @@ func getDiscussionsList(t *testing.T, svc http.Handler, request *http.Request) D
 
 func TestListDiscussions(t *testing.T) {
 	t.Run("Returns sorted discussions", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
@@ -94,7 +94,7 @@ func TestListDiscussions(t *testing.T) {
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2")
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
@@ -105,7 +105,7 @@ func TestListDiscussions(t *testing.T) {
 		checkErrorFromGitlab(t, data, "Could not list discussions")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
@@ -116,7 +116,7 @@ func TestListDiscussions(t *testing.T) {
 		checkNon200(t, data, "Could not list discussions", "/mr/discussions/list")
 	})
 	t.Run("Handles error from emoji service", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{badEmojiResponse: true, testBase: testBase{}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),

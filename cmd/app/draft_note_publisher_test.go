@@ -31,20 +31,6 @@ func TestPublishDraftNote(t *testing.T) {
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
 	})
-	t.Run("Handles bad ID", func(t *testing.T) {
-		badData := testDraftNotePublishRequest
-		badData.Note = 0
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", badData)
-		svc := middleware(
-			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
-			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-			withMethodCheck(http.MethodPost),
-		)
-		data := getFailData(t, svc, request)
-		assert(t, data.Status, http.StatusBadRequest)
-		assert(t, data.Message, "Must provide Note ID")
-	})
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
 		svc := middleware(

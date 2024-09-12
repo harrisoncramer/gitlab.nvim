@@ -86,7 +86,10 @@ func TestListDraftNotes(t *testing.T) {
 }
 
 func TestPostDraftNote(t *testing.T) {
-	var testPostDraftNoteRequestData = PostDraftNoteRequest{Comment: "Some comment"}
+	var testPostDraftNoteRequestData = PostDraftNoteRequest{
+		Comment:      "Some comment",
+		DiscussionId: "abc123",
+	}
 	t.Run("Posts new draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
 		svc := middleware(
@@ -180,7 +183,8 @@ func TestEditDraftNote(t *testing.T) {
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
 		data := getFailData(t, svc, request)
-		assert(t, data.Message, "Must provide draft note text")
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "Note is required")
 		assert(t, data.Status, http.StatusBadRequest)
 	})
 }
