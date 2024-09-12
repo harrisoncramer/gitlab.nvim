@@ -220,6 +220,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/job", middleware(
 		traceFileService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+		withMethodCheck(http.MethodGet),
 		withLogging,
 	))
 	m.HandleFunc("/project/members", middleware(

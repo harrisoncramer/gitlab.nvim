@@ -35,28 +35,36 @@ func (f fakeTraceFileGetter) GetTraceFile(pid interface{}, jobID int, options ..
 	return re, resp, err
 }
 
-// var jobId = 0
 func TestJobHandler(t *testing.T) {
 	t.Run("Should read a job trace file", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
-		client := fakeTraceFileGetter{}
-		svc := traceFileService{testProjectData, client}
+		svc := middleware(
+			traceFileService{testProjectData, fakeTraceFileGetter{}},
+			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+			withMethodCheck(http.MethodGet),
+		)
 		data := getTraceFileData(t, svc, request)
 		assert(t, data.Message, "Log file read")
 		assert(t, data.File, "Some data")
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
-		client := fakeTraceFileGetter{testBase{errFromGitlab: true}}
-		svc := traceFileService{testProjectData, client}
+		svc := middleware(
+			traceFileService{testProjectData, fakeTraceFileGetter{testBase{errFromGitlab: true}}},
+			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+			withMethodCheck(http.MethodGet),
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not get trace file for job")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{})
-		client := fakeTraceFileGetter{testBase{status: http.StatusSeeOther}}
-		svc := traceFileService{testProjectData, client}
+		svc := middleware(
+			traceFileService{testProjectData, fakeTraceFileGetter{testBase{status: http.StatusSeeOther}}},
+			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+			withMethodCheck(http.MethodGet),
+		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not get trace file for job", "/job")
 	})

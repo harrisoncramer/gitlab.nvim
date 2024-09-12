@@ -29,29 +29,10 @@ type traceFileService struct {
 
 /* jobHandler returns a string that shows the output of a specific job run in a Gitlab pipeline */
 func (a traceFileService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
-		return
-	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value("payload").(*JobTraceRequest)
 
-	defer r.Body.Close()
-
-	var jobTraceRequest JobTraceRequest
-	err = json.Unmarshal(body, &jobTraceRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
-
-	reader, res, err := a.client.GetTraceFile(a.projectInfo.ProjectId, jobTraceRequest.JobId)
+	reader, res, err := a.client.GetTraceFile(a.projectInfo.ProjectId, payload.JobId)
 
 	if err != nil {
 		handleError(w, err, "Could not get trace file for job", http.StatusInternalServerError)
