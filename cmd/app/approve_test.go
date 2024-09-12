@@ -23,33 +23,36 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Approves merge request", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{}
-		svc := mergeRequestApproverService{testProjectData, client}
+		svc := middleware(
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withMethodCheck(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Approved MR")
-		assert(t, data.Status, http.StatusOK)
-	})
-
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/approve", nil)
-		client := fakeApproverClient{}
-		svc := mergeRequestApproverService{testProjectData, client}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{errFromGitlab: true}}
-		svc := mergeRequestApproverService{testProjectData, client}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not approve merge request")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/approve", nil)
 		client := fakeApproverClient{testBase{status: http.StatusSeeOther}}
-		svc := mergeRequestApproverService{testProjectData, client}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			mergeRequestApproverService{testProjectData, client},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not approve merge request", "/mr/approve")
 	})
 }

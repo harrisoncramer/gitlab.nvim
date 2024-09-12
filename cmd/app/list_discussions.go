@@ -1,7 +1,6 @@
 package app
 
 import (
-	"io"
 	"net/http"
 	"sort"
 	"sync"
@@ -21,7 +20,7 @@ func Contains[T comparable](elems []T, v T) bool {
 }
 
 type DiscussionsRequest struct {
-	Blacklist []string `json:"blacklist"`
+	Blacklist []string `json:"blacklist" validate:"required"`
 }
 
 type DiscussionsResponse struct {
@@ -61,27 +60,9 @@ type discussionsListerService struct {
 listDiscussionsHandler lists all discusions for a given merge request, both those linked and unlinked to particular points in the code.
 The responses are sorted by date created, and blacklisted users are not included
 */
-func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
+func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	body, err := io.ReadAll(r.Body)
-
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-	}
-
-	defer r.Body.Close()
-
-	var requestBody DiscussionsRequest
-	err = json.Unmarshal(body, &requestBody)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-	}
+	request := r.Context().Value(payload(payload("payload"))).(*DiscussionsRequest)
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
@@ -96,7 +77,7 @@ func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/discussions/list"}, "Could not list discussions", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not list discussions", res.StatusCode)
 		return
 	}
 
@@ -106,7 +87,7 @@ func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request
 	var linkedDiscussions []*gitlab.Discussion
 
 	for _, discussion := range discussions {
-		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) {
+		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(request.Blacklist, discussion.Notes[0].Author.Username) {
 			continue
 		}
 		for _, note := range discussion.Notes {
@@ -142,10 +123,7 @@ func (a discussionsListerService) handler(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusOK)
 	response := DiscussionsResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Discussions retrieved",
-			Status:  http.StatusOK,
-		},
+		SuccessResponse:     SuccessResponse{Message: "Discussions retrieved"},
 		Discussions:         linkedDiscussions,
 		UnlinkedDiscussions: unlinkedDiscussions,
 		Emojis:              emojis,

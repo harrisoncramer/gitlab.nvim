@@ -24,22 +24,36 @@ func TestReplyHandler(t *testing.T) {
 	var testReplyRequest = ReplyRequest{DiscussionId: "abc123", Reply: "Some Reply", IsDraft: false}
 	t.Run("Sends a reply", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)
-		svc := replyService{testProjectData, fakeReplyManager{}}
+		svc := middleware(
+			replyService{testProjectData, fakeReplyManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Replied to comment")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)
-		svc := replyService{testProjectData, fakeReplyManager{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			replyService{testProjectData, fakeReplyManager{testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not leave reply")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/reply", testReplyRequest)
-		svc := replyService{testProjectData, fakeReplyManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			replyService{testProjectData, fakeReplyManager{testBase{status: http.StatusSeeOther}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not leave reply", "/mr/reply")
 	})
 }

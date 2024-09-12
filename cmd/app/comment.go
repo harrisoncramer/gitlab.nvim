@@ -2,43 +2,15 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
-type PostCommentRequest struct {
-	Comment string `json:"comment"`
-	PositionData
-}
-
-type DeleteCommentRequest struct {
-	NoteId       int    `json:"note_id"`
-	DiscussionId string `json:"discussion_id"`
-}
-
-type EditCommentRequest struct {
-	Comment      string `json:"comment"`
-	NoteId       int    `json:"note_id"`
-	DiscussionId string `json:"discussion_id"`
-	Resolved     bool   `json:"resolved"`
-}
-
 type CommentResponse struct {
 	SuccessResponse
 	Comment    *gitlab.Note       `json:"note"`
 	Discussion *gitlab.Discussion `json:"discussion"`
-}
-
-/* CommentWithPosition is a comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based comments. */
-type CommentWithPosition struct {
-	PositionData PositionData
-}
-
-func (comment CommentWithPosition) GetPositionData() PositionData {
-	return comment.PositionData
 }
 
 type CommentManager interface {
@@ -53,7 +25,7 @@ type commentService struct {
 }
 
 /* commentHandler creates, edits, and deletes discussions (comments, multi-line comments) */
-func (a commentService) handler(w http.ResponseWriter, r *http.Request) {
+func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
@@ -62,30 +34,19 @@ func (a commentService) handler(w http.ResponseWriter, r *http.Request) {
 		a.editComment(w, r)
 	case http.MethodDelete:
 		a.deleteComment(w, r)
-	default:
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
-		handleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
 	}
+}
+
+type DeleteCommentRequest struct {
+	NoteId       int    `json:"note_id" validate:"required"`
+	DiscussionId string `json:"discussion_id" validate:"required"`
 }
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
 func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value(payload("payload")).(*DeleteCommentRequest)
 
-	defer r.Body.Close()
-
-	var deleteCommentRequest DeleteCommentRequest
-	err = json.Unmarshal(body, &deleteCommentRequest)
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
-
-	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, deleteCommentRequest.DiscussionId, deleteCommentRequest.NoteId)
+	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.DiscussionId, payload.NoteId)
 
 	if err != nil {
 		handleError(w, err, "Could not delete comment", http.StatusInternalServerError)
@@ -93,15 +54,12 @@ func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/comment"}, "Could not delete comment", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not delete comment", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Comment deleted successfully",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Comment deleted successfully"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -109,32 +67,33 @@ func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type PostCommentRequest struct {
+	Comment string `json:"comment" validate:"required"`
+	PositionData
+}
+
+/* CommentWithPosition is a comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based comments. */
+type CommentWithPosition struct {
+	PositionData PositionData
+}
+
+func (comment CommentWithPosition) GetPositionData() PositionData {
+	return comment.PositionData
+}
+
 /* postComment creates a note, multiline comment, or comment. */
 func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var postCommentRequest PostCommentRequest
-	err = json.Unmarshal(body, &postCommentRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value(payload("payload")).(*PostCommentRequest)
 
 	opt := gitlab.CreateMergeRequestDiscussionOptions{
-		Body: &postCommentRequest.Comment,
+		Body: &payload.Comment,
 	}
 
 	/* If we are leaving a comment on a line, leave position. Otherwise,
 	we are leaving a note (unlinked comment) */
 
-	if postCommentRequest.FileName != "" {
-		commentWithPositionData := CommentWithPosition{postCommentRequest.PositionData}
+	if payload.FileName != "" {
+		commentWithPositionData := CommentWithPosition{payload.PositionData}
 		opt.Position = buildCommentPosition(commentWithPositionData)
 	}
 
@@ -146,18 +105,15 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/comment"}, "Could not create discussion", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not create discussion", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Comment created successfully",
-			Status:  http.StatusOK,
-		},
-		Comment:    discussion.Notes[0],
-		Discussion: discussion,
+		SuccessResponse: SuccessResponse{Message: "Comment created successfully"},
+		Comment:         discussion.Notes[0],
+		Discussion:      discussion,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -166,28 +122,23 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type EditCommentRequest struct {
+	Comment      string `json:"comment" validate:"required"`
+	NoteId       int    `json:"note_id" validate:"required"`
+	DiscussionId string `json:"discussion_id" validate:"required"`
+	Resolved     bool   `json:"resolved"`
+}
+
 /* editComment changes the text of a comment or changes it's resolved status. */
 func (a commentService) editComment(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
 
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
+	payload := r.Context().Value(payload("payload")).(*EditCommentRequest)
+
+	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
+		Body: gitlab.Ptr(payload.Comment),
 	}
 
-	defer r.Body.Close()
-
-	var editCommentRequest EditCommentRequest
-	err = json.Unmarshal(body, &editCommentRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
-
-	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{}
-	options.Body = gitlab.Ptr(editCommentRequest.Comment)
-
-	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, editCommentRequest.DiscussionId, editCommentRequest.NoteId, &options)
+	note, res, err := a.client.UpdateMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.DiscussionId, payload.NoteId, &options)
 
 	if err != nil {
 		handleError(w, err, "Could not update comment", http.StatusInternalServerError)
@@ -195,17 +146,14 @@ func (a commentService) editComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/comment"}, "Could not update comment", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not update comment", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := CommentResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Comment updated successfully",
-			Status:  http.StatusOK,
-		},
-		Comment: note,
+		SuccessResponse: SuccessResponse{Message: "Comment updated successfully"},
+		Comment:         note,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

@@ -2,24 +2,19 @@ package app
 
 import (
 	"encoding/json"
-	"io"
+	"errors"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
 type AssigneeUpdateRequest struct {
-	Ids []int `json:"ids"`
+	Ids []int `json:"ids" validate:"required"`
 }
 
 type AssigneeUpdateResponse struct {
 	SuccessResponse
 	Assignees []*gitlab.BasicUser `json:"assignees"`
-}
-
-type AssigneesRequestResponse struct {
-	SuccessResponse
-	Assignees []int `json:"assignees"`
 }
 
 type assigneesService struct {
@@ -28,26 +23,12 @@ type assigneesService struct {
 }
 
 /* assigneesHandler adds or removes assignees from a merge request. */
-func (a assigneesService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPut {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
-		return
-	}
+func (a assigneesService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+	assigneeUpdateRequest, ok := r.Context().Value(payload("payload")).(*AssigneeUpdateRequest)
 
-	defer r.Body.Close()
-	var assigneeUpdateRequest AssigneeUpdateRequest
-	err = json.Unmarshal(body, &assigneeUpdateRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
+	if !ok {
+		handleError(w, errors.New("Could not get payload from context"), "Bad payload", http.StatusInternalServerError)
 		return
 	}
 
@@ -61,17 +42,14 @@ func (a assigneesService) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/assignee"}, "Could not modify merge request assignees", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request assignees", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := AssigneeUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Assignees updated",
-			Status:  http.StatusOK,
-		},
-		Assignees: mr.Assignees,
+		SuccessResponse: SuccessResponse{Message: "Assignees updated"},
+		Assignees:       mr.Assignees,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

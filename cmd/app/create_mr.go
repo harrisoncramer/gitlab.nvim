@@ -2,21 +2,19 @@ package app
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
 type CreateMrRequest struct {
-	Title           string `json:"title"`
+	Title           string `json:"title" validate:"required"`
+	TargetBranch    string `json:"target_branch" validate:"required"`
 	Description     string `json:"description"`
-	TargetBranch    string `json:"target_branch"`
+	TargetProjectID int    `json:"forked_project_id,omitempty"`
 	DeleteBranch    bool   `json:"delete_branch"`
 	Squash          bool   `json:"squash"`
-	TargetProjectID int    `json:"forked_project_id,omitempty"`
 }
 
 type MergeRequestCreator interface {
@@ -29,36 +27,9 @@ type mergeRequestCreatorService struct {
 }
 
 /* createMr creates a merge request */
-func (a mergeRequestCreatorService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-	if r.Method != http.MethodPost {
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
+func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	var createMrRequest CreateMrRequest
-	err = json.Unmarshal(body, &createMrRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-		return
-	}
-
-	if createMrRequest.Title == "" {
-		handleError(w, errors.New("Title cannot be empty"), "Could not create MR", http.StatusBadRequest)
-		return
-	}
-
-	if createMrRequest.TargetBranch == "" {
-		handleError(w, errors.New("Target branch cannot be empty"), "Could not create MR", http.StatusBadRequest)
-		return
-	}
+	createMrRequest := r.Context().Value(payload("payload")).(*CreateMrRequest)
 
 	opts := gitlab.CreateMergeRequestOptions{
 		Title:              &createMrRequest.Title,
@@ -81,14 +52,11 @@ func (a mergeRequestCreatorService) handler(w http.ResponseWriter, r *http.Reque
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/create_mr"}, "Could not create MR", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not create MR", res.StatusCode)
 		return
 	}
 
-	response := SuccessResponse{
-		Status:  http.StatusOK,
-		Message: fmt.Sprintf("MR '%s' created", createMrRequest.Title),
-	}
+	response := SuccessResponse{Message: fmt.Sprintf("MR '%s' created", createMrRequest.Title)}
 
 	w.WriteHeader(http.StatusOK)
 

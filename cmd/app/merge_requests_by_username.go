@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"sync"
 
@@ -21,42 +20,15 @@ type mergeRequestListerByUsernameService struct {
 }
 
 type MergeRequestByUsernameRequest struct {
-	UserId   int    `json:"user_id"`
-	Username string `json:"username"`
+	UserId   int    `json:"user_id" validate:"required"`
+	Username string `json:"username" validate:"required"`
 	State    string `json:"state,omitempty"`
 }
 
-func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
+// Returns a list of merge requests where the given username/id is either an assignee, reviewer, or author
+func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var request MergeRequestByUsernameRequest
-	err = json.Unmarshal(body, &request)
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
-
-	if request.Username == "" {
-		handleError(w, errors.New("username is a required payload field"), "username is required", http.StatusBadRequest)
-		return
-	}
-
-	if request.UserId == 0 {
-		handleError(w, errors.New("user_id is a required payload field"), "user_id is required", http.StatusBadRequest)
-		return
-	}
+	request := r.Context().Value(payload("payload")).(*MergeRequestByUsernameRequest)
 
 	if request.State == "" {
 		request.State = "opened"
@@ -133,14 +105,11 @@ func (a mergeRequestListerByUsernameService) handler(w http.ResponseWriter, r *h
 
 	w.WriteHeader(http.StatusOK)
 	response := ListMergeRequestResponse{
-		SuccessResponse: SuccessResponse{
-			Message: fmt.Sprintf("Merge requests fetched for %s", request.Username),
-			Status:  http.StatusOK,
-		},
-		MergeRequests: mergeRequests,
+		SuccessResponse: SuccessResponse{Message: fmt.Sprintf("Merge requests fetched for %s", request.Username)},
+		MergeRequests:   mergeRequests,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}

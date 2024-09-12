@@ -3,8 +3,6 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,34 +10,13 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-/* The data coming from the client when creating a draft note is the same,
+/* The data coming from the client when creating a draft note is the same
 as when they are creating a normal comment, but the Gitlab
 endpoints + resources we handle are different */
-
-type PostDraftNoteRequest struct {
-	Comment      string `json:"comment"`
-	DiscussionId string `json:"discussion_id,omitempty"`
-	PositionData
-}
-
-type UpdateDraftNoteRequest struct {
-	Note     string `json:"note"`
-	Position gitlab.PositionOptions
-}
-
-type DraftNotePublishRequest struct {
-	Note       int  `json:"note,omitempty"`
-	PublishAll bool `json:"publish_all"`
-}
 
 type DraftNoteResponse struct {
 	SuccessResponse
 	DraftNote *gitlab.DraftNote `json:"draft_note"`
-}
-
-type ListDraftNotesResponse struct {
-	SuccessResponse
-	DraftNotes []*gitlab.DraftNote `json:"draft_notes"`
 }
 
 /* DraftNoteWithPosition is a draft comment with an (optional) position data value embedded in it. The position data will be non-nil for range-based draft comments. */
@@ -64,7 +41,7 @@ type draftNoteService struct {
 }
 
 /* draftNoteHandler creates, edits, and deletes draft notes */
-func (a draftNoteService) handler(w http.ResponseWriter, r *http.Request) {
+func (a draftNoteService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodGet:
@@ -75,14 +52,16 @@ func (a draftNoteService) handler(w http.ResponseWriter, r *http.Request) {
 		a.updateDraftNote(w, r)
 	case http.MethodDelete:
 		a.deleteDraftNote(w, r)
-	default:
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch, http.MethodGet))
-		handleError(w, InvalidRequestError{}, "Expected DELETE, GET, POST or PATCH", http.StatusMethodNotAllowed)
 	}
 }
 
+type ListDraftNotesResponse struct {
+	SuccessResponse
+	DraftNotes []*gitlab.DraftNote `json:"draft_notes"`
+}
+
 /* listDraftNotes lists all draft notes for the currently authenticated user */
-func (a draftNoteService) listDraftNotes(w http.ResponseWriter, _ *http.Request) {
+func (a draftNoteService) listDraftNotes(w http.ResponseWriter, r *http.Request) {
 
 	opt := gitlab.ListDraftNotesOptions{}
 	draftNotes, res, err := a.client.ListDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
@@ -93,17 +72,14 @@ func (a draftNoteService) listDraftNotes(w http.ResponseWriter, _ *http.Request)
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not get draft notes", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not get draft notes", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := ListDraftNotesResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Draft notes fetched successfully",
-			Status:  http.StatusOK,
-		},
-		DraftNotes: draftNotes,
+		SuccessResponse: SuccessResponse{Message: "Draft notes fetched successfully"},
+		DraftNotes:      draftNotes,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -112,34 +88,27 @@ func (a draftNoteService) listDraftNotes(w http.ResponseWriter, _ *http.Request)
 	}
 }
 
+type PostDraftNoteRequest struct {
+	Comment      string `json:"comment" validate:"required"`
+	DiscussionId string `json:"discussion_id,omitempty" validate:"required"`
+	PositionData        // TODO: How to add validations to data from external package???
+}
+
 /* postDraftNote creates a draft note */
 func (a draftNoteService) postDraftNote(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	var postDraftNoteRequest PostDraftNoteRequest
-	err = json.Unmarshal(body, &postDraftNoteRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value(payload("payload")).(*PostDraftNoteRequest)
 
 	opt := gitlab.CreateDraftNoteOptions{
-		Note: &postDraftNoteRequest.Comment,
+		Note: &payload.Comment,
 	}
 
 	// Draft notes can be posted in "response" to existing discussions
-	if postDraftNoteRequest.DiscussionId != "" {
-		opt.InReplyToDiscussionID = gitlab.Ptr(postDraftNoteRequest.DiscussionId)
+	if payload.DiscussionId != "" {
+		opt.InReplyToDiscussionID = gitlab.Ptr(payload.DiscussionId)
 	}
 
-	if postDraftNoteRequest.FileName != "" {
-		draftNoteWithPosition := DraftNoteWithPosition{postDraftNoteRequest.PositionData}
+	if payload.FileName != "" {
+		draftNoteWithPosition := DraftNoteWithPosition{payload.PositionData}
 		opt.Position = buildCommentPosition(draftNoteWithPosition)
 	}
 
@@ -151,17 +120,14 @@ func (a draftNoteService) postDraftNote(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft_notes/"}, "Could not create draft note", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not create draft note", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := DraftNoteResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Draft note created successfully",
-			Status:  http.StatusOK,
-		},
-		DraftNote: draftNote,
+		SuccessResponse: SuccessResponse{Message: "Draft note created successfully"},
+		DraftNote:       draftNote,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -187,20 +153,22 @@ func (a draftNoteService) deleteDraftNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: fmt.Sprintf("/mr/draft_notes/%d", id)}, "Could not delete draft note", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not delete draft note", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Draft note deleted",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Draft note deleted"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
+}
+
+type UpdateDraftNoteRequest struct {
+	Note     string `json:"note" validate:"required"`
+	Position gitlab.PositionOptions
 }
 
 /* updateDraftNote edits the text of a draft comment */
@@ -212,29 +180,16 @@ func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value(payload("payload")).(*UpdateDraftNoteRequest)
 
-	defer r.Body.Close()
-
-	var updateDraftNoteRequest UpdateDraftNoteRequest
-	err = json.Unmarshal(body, &updateDraftNoteRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal data from request body", http.StatusBadRequest)
-		return
-	}
-
-	if updateDraftNoteRequest.Note == "" {
+	if payload.Note == "" {
 		handleError(w, errors.New("Draft note text missing"), "Must provide draft note text", http.StatusBadRequest)
 		return
 	}
 
 	opt := gitlab.UpdateDraftNoteOptions{
-		Note:     &updateDraftNoteRequest.Note,
-		Position: &updateDraftNoteRequest.Position,
+		Note:     &payload.Note,
+		Position: &payload.Position,
 	}
 
 	draftNote, res, err := a.client.UpdateDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, id, &opt)
@@ -245,17 +200,14 @@ func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: fmt.Sprintf("/mr/draft_notes/%d", id)}, "Could not update draft note", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not update draft note", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := DraftNoteResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Draft note updated",
-			Status:  http.StatusOK,
-		},
-		DraftNote: draftNote,
+		SuccessResponse: SuccessResponse{Message: "Draft note updated"},
+		DraftNote:       draftNote,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

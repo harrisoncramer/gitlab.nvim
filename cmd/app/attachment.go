@@ -16,8 +16,8 @@ type FileReader interface {
 }
 
 type AttachmentRequest struct {
-	FilePath string `json:"file_path"`
-	FileName string `json:"file_name"`
+	FilePath string `json:"file_path" validate:"required"`
+	FileName string `json:"file_name" validate:"required"`
 }
 
 type AttachmentResponse struct {
@@ -58,55 +58,31 @@ type attachmentService struct {
 }
 
 /* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
-func (a attachmentService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
+func (a attachmentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	payload := r.Context().Value(payload("payload")).(*AttachmentRequest)
 
-	var attachmentRequest AttachmentRequest
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-
-	err = json.Unmarshal(body, &attachmentRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal JSON", http.StatusBadRequest)
-		return
-	}
-
-	file, err := a.fileReader.ReadFile(attachmentRequest.FilePath)
+	file, err := a.fileReader.ReadFile(payload.FilePath)
 	if err != nil || file == nil {
-		handleError(w, err, fmt.Sprintf("Could not read %s file", attachmentRequest.FileName), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Could not read %s file", payload.FileName), http.StatusInternalServerError)
 		return
 	}
 
-	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, attachmentRequest.FileName)
+	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, payload.FileName)
 	if err != nil {
-		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), http.StatusInternalServerError)
+		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", payload.FileName), http.StatusInternalServerError)
 		return
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/attachment"}, fmt.Sprintf("Could not upload %s to Gitlab", attachmentRequest.FileName), res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, fmt.Sprintf("Could not upload %s to Gitlab", payload.FileName), res.StatusCode)
 		return
 	}
 
 	response := AttachmentResponse{
-		SuccessResponse: SuccessResponse{
-			Status:  http.StatusOK,
-			Message: "File uploaded successfully",
-		},
-		Markdown: projectFile.Markdown,
-		Alt:      projectFile.Alt,
-		Url:      projectFile.URL,
+		SuccessResponse: SuccessResponse{Message: "File uploaded successfully"},
+		Markdown:        projectFile.Markdown,
+		Alt:             projectFile.Alt,
+		Url:             projectFile.URL,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

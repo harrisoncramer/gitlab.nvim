@@ -17,14 +17,7 @@ type mergeRequestApproverService struct {
 }
 
 /* approveHandler approves a merge request. */
-func (a mergeRequestApproverService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
+func (a mergeRequestApproverService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, res, err := a.client.ApproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
 	if err != nil {
@@ -33,15 +26,12 @@ func (a mergeRequestApproverService) handler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/approve"}, "Could not approve merge request", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not approve merge request", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Approved MR",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Approved MR"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

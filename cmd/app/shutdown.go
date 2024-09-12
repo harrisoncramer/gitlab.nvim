@@ -69,10 +69,7 @@ func (s shutdown) shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: text,
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: text}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

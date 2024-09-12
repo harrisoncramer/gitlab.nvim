@@ -53,9 +53,9 @@ func (f fakeDiscussionsLister) ListMergeRequestAwardEmojiOnNote(pid interface{},
 	return []*gitlab.AwardEmoji{}, resp, err
 }
 
-func getDiscussionsList(t *testing.T, svc ServiceWithHandler, request *http.Request) DiscussionsResponse {
+func getDiscussionsList(t *testing.T, svc http.Handler, request *http.Request) DiscussionsResponse {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data DiscussionsResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)
@@ -67,46 +67,63 @@ func getDiscussionsList(t *testing.T, svc ServiceWithHandler, request *http.Requ
 
 func TestListDiscussions(t *testing.T) {
 	t.Run("Returns sorted discussions", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
+		svc := middleware(
+			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.Message, "Discussions retrieved")
-		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
 		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer")
 	})
 
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer"}})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
+		svc := middleware(
+			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
-		assert(t, data.SuccessResponse.Status, http.StatusOK)
 		assert(t, len(data.Discussions), 1)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2")
 	})
-	t.Run("Disallows non-GET methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
+		svc := middleware(
+			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not list discussions")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
+		svc := middleware(
+			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not list discussions", "/mr/discussions/list")
 	})
 	t.Run("Handles error from emoji service", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{})
-		svc := discussionsListerService{testProjectData, fakeDiscussionsLister{badEmojiResponse: true}}
-		data := getFailData(t, svc, request)
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
+		svc := middleware(
+			discussionsListerService{testProjectData, fakeDiscussionsLister{badEmojiResponse: true, testBase: testBase{}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not fetch emojis")
 		assert(t, data.Details, "Some error from emoji service")
 	})

@@ -48,16 +48,13 @@ type emojiService struct {
 	client EmojiManager
 }
 
-func (a emojiService) handler(w http.ResponseWriter, r *http.Request) {
+func (a emojiService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.Method {
 	case http.MethodPost:
 		a.postEmojiOnNote(w, r)
 	case http.MethodDelete:
 		a.deleteEmojiFromNote(w, r)
-	default:
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodDelete, http.MethodPost))
-		handleError(w, InvalidRequestError{}, "Expected DELETE or POST", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -87,15 +84,12 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not delete awardable", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not delete awardable", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Emoji deleted",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Emoji deleted"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -131,17 +125,14 @@ func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/awardable/note"}, "Could not post emoji", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not post emoji", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := CreateEmojiResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Merge requests retrieved",
-			Status:  http.StatusOK,
-		},
-		Emoji: awardEmoji,
+		SuccessResponse: SuccessResponse{Message: "Merge requests retrieved"},
+		Emoji:           awardEmoji,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

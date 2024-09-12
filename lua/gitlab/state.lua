@@ -47,8 +47,10 @@ M.settings = {
   file_separator = u.path_separator,
   port = nil, -- choose random port
   debug = {
-    go_request = false,
-    go_response = false,
+    request = false,
+    response = false,
+    gitlab_request = false,
+    gitlab_response = false,
   },
   log_path = (vim.fn.stdpath("cache") .. "/gitlab.nvim.log"),
   config_path = nil,

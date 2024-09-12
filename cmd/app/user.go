@@ -21,13 +21,7 @@ type meService struct {
 	client MeGetter
 }
 
-func (a meService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
-		return
-	}
+func (a meService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	user, res, err := a.client.CurrentUser()
 
@@ -42,11 +36,8 @@ func (a meService) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := UserResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "User fetched successfully",
-			Status:  http.StatusOK,
-		},
-		User: user,
+		SuccessResponse: SuccessResponse{Message: "User fetched successfully"},
+		User:            user,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

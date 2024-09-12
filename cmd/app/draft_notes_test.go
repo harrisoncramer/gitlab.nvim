@@ -42,74 +42,99 @@ func (f fakeDraftNoteManager) UpdateDraftNote(pid interface{}, mergeRequest int,
 func TestListDraftNotes(t *testing.T) {
 	t.Run("Lists all draft notes", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft notes fetched successfully")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{testBase: testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not get draft notes")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{testBase: testBase{status: http.StatusSeeOther}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not get draft notes", "/mr/draft_notes/")
 	})
 }
 
 func TestPostDraftNote(t *testing.T) {
-	var testPostDraftNoteRequestData = PostDraftNoteRequest{Comment: "Some comment"}
+	var testPostDraftNoteRequestData = PostDraftNoteRequest{
+		Comment:      "Some comment",
+		DiscussionId: "abc123",
+	}
 	t.Run("Posts new draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note created successfully")
-	})
-	t.Run("Handles error from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
-		checkErrorFromGitlab(t, data, "Could not create draft note")
-	})
-	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
-		checkNon200(t, data, "Could not create draft note", "/mr/draft_notes/")
 	})
 }
 
 func TestDeleteDraftNote(t *testing.T) {
 	t.Run("Deletes new draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note deleted")
-	})
-	t.Run("Handles error from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
-		checkErrorFromGitlab(t, data, "Could not delete draft note")
-	})
-	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/3", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
-		checkNon200(t, data, "Could not delete draft note", "/mr/draft_notes/3")
 	})
 	t.Run("Handles bad ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodDelete, "/mr/draft_notes/blah", nil)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not parse draft note ID")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 }
 
@@ -117,37 +142,49 @@ func TestEditDraftNote(t *testing.T) {
 	var testUpdateDraftNoteRequest = UpdateDraftNoteRequest{Note: "Some new note"}
 	t.Run("Edits new draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", testUpdateDraftNoteRequest)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{}}
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note updated")
-	})
-	t.Run("Handles error from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", testUpdateDraftNoteRequest)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
-		checkErrorFromGitlab(t, data, "Could not update draft note")
-	})
-	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", testUpdateDraftNoteRequest)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
-		checkNon200(t, data, "Could not update draft note", "/mr/draft_notes/3")
 	})
 	t.Run("Handles bad ID", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/blah", testUpdateDraftNoteRequest)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not parse draft note ID")
-		assert(t, data.Status, http.StatusBadRequest)
+		assert(t, status, http.StatusBadRequest)
 	})
 	t.Run("Handles empty note", func(t *testing.T) {
 		requestData := testUpdateDraftNoteRequest
 		requestData.Note = ""
 		request := makeRequest(t, http.MethodPatch, "/mr/draft_notes/3", requestData)
-		svc := draftNoteService{testProjectData, fakeDraftNoteManager{testBase{status: http.StatusSeeOther}}}
-		data := getFailData(t, svc, request)
-		assert(t, data.Message, "Must provide draft note text")
-		assert(t, data.Status, http.StatusBadRequest)
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  &PostDraftNoteRequest{},
+				http.MethodPatch: &UpdateDraftNoteRequest{},
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		data, status := getFailData(t, svc, request)
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "Note is required")
+		assert(t, status, http.StatusBadRequest)
 	})
 }

@@ -2,14 +2,13 @@ package app
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
 type ReviewerUpdateRequest struct {
-	Ids []int `json:"ids"`
+	Ids []int `json:"ids" validate:"required"`
 }
 
 type ReviewerUpdateResponse struct {
@@ -32,31 +31,11 @@ type reviewerService struct {
 }
 
 /* reviewersHandler adds or removes reviewers from an MR */
-func (a reviewerService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPut {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var reviewerUpdateRequest ReviewerUpdateRequest
-	err = json.Unmarshal(body, &reviewerUpdateRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+func (a reviewerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	payload := r.Context().Value(payload("payload")).(*ReviewerUpdateRequest)
 
 	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
-		ReviewerIDs: &reviewerUpdateRequest.Ids,
+		ReviewerIDs: &payload.Ids,
 	})
 
 	if err != nil {
@@ -65,17 +44,14 @@ func (a reviewerService) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/reviewer"}, "Could not modify merge request reviewers", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request reviewers", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := ReviewerUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Reviewers updated",
-			Status:  http.StatusOK,
-		},
-		Reviewers: mr.Reviewers,
+		SuccessResponse: SuccessResponse{Message: "Reviewers updated"},
+		Reviewers:       mr.Reviewers,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

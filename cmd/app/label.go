@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -39,20 +38,16 @@ type labelService struct {
 }
 
 /* labelsHandler adds or removes labels from a merge request, and returns all labels for the current project */
-func (a labelService) handler(w http.ResponseWriter, r *http.Request) {
+func (a labelService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.getLabels(w, r)
 	case http.MethodPut:
 		a.updateLabels(w, r)
-	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodPut, http.MethodGet))
-		handleError(w, InvalidRequestError{}, "Expected GET or PUT", http.StatusMethodNotAllowed)
 	}
 }
 
-func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
+func (a labelService) getLabels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	labels, res, err := a.client.ListLabels(a.projectInfo.ProjectId, &gitlab.ListLabelsOptions{})
@@ -63,7 +58,7 @@ func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/label"}, "Could not modify merge request labels", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request labels", res.StatusCode)
 		return
 	}
 
@@ -78,11 +73,8 @@ func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	response := LabelsRequestResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Labels updated",
-			Status:  http.StatusOK,
-		},
-		Labels: convertedLabels,
+		SuccessResponse: SuccessResponse{Message: "Labels updated"},
+		Labels:          convertedLabels,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -120,17 +112,14 @@ func (a labelService) updateLabels(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/label"}, "Could not modify merge request labels", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request labels", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := LabelUpdateResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Labels updated",
-			Status:  http.StatusOK,
-		},
-		Labels: mr.Labels,
+		SuccessResponse: SuccessResponse{Message: "Labels updated"},
+		Labels:          mr.Labels,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

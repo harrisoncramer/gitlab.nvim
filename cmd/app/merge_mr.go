@@ -2,16 +2,15 @@ package app
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
 type AcceptMergeRequestRequest struct {
-	Squash        bool   `json:"squash"`
-	SquashMessage string `json:"squash_message"`
 	DeleteBranch  bool   `json:"delete_branch"`
+	SquashMessage string `json:"squash_message"`
+	Squash        bool   `json:"squash"`
 }
 
 type MergeRequestAccepter interface {
@@ -24,34 +23,16 @@ type mergeRequestAccepterService struct {
 }
 
 /* acceptAndMergeHandler merges a given merge request into the target branch */
-func (a mergeRequestAccepterService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-	if r.Method != http.MethodPost {
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	var acceptAndMergeRequest AcceptMergeRequestRequest
-	err = json.Unmarshal(body, &acceptAndMergeRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-		return
-	}
+func (a mergeRequestAccepterService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	payload := r.Context().Value(payload("payload")).(*AcceptMergeRequestRequest)
 
 	opts := gitlab.AcceptMergeRequestOptions{
-		Squash:                   &acceptAndMergeRequest.Squash,
-		ShouldRemoveSourceBranch: &acceptAndMergeRequest.DeleteBranch,
+		Squash:                   &payload.Squash,
+		ShouldRemoveSourceBranch: &payload.DeleteBranch,
 	}
 
-	if acceptAndMergeRequest.SquashMessage != "" {
-		opts.SquashCommitMessage = &acceptAndMergeRequest.SquashMessage
+	if payload.SquashMessage != "" {
+		opts.SquashCommitMessage = &payload.SquashMessage
 	}
 
 	_, res, err := a.client.AcceptMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opts)
@@ -62,14 +43,11 @@ func (a mergeRequestAccepterService) handler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/merge"}, "Could not merge MR", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not merge MR", res.StatusCode)
 		return
 	}
 
-	response := SuccessResponse{
-		Status:  http.StatusOK,
-		Message: "MR merged successfully",
-	}
+	response := SuccessResponse{Message: "MR merged successfully"}
 
 	w.WriteHeader(http.StatusOK)
 
