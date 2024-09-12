@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+
+	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
 type fakeHandler struct{}
@@ -40,5 +42,21 @@ func TestMethodMiddleware(t *testing.T) {
 		handler := middleware(fakeHandler{}, mw)
 		data := getSuccessData(t, handler, request)
 		assert(t, data.Message, "Foo")
+	})
+}
+
+func TestWithMrMiddleware(t *testing.T) {
+	t.Run("Loads an MR ID", func(t *testing.T) {
+		request := makeRequest(t, http.MethodGet, "/foo", nil)
+		d := data{
+			projectInfo: &ProjectInfo{},
+			gitInfo:     &git.GitData{BranchName: "foo"},
+		}
+		mw := withMr(d, fakeMergeRequestLister{})
+		handler := middleware(fakeHandler{}, mw)
+		getSuccessData(t, handler, request)
+		if d.projectInfo.MergeId != 10 {
+			t.FailNow()
+		}
 	})
 }
