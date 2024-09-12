@@ -15,6 +15,8 @@ import (
 
 type mw func(http.Handler) http.Handler
 
+type payload string
+
 // Wraps a series of middleware around the base handler. Functions are called from bottom to top.
 // The middlewares should call the serveHTTP method on their http.Handler argument to pass along the request.
 func middleware(h http.Handler, middlewares ...mw) http.HandlerFunc {
@@ -49,15 +51,15 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 			return
 		}
 
-		payload := p.methodToPayload[r.Method]
-		err = json.Unmarshal(body, &payload)
+		pl := p.methodToPayload[r.Method]
+		err = json.Unmarshal(body, &pl)
 
 		if err != nil {
 			handleError(w, err, "Could not parse JSON request body", http.StatusBadRequest)
 			return
 		}
 
-		err = p.validate.Struct(payload)
+		err = p.validate.Struct(pl)
 		if err != nil {
 			switch err := err.(type) {
 			case validator.ValidationErrors:
@@ -70,7 +72,7 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 		}
 
 		// Pass the parsed data so we don't have to re-parse it in the handler
-		ctx := context.WithValue(r.Context(), "payload", payload)
+		ctx := context.WithValue(r.Context(), payload(payload("payload")), pl)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
@@ -141,8 +143,7 @@ func withMr(data data, client MergeRequestLister) mw {
 }
 
 type methodMiddleware struct {
-	validate *validator.Validate
-	methods  []string
+	methods []string
 }
 
 func (m methodMiddleware) handle(next http.Handler) http.Handler {
@@ -161,9 +162,7 @@ func (m methodMiddleware) handle(next http.Handler) http.Handler {
 }
 
 func withMethodCheck(methods ...string) mw {
-	return methodMiddleware{
-		methods: methods,
-	}.handle
+	return methodMiddleware{methods: methods}.handle
 }
 
 // Helper function to format validation errors into more readable strings

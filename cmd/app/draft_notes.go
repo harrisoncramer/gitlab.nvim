@@ -96,7 +96,7 @@ type PostDraftNoteRequest struct {
 
 /* postDraftNote creates a draft note */
 func (a draftNoteService) postDraftNote(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*PostDraftNoteRequest)
+	payload := r.Context().Value(payload("payload")).(*PostDraftNoteRequest)
 
 	opt := gitlab.CreateDraftNoteOptions{
 		Note: &payload.Comment,
@@ -180,7 +180,7 @@ func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	payload := r.Context().Value("payload").(*UpdateDraftNoteRequest)
+	payload := r.Context().Value(payload("payload")).(*UpdateDraftNoteRequest)
 
 	if payload.Note == "" {
 		handleError(w, errors.New("Draft note text missing"), "Must provide draft note text", http.StatusBadRequest)

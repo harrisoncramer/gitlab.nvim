@@ -25,7 +25,7 @@ type assigneesService struct {
 /* assigneesHandler adds or removes assignees from a merge request. */
 func (a assigneesService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	assigneeUpdateRequest, ok := r.Context().Value("payload").(*AssigneeUpdateRequest)
+	assigneeUpdateRequest, ok := r.Context().Value(payload("payload")).(*AssigneeUpdateRequest)
 
 	if !ok {
 		handleError(w, errors.New("Could not get payload from context"), "Bad payload", http.StatusInternalServerError)

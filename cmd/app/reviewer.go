@@ -32,7 +32,7 @@ type reviewerService struct {
 
 /* reviewersHandler adds or removes reviewers from an MR */
 func (a reviewerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*ReviewerUpdateRequest)
+	payload := r.Context().Value(payload("payload")).(*ReviewerUpdateRequest)
 
 	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
 		ReviewerIDs: &payload.Ids,

@@ -25,7 +25,7 @@ type mergeRequestListerService struct {
 // Lists all merge requests in Gitlab according to the provided filters
 func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	payload := r.Context().Value("payload").(*gitlab.ListProjectMergeRequestsOptions)
+	payload := r.Context().Value(payload("payload")).(*gitlab.ListProjectMergeRequestsOptions)
 
 	if payload.State == nil {
 		payload.State = gitlab.Ptr("opened")

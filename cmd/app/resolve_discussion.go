@@ -24,7 +24,7 @@ type DiscussionResolveRequest struct {
 
 /* discussionsResolveHandler sets a discussion to be "resolved" or not resolved, depending on the payload */
 func (a discussionsResolutionService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*DiscussionResolveRequest)
+	payload := r.Context().Value(payload("payload")).(*DiscussionResolveRequest)
 
 	_, res, err := a.client.ResolveMergeRequestDiscussion(
 		a.projectInfo.ProjectId,

@@ -30,7 +30,7 @@ type replyService struct {
 
 /* replyHandler sends a reply to a note or comment */
 func (a replyService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	replyRequest := r.Context().Value("payload").(*ReplyRequest)
+	replyRequest := r.Context().Value(payload("payload")).(*ReplyRequest)
 
 	now := time.Now()
 	options := gitlab.AddMergeRequestDiscussionNoteOptions{

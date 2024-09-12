@@ -62,7 +62,7 @@ The responses are sorted by date created, and blacklisted users are not included
 */
 func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	request := r.Context().Value("payload").(*DiscussionsRequest)
+	request := r.Context().Value(payload(payload("payload"))).(*DiscussionsRequest)
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,

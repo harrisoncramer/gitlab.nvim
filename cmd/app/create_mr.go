@@ -29,7 +29,7 @@ type mergeRequestCreatorService struct {
 /* createMr creates a merge request */
 func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	createMrRequest := r.Context().Value("payload").(*CreateMrRequest)
+	createMrRequest := r.Context().Value(payload("payload")).(*CreateMrRequest)
 
 	opts := gitlab.CreateMergeRequestOptions{
 		Title:              &createMrRequest.Title,

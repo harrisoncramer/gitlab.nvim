@@ -44,7 +44,7 @@ type DeleteCommentRequest struct {
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
 func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*DeleteCommentRequest)
+	payload := r.Context().Value(payload("payload")).(*DeleteCommentRequest)
 
 	res, err := a.client.DeleteMergeRequestDiscussionNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.DiscussionId, payload.NoteId)
 
@@ -83,7 +83,7 @@ func (comment CommentWithPosition) GetPositionData() PositionData {
 
 /* postComment creates a note, multiline comment, or comment. */
 func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*PostCommentRequest)
+	payload := r.Context().Value(payload("payload")).(*PostCommentRequest)
 
 	opt := gitlab.CreateMergeRequestDiscussionOptions{
 		Body: &payload.Comment,
@@ -132,7 +132,7 @@ type EditCommentRequest struct {
 /* editComment changes the text of a comment or changes it's resolved status. */
 func (a commentService) editComment(w http.ResponseWriter, r *http.Request) {
 
-	payload := r.Context().Value("payload").(*EditCommentRequest)
+	payload := r.Context().Value(payload("payload")).(*EditCommentRequest)
 
 	options := gitlab.UpdateMergeRequestDiscussionNoteOptions{
 		Body: gitlab.Ptr(payload.Comment),

@@ -18,7 +18,8 @@ func (f fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	data := SuccessResponse{Message: "Some message"}
 	j, _ := json.Marshal(data)
-	w.Write(j)
+	w.Write(j) // nolint
+
 }
 
 func TestMethodMiddleware(t *testing.T) {

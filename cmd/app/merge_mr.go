@@ -24,7 +24,7 @@ type mergeRequestAccepterService struct {
 
 /* acceptAndMergeHandler merges a given merge request into the target branch */
 func (a mergeRequestAccepterService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*AcceptMergeRequestRequest)
+	payload := r.Context().Value(payload("payload")).(*AcceptMergeRequestRequest)
 
 	opts := gitlab.AcceptMergeRequestOptions{
 		Squash:                   &payload.Squash,

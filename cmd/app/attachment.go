@@ -59,7 +59,7 @@ type attachmentService struct {
 
 /* attachmentHandler uploads an attachment (file, image, etc) to Gitlab and returns metadata about the upload. */
 func (a attachmentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*AttachmentRequest)
+	payload := r.Context().Value(payload("payload")).(*AttachmentRequest)
 
 	file, err := a.fileReader.ReadFile(payload.FilePath)
 	if err != nil || file == nil {

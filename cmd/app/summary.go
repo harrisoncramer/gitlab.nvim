@@ -24,7 +24,7 @@ type summaryService struct {
 
 func (a summaryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	payload := r.Context().Value("payload").(*SummaryUpdateRequest)
+	payload := r.Context().Value(payload("payload")).(*SummaryUpdateRequest)
 
 	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
 		Description: &payload.Description,

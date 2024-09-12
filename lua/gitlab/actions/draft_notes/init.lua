@@ -155,17 +155,17 @@ end
 M.add_draft_notes_to_table = function(unlinked)
   local draft_notes = List.new(state.DRAFT_NOTES)
   local draft_note_nodes = draft_notes
-      ---@param note DraftNote
-      :filter(function(note)
-        if unlinked then
-          return not M.has_position(note)
-        end
-        return M.has_position(note)
-      end)
-      :filter(function(note)
-        return note.discussion_id == "" -- Do not include draft replies
-      end)
-      :map(M.build_root_draft_note)
+    ---@param note DraftNote
+    :filter(function(note)
+      if unlinked then
+        return not M.has_position(note)
+      end
+      return M.has_position(note)
+    end)
+    :filter(function(note)
+      return note.discussion_id == "" -- Do not include draft replies
+    end)
+    :map(M.build_root_draft_note)
 
   return draft_note_nodes
 end

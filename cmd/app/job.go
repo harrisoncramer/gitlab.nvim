@@ -30,7 +30,7 @@ type traceFileService struct {
 /* jobHandler returns a string that shows the output of a specific job run in a Gitlab pipeline */
 func (a traceFileService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	payload := r.Context().Value("payload").(*JobTraceRequest)
+	payload := r.Context().Value(payload("payload")).(*JobTraceRequest)
 
 	reader, res, err := a.client.GetTraceFile(a.projectInfo.ProjectId, payload.JobId)
 

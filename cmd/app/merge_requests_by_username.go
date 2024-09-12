@@ -28,7 +28,7 @@ type MergeRequestByUsernameRequest struct {
 // Returns a list of merge requests where the given username/id is either an assignee, reviewer, or author
 func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	request := r.Context().Value("payload").(*MergeRequestByUsernameRequest)
+	request := r.Context().Value(payload("payload")).(*MergeRequestByUsernameRequest)
 
 	if request.State == "" {
 		request.State = "opened"

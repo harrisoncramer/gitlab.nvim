@@ -22,7 +22,7 @@ type DraftNotePublishRequest struct {
 }
 
 func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	payload := r.Context().Value("payload").(*DraftNotePublishRequest)
+	payload := r.Context().Value(payload("payload")).(*DraftNotePublishRequest)
 
 	var res *gitlab.Response
 	var err error
