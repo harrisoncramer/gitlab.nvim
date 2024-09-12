@@ -8,11 +8,15 @@ import (
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 )
 
+type FakePayload struct {
+	Foo string `json:"foo" validate:"required"`
+}
+
 type fakeHandler struct{}
 
 func (f fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	data := SuccessResponse{Message: "Foo"}
+	data := SuccessResponse{Message: "Some message"}
 	j, _ := json.Marshal(data)
 	w.Write(j)
 }
@@ -41,12 +45,12 @@ func TestMethodMiddleware(t *testing.T) {
 		mw := validateMethods(http.MethodGet)
 		handler := middleware(fakeHandler{}, mw)
 		data := getSuccessData(t, handler, request)
-		assert(t, data.Message, "Foo")
+		assert(t, data.Message, "Some message")
 	})
 }
 
 func TestWithMrMiddleware(t *testing.T) {
-	t.Run("Loads an MR ID", func(t *testing.T) {
+	t.Run("Loads an MR ID into the projectInfo", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
 		d := data{
 			projectInfo: &ProjectInfo{},
@@ -84,5 +88,26 @@ func TestWithMrMiddleware(t *testing.T) {
 		assert(t, data.Status, http.StatusBadRequest)
 		assert(t, data.Message, "Multiple MRs found")
 		assert(t, data.Details, "Please call gitlab.choose_merge_request()")
+	})
+}
+
+func TestValidatorMiddleware(t *testing.T) {
+	t.Run("Should error with missing field", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{}) // No Foo field
+		data := getFailData(t, middleware(
+			fakeHandler{},
+			validatePayloads(methodToPayload{http.MethodPost: &FakePayload{}}),
+		), request)
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "Foo is required")
+		assert(t, data.Status, http.StatusBadRequest)
+	})
+	t.Run("Should allow valid payload through", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{Foo: "Some payload"})
+		data := getSuccessData(t, middleware(
+			fakeHandler{},
+			validatePayloads(methodToPayload{http.MethodPost: &FakePayload{}}),
+		), request)
+		assert(t, data.Message, "Some message")
 	})
 }
