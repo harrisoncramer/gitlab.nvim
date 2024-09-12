@@ -235,6 +235,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/merge_requests_by_username", middleware(
 		mergeRequestListerByUsernameService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+		withMethodCheck(http.MethodPost),
 		withLogging,
 	))
 

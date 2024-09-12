@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"sync"
 
@@ -26,27 +25,10 @@ type MergeRequestByUsernameRequest struct {
 	State    string `json:"state,omitempty"`
 }
 
+// Returns a list of merge requests where the given username/id is either an assignee, reviewer, or author
 func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var request MergeRequestByUsernameRequest
-	err = json.Unmarshal(body, &request)
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+	request := r.Context().Value("payload").(*MergeRequestByUsernameRequest)
 
 	if request.Username == "" {
 		handleError(w, errors.New("username is a required payload field"), "username is required", http.StatusBadRequest)
@@ -137,7 +119,7 @@ func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r 
 		MergeRequests:   mergeRequests,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
