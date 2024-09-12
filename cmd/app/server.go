@@ -197,6 +197,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/pipeline", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
+		withMethodCheck(http.MethodGet, http.MethodPost),
 		withLogging,
 	))
 	m.HandleFunc("/pipeline/trigger/", middleware(

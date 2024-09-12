@@ -49,10 +49,6 @@ func (a pipelineService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.GetPipelineAndJobs(w, r)
 	case http.MethodPost:
 		a.RetriggerPipeline(w, r)
-	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
-		handleError(w, InvalidRequestError{}, "Expected GET or POST", http.StatusMethodNotAllowed)
 	}
 }
 
