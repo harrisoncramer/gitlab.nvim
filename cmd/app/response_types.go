@@ -7,7 +7,6 @@ import (
 type ErrorResponse struct {
 	Message string `json:"message"`
 	Details string `json:"details"`
-	Status  int    `json:"status"`
 }
 
 type SuccessResponse struct {

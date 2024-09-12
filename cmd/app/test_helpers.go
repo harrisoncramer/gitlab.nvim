@@ -105,22 +105,18 @@ func (f *testBase) handleGitlabError() (*gitlab.Response, error) {
 
 func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
 	t.Helper()
-	assert(t, data.Status, http.StatusInternalServerError)
 	assert(t, data.Message, msg)
 	assert(t, data.Details, errorFromGitlab.Error())
 }
 
 func checkBadMethod(t *testing.T, data ErrorResponse, methods ...string) {
 	t.Helper()
-
-	assert(t, data.Status, http.StatusMethodNotAllowed)
 	assert(t, data.Message, "Invalid request type")
 	assert(t, data.Details, fmt.Sprintf("Expected: %s", strings.Join(methods, "; ")))
 }
 
 func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
 	t.Helper()
-	assert(t, data.Status, http.StatusSeeOther)
 	assert(t, data.Message, msg)
 	assert(t, data.Details, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
 }

@@ -118,7 +118,6 @@ func handleError(w http.ResponseWriter, err error, message string, status int) {
 	response := ErrorResponse{
 		Message: message,
 		Details: err.Error(),
-		Status:  status,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
