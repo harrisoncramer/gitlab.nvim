@@ -36,21 +36,36 @@ func TestAttachmentHandler(t *testing.T) {
 
 	t.Run("Returns 200-status response after upload", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{}}
+		svc := middleware(
+			attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{}},
+			validatePayloads(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "File uploaded successfully")
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{errFromGitlab: true}}}
+		svc := middleware(
+			attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{errFromGitlab: true}}},
+			validatePayloads(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not upload some_file_name to Gitlab")
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/attachment", attachmentTestRequestData)
-		svc := attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{status: http.StatusSeeOther}}}
+		svc := middleware(
+			attachmentService{testProjectData, fakeFileReader{}, fakeFileUploaderClient{testBase{status: http.StatusSeeOther}}},
+			validatePayloads(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+			validateMethods(http.MethodPost),
+			logMiddleware,
+		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not upload some_file_name to Gitlab", "/attachment")
 	})

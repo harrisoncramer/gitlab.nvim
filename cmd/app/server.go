@@ -200,6 +200,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/attachment", middleware(
 		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
+		validatePayloads(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+		validateMethods(http.MethodPost),
 		logMiddleware,
 	))
 	m.HandleFunc("/create_mr", middleware(
