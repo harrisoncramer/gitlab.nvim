@@ -9,7 +9,7 @@ import (
 )
 
 type AssigneeUpdateRequest struct {
-	Ids []int `json:"ids"`
+	Ids []int `json:"ids" validate:"required"`
 }
 
 type AssigneeUpdateResponse struct {

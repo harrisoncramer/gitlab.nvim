@@ -10,7 +10,7 @@ import (
 )
 
 type JobTraceRequest struct {
-	JobId int `json:"job_id"`
+	JobId int `json:"job_id" validate:"required"`
 }
 
 type JobTraceResponse struct {

@@ -20,7 +20,7 @@ func Contains[T comparable](elems []T, v T) bool {
 }
 
 type DiscussionsRequest struct {
-	Blacklist []string `json:"blacklist"`
+	Blacklist []string `json:"blacklist" validate:"required"`
 }
 
 type DiscussionsResponse struct {

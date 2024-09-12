@@ -42,8 +42,8 @@ func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type DeleteCommentRequest struct {
-	NoteId       int    `json:"note_id"`
-	DiscussionId string `json:"discussion_id"`
+	NoteId       int    `json:"note_id" validate:"required"`
+	DiscussionId string `json:"discussion_id" validate:"required"`
 }
 
 /* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
@@ -72,7 +72,7 @@ func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 }
 
 type PostCommentRequest struct {
-	Comment string `json:"comment"`
+	Comment string `json:"comment" validate:"required"`
 	PositionData
 }
 
@@ -127,9 +127,9 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 }
 
 type EditCommentRequest struct {
-	Comment      string `json:"comment"`
-	NoteId       int    `json:"note_id"`
-	DiscussionId string `json:"discussion_id"`
+	Comment      string `json:"comment" validate:"required"`
+	NoteId       int    `json:"note_id" validate:"required"`
+	DiscussionId string `json:"discussion_id" validate:"required"`
 	Resolved     bool   `json:"resolved"`
 }
 

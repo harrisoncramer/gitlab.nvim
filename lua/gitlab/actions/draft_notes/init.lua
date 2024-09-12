@@ -84,7 +84,7 @@ end
 
 ---Publishes all draft notes and comments. Re-renders all discussion views.
 M.confirm_publish_all_drafts = function()
-  local body = { publish_all = true }
+  local body = {}
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
@@ -109,7 +109,7 @@ M.confirm_publish_draft = function(tree)
 
   ---@type integer
   local note_id = note_node.is_root and root_node.id or note_node.id
-  local body = { note = note_id, publish_all = false }
+  local body = { note = note_id }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
 
@@ -155,17 +155,17 @@ end
 M.add_draft_notes_to_table = function(unlinked)
   local draft_notes = List.new(state.DRAFT_NOTES)
   local draft_note_nodes = draft_notes
-    ---@param note DraftNote
-    :filter(function(note)
-      if unlinked then
-        return not M.has_position(note)
-      end
-      return M.has_position(note)
-    end)
-    :filter(function(note)
-      return note.discussion_id == "" -- Do not include draft replies
-    end)
-    :map(M.build_root_draft_note)
+      ---@param note DraftNote
+      :filter(function(note)
+        if unlinked then
+          return not M.has_position(note)
+        end
+        return M.has_position(note)
+      end)
+      :filter(function(note)
+        return note.discussion_id == "" -- Do not include draft replies
+      end)
+      :map(M.build_root_draft_note)
 
   return draft_note_nodes
 end

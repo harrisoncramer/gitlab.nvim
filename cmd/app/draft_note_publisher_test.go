@@ -19,7 +19,7 @@ func (f fakeDraftNotePublisher) PublishDraftNote(pid interface{}, mergeRequest i
 }
 
 func TestPublishDraftNote(t *testing.T) {
-	var testDraftNotePublishRequest = DraftNotePublishRequest{Note: 3, PublishAll: false}
+	var testDraftNotePublishRequest = DraftNotePublishRequest{Note: 3}
 	t.Run("Publishes draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
 		svc := middleware(
@@ -59,7 +59,7 @@ func TestPublishDraftNote(t *testing.T) {
 }
 
 func TestPublishAllDraftNotes(t *testing.T) {
-	var testDraftNotePublishRequest = DraftNotePublishRequest{PublishAll: true}
+	var testDraftNotePublishRequest = DraftNotePublishRequest{}
 	t.Run("Should publish all draft notes", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
 		svc := middleware(

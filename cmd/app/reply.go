@@ -9,8 +9,8 @@ import (
 )
 
 type ReplyRequest struct {
-	DiscussionId string `json:"discussion_id"`
-	Reply        string `json:"reply"`
+	DiscussionId string `json:"discussion_id" validate:"required"`
+	Reply        string `json:"reply" validate:"required"`
 	IsDraft      bool   `json:"is_draft"`
 }
 

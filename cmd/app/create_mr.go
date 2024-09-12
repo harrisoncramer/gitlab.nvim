@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -10,12 +9,12 @@ import (
 )
 
 type CreateMrRequest struct {
-	Title           string `json:"title"`
+	Title           string `json:"title" validate:"required"`
+	TargetBranch    string `json:"target_branch" validate:"required"`
 	Description     string `json:"description"`
-	TargetBranch    string `json:"target_branch"`
+	TargetProjectID int    `json:"forked_project_id,omitempty"`
 	DeleteBranch    bool   `json:"delete_branch"`
 	Squash          bool   `json:"squash"`
-	TargetProjectID int    `json:"forked_project_id,omitempty"`
 }
 
 type MergeRequestCreator interface {
@@ -31,16 +30,6 @@ type mergeRequestCreatorService struct {
 func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	createMrRequest := r.Context().Value("payload").(*CreateMrRequest)
-
-	if createMrRequest.Title == "" {
-		handleError(w, errors.New("Title cannot be empty"), "Could not create MR", http.StatusBadRequest)
-		return
-	}
-
-	if createMrRequest.TargetBranch == "" {
-		handleError(w, errors.New("Target branch cannot be empty"), "Could not create MR", http.StatusBadRequest)
-		return
-	}
 
 	opts := gitlab.CreateMergeRequestOptions{
 		Title:              &createMrRequest.Title,

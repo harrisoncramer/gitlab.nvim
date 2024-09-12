@@ -90,9 +90,9 @@ func (a draftNoteService) listDraftNotes(w http.ResponseWriter, _ *http.Request)
 }
 
 type PostDraftNoteRequest struct {
-	Comment      string `json:"comment"`
-	DiscussionId string `json:"discussion_id,omitempty"`
-	PositionData
+	Comment      string `json:"comment" validate:"required"`
+	DiscussionId string `json:"discussion_id,omitempty" validate:"required"`
+	PositionData        // TODO: How to add validations to data from external package???
 }
 
 /* postDraftNote creates a draft note */
@@ -168,7 +168,7 @@ func (a draftNoteService) deleteDraftNote(w http.ResponseWriter, r *http.Request
 }
 
 type UpdateDraftNoteRequest struct {
-	Note     string `json:"note"`
+	Note     string `json:"note" validate:"required"`
 	Position gitlab.PositionOptions
 }
 

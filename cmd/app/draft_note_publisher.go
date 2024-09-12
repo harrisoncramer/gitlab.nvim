@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -19,8 +18,7 @@ type draftNotePublisherService struct {
 }
 
 type DraftNotePublishRequest struct {
-	Note       int  `json:"note,omitempty"`
-	PublishAll bool `json:"publish_all"`
+	Note int `json:"note,omitempty"`
 }
 
 func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -28,14 +26,10 @@ func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	var res *gitlab.Response
 	var err error
-	if payload.PublishAll {
-		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
-	} else {
-		if payload.Note == 0 {
-			handleError(w, errors.New("No ID provided"), "Must provide Note ID", http.StatusBadRequest)
-			return
-		}
+	if payload.Note != 0 {
 		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.Note)
+	} else {
+		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
 	}
 
 	if err != nil {

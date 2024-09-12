@@ -20,8 +20,8 @@ type mergeRequestListerByUsernameService struct {
 }
 
 type MergeRequestByUsernameRequest struct {
-	UserId   int    `json:"user_id"`
-	Username string `json:"username"`
+	UserId   int    `json:"user_id" validate:"required"`
+	Username string `json:"username" validate:"required"`
 	State    string `json:"state,omitempty"`
 }
 
@@ -29,16 +29,6 @@ type MergeRequestByUsernameRequest struct {
 func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	request := r.Context().Value("payload").(*MergeRequestByUsernameRequest)
-
-	if request.Username == "" {
-		handleError(w, errors.New("username is a required payload field"), "username is required", http.StatusBadRequest)
-		return
-	}
-
-	if request.UserId == 0 {
-		handleError(w, errors.New("user_id is a required payload field"), "user_id is required", http.StatusBadRequest)
-		return
-	}
 
 	if request.State == "" {
 		request.State = "opened"

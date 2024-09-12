@@ -16,8 +16,8 @@ type FileReader interface {
 }
 
 type AttachmentRequest struct {
-	FilePath string `json:"file_path"`
-	FileName string `json:"file_name"`
+	FilePath string `json:"file_path" validate:"required"`
+	FileName string `json:"file_name" validate:"required"`
 }
 
 type AttachmentResponse struct {

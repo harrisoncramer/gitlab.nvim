@@ -8,9 +8,9 @@ import (
 )
 
 type AcceptMergeRequestRequest struct {
-	Squash        bool   `json:"squash"`
-	SquashMessage string `json:"squash_message"`
 	DeleteBranch  bool   `json:"delete_branch"`
+	SquashMessage string `json:"squash_message"`
+	Squash        bool   `json:"squash"`
 }
 
 type MergeRequestAccepter interface {
