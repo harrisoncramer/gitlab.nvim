@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
+	"github.com/xanzy/go-gitlab"
 )
 
 /*
@@ -231,6 +232,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/merge_requests", middleware(
 		mergeRequestListerService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}), // TODO: How to validate external object
+		withMethodCheck(http.MethodPost),
 		withLogging,
 	))
 	m.HandleFunc("/merge_requests_by_username", middleware(

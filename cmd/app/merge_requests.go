@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -23,37 +22,20 @@ type mergeRequestListerService struct {
 	client MergeRequestLister
 }
 
+// Lists all merge requests in Gitlab according to the provided filters
 func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
+
+	payload := r.Context().Value("payload").(*gitlab.ListProjectMergeRequestsOptions)
+
+	if payload.State == nil {
+		payload.State = gitlab.Ptr("opened")
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
+	if payload.Scope == nil {
+		payload.Scope = gitlab.Ptr("all")
 	}
 
-	defer r.Body.Close()
-	var listMergeRequestRequest gitlab.ListProjectMergeRequestsOptions
-	err = json.Unmarshal(body, &listMergeRequestRequest)
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
-
-	if listMergeRequestRequest.State == nil {
-		listMergeRequestRequest.State = gitlab.Ptr("opened")
-	}
-
-	if listMergeRequestRequest.Scope == nil {
-		listMergeRequestRequest.Scope = gitlab.Ptr("all")
-	}
-
-	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, &listMergeRequestRequest)
+	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, payload)
 
 	if err != nil {
 		handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
