@@ -132,6 +132,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/info", middleware(
 		infoService{d, gitlabClient},
 		withMr(d, gitlabClient),
+		withMethodCheck(http.MethodGet),
 		withLogging,
 	))
 	m.HandleFunc("/mr/assignee", middleware(

@@ -23,13 +23,6 @@ type infoService struct {
 
 /* infoHandler fetches infomation about the current git project. The data returned here is used in many other API calls */
 func (a infoService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
-		return
-	}
-
 	mr, res, err := a.client.GetMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.GetMergeRequestsOptions{})
 	if err != nil {
 		handleError(w, err, "Could not get project info", http.StatusInternalServerError)
