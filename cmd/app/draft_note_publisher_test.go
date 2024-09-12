@@ -22,7 +22,12 @@ func TestPublishDraftNote(t *testing.T) {
 	var testDraftNotePublishRequest = DraftNotePublishRequest{Note: 3, PublishAll: false}
 	t.Run("Publishes draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			validateMethods(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
 	})
@@ -30,14 +35,24 @@ func TestPublishDraftNote(t *testing.T) {
 		badData := testDraftNotePublishRequest
 		badData.Note = 0
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", badData)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			validateMethods(http.MethodPost),
+		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Status, http.StatusBadRequest)
 		assert(t, data.Message, "Must provide Note ID")
 	})
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase{errFromGitlab: true}}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			validateMethods(http.MethodPost),
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
 	})
@@ -47,13 +62,23 @@ func TestPublishAllDraftNotes(t *testing.T) {
 	var testDraftNotePublishRequest = DraftNotePublishRequest{PublishAll: true}
 	t.Run("Should publish all draft notes", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			validateMethods(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
 	})
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase{errFromGitlab: true}}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			validateMethods(http.MethodPost),
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
 	})

@@ -184,6 +184,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/draft_notes/publish", middleware(
 		draftNotePublisherService{d, gitlabClient},
 		withMr(d, gitlabClient),
+		validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+		validateMethods(http.MethodPost),
 		logMiddleware,
 	))
 	m.HandleFunc("/pipeline", middleware(

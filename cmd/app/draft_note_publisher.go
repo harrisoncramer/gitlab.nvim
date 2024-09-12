@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -20,37 +19,18 @@ type draftNotePublisherService struct {
 }
 
 func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var draftNotePublishRequest DraftNotePublishRequest
-	err = json.Unmarshal(body, &draftNotePublishRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value("payload").(*DraftNotePublishRequest)
 
 	var res *gitlab.Response
-	if draftNotePublishRequest.PublishAll {
+	var err error
+	if payload.PublishAll {
 		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
 	} else {
-		if draftNotePublishRequest.Note == 0 {
+		if payload.Note == 0 {
 			handleError(w, errors.New("No ID provided"), "Must provide Note ID", http.StatusBadRequest)
 			return
 		}
-		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, draftNotePublishRequest.Note)
+		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.Note)
 	}
 
 	if err != nil {
