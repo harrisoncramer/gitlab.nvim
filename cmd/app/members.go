@@ -38,7 +38,7 @@ func (a projectMemberService) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/project/members"}, "Could not retrieve project members", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not retrieve project members", res.StatusCode)
 		return
 	}
 

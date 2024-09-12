@@ -65,7 +65,7 @@ func (a reviewerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/reviewer"}, "Could not modify merge request reviewers", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request reviewers", res.StatusCode)
 		return
 	}
 

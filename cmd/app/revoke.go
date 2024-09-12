@@ -33,7 +33,7 @@ func (a mergeRequestRevokerService) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/revoke"}, "Could not revoke approval", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not revoke approval", res.StatusCode)
 		return
 	}
 

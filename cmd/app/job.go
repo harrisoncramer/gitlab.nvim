@@ -40,7 +40,7 @@ func (a traceFileService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/job"}, "Could not get trace file for job", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not get trace file for job", res.StatusCode)
 		return
 	}
 

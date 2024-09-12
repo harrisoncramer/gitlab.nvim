@@ -52,7 +52,7 @@ func (a labelService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
+func (a labelService) getLabels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	labels, res, err := a.client.ListLabels(a.projectInfo.ProjectId, &gitlab.ListLabelsOptions{})
@@ -63,7 +63,7 @@ func (a labelService) getLabels(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/label"}, "Could not modify merge request labels", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request labels", res.StatusCode)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (a labelService) updateLabels(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/label"}, "Could not modify merge request labels", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request labels", res.StatusCode)
 		return
 	}
 

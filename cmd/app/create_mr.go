@@ -52,7 +52,7 @@ func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/create_mr"}, "Could not create MR", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not create MR", res.StatusCode)
 		return
 	}
 

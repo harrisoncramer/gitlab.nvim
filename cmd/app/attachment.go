@@ -74,7 +74,7 @@ func (a attachmentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/attachment"}, fmt.Sprintf("Could not upload %s to Gitlab", payload.FileName), res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, fmt.Sprintf("Could not upload %s to Gitlab", payload.FileName), res.StatusCode)
 		return
 	}
 

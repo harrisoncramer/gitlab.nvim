@@ -46,7 +46,7 @@ func (a replyService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/reply"}, "Could not leave reply", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not leave reply", res.StatusCode)
 		return
 	}
 

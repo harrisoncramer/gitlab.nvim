@@ -42,7 +42,7 @@ func (a assigneesService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/assignee"}, "Could not modify merge request assignees", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not modify merge request assignees", res.StatusCode)
 		return
 	}
 

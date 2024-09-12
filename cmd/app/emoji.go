@@ -87,7 +87,7 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not delete awardable", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not delete awardable", res.StatusCode)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/awardable/note"}, "Could not post emoji", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not post emoji", res.StatusCode)
 		return
 	}
 

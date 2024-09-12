@@ -26,7 +26,7 @@ func (a mergeRequestApproverService) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/approve"}, "Could not approve merge request", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not approve merge request", res.StatusCode)
 		return
 	}
 

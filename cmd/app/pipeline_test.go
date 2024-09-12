@@ -91,6 +91,6 @@ func TestPipelineTrigger(t *testing.T) {
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)
-		checkNon200(t, data, "Could not retrigger pipeline", "/pipeline")
+		checkNon200(t, data, "Could not retrigger pipeline", "/pipeline/trigger/3")
 	})
 }

@@ -40,7 +40,7 @@ func (a revisionsService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/revisions"}, "Could not get diff version info", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not get diff version info", res.StatusCode)
 		return
 	}
 

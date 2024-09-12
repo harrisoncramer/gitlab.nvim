@@ -38,7 +38,7 @@ func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft_notes/publish"}, "Could not publish dfaft note", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not publish dfaft note", res.StatusCode)
 		return
 	}
 

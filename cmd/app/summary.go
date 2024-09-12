@@ -58,7 +58,7 @@ func (a summaryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/summary"}, "Could not edit merge request summary", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not edit merge request summary", res.StatusCode)
 		return
 	}
 

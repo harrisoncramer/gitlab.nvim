@@ -43,7 +43,7 @@ func (a mergeRequestAccepterService) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/merge"}, "Could not merge MR", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not merge MR", res.StatusCode)
 		return
 	}
 

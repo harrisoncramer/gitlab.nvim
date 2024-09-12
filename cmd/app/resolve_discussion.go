@@ -44,7 +44,7 @@ func (a discussionsResolutionService) ServeHTTP(w http.ResponseWriter, r *http.R
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/discussions/resolve"}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, fmt.Sprintf("Could not %s discussion", friendlyName), res.StatusCode)
 		return
 	}
 

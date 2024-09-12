@@ -35,7 +35,7 @@ func TestAssigneeHandler(t *testing.T) {
 	})
 
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPut, "/mr/approve", updatePayload)
+		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
 		client := fakeAssigneeClient{testBase{errFromGitlab: true}}
 		svc := middleware(
 			assigneesService{testProjectData, client},
@@ -48,7 +48,7 @@ func TestAssigneeHandler(t *testing.T) {
 	})
 
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPut, "/mr/approve", updatePayload)
+		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)
 		client := fakeAssigneeClient{testBase{status: http.StatusSeeOther}}
 		svc := middleware(
 			assigneesService{testProjectData, client},

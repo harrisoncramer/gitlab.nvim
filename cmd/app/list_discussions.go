@@ -77,7 +77,7 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/discussions/list"}, "Could not list discussions", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not list discussions", res.StatusCode)
 		return
 	}
 

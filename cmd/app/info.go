@@ -30,7 +30,7 @@ func (a infoService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/info"}, "Could not get project info", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not get project info", res.StatusCode)
 		return
 	}
 

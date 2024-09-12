@@ -96,7 +96,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	}
 
 	if pipeline == nil {
-		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
+		handleError(w, GenericError{r.URL.Path}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not get pipeline jobs", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (a pipelineService) RetriggerPipeline(w http.ResponseWriter, r *http.Reques
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not retrigger pipeline", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not retrigger pipeline", res.StatusCode)
 		return
 	}
 
