@@ -73,7 +73,6 @@ func TestListDiscussions(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.Message, "Discussions retrieved")
@@ -88,7 +87,6 @@ func TestListDiscussions(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
@@ -102,7 +100,6 @@ func TestListDiscussions(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not list discussions")
@@ -114,7 +111,6 @@ func TestListDiscussions(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not list discussions", "/mr/discussions/list")
@@ -126,7 +122,6 @@ func TestListDiscussions(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not fetch emojis")

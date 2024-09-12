@@ -25,7 +25,6 @@ func TestMembersHandler(t *testing.T) {
 		svc := middleware(
 			projectMemberService{testProjectData, fakeMemberLister{}},
 			withMethodCheck(http.MethodGet),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Project members retrieved")
@@ -35,7 +34,6 @@ func TestMembersHandler(t *testing.T) {
 		svc := middleware(
 			projectMemberService{testProjectData, fakeMemberLister{testBase{errFromGitlab: true}}},
 			withMethodCheck(http.MethodGet),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not retrieve project members")
@@ -45,7 +43,6 @@ func TestMembersHandler(t *testing.T) {
 		svc := middleware(
 			projectMemberService{testProjectData, fakeMemberLister{testBase{status: http.StatusSeeOther}}},
 			withMethodCheck(http.MethodGet),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not retrieve project members", "/project/members")

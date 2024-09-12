@@ -118,9 +118,9 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/mr/discussions/list", middleware(
 		discussionsListerService{d, gitlabClient},
+		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withMr(d, gitlabClient),
 		withLogging,
 	))
 	m.HandleFunc("/mr/discussions/resolve", middleware(
@@ -197,6 +197,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		withMethodCheck(http.MethodPost),
 		withLogging,
 	))
+
 	m.HandleFunc("/pipeline", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
 		withMethodCheck(http.MethodGet),

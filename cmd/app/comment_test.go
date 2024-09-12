@@ -49,7 +49,6 @@ func TestPostComment(t *testing.T) {
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment created successfully")
@@ -72,7 +71,6 @@ func TestPostComment(t *testing.T) {
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment created successfully")
@@ -89,7 +87,6 @@ func TestPostComment(t *testing.T) {
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not create discussion")
@@ -106,7 +103,6 @@ func TestPostComment(t *testing.T) {
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not create discussion", "/mr/comment")
@@ -126,7 +122,6 @@ func TestDeleteComment(t *testing.T) {
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment deleted successfully")
@@ -146,7 +141,6 @@ func TestEditComment(t *testing.T) {
 				http.MethodPatch:  &EditCommentRequest{},
 			}),
 			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Comment updated successfully")

@@ -32,7 +32,6 @@ func TestResolveDiscussion(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			withMethodCheck(http.MethodPut),
-			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getSuccessData(t, svc, request)
@@ -47,7 +46,6 @@ func TestResolveDiscussion(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			withMethodCheck(http.MethodPut),
-			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getSuccessData(t, svc, request)
@@ -62,7 +60,6 @@ func TestResolveDiscussion(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			withMethodCheck(http.MethodPut),
-			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getFailData(t, svc, request)
@@ -77,7 +74,6 @@ func TestResolveDiscussion(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 			withMethodCheck(http.MethodPut),
-			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getFailData(t, svc, request)

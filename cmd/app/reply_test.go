@@ -29,7 +29,6 @@ func TestReplyHandler(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Replied to comment")
@@ -41,7 +40,6 @@ func TestReplyHandler(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not leave reply")
@@ -54,7 +52,6 @@ func TestReplyHandler(t *testing.T) {
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not leave reply", "/mr/reply")

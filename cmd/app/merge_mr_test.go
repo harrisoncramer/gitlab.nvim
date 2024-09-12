@@ -31,7 +31,6 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR merged successfully")
@@ -45,7 +44,6 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not merge MR")
@@ -59,7 +57,6 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not merge MR", "/mr/merge")

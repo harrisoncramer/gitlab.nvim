@@ -34,7 +34,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}},
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Merge requests fetched for hcramer")
@@ -46,7 +45,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{emptyResponse: true}},
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "No MRs found")
@@ -62,7 +60,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}},
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "username is required")
@@ -78,7 +75,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}},
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "user_id is required")
@@ -92,7 +88,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{testBase: testBase{errFromGitlab: true}}},
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
@@ -106,7 +101,6 @@ func TestListMergeRequestByUsername(t *testing.T) {
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{testBase: testBase{status: http.StatusSeeOther}}},
 			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 			withMethodCheck(http.MethodPost),
-			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
