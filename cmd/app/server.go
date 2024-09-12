@@ -146,16 +146,21 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/summary", middleware(
 		summaryService{d, gitlabClient},
 		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPut: &SummaryUpdateRequest{}}),
+		withMethodCheck(http.MethodPut),
 		withLogging,
 	))
 	m.HandleFunc("/mr/reviewer", middleware(
 		reviewerService{d, gitlabClient},
 		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPut: &ReviewerUpdateRequest{}}),
+		withMethodCheck(http.MethodPut),
 		withLogging,
 	))
 	m.HandleFunc("/mr/revisions", middleware(
 		revisionsService{d, gitlabClient},
 		withMr(d, gitlabClient),
+		withMethodCheck(http.MethodGet),
 		withLogging,
 	))
 	m.HandleFunc("/mr/reply", middleware(
@@ -172,11 +177,13 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/mr/revoke", middleware(
 		mergeRequestRevokerService{d, gitlabClient},
+		withMethodCheck(http.MethodPost),
 		withMr(d, gitlabClient),
 		withLogging,
 	))
 	m.HandleFunc("/mr/awardable/note/", middleware(
 		emojiService{d, gitlabClient},
+		withMethodCheck(http.MethodPost, http.MethodDelete),
 		withMr(d, gitlabClient),
 		withLogging,
 	))
@@ -210,6 +217,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/users/me", middleware(
 		meService{d, gitlabClient},
+		withMethodCheck(http.MethodGet),
 		withLogging,
 	))
 	m.HandleFunc("/attachment", middleware(

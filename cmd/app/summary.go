@@ -2,15 +2,14 @@ package app
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
 )
 
 type SummaryUpdateRequest struct {
+	Title       string `json:"title" validate:"required"`
 	Description string `json:"description"`
-	Title       string `json:"title"`
 }
 
 type SummaryUpdateResponse struct {
@@ -24,32 +23,12 @@ type summaryService struct {
 }
 
 func (a summaryService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 
-	if r.Method != http.MethodPut {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPut)
-		handleError(w, InvalidRequestError{}, "Expected PUT", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var SummaryUpdateRequest SummaryUpdateRequest
-	err = json.Unmarshal(body, &SummaryUpdateRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+	payload := r.Context().Value("payload").(*SummaryUpdateRequest)
 
 	mr, res, err := a.client.UpdateMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, &gitlab.UpdateMergeRequestOptions{
-		Description: &SummaryUpdateRequest.Description,
-		Title:       &SummaryUpdateRequest.Title,
+		Description: &payload.Description,
+		Title:       &payload.Title,
 	})
 
 	if err != nil {

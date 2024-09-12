@@ -22,12 +22,6 @@ type meService struct {
 }
 
 func (a meService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
-		return
-	}
 
 	user, res, err := a.client.CurrentUser()
 

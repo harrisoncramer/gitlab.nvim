@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -35,9 +34,6 @@ func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.editComment(w, r)
 	case http.MethodDelete:
 		a.deleteComment(w, r)
-	default:
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s, %s", http.MethodDelete, http.MethodPost, http.MethodPatch))
-		handleError(w, InvalidRequestError{}, "Expected DELETE, POST or PATCH", http.StatusMethodNotAllowed)
 	}
 }
 

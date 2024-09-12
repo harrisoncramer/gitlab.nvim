@@ -55,9 +55,6 @@ func (a emojiService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.postEmojiOnNote(w, r)
 	case http.MethodDelete:
 		a.deleteEmojiFromNote(w, r)
-	default:
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodDelete, http.MethodPost))
-		handleError(w, InvalidRequestError{}, "Expected DELETE or POST", http.StatusMethodNotAllowed)
 	}
 }
 

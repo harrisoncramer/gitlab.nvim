@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -45,10 +44,6 @@ func (a labelService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.getLabels(w, r)
 	case http.MethodPut:
 		a.updateLabels(w, r)
-	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodPut, http.MethodGet))
-		handleError(w, InvalidRequestError{}, "Expected GET or PUT", http.StatusMethodNotAllowed)
 	}
 }
 
