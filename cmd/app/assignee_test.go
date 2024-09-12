@@ -27,9 +27,9 @@ func TestAssigneeHandler(t *testing.T) {
 		svc := middleware(
 			assigneesService{testProjectData, fakeAssigneeClient{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Assignees updated")
@@ -41,9 +41,9 @@ func TestAssigneeHandler(t *testing.T) {
 		svc := middleware(
 			assigneesService{testProjectData, client},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not modify merge request assignees")
@@ -55,9 +55,9 @@ func TestAssigneeHandler(t *testing.T) {
 		svc := middleware(
 			assigneesService{testProjectData, client},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not modify merge request assignees", "/mr/assignee")

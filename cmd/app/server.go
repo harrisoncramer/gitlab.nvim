@@ -94,139 +94,144 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/approve", middleware(
 		mergeRequestApproverService{d, gitlabClient}, // These functions are called from bottom to top...
 		withMr(d, gitlabClient),
-		validateMethods(http.MethodPost),
-		logMiddleware,
+		withMethodCheck(http.MethodPost),
+		withLogging,
 	))
 	m.HandleFunc("/mr/comment", middleware(
 		commentService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		validatePayloads(methodToPayload{
+		withPayloadValidation(methodToPayload{
 			http.MethodPost:   &PostCommentRequest{},
 			http.MethodDelete: &DeleteCommentRequest{},
 			http.MethodPatch:  &EditCommentRequest{},
 		}),
-		validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
-		logMiddleware,
+		withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
+		withLogging,
 	))
 	m.HandleFunc("/mr/merge", middleware(
 		mergeRequestAccepterService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		validatePayloads(methodToPayload{http.MethodPost: &AcceptMergeRequestRequest{}}),
-		validateMethods(http.MethodPost),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{http.MethodPost: &AcceptMergeRequestRequest{}}),
+		withMethodCheck(http.MethodPost),
+		withLogging,
 	))
 	m.HandleFunc("/mr/discussions/list", middleware(
 		discussionsListerService{d, gitlabClient},
-		validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
-		validateMethods(http.MethodPost),
+		withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+		withMethodCheck(http.MethodPost),
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/discussions/resolve", middleware(
 		discussionsResolutionService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
-		validateMethods(http.MethodPut),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+		withMethodCheck(http.MethodPut),
+		withLogging,
 	))
 	m.HandleFunc("/mr/info", middleware(
 		infoService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/assignee", middleware(
 		assigneesService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		validatePayloads(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
-		validateMethods(http.MethodPut),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+		withMethodCheck(http.MethodPut),
+		withLogging,
 	))
 	m.HandleFunc("/mr/summary", middleware(
 		summaryService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/reviewer", middleware(
 		reviewerService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/revisions", middleware(
 		revisionsService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/reply", middleware(
 		replyService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/label", middleware(
 		labelService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/revoke", middleware(
 		mergeRequestRevokerService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/awardable/note/", middleware(
 		emojiService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/mr/draft_notes/", middleware(
 		draftNoteService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{
+			http.MethodPost:  &PostDraftNoteRequest{},
+			http.MethodPatch: &UpdateDraftNoteRequest{},
+		}),
+		withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		withLogging,
 	))
 	m.HandleFunc("/mr/draft_notes/publish", middleware(
 		draftNotePublisherService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-		validateMethods(http.MethodPost),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+		withMethodCheck(http.MethodPost),
+		withLogging,
 	))
 	m.HandleFunc("/pipeline", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/pipeline/trigger/", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/users/me", middleware(
 		meService{d, gitlabClient},
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/attachment", middleware(
 		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
-		validatePayloads(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
-		validateMethods(http.MethodPost),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+		withMethodCheck(http.MethodPost),
+		withLogging,
 	))
 	m.HandleFunc("/create_mr", middleware(
 		mergeRequestCreatorService{d, gitlabClient},
-		validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
-		validateMethods(http.MethodPost),
-		logMiddleware,
+		withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+		withMethodCheck(http.MethodPost),
+		withLogging,
 	))
 	m.HandleFunc("/job", middleware(
 		traceFileService{d, gitlabClient},
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/project/members", middleware(
 		projectMemberService{d, gitlabClient},
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/merge_requests", middleware(
 		mergeRequestListerService{d, gitlabClient},
-		logMiddleware,
+		withLogging,
 	))
 	m.HandleFunc("/merge_requests_by_username", middleware(
 		mergeRequestListerByUsernameService{d, gitlabClient},
-		logMiddleware,
+		withLogging,
 	))
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)

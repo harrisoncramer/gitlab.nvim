@@ -30,9 +30,9 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getSuccessData(t, svc, request)
@@ -45,9 +45,9 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getSuccessData(t, svc, request)
@@ -60,9 +60,9 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
 		data := getFailData(t, svc, request)
@@ -75,9 +75,9 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
-			validateMethods(http.MethodPut),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withMethodCheck(http.MethodPut),
+			withLogging,
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data := getFailData(t, svc, request)

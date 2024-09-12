@@ -31,8 +31,8 @@ func TestCreateMr(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		svc := middleware(
 			mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{}},
-			validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR 'Some title' created")
@@ -42,8 +42,8 @@ func TestCreateMr(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		svc := middleware(
 			mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{testBase{errFromGitlab: true}}},
-			validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not create MR")
@@ -53,8 +53,8 @@ func TestCreateMr(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/create_mr", testCreateMrRequestData)
 		svc := middleware(
 			mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{testBase{status: http.StatusSeeOther}}},
-			validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not create MR", "/create_mr")
@@ -66,8 +66,8 @@ func TestCreateMr(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/create_mr", reqData)
 		svc := middleware(
 			mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{}},
-			validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Status, http.StatusBadRequest)
@@ -81,8 +81,8 @@ func TestCreateMr(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/create_mr", reqData)
 		svc := middleware(
 			mergeRequestCreatorService{testProjectData, fakeMergeCreatorClient{}},
-			validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Status, http.StatusBadRequest)

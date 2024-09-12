@@ -33,8 +33,16 @@ type validatorMiddleware struct {
 	methodToPayload methodToPayload
 }
 
+// Validates the fields in a payload and then attaches the validated payload to the request context so that
+// subsequent handlers can use it.
 func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if p.methodToPayload[r.Method] == nil { // If no payload to validate for this method type...
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			handleError(w, err, "Could not read request body", http.StatusBadRequest)
@@ -69,12 +77,12 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 	})
 }
 
-func validatePayloads(mtp methodToPayload) mw {
+func withPayloadValidation(mtp methodToPayload) mw {
 	return validatorMiddleware{validate: validate, methodToPayload: mtp}.handle
 }
 
 // Logs the request to the Go server, if enabled
-func logMiddleware(next http.Handler) http.Handler {
+func withLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if pluginOptions.Debug.Request {
@@ -89,7 +97,7 @@ type withMrMiddleware struct {
 	client MergeRequestLister
 }
 
-/* Gets the current merge request ID and attaches it to the projectInfo */
+// Gets the current merge request ID and attaches it to the projectInfo
 func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// If the merge request is already attached, skip the middleware logic
@@ -127,6 +135,7 @@ func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 	})
 }
 
+// Att
 func withMr(data data, client MergeRequestLister) mw {
 	return withMrMiddleware{data, client}.handle
 }
@@ -151,7 +160,7 @@ func (m methodMiddleware) handle(next http.Handler) http.Handler {
 	})
 }
 
-func validateMethods(methods ...string) mw {
+func withMethodCheck(methods ...string) mw {
 	return methodMiddleware{
 		methods: methods,
 	}.handle

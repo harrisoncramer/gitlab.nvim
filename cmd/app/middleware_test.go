@@ -24,7 +24,7 @@ func (f fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func TestMethodMiddleware(t *testing.T) {
 	t.Run("Fails a bad method", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
-		mw := validateMethods(http.MethodPost)
+		mw := withMethodCheck(http.MethodPost)
 		handler := middleware(fakeHandler{}, mw)
 		data := getFailData(t, handler, request)
 		assert(t, data.Message, "Invalid request type")
@@ -33,7 +33,7 @@ func TestMethodMiddleware(t *testing.T) {
 	})
 	t.Run("Fails bad method with multiple", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
-		mw := validateMethods(http.MethodPost, http.MethodPatch)
+		mw := withMethodCheck(http.MethodPost, http.MethodPatch)
 		handler := middleware(fakeHandler{}, mw)
 		data := getFailData(t, handler, request)
 		assert(t, data.Message, "Invalid request type")
@@ -42,7 +42,7 @@ func TestMethodMiddleware(t *testing.T) {
 	})
 	t.Run("Allows ok method through", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
-		mw := validateMethods(http.MethodGet)
+		mw := withMethodCheck(http.MethodGet)
 		handler := middleware(fakeHandler{}, mw)
 		data := getSuccessData(t, handler, request)
 		assert(t, data.Message, "Some message")
@@ -96,7 +96,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{}) // No Foo field
 		data := getFailData(t, middleware(
 			fakeHandler{},
-			validatePayloads(methodToPayload{http.MethodPost: &FakePayload{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
 		), request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Foo is required")
@@ -106,7 +106,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{Foo: "Some payload"})
 		data := getSuccessData(t, middleware(
 			fakeHandler{},
-			validatePayloads(methodToPayload{http.MethodPost: &FakePayload{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
 		), request)
 		assert(t, data.Message, "Some message")
 	})

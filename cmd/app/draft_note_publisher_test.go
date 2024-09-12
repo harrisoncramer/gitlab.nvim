@@ -25,8 +25,8 @@ func TestPublishDraftNote(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
@@ -38,8 +38,8 @@ func TestPublishDraftNote(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Status, http.StatusBadRequest)
@@ -50,8 +50,8 @@ func TestPublishDraftNote(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
@@ -65,8 +65,8 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note(s) published")
@@ -76,8 +76,8 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
-			validateMethods(http.MethodPost),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")

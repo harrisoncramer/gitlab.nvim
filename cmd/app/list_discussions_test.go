@@ -71,9 +71,9 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.Message, "Discussions retrieved")
@@ -86,9 +86,9 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
@@ -100,9 +100,9 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not list discussions")
@@ -112,9 +112,9 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not list discussions", "/mr/discussions/list")
@@ -124,9 +124,9 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{badEmojiResponse: true, testBase: testBase{}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not fetch emojis")

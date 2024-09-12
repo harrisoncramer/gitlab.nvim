@@ -18,6 +18,11 @@ type draftNotePublisherService struct {
 	client DraftNotePublisher
 }
 
+type DraftNotePublishRequest struct {
+	Note       int  `json:"note,omitempty"`
+	PublishAll bool `json:"publish_all"`
+}
+
 func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	payload := r.Context().Value("payload").(*DraftNotePublishRequest)
 

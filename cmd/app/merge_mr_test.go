@@ -27,11 +27,11 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		svc := middleware(
 			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{
+			withPayloadValidation(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "MR merged successfully")
@@ -41,11 +41,11 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		svc := middleware(
 			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{
+			withPayloadValidation(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not merge MR")
@@ -55,11 +55,11 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 		svc := middleware(
 			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			validatePayloads(methodToPayload{
+			withPayloadValidation(methodToPayload{
 				http.MethodPost: &AcceptMergeRequestRequest{},
 			}),
-			validateMethods(http.MethodPost),
-			logMiddleware,
+			withMethodCheck(http.MethodPost),
+			withLogging,
 		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not merge MR", "/mr/merge")
