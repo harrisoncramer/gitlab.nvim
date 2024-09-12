@@ -234,12 +234,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
-	return http.HandlerFunc(
-		middleware(
-			m,
-			withLogging,
-		),
-	)
+	return LoggingServer{handler: m}
 }
 
 /* Used to check whether the server has started yet */
