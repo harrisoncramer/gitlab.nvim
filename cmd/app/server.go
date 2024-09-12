@@ -206,6 +206,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/create_mr", middleware(
 		mergeRequestCreatorService{d, gitlabClient},
+		validatePayloads(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+		validateMethods(http.MethodPost),
 		logMiddleware,
 	))
 	m.HandleFunc("/job", middleware(

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -30,25 +29,8 @@ type mergeRequestCreatorService struct {
 
 /* createMr creates a merge request */
 func (a mergeRequestCreatorService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-	if r.Method != http.MethodPost {
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	var createMrRequest CreateMrRequest
-	err = json.Unmarshal(body, &createMrRequest)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-		return
-	}
+	createMrRequest := r.Context().Value("payload").(*CreateMrRequest)
 
 	if createMrRequest.Title == "" {
 		handleError(w, errors.New("Title cannot be empty"), "Could not create MR", http.StatusBadRequest)
