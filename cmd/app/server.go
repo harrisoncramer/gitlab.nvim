@@ -226,6 +226,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/project/members", middleware(
 		projectMemberService{d, gitlabClient},
+		withMethodCheck(http.MethodGet),
 		withLogging,
 	))
 	m.HandleFunc("/merge_requests", middleware(

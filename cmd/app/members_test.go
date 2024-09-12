@@ -22,19 +22,31 @@ func (f fakeMemberLister) ListAllProjectMembers(pid interface{}, opt *gitlab.Lis
 func TestMembersHandler(t *testing.T) {
 	t.Run("Returns project members", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		svc := projectMemberService{testProjectData, fakeMemberLister{}}
+		svc := middleware(
+			projectMemberService{testProjectData, fakeMemberLister{}},
+			withMethodCheck(http.MethodGet),
+			withLogging,
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Project members retrieved")
 	})
 	t.Run("Handles error from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		svc := projectMemberService{testProjectData, fakeMemberLister{testBase{errFromGitlab: true}}}
+		svc := middleware(
+			projectMemberService{testProjectData, fakeMemberLister{testBase{errFromGitlab: true}}},
+			withMethodCheck(http.MethodGet),
+			withLogging,
+		)
 		data := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not retrieve project members")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		svc := projectMemberService{testProjectData, fakeMemberLister{testBase{status: http.StatusSeeOther}}}
+		svc := middleware(
+			projectMemberService{testProjectData, fakeMemberLister{testBase{status: http.StatusSeeOther}}},
+			withMethodCheck(http.MethodGet),
+			withLogging,
+		)
 		data := getFailData(t, svc, request)
 		checkNon200(t, data, "Could not retrieve project members", "/project/members")
 	})

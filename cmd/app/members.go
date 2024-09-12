@@ -23,12 +23,6 @@ type projectMemberService struct {
 
 /* projectMembersHandler returns all members of the current Gitlab project */
 func (a projectMemberService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodGet)
-		handleError(w, InvalidRequestError{}, "Expected GET", http.StatusMethodNotAllowed)
-		return
-	}
 
 	projectMemberOptions := gitlab.ListProjectMembersOptions{
 		ListOptions: gitlab.ListOptions{
