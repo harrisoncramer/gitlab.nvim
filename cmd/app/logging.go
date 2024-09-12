@@ -1,13 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
 )
 
-func logRequest(r *http.Request) {
+func logRequest(prefix string, r *http.Request) {
 	file := openLogFile()
 	defer file.Close()
 	token := r.Header.Get("Private-Token")
@@ -18,12 +19,12 @@ func logRequest(r *http.Request) {
 		os.Exit(1)
 	}
 	r.Header.Set("Private-Token", token)
-	_, err = file.Write([]byte("\n-- REQUEST --\n")) //nolint:all
-	_, err = file.Write(res)                         //nolint:all
-	_, err = file.Write([]byte("\n"))                //nolint:all
+	_, err = file.Write([]byte(fmt.Sprintf("\n-- %s --\n", prefix))) //nolint:all
+	_, err = file.Write(res)                                         //nolint:all
+	_, err = file.Write([]byte("\n"))                                //nolint:all
 }
 
-func logResponse(r *http.Response) {
+func logResponse(prefix string, r *http.Response) {
 	file := openLogFile()
 	defer file.Close()
 
@@ -33,9 +34,9 @@ func logResponse(r *http.Response) {
 		os.Exit(1)
 	}
 
-	_, err = file.Write([]byte("\n-- RESPONSE --\n")) //nolint:all
-	_, err = file.Write(res)                          //nolint:all
-	_, err = file.Write([]byte("\n"))                 //nolint:all
+	_, err = file.Write([]byte(fmt.Sprintf("\n-- %s --\n", prefix))) //nolint:all
+	_, err = file.Write(res)                                         //nolint:all
+	_, err = file.Write([]byte("\n"))                                //nolint:all
 }
 
 func openLogFile() *os.File {

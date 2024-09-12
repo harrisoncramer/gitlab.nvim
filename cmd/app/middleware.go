@@ -88,7 +88,7 @@ func withLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if pluginOptions.Debug.Request {
-			logRequest(r)
+			logRequest("REQUEST TO GO SERVER", r)
 		}
 		next.ServeHTTP(w, r) // Call the ServeHTTP on the next function in the chain
 	})

@@ -48,14 +48,14 @@ func NewClient() (error, *Client) {
 	if pluginOptions.Debug.GitlabRequest {
 		gitlabOptions = append(gitlabOptions, gitlab.WithRequestLogHook(
 			func(l retryablehttp.Logger, r *http.Request, i int) {
-				logRequest(r)
+				logRequest("REQUEST TO GITLAB", r)
 			},
 		))
 	}
 
 	if pluginOptions.Debug.GitlabResponse {
 		gitlabOptions = append(gitlabOptions, gitlab.WithResponseLogHook(func(l retryablehttp.Logger, response *http.Response) {
-			logResponse(response)
+			logResponse("RESPONSE FROM GITLAB", response)
 		},
 		))
 	}

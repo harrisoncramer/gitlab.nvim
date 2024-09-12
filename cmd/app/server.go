@@ -76,7 +76,7 @@ type data struct {
 
 type optFunc func(a *data) error
 
-func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) *http.ServeMux {
+func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) http.Handler {
 	m := http.NewServeMux()
 
 	d := data{
@@ -96,7 +96,6 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		mergeRequestApproverService{d, gitlabClient}, // These functions are called from bottom to top...
 		withMr(d, gitlabClient),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/mr/comment", middleware(
 		commentService{d, gitlabClient},
@@ -107,85 +106,72 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 			http.MethodPatch:  &EditCommentRequest{},
 		}),
 		withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
-		withLogging,
 	))
 	m.HandleFunc("/mr/merge", middleware(
 		mergeRequestAccepterService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPost: &AcceptMergeRequestRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/mr/discussions/list", middleware(
 		discussionsListerService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/mr/discussions/resolve", middleware(
 		discussionsResolutionService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
 		withMethodCheck(http.MethodPut),
-		withLogging,
 	))
 	m.HandleFunc("/mr/info", middleware(
 		infoService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withMethodCheck(http.MethodGet),
-		withLogging,
 	))
 	m.HandleFunc("/mr/assignee", middleware(
 		assigneesService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
 		withMethodCheck(http.MethodPut),
-		withLogging,
 	))
 	m.HandleFunc("/mr/summary", middleware(
 		summaryService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPut: &SummaryUpdateRequest{}}),
 		withMethodCheck(http.MethodPut),
-		withLogging,
 	))
 	m.HandleFunc("/mr/reviewer", middleware(
 		reviewerService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPut: &ReviewerUpdateRequest{}}),
 		withMethodCheck(http.MethodPut),
-		withLogging,
 	))
 	m.HandleFunc("/mr/revisions", middleware(
 		revisionsService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withMethodCheck(http.MethodGet),
-		withLogging,
 	))
 	m.HandleFunc("/mr/reply", middleware(
 		replyService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/mr/label", middleware(
 		labelService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withLogging,
 	))
 	m.HandleFunc("/mr/revoke", middleware(
 		mergeRequestRevokerService{d, gitlabClient},
 		withMethodCheck(http.MethodPost),
 		withMr(d, gitlabClient),
-		withLogging,
 	))
 	m.HandleFunc("/mr/awardable/note/", middleware(
 		emojiService{d, gitlabClient},
 		withMethodCheck(http.MethodPost, http.MethodDelete),
 		withMr(d, gitlabClient),
-		withLogging,
 	))
 	m.HandleFunc("/mr/draft_notes/", middleware(
 		draftNoteService{d, gitlabClient},
@@ -195,71 +181,65 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 			http.MethodPatch: &UpdateDraftNoteRequest{},
 		}),
 		withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
-		withLogging,
 	))
 	m.HandleFunc("/mr/draft_notes/publish", middleware(
 		draftNotePublisherService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 
 	m.HandleFunc("/pipeline", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
 		withMethodCheck(http.MethodGet),
-		withLogging,
 	))
 	m.HandleFunc("/pipeline/trigger/", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/users/me", middleware(
 		meService{d, gitlabClient},
 		withMethodCheck(http.MethodGet),
-		withLogging,
 	))
 	m.HandleFunc("/attachment", middleware(
 		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
 		withPayloadValidation(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/create_mr", middleware(
 		mergeRequestCreatorService{d, gitlabClient},
 		withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/job", middleware(
 		traceFileService{d, gitlabClient},
 		withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
 		withMethodCheck(http.MethodGet),
-		withLogging,
 	))
 	m.HandleFunc("/project/members", middleware(
 		projectMemberService{d, gitlabClient},
 		withMethodCheck(http.MethodGet),
-		withLogging,
 	))
 	m.HandleFunc("/merge_requests", middleware(
 		mergeRequestListerService{d, gitlabClient},
 		withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}), // TODO: How to validate external object
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 	m.HandleFunc("/merge_requests_by_username", middleware(
 		mergeRequestListerByUsernameService{d, gitlabClient},
 		withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 		withMethodCheck(http.MethodPost),
-		withLogging,
 	))
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
-	return m
+	return http.HandlerFunc(
+		middleware(
+			m,
+			withLogging,
+		),
+	)
 }
 
 /* Used to check whether the server has started yet */
