@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"time"
 
@@ -31,27 +30,7 @@ type replyService struct {
 
 /* replyHandler sends a reply to a note or comment */
 func (a replyService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var replyRequest ReplyRequest
-	err = json.Unmarshal(body, &replyRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+	replyRequest := r.Context().Value("payload").(*ReplyRequest)
 
 	now := time.Now()
 	options := gitlab.AddMergeRequestDiscussionNoteOptions{

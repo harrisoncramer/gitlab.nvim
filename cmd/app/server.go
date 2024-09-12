@@ -161,6 +161,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	m.HandleFunc("/mr/reply", middleware(
 		replyService{d, gitlabClient},
 		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+		withMethodCheck(http.MethodPost),
 		withLogging,
 	))
 	m.HandleFunc("/mr/label", middleware(
