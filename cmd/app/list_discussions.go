@@ -1,7 +1,6 @@
 package app
 
 import (
-	"io"
 	"net/http"
 	"sort"
 	"sync"
@@ -62,26 +61,8 @@ listDiscussionsHandler lists all discusions for a given merge request, both thos
 The responses are sorted by date created, and blacklisted users are not included
 */
 func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
 
-	body, err := io.ReadAll(r.Body)
-
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-	}
-
-	defer r.Body.Close()
-
-	var requestBody DiscussionsRequest
-	err = json.Unmarshal(body, &requestBody)
-	if err != nil {
-		handleError(w, err, "Could not unmarshal request body", http.StatusBadRequest)
-	}
+	request := r.Context().Value("payload").(*DiscussionsRequest)
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
 		Page:    1,
@@ -106,7 +87,7 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	var linkedDiscussions []*gitlab.Discussion
 
 	for _, discussion := range discussions {
-		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(requestBody.Blacklist, discussion.Notes[0].Author.Username) {
+		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(request.Blacklist, discussion.Notes[0].Author.Username) {
 			continue
 		}
 		for _, note := range discussion.Notes {

@@ -108,7 +108,6 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		validateMethods(http.MethodPost, http.MethodDelete, http.MethodPatch),
 		logMiddleware,
 	))
-
 	m.HandleFunc("/mr/merge", middleware(
 		mergeRequestAccepterService{d, gitlabClient},
 		withMr(d, gitlabClient),
@@ -118,6 +117,8 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 	))
 	m.HandleFunc("/mr/discussions/list", middleware(
 		discussionsListerService{d, gitlabClient},
+		validatePayloads(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+		validateMethods(http.MethodPost),
 		withMr(d, gitlabClient),
 		logMiddleware,
 	))
