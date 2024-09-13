@@ -186,7 +186,7 @@ M.create_comment_layout = function(opts)
 
     -- Check that we are hovering over the code
     local filetype = vim.bo[0].filetype
-    if filetype ~= "markdown" then
+    if filetype == "DiffviewFiles" or filetype == "gitlab" then
       u.notify(
         "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
         vim.log.levels.ERROR
