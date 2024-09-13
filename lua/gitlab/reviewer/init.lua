@@ -151,25 +151,7 @@ end
 ---other modules such as the comment module to create line codes or set diagnostics
 ---@return DiffviewInfo | nil
 M.get_reviewer_data = function()
-  if M.tabnr == nil then
-    u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
-    return
-  end
-
-  -- Check if we are in the diffview tab
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  if tabnr ~= M.tabnr then
-    u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
-    return
-  end
-
-  -- Check if we are in the diffview buffer
   local view = diffview_lib.get_current_view()
-  if view == nil then
-    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
-    return
-  end
-
   local layout = view.cur_layout
   local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
