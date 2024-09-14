@@ -233,15 +233,12 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 		withMethodCheck(http.MethodPost),
 	))
 
-	m.Handle("/ping", http.HandlerFunc(pingHandler))
+	m.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, "pong")
+	})
 
 	return LoggingServer{handler: m}
-}
-
-/* Used to check whether the server has started yet */
-func pingHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "pong")
 }
 
 /* checkServer pings the server repeatedly for 1 full second after startup in order to notify the plugin that the server is ready */
