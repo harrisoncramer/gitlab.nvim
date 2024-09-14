@@ -26,6 +26,8 @@ M.run_job = function(endpoint, method, body, callback)
           return
         end
         local data_ok, data = pcall(vim.json.decode, output)
+
+        -- Failing to unmarshal JSON
         if not data_ok then
           local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)
           if type(output) == "string" then
@@ -34,17 +36,22 @@ M.run_job = function(endpoint, method, body, callback)
           u.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
           return
         end
+
+        -- If JSON provided, handle success or error cases
         if data ~= nil then
-          local status = (tonumber(data.status) >= 200 and tonumber(data.status) < 300) and "success" or "error"
-          if status == "success" and callback ~= nil then
-            callback(data)
-          elseif status == "success" then
+          if data.details == nil then
+            if callback then
+              callback(data)
+              return
+            end
             local message = string.format("%s", data.message)
             u.notify(message, vim.log.levels.INFO)
-          else
-            local message = string.format("%s: %s", data.message, data.details)
-            u.notify(message, vim.log.levels.ERROR)
+            return
           end
+
+          -- Handle error case
+          local message = string.format("%s: %s", data.message, data.details)
+          u.notify(message, vim.log.levels.ERROR)
         end
       end, 0)
     end,

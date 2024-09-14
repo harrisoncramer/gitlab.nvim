@@ -43,16 +43,12 @@ type pipelineService struct {
 pipelineHandler fetches information about the current pipeline, and retriggers a pipeline run. For more detailed information
 about a given job in a pipeline, see the jobHandler function
 */
-func (a pipelineService) handler(w http.ResponseWriter, r *http.Request) {
+func (a pipelineService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.GetPipelineAndJobs(w, r)
 	case http.MethodPost:
 		a.RetriggerPipeline(w, r)
-	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Methods", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
-		handleError(w, InvalidRequestError{}, "Expected GET or POST", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -100,7 +96,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	}
 
 	if pipeline == nil {
-		handleError(w, GenericError{endpoint: "/pipeline"}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
+		handleError(w, GenericError{r.URL.Path}, fmt.Sprintf("No pipeline found for %s branch", a.gitInfo.BranchName), http.StatusInternalServerError)
 		return
 	}
 
@@ -112,16 +108,13 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not get pipeline jobs", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := GetPipelineAndJobsResponse{
-		SuccessResponse: SuccessResponse{
-			Status:  http.StatusOK,
-			Message: "Pipeline retrieved",
-		},
+		SuccessResponse: SuccessResponse{Message: "Pipeline retrieved"},
 		Pipeline: PipelineWithJobs{
 			LatestPipeline: pipeline,
 			Jobs:           jobs,
@@ -153,17 +146,14 @@ func (a pipelineService) RetriggerPipeline(w http.ResponseWriter, r *http.Reques
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/pipeline"}, "Could not retrigger pipeline", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not retrigger pipeline", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := RetriggerPipelineResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Pipeline retriggered",
-			Status:  http.StatusOK,
-		},
-		LatestPipeline: pipeline,
+		SuccessResponse: SuccessResponse{Message: "Pipeline retriggered"},
+		LatestPipeline:  pipeline,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

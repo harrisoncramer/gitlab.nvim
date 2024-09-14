@@ -76,7 +76,7 @@ type data struct {
 
 type optFunc func(a *data) error
 
-func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) *http.ServeMux {
+func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) http.Handler {
 	m := http.NewServeMux()
 
 	d := data{
@@ -92,37 +92,149 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		}
 	}
 
-	m.HandleFunc("/mr/approve", withMr(mergeRequestApproverService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/comment", withMr(commentService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/merge", withMr(mergeRequestAccepterService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/discussions/list", withMr(discussionsListerService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/discussions/resolve", withMr(discussionsResolutionService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/info", withMr(infoService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/assignee", withMr(assigneesService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/summary", withMr(summaryService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/reviewer", withMr(reviewerService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/revisions", withMr(revisionsService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/reply", withMr(replyService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/label", withMr(labelService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/revoke", withMr(mergeRequestRevokerService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/awardable/note/", withMr(emojiService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/draft_notes/", withMr(draftNoteService{d, gitlabClient}, d, gitlabClient))
-	m.HandleFunc("/mr/draft_notes/publish", withMr(draftNotePublisherService{d, gitlabClient}, d, gitlabClient))
+	m.HandleFunc("/mr/approve", middleware(
+		mergeRequestApproverService{d, gitlabClient}, // These functions are called from bottom to top...
+		withMr(d, gitlabClient),
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/mr/comment", middleware(
+		commentService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{
+			http.MethodPost:   &PostCommentRequest{},
+			http.MethodDelete: &DeleteCommentRequest{},
+			http.MethodPatch:  &EditCommentRequest{},
+		}),
+		withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
+	))
+	m.HandleFunc("/mr/merge", middleware(
+		mergeRequestAccepterService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPost: &AcceptMergeRequestRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/mr/discussions/list", middleware(
+		discussionsListerService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/mr/discussions/resolve", middleware(
+		discussionsResolutionService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+		withMethodCheck(http.MethodPut),
+	))
+	m.HandleFunc("/mr/info", middleware(
+		infoService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withMethodCheck(http.MethodGet),
+	))
+	m.HandleFunc("/mr/assignee", middleware(
+		assigneesService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+		withMethodCheck(http.MethodPut),
+	))
+	m.HandleFunc("/mr/summary", middleware(
+		summaryService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPut: &SummaryUpdateRequest{}}),
+		withMethodCheck(http.MethodPut),
+	))
+	m.HandleFunc("/mr/reviewer", middleware(
+		reviewerService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPut: &ReviewerUpdateRequest{}}),
+		withMethodCheck(http.MethodPut),
+	))
+	m.HandleFunc("/mr/revisions", middleware(
+		revisionsService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withMethodCheck(http.MethodGet),
+	))
+	m.HandleFunc("/mr/reply", middleware(
+		replyService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/mr/label", middleware(
+		labelService{d, gitlabClient},
+		withMr(d, gitlabClient),
+	))
+	m.HandleFunc("/mr/revoke", middleware(
+		mergeRequestRevokerService{d, gitlabClient},
+		withMethodCheck(http.MethodPost),
+		withMr(d, gitlabClient),
+	))
+	m.HandleFunc("/mr/awardable/note/", middleware(
+		emojiService{d, gitlabClient},
+		withMethodCheck(http.MethodPost, http.MethodDelete),
+		withMr(d, gitlabClient),
+	))
+	m.HandleFunc("/mr/draft_notes/", middleware(
+		draftNoteService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{
+			http.MethodPost:  &PostDraftNoteRequest{},
+			http.MethodPatch: &UpdateDraftNoteRequest{},
+		}),
+		withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+	))
+	m.HandleFunc("/mr/draft_notes/publish", middleware(
+		draftNotePublisherService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
 
-	m.HandleFunc("/pipeline", pipelineService{d, gitlabClient, git.Git{}}.handler)
-	m.HandleFunc("/pipeline/trigger/", pipelineService{d, gitlabClient, git.Git{}}.handler)
-	m.HandleFunc("/users/me", meService{d, gitlabClient}.handler)
-	m.HandleFunc("/attachment", attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}}.handler)
-	m.HandleFunc("/create_mr", mergeRequestCreatorService{d, gitlabClient}.handler)
-	m.HandleFunc("/job", traceFileService{d, gitlabClient}.handler)
-	m.HandleFunc("/project/members", projectMemberService{d, gitlabClient}.handler)
-	m.HandleFunc("/merge_requests", mergeRequestListerService{d, gitlabClient}.handler)
-	m.HandleFunc("/merge_requests_by_username", mergeRequestListerByUsernameService{d, gitlabClient}.handler)
+	m.HandleFunc("/pipeline", middleware(
+		pipelineService{d, gitlabClient, git.Git{}},
+		withMethodCheck(http.MethodGet),
+	))
+	m.HandleFunc("/pipeline/trigger/", middleware(
+		pipelineService{d, gitlabClient, git.Git{}},
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/users/me", middleware(
+		meService{d, gitlabClient},
+		withMethodCheck(http.MethodGet),
+	))
+	m.HandleFunc("/attachment", middleware(
+		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
+		withPayloadValidation(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/create_mr", middleware(
+		mergeRequestCreatorService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/job", middleware(
+		traceFileService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+		withMethodCheck(http.MethodGet),
+	))
+	m.HandleFunc("/project/members", middleware(
+		projectMemberService{d, gitlabClient},
+		withMethodCheck(http.MethodGet),
+	))
+	m.HandleFunc("/merge_requests", middleware(
+		mergeRequestListerService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}), // TODO: How to validate external object
+		withMethodCheck(http.MethodPost),
+	))
+	m.HandleFunc("/merge_requests_by_username", middleware(
+		mergeRequestListerByUsernameService{d, gitlabClient},
+		withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
 
 	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
-	return m
+	return LoggingServer{handler: m}
 }
 
 /* Used to check whether the server has started yet */
@@ -154,46 +266,4 @@ func createListener() (l net.Listener) {
 	}
 
 	return l
-}
-
-type ServiceWithHandler interface {
-	handler(http.ResponseWriter, *http.Request)
-}
-
-/* withMr is a Middlware that gets the current merge request ID and attaches it to the projectInfo */
-func withMr(svc ServiceWithHandler, c data, client MergeRequestLister) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// If the merge request is already attached, skip the middleware logic
-		if c.projectInfo.MergeId == 0 {
-			options := gitlab.ListProjectMergeRequestsOptions{
-				Scope:        gitlab.Ptr("all"),
-				SourceBranch: &c.gitInfo.BranchName,
-				TargetBranch: pluginOptions.ChosenTargetBranch,
-			}
-
-			mergeRequests, _, err := client.ListProjectMergeRequests(c.projectInfo.ProjectId, &options)
-			if err != nil {
-				handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
-				return
-			}
-
-			if len(mergeRequests) == 0 {
-				err := fmt.Errorf("No merge requests found for branch '%s'", c.gitInfo.BranchName)
-				handleError(w, err, "No merge requests found", http.StatusBadRequest)
-				return
-			}
-
-			if len(mergeRequests) > 1 {
-				err := errors.New("Please call gitlab.choose_merge_request()")
-				handleError(w, err, "Multiple MRs found", http.StatusBadRequest)
-				return
-			}
-
-			mergeIdInt := mergeRequests[0].IID
-			c.projectInfo.MergeId = mergeIdInt
-		}
-
-		// Call the next handler if middleware succeeds
-		svc.handler(w, r)
-	}
 }

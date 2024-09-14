@@ -17,13 +17,7 @@ type mergeRequestRevokerService struct {
 }
 
 /* revokeHandler revokes approval for the current merge request */
-func (a mergeRequestRevokerService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
+func (a mergeRequestRevokerService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res, err := a.client.UnapproveMergeRequest(a.projectInfo.ProjectId, a.projectInfo.MergeId, nil, nil)
 
@@ -33,15 +27,12 @@ func (a mergeRequestRevokerService) handler(w http.ResponseWriter, r *http.Reque
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/revoke"}, "Could not revoke approval", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not revoke approval", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Success! Revoked MR approval",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Success! Revoked MR approval"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

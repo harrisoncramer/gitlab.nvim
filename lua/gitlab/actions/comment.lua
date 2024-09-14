@@ -3,6 +3,7 @@
 --- to this module the data required to make the API calls
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
+local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
@@ -153,17 +154,45 @@ end
 
 ---@class LayoutOpts
 ---@field ranged boolean
----@field discussion_id string|nil
 ---@field unlinked boolean
+---@field discussion_id string|nil
 
 ---This function sets up the layout and popups needed to create a comment, note and
 ---multi-line comment. It also sets up the basic keybindings for switching between
 ---window panes, and for the non-primary sections.
----@param opts LayoutOpts|nil
----@return NuiLayout
+---@param opts LayoutOpts
+---@return NuiLayout|nil
 M.create_comment_layout = function(opts)
-  if opts == nil then
-    opts = {}
+  if opts.unlinked ~= true then
+    -- Check that diffview is initialized
+    if reviewer.tabnr == nil then
+      u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
+      return
+    end
+
+    -- Check that Diffview is the current view
+    local view = diffview_lib.get_current_view()
+    if view == nil then
+      u.notify("Comments should be left in the reviewer pane", vim.log.levels.ERROR)
+      return
+    end
+
+    -- Check that we are in the diffview tab
+    local tabnr = vim.api.nvim_get_current_tabpage()
+    if tabnr ~= reviewer.tabnr then
+      u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
+      return
+    end
+
+    -- Check that we are hovering over the code
+    local filetype = vim.bo[0].filetype
+    if filetype == "DiffviewFiles" or filetype == "gitlab" then
+      u.notify(
+        "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
+        vim.log.levels.ERROR
+      )
+      return
+    end
   end
 
   local title = opts.discussion_id and "Reply" or "Comment"
@@ -229,7 +258,8 @@ M.create_comment = function()
   if err ~= nil then
     return
   end
-  local is_modified = vim.api.nvim_buf_get_option(0, "modified")
+
+  local is_modified = vim.bo[0].modified
   if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
     u.notify(
       "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
@@ -243,7 +273,9 @@ M.create_comment = function()
   end
 
   local layout = M.create_comment_layout({ ranged = false, unlinked = false })
-  layout:mount()
+  if layout ~= nil then
+    layout:mount()
+  end
 end
 
 --- This function will open a multi-line comment popup in order to create a multi-line comment
@@ -257,14 +289,18 @@ M.create_multiline_comment = function()
   end
 
   local layout = M.create_comment_layout({ ranged = true, unlinked = false })
-  layout:mount()
+  if layout ~= nil then
+    layout:mount()
+  end
 end
 
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
   local layout = M.create_comment_layout({ ranged = false, unlinked = true })
-  layout:mount()
+  if layout ~= nil then
+    layout:mount()
+  end
 end
 
 ---Given the current visually selected area of text, builds text to fill in the
@@ -319,7 +355,9 @@ M.create_comment_suggestion = function()
   local suggestion_lines, range_length = build_suggestion()
 
   local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
-  layout:mount()
+  if layout ~= nil then
+    layout:mount()
+  end
   vim.schedule(function()
     if suggestion_lines then
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)

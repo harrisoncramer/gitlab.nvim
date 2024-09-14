@@ -59,7 +59,7 @@ func NewGitData(remote string, g GitManager) (GitData, error) {
 	           https://git@gitlab.com/namespace/subnamespace/dummy-test-repo.git
 	           git@git@gitlab.com:namespace/subnamespace/dummy-test-repo.git
 	*/
-	re := regexp.MustCompile(`(?:^https?:\/\/|^ssh:\/\/|^git@)(?:[^\/:]+)(?::\d+)?[\/:](.*)\/([^\/]+?)(?:\.git)?$`)
+	re := regexp.MustCompile(`^(?:git@[^\/:]*|https?:\/\/[^\/]+|ssh:\/\/[^\/:]+)(?::\d+)?[\/:](.*)\/([^\/]+?)(?:\.git)?\/?$`)
 	matches := re.FindStringSubmatch(url)
 	if len(matches) != 3 {
 		return GitData{}, fmt.Errorf("Invalid Git URL format: %s", url)

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
@@ -63,9 +62,9 @@ var testProjectData = data{
 	},
 }
 
-func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request) SuccessResponse {
+func getSuccessData(t *testing.T, svc http.Handler, request *http.Request) SuccessResponse {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data SuccessResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)
@@ -75,16 +74,16 @@ func getSuccessData(t *testing.T, svc ServiceWithHandler, request *http.Request)
 	return data
 }
 
-func getFailData(t *testing.T, svc ServiceWithHandler, request *http.Request) ErrorResponse {
+func getFailData(t *testing.T, svc http.Handler, request *http.Request) (errResponse ErrorResponse, status int) {
 	res := httptest.NewRecorder()
-	svc.handler(res, request)
+	svc.ServeHTTP(res, request)
 
 	var data ErrorResponse
 	err := json.Unmarshal(res.Body.Bytes(), &data)
 	if err != nil {
 		t.Error(err)
 	}
-	return data
+	return data, res.Result().StatusCode
 }
 
 type testBase struct {
@@ -105,22 +104,12 @@ func (f *testBase) handleGitlabError() (*gitlab.Response, error) {
 
 func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
 	t.Helper()
-	assert(t, data.Status, http.StatusInternalServerError)
 	assert(t, data.Message, msg)
 	assert(t, data.Details, errorFromGitlab.Error())
 }
 
-func checkBadMethod(t *testing.T, data ErrorResponse, methods ...string) {
-	t.Helper()
-	assert(t, data.Status, http.StatusMethodNotAllowed)
-	assert(t, data.Details, "Invalid request type")
-	expectedMethods := strings.Join(methods, " or ")
-	assert(t, data.Message, fmt.Sprintf("Expected %s", expectedMethods))
-}
-
 func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
 	t.Helper()
-	assert(t, data.Status, http.StatusSeeOther)
 	assert(t, data.Message, msg)
 	assert(t, data.Details, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
 }

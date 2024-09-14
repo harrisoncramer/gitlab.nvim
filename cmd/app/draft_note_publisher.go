@@ -2,8 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"errors"
-	"io"
 	"net/http"
 
 	"github.com/xanzy/go-gitlab"
@@ -19,38 +17,19 @@ type draftNotePublisherService struct {
 	client DraftNotePublisher
 }
 
-func (a draftNotePublisherService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
+type DraftNotePublishRequest struct {
+	Note int `json:"note,omitempty"`
+}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var draftNotePublishRequest DraftNotePublishRequest
-	err = json.Unmarshal(body, &draftNotePublishRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	payload := r.Context().Value(payload("payload")).(*DraftNotePublishRequest)
 
 	var res *gitlab.Response
-	if draftNotePublishRequest.PublishAll {
-		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
+	var err error
+	if payload.Note != 0 {
+		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, payload.Note)
 	} else {
-		if draftNotePublishRequest.Note == 0 {
-			handleError(w, errors.New("No ID provided"), "Must provide Note ID", http.StatusBadRequest)
-			return
-		}
-		res, err = a.client.PublishDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, draftNotePublishRequest.Note)
+		res, err = a.client.PublishAllDraftNotes(a.projectInfo.ProjectId, a.projectInfo.MergeId)
 	}
 
 	if err != nil {
@@ -59,15 +38,12 @@ func (a draftNotePublisherService) handler(w http.ResponseWriter, r *http.Reques
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/draft_notes/publish"}, "Could not publish dfaft note", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not publish dfaft note", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	response := SuccessResponse{
-		Message: "Draft note(s) published",
-		Status:  http.StatusOK,
-	}
+	response := SuccessResponse{Message: "Draft note(s) published"}
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {

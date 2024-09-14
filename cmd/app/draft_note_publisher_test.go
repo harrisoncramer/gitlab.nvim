@@ -19,56 +19,53 @@ func (f fakeDraftNotePublisher) PublishDraftNote(pid interface{}, mergeRequest i
 }
 
 func TestPublishDraftNote(t *testing.T) {
-	var testDraftNotePublishRequest = DraftNotePublishRequest{Note: 3, PublishAll: false}
+	var testDraftNotePublishRequest = DraftNotePublishRequest{Note: 3}
 	t.Run("Publishes draft note", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note(s) published")
-	})
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
-	})
-	t.Run("Handles bad ID", func(t *testing.T) {
-		badData := testDraftNotePublishRequest
-		badData.Note = 0
-		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", badData)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
-		data := getFailData(t, svc, request)
-		assert(t, data.Status, http.StatusBadRequest)
-		assert(t, data.Message, "Must provide Note ID")
 	})
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
 	})
 }
 
 func TestPublishAllDraftNotes(t *testing.T) {
-	var testDraftNotePublishRequest = DraftNotePublishRequest{PublishAll: true}
+	var testDraftNotePublishRequest = DraftNotePublishRequest{}
 	t.Run("Should publish all draft notes", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
-		assert(t, data.Status, http.StatusOK)
 		assert(t, data.Message, "Draft note(s) published")
-	})
-	t.Run("Disallows non-POST method", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodPost)
 	})
 	t.Run("Handles error from Gitlab", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/publish", testDraftNotePublishRequest)
-		svc := draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase{errFromGitlab: true}}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not publish draft note(s)")
 	})
 }

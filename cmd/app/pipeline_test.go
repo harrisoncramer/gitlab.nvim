@@ -38,27 +38,29 @@ func (f fakePipelineManager) RetryPipelineBuild(pid interface{}, pipeline int, o
 func TestPipelineGetter(t *testing.T) {
 	t.Run("Gets all pipeline jobs", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}}
+		svc := middleware(
+			pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}},
+			withMethodCheck(http.MethodGet),
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Pipeline retrieved")
-		assert(t, data.Status, http.StatusOK)
-	})
-	t.Run("Disallows non-GET, non-POST methods", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPatch, "/pipeline", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}}
-		data := getFailData(t, svc, request)
-		checkBadMethod(t, data, http.MethodGet, http.MethodPost)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{testBase{errFromGitlab: true}}, FakeGitManager{}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			pipelineService{testProjectData, fakePipelineManager{testBase{errFromGitlab: true}}, FakeGitManager{}},
+			withMethodCheck(http.MethodGet),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Failed to get latest pipeline for some-branch branch")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/pipeline", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{testBase: testBase{status: http.StatusSeeOther}}, FakeGitManager{}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			pipelineService{testProjectData, fakePipelineManager{testBase{status: http.StatusSeeOther}}, FakeGitManager{}},
+			withMethodCheck(http.MethodGet),
+		)
+		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Failed to get latest pipeline for some-branch branch") // Expected, we treat this as an error
 	})
 }
@@ -66,21 +68,29 @@ func TestPipelineGetter(t *testing.T) {
 func TestPipelineTrigger(t *testing.T) {
 	t.Run("Retriggers pipeline", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/3", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}}
+		svc := middleware(
+			pipelineService{testProjectData, fakePipelineManager{}, FakeGitManager{}},
+			withMethodCheck(http.MethodPost),
+		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Pipeline retriggered")
-		assert(t, data.Status, http.StatusOK)
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/3", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{testBase{errFromGitlab: true}}, FakeGitManager{}}
-		data := getFailData(t, svc, request)
+		svc := middleware(
+			pipelineService{testProjectData, fakePipelineManager{testBase{errFromGitlab: true}}, FakeGitManager{}},
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not retrigger pipeline")
 	})
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/pipeline/trigger/3", nil)
-		svc := pipelineService{testProjectData, fakePipelineManager{testBase: testBase{status: http.StatusSeeOther}}, FakeGitManager{}}
-		data := getFailData(t, svc, request)
-		checkNon200(t, data, "Could not retrigger pipeline", "/pipeline")
+		svc := middleware(
+			pipelineService{testProjectData, fakePipelineManager{testBase{status: http.StatusSeeOther}}, FakeGitManager{}},
+			withMethodCheck(http.MethodPost),
+		)
+		data, _ := getFailData(t, svc, request)
+		checkNon200(t, data, "Could not retrigger pipeline", "/pipeline/trigger/3")
 	})
 }

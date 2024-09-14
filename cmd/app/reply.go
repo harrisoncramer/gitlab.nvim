@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"time"
 
@@ -10,8 +9,8 @@ import (
 )
 
 type ReplyRequest struct {
-	DiscussionId string `json:"discussion_id"`
-	Reply        string `json:"reply"`
+	DiscussionId string `json:"discussion_id" validate:"required"`
+	Reply        string `json:"reply" validate:"required"`
 	IsDraft      bool   `json:"is_draft"`
 }
 
@@ -30,28 +29,8 @@ type replyService struct {
 }
 
 /* replyHandler sends a reply to a note or comment */
-func (a replyService) handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodPost {
-		w.Header().Set("Access-Control-Allow-Methods", http.MethodPost)
-		handleError(w, InvalidRequestError{}, "Expected POST", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		handleError(w, err, "Could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	defer r.Body.Close()
-	var replyRequest ReplyRequest
-	err = json.Unmarshal(body, &replyRequest)
-
-	if err != nil {
-		handleError(w, err, "Could not read JSON from request", http.StatusBadRequest)
-		return
-	}
+func (a replyService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	replyRequest := r.Context().Value(payload("payload")).(*ReplyRequest)
 
 	now := time.Now()
 	options := gitlab.AddMergeRequestDiscussionNoteOptions{
@@ -67,17 +46,14 @@ func (a replyService) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.StatusCode >= 300 {
-		handleError(w, GenericError{endpoint: "/mr/reply"}, "Could not leave reply", res.StatusCode)
+		handleError(w, GenericError{r.URL.Path}, "Could not leave reply", res.StatusCode)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	response := ReplyResponse{
-		SuccessResponse: SuccessResponse{
-			Message: "Replied to comment",
-			Status:  http.StatusOK,
-		},
-		Note: note,
+		SuccessResponse: SuccessResponse{Message: "Replied to comment"},
+		Note:            note,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

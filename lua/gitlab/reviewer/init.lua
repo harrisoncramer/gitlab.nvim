@@ -67,11 +67,11 @@ M.open = function()
   end
 
   if state.INFO.state == "closed" then
-    u.notify(string.format("This MR was closed on %s", u.format_date(state.INFO.closed_at)), vim.log.levels.WARN)
+    u.notify(string.format("This MR was closed %s", u.time_since(state.INFO.closed_at)), vim.log.levels.WARN)
   end
 
   if state.INFO.state == "merged" then
-    u.notify(string.format("This MR was merged on %s", u.format_date(state.INFO.merged_at)), vim.log.levels.WARN)
+    u.notify(string.format("This MR was merged %s", u.time_since(state.INFO.merged_at)), vim.log.levels.WARN)
   end
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
@@ -151,25 +151,7 @@ end
 ---other modules such as the comment module to create line codes or set diagnostics
 ---@return DiffviewInfo | nil
 M.get_reviewer_data = function()
-  if M.tabnr == nil then
-    u.notify("Diffview reviewer must be initialized first", vim.log.levels.ERROR)
-    return
-  end
-
-  -- Check if we are in the diffview tab
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  if tabnr ~= M.tabnr then
-    u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
-    return
-  end
-
-  -- Check if we are in the diffview buffer
   local view = diffview_lib.get_current_view()
-  if view == nil then
-    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
-    return
-  end
-
   local layout = view.cur_layout
   local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
@@ -321,7 +303,7 @@ local set_keymaps = function(bufnr, keymaps)
   if keymaps.reviewer.create_comment ~= false then
     -- Set keymap for repeated operator keybinding
     vim.keymap.set("o", keymaps.reviewer.create_comment, function()
-      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "j" } }, {})
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "$" } }, {})
     end, {
       buffer = bufnr,
       desc = "Create comment for [count] lines",
@@ -351,7 +333,7 @@ local set_keymaps = function(bufnr, keymaps)
   if keymaps.reviewer.create_suggestion ~= false then
     -- Set keymap for repeated operator keybinding
     vim.keymap.set("o", keymaps.reviewer.create_suggestion, function()
-      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "j" } }, {})
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "$" } }, {})
     end, {
       buffer = bufnr,
       desc = "Create suggestion for [count] lines",
