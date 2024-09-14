@@ -18,7 +18,7 @@ to handle potential shutdown requests and incoming HTTP requests.
 */
 func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitData) {
 
-	s := shutdown{
+	s := shutdownService{
 		sigCh: make(chan os.Signal, 1),
 	}
 
@@ -26,7 +26,7 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitData) 
 	r := CreateRouter(
 		client,
 		projectInfo,
-		s,
+		&s,
 		func(a *data) error { a.projectInfo = projectInfo; return nil },
 		func(a *data) error { a.gitInfo = &GitInfo; return nil },
 		func(a *data) error { err := attachEmojis(a, fr); return err },
@@ -39,10 +39,8 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitData) 
 	go func() {
 		err := server.Serve(l)
 		if err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				os.Exit(0)
-			} else {
-				fmt.Fprintf(os.Stderr, "Server did not respond: %s\n", err)
+			if !errors.Is(err, http.ErrServerClosed) {
+				fmt.Fprintf(os.Stderr, "Server crashed: %s\n", err)
 				os.Exit(1)
 			}
 		}
@@ -76,7 +74,7 @@ type data struct {
 
 type optFunc func(a *data) error
 
-func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) http.Handler {
+func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownService, optFuncs ...optFunc) http.Handler {
 	m := http.NewServeMux()
 
 	d := data{
@@ -188,7 +186,6 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
 		withMethodCheck(http.MethodPost),
 	))
-
 	m.HandleFunc("/pipeline", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
 		withMethodCheck(http.MethodGet),
@@ -230,8 +227,12 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 		withMethodCheck(http.MethodPost),
 	))
+	m.HandleFunc("/shutdown", middleware(
+		*s,
+		withPayloadValidation(methodToPayload{http.MethodPost: &ShutdownRequest{}}),
+		withMethodCheck(http.MethodPost),
+	))
 
-	m.HandleFunc("/shutdown", s.shutdownHandler)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return LoggingServer{handler: m}
