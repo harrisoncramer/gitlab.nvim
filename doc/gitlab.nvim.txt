@@ -22,7 +22,7 @@ Table of Contents                              *gitlab.nvim.table-of-contents*
   - Creating an MR                                |gitlab.nvim.creating-an-mr|
   - Pipelines                                          |gitlab.nvim.pipelines|
   - Reviewers and Assignees              |gitlab.nvim.reviewers-and-assignees|
-  - Restarting or Shutting Down      |gitlab.nvim.restarting-or-shutting-down|
+  - Restarting The Go Server                          |gitlab.nvim.restarting|
   - Keybindings                                      |gitlab.nvim.keybindings|
   - Troubleshooting                              |gitlab.nvim.troubleshooting|
   - Api                                                      |gitlab.nvim.api|
@@ -591,26 +591,12 @@ install `dressing.nvim`. If you use Dressing, please enable it:
     })
 <
 
-RESTARTING OR SHUTTING DOWN          *gitlab.nvim.restarting-or-shutting-down*
+RESTARTING THE GO SERVER                              *gitlab.nvim.restarting*
 
 The `gitlab.nvim` server will shut down automatically when you exit Neovim.
-However, if you would like to manage this yourself (for instance, restart the
-server when you check out a new branch) you may do so via the `restart`
-command, or `shutdown` commands, which both accept callbacks:
+You may restart the server at any time via the the `restart` command:
 >lua
     require("gitlab.server").restart()
-    require("gitlab.server").shutdown()
-<
-For instance you could set up the following keybinding to close and reopen the
-reviewer when checking out a new branch:
->lua
-    local gitlab = require("gitlab")
-    vim.keymap.set("n", "glB", function ()
-        require("gitlab.server").restart(function ()
-            vim.cmd.tabclose()
-            gitlab.review() -- Reopen the reviewer after the server restarts
-        end)
-    end)
 <
 
 KEYBINDINGS                                          *gitlab.nvim.keybindings*

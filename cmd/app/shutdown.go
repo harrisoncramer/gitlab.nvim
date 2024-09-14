@@ -35,7 +35,7 @@ func (s shutdownService) WatchForShutdown(server *http.Server) {
 }
 
 type ShutdownRequest struct {
-	Restart bool `json:"restart" validate:"required"`
+	Restart bool `json:"restart"`
 }
 
 /* Shuts down the HTTP server and exit the process by signaling to the shutdown channel */

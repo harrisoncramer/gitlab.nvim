@@ -60,7 +60,7 @@ M.run_job = function(endpoint, method, body, callback)
         u.notify("Could not run command!", vim.log.levels.ERROR)
       end, 0)
     end,
-    on_exit = function(status)
+    on_exit = function(_, status)
       vim.defer_fn(function()
         if status ~= 0 then
           u.notify(string.format("Go server exited with non-zero code: %d", status), vim.log.levels.ERROR)
