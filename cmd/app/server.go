@@ -231,7 +231,13 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s shutdownServ
 		withMethodCheck(http.MethodPost),
 	))
 
-	m.HandleFunc("/shutdown", s.ServeHTTP)
+	m.HandleFunc(
+		"/shutdown",
+		middleware(
+			s,
+			withMethodCheck(http.MethodPost),
+		),
+	)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return LoggingServer{handler: m}
