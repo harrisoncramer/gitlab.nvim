@@ -186,7 +186,6 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 		withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
 		withMethodCheck(http.MethodPost),
 	))
-
 	m.HandleFunc("/pipeline", middleware(
 		pipelineService{d, gitlabClient, git.Git{}},
 		withMethodCheck(http.MethodGet),
@@ -228,7 +227,6 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 		withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
 		withMethodCheck(http.MethodPost),
 	))
-
 	m.HandleFunc("/shutdown", middleware(
 		*s,
 		withPayloadValidation(methodToPayload{http.MethodPost: &ShutdownRequest{}}),
