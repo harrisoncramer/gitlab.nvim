@@ -18,7 +18,7 @@ to handle potential shutdown requests and incoming HTTP requests.
 */
 func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitData) {
 
-	s := shutdown{
+	s := shutdownService{
 		sigCh: make(chan os.Signal, 1),
 	}
 
@@ -76,7 +76,7 @@ type data struct {
 
 type optFunc func(a *data) error
 
-func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHandler, optFuncs ...optFunc) http.Handler {
+func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s shutdownService, optFuncs ...optFunc) http.Handler {
 	m := http.NewServeMux()
 
 	d := data{
@@ -231,7 +231,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s ShutdownHand
 		withMethodCheck(http.MethodPost),
 	))
 
-	m.HandleFunc("/shutdown", s.shutdownHandler)
+	m.HandleFunc("/shutdown", s.ServeHTTP)
 	m.Handle("/ping", http.HandlerFunc(pingHandler))
 
 	return LoggingServer{handler: m}

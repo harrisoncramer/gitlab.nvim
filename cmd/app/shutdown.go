@@ -19,14 +19,14 @@ func (k killer) String() string {
 
 type ShutdownHandler interface {
 	WatchForShutdown(server *http.Server)
-	shutdownHandler(w http.ResponseWriter, r *http.Request)
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
-type shutdown struct {
+type shutdownService struct {
 	sigCh chan os.Signal
 }
 
-func (s shutdown) WatchForShutdown(server *http.Server) {
+func (s shutdownService) WatchForShutdown(server *http.Server) {
 	/* Handles shutdown requests */
 	<-s.sigCh
 	err := server.Shutdown(context.Background())
@@ -42,8 +42,8 @@ type ShutdownRequest struct {
 	Restart bool `json:"restart"`
 }
 
-/* shutdownHandler will shutdown the HTTP server and exit the process by signaling to the shutdown channel */
-func (s shutdown) shutdownHandler(w http.ResponseWriter, r *http.Request) {
+/* Shuts down the HTTP server and exit the process by signaling to the shutdown channel */
+func (s shutdownService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		handleError(w, errors.New("Invalid request type"), "That request type is not allowed", http.StatusMethodNotAllowed)
