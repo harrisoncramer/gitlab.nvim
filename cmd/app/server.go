@@ -86,7 +86,13 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	for _, optFunc := range optFuncs {
 		err := optFunc(&d)
 		if err != nil {
-			panic(err)
+			if os.Getenv("DEBUG") != "" {
+				// TODO: We have some JSON files (emojis.json) we import relative to the binary in production and
+				// expect to break during debugging, do not throw when that occurs.
+				fmt.Fprintf(os.Stdout, "Issue occured setting up router: %s\n", err)
+			} else {
+				panic(err)
+			}
 		}
 	}
 
