@@ -156,6 +156,7 @@ end
 ---@field ranged boolean
 ---@field unlinked boolean
 ---@field discussion_id string|nil
+---@field reply boolean|nil
 
 ---This function sets up the layout and popups needed to create a comment, note and
 ---multi-line comment. It also sets up the basic keybindings for switching between
@@ -172,7 +173,7 @@ M.create_comment_layout = function(opts)
 
     -- Check that Diffview is the current view
     local view = diffview_lib.get_current_view()
-    if view == nil then
+    if view == nil and not opts.reply then
       u.notify("Comments should be left in the reviewer pane", vim.log.levels.ERROR)
       return
     end
@@ -186,7 +187,7 @@ M.create_comment_layout = function(opts)
 
     -- Check that we are hovering over the code
     local filetype = vim.bo[0].filetype
-    if filetype == "DiffviewFiles" or filetype == "gitlab" then
+    if not opts.reply and (filetype == "DiffviewFiles" or filetype == "gitlab") then
       u.notify(
         "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
         vim.log.levels.ERROR

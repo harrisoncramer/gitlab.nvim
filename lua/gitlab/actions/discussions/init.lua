@@ -244,8 +244,16 @@ M.reply = function(tree)
   local discussion_id = tostring(discussion_node.id)
   local comment = require("gitlab.actions.comment")
   local unlinked = tree.bufnr == M.unlinked_bufnr
-  local layout = comment.create_comment_layout({ ranged = false, discussion_id = discussion_id, unlinked = unlinked })
-  layout:mount()
+  local layout = comment.create_comment_layout({
+    ranged = false,
+    discussion_id = discussion_id,
+    unlinked = unlinked,
+    reply = true,
+  })
+
+  if layout then
+    layout:mount()
+  end
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
