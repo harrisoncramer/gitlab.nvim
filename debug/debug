@@ -26,11 +26,12 @@ DEBUG_DIR=$(dirname "$0")
 SOURCE_DIR=$(dirname "$DEBUG_DIR")
 cd "$SOURCE_DIR/cmd"
 
+go clean -cache
 go build -gcflags="all=-N -l" -o "${DEBUG_DIR}/bin" && cp "${DEBUG_DIR}/bin" "${TARGET}/bin"
 
-# # Add the token to the debug json
+# Add the token to the debug json
 JSON_WITH_TOKEN=$(cat "$DEBUG_DIR/debug.json" | jq --arg token $GITLAB_TOKEN '.auth_token = $token')
 
-# # Run the binary
+# Run the binary
 cd $TARGET
 DEBUG=true ./bin "$JSON_WITH_TOKEN"
