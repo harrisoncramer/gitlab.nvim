@@ -27,7 +27,7 @@ func TestReplyHandler(t *testing.T) {
 		svc := middleware(
 			replyService{testProjectData, fakeReplyManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[ReplyRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
@@ -38,7 +38,7 @@ func TestReplyHandler(t *testing.T) {
 		svc := middleware(
 			replyService{testProjectData, fakeReplyManager{testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[ReplyRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)
@@ -50,7 +50,7 @@ func TestReplyHandler(t *testing.T) {
 		svc := middleware(
 			replyService{testProjectData, fakeReplyManager{testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[ReplyRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)

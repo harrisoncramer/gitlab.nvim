@@ -46,8 +46,8 @@ func TestListDraftNotes(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -61,8 +61,8 @@ func TestListDraftNotes(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -75,8 +75,8 @@ func TestListDraftNotes(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{testBase: testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -96,8 +96,8 @@ func TestPostDraftNote(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -113,8 +113,8 @@ func TestDeleteDraftNote(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -127,8 +127,8 @@ func TestDeleteDraftNote(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -146,8 +146,8 @@ func TestEditDraftNote(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -160,8 +160,8 @@ func TestEditDraftNote(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)
@@ -177,8 +177,8 @@ func TestEditDraftNote(t *testing.T) {
 			draftNoteService{testProjectData, fakeDraftNoteManager{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost:  &PostDraftNoteRequest{},
-				http.MethodPatch: &UpdateDraftNoteRequest{},
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 			}),
 			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 		)

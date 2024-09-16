@@ -28,7 +28,13 @@ func middleware(h http.Handler, middlewares ...mw) http.HandlerFunc {
 
 var validate = validator.New()
 
-type methodToPayload map[string]any
+type methodToPayload map[string]func() any
+
+// Generic factory function to create new payload instances per request
+func newPayload[T any]() any {
+	var p T
+	return &p
+}
 
 type validatorMiddleware struct {
 	validate        *validator.Validate
@@ -40,7 +46,8 @@ type validatorMiddleware struct {
 func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		if p.methodToPayload[r.Method] == nil { // If no payload to validate for this method type...
+		constructor, exists := p.methodToPayload[r.Method]
+		if !exists { // If no payload to validate for this method type...
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -51,7 +58,9 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 			return
 		}
 
-		pl := p.methodToPayload[r.Method]
+		// Create a new instance for this request
+		pl := constructor()
+
 		err = json.Unmarshal(body, &pl)
 
 		if err != nil {
@@ -72,7 +81,7 @@ func (p validatorMiddleware) handle(next http.Handler) http.Handler {
 		}
 
 		// Pass the parsed data so we don't have to re-parse it in the handler
-		ctx := context.WithValue(r.Context(), payload(payload("payload")), pl)
+		ctx := context.WithValue(r.Context(), payload("payload"), pl)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

@@ -97,7 +97,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{}) // No Foo field
 		data, status := getFailData(t, middleware(
 			fakeHandler{},
-			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[FakePayload]}),
 		), request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Foo is required")
@@ -107,7 +107,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{Foo: "Some payload"})
 		data := getSuccessData(t, middleware(
 			fakeHandler{},
-			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[FakePayload]}),
 		), request)
 		assert(t, data.Message, "Some message")
 	})

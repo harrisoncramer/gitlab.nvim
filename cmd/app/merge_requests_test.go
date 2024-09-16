@@ -36,7 +36,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := middleware(
 			mergeRequestListerService{testProjectData, fakeMergeRequestLister{}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[gitlab.ListProjectMergeRequestsOptions]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
@@ -46,7 +46,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := middleware(
 			mergeRequestListerService{testProjectData, fakeMergeRequestLister{testBase: testBase{errFromGitlab: true}}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[gitlab.ListProjectMergeRequestsOptions]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
@@ -57,7 +57,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := middleware(
 			mergeRequestListerService{testProjectData, fakeMergeRequestLister{testBase: testBase{status: http.StatusSeeOther}}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[gitlab.ListProjectMergeRequestsOptions]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
@@ -68,7 +68,7 @@ func TestMergeRequestHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := middleware(
 			mergeRequestListerService{testProjectData, fakeMergeRequestLister{emptyResponse: true}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[gitlab.ListProjectMergeRequestsOptions]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
