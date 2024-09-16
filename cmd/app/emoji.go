@@ -64,6 +64,11 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/awardable/note/")
 	ids := strings.Split(suffix, "/")
 
+	if len(ids) < 2 {
+		handleError(w, errors.New("Missing IDs"), "Must provide note ID and awardable ID", http.StatusBadRequest)
+		return
+	}
+
 	noteId, err := strconv.Atoi(ids[0])
 	if err != nil {
 		handleError(w, err, "Could not convert note ID to integer", http.StatusBadRequest)

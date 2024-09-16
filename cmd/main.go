@@ -14,6 +14,10 @@ var pluginOptions app.PluginOptions
 func main() {
 	log.SetFlags(0)
 
+	if len(os.Args) < 2 {
+		log.Fatal("Must provide server configuration")
+	}
+
 	err := json.Unmarshal([]byte(os.Args[1]), &pluginOptions)
 	app.SetPluginOptions(pluginOptions)
 

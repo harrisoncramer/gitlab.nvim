@@ -251,7 +251,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 func checkServer(port int) error {
 	for i := 0; i < 10; i++ {
 		resp, err := http.Get("http://localhost:" + fmt.Sprintf("%d", port) + "/ping")
-		if resp.StatusCode == 200 && err == nil {
+		if resp != nil && resp.StatusCode == 200 && err == nil {
 			return nil
 		}
 		time.Sleep(100 * time.Microsecond)
