@@ -17,7 +17,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.54
+          version: v1.61.0
           only-new-issues: true
           skip-cache: true
       - name: Install staticcheck
