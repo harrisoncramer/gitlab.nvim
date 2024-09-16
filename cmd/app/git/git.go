@@ -39,12 +39,12 @@ Gitlab project and the branch must be a feature branch
 func NewGitData(remote string, g GitManager) (GitData, error) {
 	err := g.RefreshProjectInfo(remote)
 	if err != nil {
-		return GitData{}, fmt.Errorf("Could not get latest information from remote: %v", err)
+		return GitData{}, fmt.Errorf("could not get latest information from remote: %v", err)
 	}
 
 	url, err := g.GetProjectUrlFromNativeGitCmd(remote)
 	if err != nil {
-		return GitData{}, fmt.Errorf("Could not get project Url: %v", err)
+		return GitData{}, fmt.Errorf("could not get project Url: %v", err)
 	}
 
 	/*
@@ -62,7 +62,7 @@ func NewGitData(remote string, g GitManager) (GitData, error) {
 	re := regexp.MustCompile(`^(?:git@[^\/:]*|https?:\/\/[^\/]+|ssh:\/\/[^\/:]+)(?::\d+)?[\/:](.*)\/([^\/]+?)(?:\.git)?\/?$`)
 	matches := re.FindStringSubmatch(url)
 	if len(matches) != 3 {
-		return GitData{}, fmt.Errorf("Invalid Git URL format: %s", url)
+		return GitData{}, fmt.Errorf("invalid git URL format: %s", url)
 	}
 
 	namespace := matches[1]
@@ -70,7 +70,7 @@ func NewGitData(remote string, g GitManager) (GitData, error) {
 
 	branchName, err := g.GetCurrentBranchNameFromNativeGitCmd()
 	if err != nil {
-		return GitData{}, fmt.Errorf("Failed to get current branch: %v", err)
+		return GitData{}, fmt.Errorf("failed to get current branch: %v", err)
 	}
 
 	return GitData{
@@ -88,7 +88,7 @@ func (g Git) GetCurrentBranchNameFromNativeGitCmd() (res string, e error) {
 
 	output, err := gitCmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Error running git rev-parse: %w", err)
+		return "", fmt.Errorf("error running git rev-parse: %w", err)
 	}
 
 	branchName := strings.TrimSpace(string(output))
@@ -101,7 +101,7 @@ func (g Git) GetProjectUrlFromNativeGitCmd(remote string) (string, error) {
 	cmd := exec.Command("git", "remote", "get-url", remote)
 	url, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Could not get remote")
+		return "", fmt.Errorf("could not get remote")
 	}
 
 	return strings.TrimSpace(string(url)), nil
@@ -112,7 +112,7 @@ func (g Git) RefreshProjectInfo(remote string) error {
 	cmd := exec.Command("git", "fetch", remote)
 	_, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("Failed to run `git fetch %s`: %v", remote, err)
+		return fmt.Errorf("failed to run `git fetch %s`: %v", remote, err)
 	}
 
 	return nil
@@ -123,7 +123,7 @@ func (g Git) GetLatestCommitOnRemote(remote string, branchName string) (string, 
 
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Failed to run `git log -1 --format=%%H " + fmt.Sprintf("%s/%s", remote, branchName))
+		return "", fmt.Errorf("failed to run `git log -1 --format=%%H " + fmt.Sprintf("%s/%s", remote, branchName))
 	}
 
 	commit := strings.TrimSpace(string(out))

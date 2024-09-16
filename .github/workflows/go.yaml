@@ -20,6 +20,10 @@ jobs:
           version: v1.54
           only-new-issues: true
           skip-cache: true
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+      - name: Run staticcheck
+        run: staticcheck ./...
   go_test:
     name: Test Go 🧪 
     needs: [go_lint]

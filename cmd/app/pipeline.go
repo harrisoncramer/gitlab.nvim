@@ -67,7 +67,7 @@ func (a pipelineService) GetLastPipeline(commit string) (*gitlab.PipelineInfo, e
 	}
 
 	if res.StatusCode >= 300 {
-		return nil, errors.New("Could not get pipelines")
+		return nil, errors.New("could not get pipelines")
 	}
 
 	if len(pipes) == 0 {

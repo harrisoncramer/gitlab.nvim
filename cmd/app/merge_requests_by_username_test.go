@@ -91,7 +91,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
-		assert(t, data.Details, strings.Repeat("Some error from Gitlab; ", 3))
+		assert(t, data.Details, strings.Repeat("some error from Gitlab; ", 3))
 		assert(t, status, http.StatusInternalServerError)
 	})
 

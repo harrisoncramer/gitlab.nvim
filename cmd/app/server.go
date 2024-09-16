@@ -257,7 +257,7 @@ func checkServer(port int) error {
 		time.Sleep(100 * time.Microsecond)
 	}
 
-	return errors.New("Could not start server!")
+	return errors.New("could not start server")
 }
 
 /* Creates a TCP listener on the port specified by the user or a random port */

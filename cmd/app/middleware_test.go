@@ -75,7 +75,7 @@ func TestWithMrMiddleware(t *testing.T) {
 		data, status := getFailData(t, handler, request)
 		assert(t, status, http.StatusNotFound)
 		assert(t, data.Message, "No MRs Found")
-		assert(t, data.Details, "Branch 'foo' does not have any merge requests")
+		assert(t, data.Details, "branch 'foo' does not have any merge requests")
 	})
 	t.Run("Handles when there are too many MRs", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
@@ -88,7 +88,7 @@ func TestWithMrMiddleware(t *testing.T) {
 		data, status := getFailData(t, handler, request)
 		assert(t, status, http.StatusBadRequest)
 		assert(t, data.Message, "Multiple MRs found")
-		assert(t, data.Details, "Please call gitlab.choose_merge_request()")
+		assert(t, data.Details, "please call gitlab.choose_merge_request()")
 	})
 }
 

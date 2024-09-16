@@ -78,7 +78,7 @@ func TestResolveDiscussion(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not resolve discussion")
-		assert(t, data.Details, "Some error from Gitlab")
+		assert(t, data.Details, "some error from Gitlab")
 		assert(t, status, http.StatusInternalServerError)
 	})
 }

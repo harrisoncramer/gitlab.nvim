@@ -14,7 +14,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-var errorFromGitlab = errors.New("Some error from Gitlab")
+var errorFromGitlab = errors.New("some error from Gitlab")
 
 /* The assert function is a helper function used to check two comparables */
 func assert[T comparable](t *testing.T, got T, want T) {

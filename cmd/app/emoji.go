@@ -65,7 +65,7 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 	ids := strings.Split(suffix, "/")
 
 	if len(ids) < 2 {
-		handleError(w, errors.New("Missing IDs"), "Must provide note ID and awardable ID", http.StatusBadRequest)
+		handleError(w, errors.New("missing IDs"), "Must provide note ID and awardable ID", http.StatusBadRequest)
 		return
 	}
 
@@ -163,18 +163,18 @@ func attachEmojis(a *data, fr FileReader) error {
 	reader, err := fr.ReadFile(filePath)
 
 	if err != nil {
-		return fmt.Errorf("Could not find emojis at %s", filePath)
+		return fmt.Errorf("could not find emojis at %s", filePath)
 	}
 
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
-		return errors.New("Could not read emoji file")
+		return errors.New("could not read emoji file")
 	}
 
 	var emojiMap EmojiMap
 	err = json.Unmarshal(bytes, &emojiMap)
 	if err != nil {
-		return errors.New("Could not unmarshal emojis")
+		return errors.New("could not unmarshal emojis")
 	}
 
 	a.emojiMap = emojiMap

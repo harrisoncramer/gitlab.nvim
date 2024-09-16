@@ -183,7 +183,7 @@ func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request
 	payload := r.Context().Value(payload("payload")).(*UpdateDraftNoteRequest)
 
 	if payload.Note == "" {
-		handleError(w, errors.New("Draft note text missing"), "Must provide draft note text", http.StatusBadRequest)
+		handleError(w, errors.New("draft note text missing"), "Must provide draft note text", http.StatusBadRequest)
 		return
 	}
 
