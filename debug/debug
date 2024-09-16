@@ -9,7 +9,7 @@
 
 # Start the server...
 # $ cd my-project
-# $ ~/.config/nvim/my-plugins/gitlab/debug/bin
+# $ ~/.config/nvim/dev-plugins/gitlab/debug/debug # Or whatever the path to this file is
 #   Server started on port: 62626
 #
 # Attach the debugger and set a breakpoint...

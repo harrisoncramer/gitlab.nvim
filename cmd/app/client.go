@@ -39,7 +39,7 @@ func NewClient() (*Client, error) {
 		return nil, errors.New("GitLab instance URL cannot be empty")
 	}
 
-	var apiCustUrl = fmt.Sprintf(pluginOptions.GitlabUrl + "/api/v4")
+	var apiCustUrl = fmt.Sprintf("%s/api/v4", pluginOptions.GitlabUrl)
 
 	gitlabOptions := []gitlab.ClientOptionFunc{
 		gitlab.WithBaseURL(apiCustUrl),

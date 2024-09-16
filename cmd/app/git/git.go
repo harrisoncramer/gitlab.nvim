@@ -123,7 +123,7 @@ func (g Git) GetLatestCommitOnRemote(remote string, branchName string) (string, 
 
 	out, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("failed to run `git log -1 --format=%%H " + fmt.Sprintf("%s/%s", remote, branchName))
+		return "", fmt.Errorf("failed to run `git log -1 --format=%%H %s/%s`", remote, branchName)
 	}
 
 	commit := strings.TrimSpace(string(out))
