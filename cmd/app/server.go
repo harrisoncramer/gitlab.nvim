@@ -99,28 +99,28 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 		commentService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{
-			http.MethodPost:   &PostCommentRequest{},
-			http.MethodDelete: &DeleteCommentRequest{},
-			http.MethodPatch:  &EditCommentRequest{},
+			http.MethodPost:   newPayload[PostCommentRequest],
+			http.MethodDelete: newPayload[DeleteCommentRequest],
+			http.MethodPatch:  newPayload[EditCommentRequest],
 		}),
 		withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
 	))
 	m.HandleFunc("/mr/merge", middleware(
 		mergeRequestAccepterService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPost: &AcceptMergeRequestRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[AcceptMergeRequestRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/mr/discussions/list", middleware(
 		discussionsListerService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/mr/discussions/resolve", middleware(
 		discussionsResolutionService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPut: newPayload[DiscussionResolveRequest]}),
 		withMethodCheck(http.MethodPut),
 	))
 	m.HandleFunc("/mr/info", middleware(
@@ -131,19 +131,19 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	m.HandleFunc("/mr/assignee", middleware(
 		assigneesService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPut: newPayload[AssigneeUpdateRequest]}),
 		withMethodCheck(http.MethodPut),
 	))
 	m.HandleFunc("/mr/summary", middleware(
 		summaryService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPut: &SummaryUpdateRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPut: newPayload[SummaryUpdateRequest]}),
 		withMethodCheck(http.MethodPut),
 	))
 	m.HandleFunc("/mr/reviewer", middleware(
 		reviewerService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPut: &ReviewerUpdateRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPut: newPayload[ReviewerUpdateRequest]}),
 		withMethodCheck(http.MethodPut),
 	))
 	m.HandleFunc("/mr/revisions", middleware(
@@ -154,7 +154,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	m.HandleFunc("/mr/reply", middleware(
 		replyService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPost: &ReplyRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[ReplyRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/mr/label", middleware(
@@ -175,15 +175,15 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 		draftNoteService{d, gitlabClient},
 		withMr(d, gitlabClient),
 		withPayloadValidation(methodToPayload{
-			http.MethodPost:  &PostDraftNoteRequest{},
-			http.MethodPatch: &UpdateDraftNoteRequest{},
+			http.MethodPost:  newPayload[PostDraftNoteRequest],
+			http.MethodPatch: newPayload[UpdateDraftNoteRequest],
 		}),
 		withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
 	))
 	m.HandleFunc("/mr/draft_notes/publish", middleware(
 		draftNotePublisherService{d, gitlabClient},
 		withMr(d, gitlabClient),
-		withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DraftNotePublishRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/pipeline", middleware(
@@ -200,17 +200,17 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	))
 	m.HandleFunc("/attachment", middleware(
 		attachmentService{data: d, client: gitlabClient, fileReader: attachmentReader{}},
-		withPayloadValidation(methodToPayload{http.MethodPost: &AttachmentRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[AttachmentRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/create_mr", middleware(
 		mergeRequestCreatorService{d, gitlabClient},
-		withPayloadValidation(methodToPayload{http.MethodPost: &CreateMrRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[CreateMrRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/job", middleware(
 		traceFileService{d, gitlabClient},
-		withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodGet: newPayload[JobTraceRequest]}),
 		withMethodCheck(http.MethodGet),
 	))
 	m.HandleFunc("/project/members", middleware(
@@ -219,12 +219,12 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	))
 	m.HandleFunc("/merge_requests", middleware(
 		mergeRequestListerService{d, gitlabClient},
-		withPayloadValidation(methodToPayload{http.MethodPost: &gitlab.ListProjectMergeRequestsOptions{}}), // TODO: How to validate external object
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[gitlab.ListProjectMergeRequestsOptions]}), // TODO: How to validate external object
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/merge_requests_by_username", middleware(
 		mergeRequestListerByUsernameService{d, gitlabClient},
-		withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 	m.HandleFunc("/shutdown", middleware(

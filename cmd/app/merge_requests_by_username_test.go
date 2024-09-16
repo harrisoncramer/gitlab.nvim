@@ -32,7 +32,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests_by_username", testListMrsByUsernamePayload)
 		svc := middleware(
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
@@ -43,7 +43,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests_by_username", testListMrsByUsernamePayload)
 		svc := middleware(
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{emptyResponse: true}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
@@ -58,7 +58,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests_by_username", missingUsernamePayload)
 		svc := middleware(
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
@@ -73,7 +73,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests_by_username", missingUsernamePayload)
 		svc := middleware(
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
@@ -86,7 +86,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests_by_username", testListMrsByUsernamePayload)
 		svc := middleware(
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{testBase: testBase{errFromGitlab: true}}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
@@ -99,7 +99,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests_by_username", testListMrsByUsernamePayload)
 		svc := middleware(
 			mergeRequestListerByUsernameService{testProjectData, fakeMergeRequestListerByUsername{testBase: testBase{status: http.StatusSeeOther}}},
-			withPayloadValidation(methodToPayload{http.MethodPost: &MergeRequestByUsernameRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[MergeRequestByUsernameRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)

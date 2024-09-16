@@ -25,7 +25,7 @@ func TestPublishDraftNote(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DraftNotePublishRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
@@ -36,7 +36,7 @@ func TestPublishDraftNote(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DraftNotePublishRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)
@@ -51,7 +51,7 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DraftNotePublishRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getSuccessData(t, svc, request)
@@ -62,7 +62,7 @@ func TestPublishAllDraftNotes(t *testing.T) {
 		svc := middleware(
 			draftNotePublisherService{testProjectData, fakeDraftNotePublisher{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DraftNotePublishRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DraftNotePublishRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)

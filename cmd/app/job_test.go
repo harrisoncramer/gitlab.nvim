@@ -40,7 +40,7 @@ func TestJobHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{JobId: 3})
 		svc := middleware(
 			traceFileService{testProjectData, fakeTraceFileGetter{}},
-			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodGet: newPayload[JobTraceRequest]}),
 			withMethodCheck(http.MethodGet),
 		)
 		data := getTraceFileData(t, svc, request)
@@ -51,7 +51,7 @@ func TestJobHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{JobId: 2})
 		svc := middleware(
 			traceFileService{testProjectData, fakeTraceFileGetter{testBase{errFromGitlab: true}}},
-			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodGet: newPayload[JobTraceRequest]}),
 			withMethodCheck(http.MethodGet),
 		)
 		data, _ := getFailData(t, svc, request)
@@ -62,7 +62,7 @@ func TestJobHandler(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/job", JobTraceRequest{JobId: 1})
 		svc := middleware(
 			traceFileService{testProjectData, fakeTraceFileGetter{testBase{status: http.StatusSeeOther}}},
-			withPayloadValidation(methodToPayload{http.MethodGet: &JobTraceRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodGet: newPayload[JobTraceRequest]}),
 			withMethodCheck(http.MethodGet),
 		)
 		data, _ := getFailData(t, svc, request)

@@ -27,7 +27,7 @@ func TestAssigneeHandler(t *testing.T) {
 		svc := middleware(
 			assigneesService{testProjectData, fakeAssigneeClient{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[AssigneeUpdateRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		data := getSuccessData(t, svc, request)
@@ -40,7 +40,7 @@ func TestAssigneeHandler(t *testing.T) {
 		svc := middleware(
 			assigneesService{testProjectData, client},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[AssigneeUpdateRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		data, _ := getFailData(t, svc, request)
@@ -53,7 +53,7 @@ func TestAssigneeHandler(t *testing.T) {
 		svc := middleware(
 			assigneesService{testProjectData, client},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &AssigneeUpdateRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[AssigneeUpdateRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		data, _ := getFailData(t, svc, request)

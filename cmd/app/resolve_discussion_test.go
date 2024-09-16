@@ -30,7 +30,7 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[DiscussionResolveRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
@@ -44,7 +44,7 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[DiscussionResolveRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
@@ -58,7 +58,7 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[DiscussionResolveRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", payload)
@@ -72,7 +72,7 @@ func TestResolveDiscussion(t *testing.T) {
 		svc := middleware(
 			discussionsResolutionService{testProjectData, fakeDiscussionResolver{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPut: &DiscussionResolveRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPut: newPayload[DiscussionResolveRequest]}),
 			withMethodCheck(http.MethodPut),
 		)
 		request := makeRequest(t, http.MethodPut, "/mr/discussions/resolve", testResolveMergeRequestPayload)
