@@ -31,11 +31,12 @@ If you are making changes to the Go codebase, don't forget to run `make compile`
 
 3. Apply formatters and linters to your changes
 
-For changes to the Go codebase: We use <a href="https://pkg.go.dev/cmd/gofmt">gofmt</a> to check formatting and <a href="https://github.com/golangci/golangci-lint">golangci-lint</a> to check linting. Run these commands in the root of the repository:
+For changes to the Go codebase: We use <a href="https://pkg.go.dev/cmd/gofmt">gofmt</a> to check formatting and <a href="https://github.com/golangci/golangci-lint">golangci-lint</a> to check linting, and <a href="https://staticcheck.dev/">staticcheck</a>. Run these commands in the root of the repository:
 
 ```bash
 $ go fmt ./...
 $ golangci-lint run
+$ staticcheck ./...
 ```
 
 If you are writing tests and have added something to the Go client, you can test with:
