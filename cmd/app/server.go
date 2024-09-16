@@ -229,7 +229,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	))
 	m.HandleFunc("/shutdown", middleware(
 		*s,
-		withPayloadValidation(methodToPayload{http.MethodPost: &ShutdownRequest{}}),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[ShutdownRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
 
