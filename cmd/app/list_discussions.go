@@ -87,7 +87,7 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	var linkedDiscussions []*gitlab.Discussion
 
 	for _, discussion := range discussions {
-		if discussion.Notes == nil || len(discussion.Notes) == 0 || Contains(request.Blacklist, discussion.Notes[0].Author.Username) {
+		if len(discussion.Notes) == 0 || Contains(request.Blacklist, discussion.Notes[0].Author.Username) {
 			continue
 		}
 		for _, note := range discussion.Notes {

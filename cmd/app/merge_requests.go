@@ -48,7 +48,7 @@ func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	if len(mergeRequests) == 0 {
-		handleError(w, errors.New("No merge requests found"), "No merge requests found", http.StatusNotFound)
+		handleError(w, errors.New("no merge requests found"), "No merge requests found", http.StatusNotFound)
 		return
 	}
 
@@ -60,6 +60,6 @@ func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
+		handleError(w, err, "could not encode response", http.StatusInternalServerError)
 	}
 }

@@ -86,7 +86,13 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	for _, optFunc := range optFuncs {
 		err := optFunc(&d)
 		if err != nil {
-			panic(err)
+			if os.Getenv("DEBUG") != "" {
+				// TODO: We have some JSON files (emojis.json) we import relative to the binary in production and
+				// expect to break during debugging, do not throw when that occurs.
+				fmt.Fprintf(os.Stdout, "Issue occured setting up router: %s\n", err)
+			} else {
+				panic(err)
+			}
 		}
 	}
 
@@ -245,13 +251,13 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 func checkServer(port int) error {
 	for i := 0; i < 10; i++ {
 		resp, err := http.Get("http://localhost:" + fmt.Sprintf("%d", port) + "/ping")
-		if resp.StatusCode == 200 && err == nil {
+		if resp != nil && resp.StatusCode == 200 && err == nil {
 			return nil
 		}
 		time.Sleep(100 * time.Microsecond)
 	}
 
-	return errors.New("Could not start server!")
+	return errors.New("could not start server")
 }
 
 /* Creates a TCP listener on the port specified by the user or a random port */

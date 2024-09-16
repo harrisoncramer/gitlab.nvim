@@ -110,18 +110,18 @@ func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 
 			mergeRequests, _, err := m.client.ListProjectMergeRequests(m.data.projectInfo.ProjectId, &options)
 			if err != nil {
-				handleError(w, fmt.Errorf("Failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
+				handleError(w, fmt.Errorf("failed to list merge requests: %w", err), "Failed to list merge requests", http.StatusInternalServerError)
 				return
 			}
 
 			if len(mergeRequests) == 0 {
-				err := fmt.Errorf("Branch '%s' does not have any merge requests", m.data.gitInfo.BranchName)
+				err := fmt.Errorf("branch '%s' does not have any merge requests", m.data.gitInfo.BranchName)
 				handleError(w, err, "No MRs Found", http.StatusNotFound)
 				return
 			}
 
 			if len(mergeRequests) > 1 {
-				err := errors.New("Please call gitlab.choose_merge_request()")
+				err := errors.New("please call gitlab.choose_merge_request()")
 				handleError(w, err, "Multiple MRs found", http.StatusBadRequest)
 				return
 			}
@@ -164,9 +164,9 @@ func withMethodCheck(methods ...string) mw {
 }
 
 // Helper function to format validation errors into more readable strings
-func formatValidationErrors(errors validator.ValidationErrors) error {
+func formatValidationErrors(errs validator.ValidationErrors) error {
 	var s strings.Builder
-	for i, e := range errors {
+	for i, e := range errs {
 		if i > 0 {
 			s.WriteString("; ")
 		}
@@ -178,5 +178,5 @@ func formatValidationErrors(errors validator.ValidationErrors) error {
 		}
 	}
 
-	return fmt.Errorf(s.String())
+	return errors.New(s.String())
 }
