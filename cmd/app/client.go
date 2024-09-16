@@ -33,13 +33,13 @@ type Client struct {
 }
 
 /* NewClient parses and validates the project settings and initializes the Gitlab client. */
-func NewClient() (error, *Client) {
+func NewClient() (*Client, error) {
 
 	if pluginOptions.GitlabUrl == "" {
-		return errors.New("GitLab instance URL cannot be empty"), nil
+		return nil, errors.New("GitLab instance URL cannot be empty")
 	}
 
-	var apiCustUrl = fmt.Sprintf(pluginOptions.GitlabUrl + "/api/v4")
+	var apiCustUrl = fmt.Sprintf("%s/api/v4", pluginOptions.GitlabUrl)
 
 	gitlabOptions := []gitlab.ClientOptionFunc{
 		gitlab.WithBaseURL(apiCustUrl),
@@ -73,10 +73,10 @@ func NewClient() (error, *Client) {
 	client, err := gitlab.NewClient(pluginOptions.AuthToken, gitlabOptions...)
 
 	if err != nil {
-		return fmt.Errorf("Failed to create client: %v", err), nil
+		return nil, fmt.Errorf("failed to create client: %v", err)
 	}
 
-	return nil, &Client{
+	return &Client{
 		MergeRequestsService:         client.MergeRequests,
 		MergeRequestApprovalsService: client.MergeRequestApprovals,
 		DiscussionsService:           client.Discussions,
@@ -88,28 +88,28 @@ func NewClient() (error, *Client) {
 		AwardEmojiService:            client.AwardEmoji,
 		UsersService:                 client.Users,
 		DraftNotesService:            client.DraftNotes,
-	}
+	}, nil
 }
 
 /* InitProjectSettings fetch the project ID using the client */
-func InitProjectSettings(c *Client, gitInfo git.GitData) (error, *ProjectInfo) {
+func InitProjectSettings(c *Client, gitInfo git.GitData) (*ProjectInfo, error) {
 
 	opt := gitlab.GetProjectOptions{}
 	project, _, err := c.GetProject(gitInfo.ProjectPath(), &opt)
 
 	if err != nil {
-		return fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err), nil
+		return nil, fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err)
 	}
 
 	if project == nil {
-		return fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err), nil
+		return nil, fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err)
 	}
 
 	projectId := fmt.Sprint(project.ID)
 
-	return nil, &ProjectInfo{
+	return &ProjectInfo{
 		ProjectId: projectId,
-	}
+	}, nil
 }
 
 /* handleError is a utililty handler that returns errors to the client along with their statuses and messages */

@@ -47,7 +47,7 @@ func (l LoggingServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Request:       r,
 	}
 	if pluginOptions.Debug.Response {
-		logResponse("RESPONSE FROM GO SERVER", resp)
+		logResponse("RESPONSE FROM GO SERVER", resp) //nolint:errcheck
 	}
 }
 
@@ -62,7 +62,7 @@ func logRequest(prefix string, r *http.Request) {
 		os.Exit(1)
 	}
 	r.Header.Set("Private-Token", token)
-	_, err = file.Write([]byte(fmt.Sprintf("\n-- %s --\n%s\n", prefix, res))) //nolint:all
+	fmt.Fprintf(file, "\n-- %s --\n%s\n", prefix, res) //nolint:errcheck
 }
 
 func logResponse(prefix string, r *http.Response) {
@@ -75,7 +75,7 @@ func logResponse(prefix string, r *http.Response) {
 		os.Exit(1)
 	}
 
-	_, err = file.Write([]byte(fmt.Sprintf("\n-- %s --\n%s\n", prefix, res))) //nolint:all
+	fmt.Fprintf(file, "\n-- %s --\n%s\n", prefix, res) //nolint:errcheck
 }
 
 func openLogFile() *os.File {

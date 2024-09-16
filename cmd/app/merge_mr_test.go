@@ -28,7 +28,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost: &AcceptMergeRequestRequest{},
+				http.MethodPost: newPayload[AcceptMergeRequestRequest],
 			}),
 			withMethodCheck(http.MethodPost),
 		)
@@ -41,7 +41,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost: &AcceptMergeRequestRequest{},
+				http.MethodPost: newPayload[AcceptMergeRequestRequest],
 			}),
 			withMethodCheck(http.MethodPost),
 		)
@@ -54,7 +54,7 @@ func TestAcceptAndMergeHandler(t *testing.T) {
 			mergeRequestAccepterService{testProjectData, fakeMergeRequestAccepter{testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
-				http.MethodPost: &AcceptMergeRequestRequest{},
+				http.MethodPost: newPayload[AcceptMergeRequestRequest],
 			}),
 			withMethodCheck(http.MethodPost),
 		)

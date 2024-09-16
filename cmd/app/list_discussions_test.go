@@ -71,7 +71,7 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getDiscussionsList(t, svc, request)
@@ -85,7 +85,7 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data := getDiscussionsList(t, svc, request)
@@ -98,7 +98,7 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)
@@ -109,7 +109,7 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{testBase: testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)
@@ -120,7 +120,7 @@ func TestListDiscussions(t *testing.T) {
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{badEmojiResponse: true, testBase: testBase{}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
-			withPayloadValidation(methodToPayload{http.MethodPost: &DiscussionsRequest{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, _ := getFailData(t, svc, request)

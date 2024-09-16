@@ -75,7 +75,7 @@ func TestWithMrMiddleware(t *testing.T) {
 		data, status := getFailData(t, handler, request)
 		assert(t, status, http.StatusNotFound)
 		assert(t, data.Message, "No MRs Found")
-		assert(t, data.Details, "Branch 'foo' does not have any merge requests")
+		assert(t, data.Details, "branch 'foo' does not have any merge requests")
 	})
 	t.Run("Handles when there are too many MRs", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
@@ -88,7 +88,7 @@ func TestWithMrMiddleware(t *testing.T) {
 		data, status := getFailData(t, handler, request)
 		assert(t, status, http.StatusBadRequest)
 		assert(t, data.Message, "Multiple MRs found")
-		assert(t, data.Details, "Please call gitlab.choose_merge_request()")
+		assert(t, data.Details, "please call gitlab.choose_merge_request()")
 	})
 }
 
@@ -97,7 +97,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{}) // No Foo field
 		data, status := getFailData(t, middleware(
 			fakeHandler{},
-			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[FakePayload]}),
 		), request)
 		assert(t, data.Message, "Invalid payload")
 		assert(t, data.Details, "Foo is required")
@@ -107,7 +107,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/foo", FakePayload{Foo: "Some payload"})
 		data := getSuccessData(t, middleware(
 			fakeHandler{},
-			withPayloadValidation(methodToPayload{http.MethodPost: &FakePayload{}}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[FakePayload]}),
 		), request)
 		assert(t, data.Message, "Some message")
 	})

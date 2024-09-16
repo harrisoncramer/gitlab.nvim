@@ -14,6 +14,10 @@ var pluginOptions app.PluginOptions
 func main() {
 	log.SetFlags(0)
 
+	if len(os.Args) < 2 {
+		log.Fatal("Must provide server configuration")
+	}
+
 	err := json.Unmarshal([]byte(os.Args[1]), &pluginOptions)
 	app.SetPluginOptions(pluginOptions)
 
@@ -28,12 +32,12 @@ func main() {
 		log.Fatalf("Failure initializing plugin: %v", err)
 	}
 
-	err, client := app.NewClient()
+	client, err := app.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
 	}
 
-	err, projectInfo := app.InitProjectSettings(client, gitData)
+	projectInfo, err := app.InitProjectSettings(client, gitData)
 	if err != nil {
 		log.Fatalf("Failed to initialize project settings: %v", err)
 	}

@@ -69,6 +69,8 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     return
   end
 
+  vim.print("Here: ", unlinked, discussion_id)
+
   local reviewer_data = reviewer.get_reviewer_data()
   if reviewer_data == nil then
     u.notify("Error getting reviewer data", vim.log.levels.ERROR)
@@ -255,6 +257,7 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
+  vim.print("Creating comment...")
   local has_clean_tree, err = git.has_clean_tree()
   if err ~= nil then
     return
@@ -298,6 +301,7 @@ end
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
+  vim.print("Creating note...")
   local layout = M.create_comment_layout({ ranged = false, unlinked = true })
   if layout ~= nil then
     layout:mount()
