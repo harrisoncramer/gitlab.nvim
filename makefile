@@ -4,10 +4,10 @@ PROJECTNAME=$(shell basename "$(PWD)")
 
 ## compile: build golang project
 compile:
-	@cd cmd && go build -o bin && mv bin ../bin
+	@go build -o bin ./cmd
 ## test: run golang project tests
 test:
-	@cd cmd/app && go test
+	@go test -v ./...
 
 .PHONY: help
 all: help
