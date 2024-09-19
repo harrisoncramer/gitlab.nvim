@@ -44,7 +44,7 @@ func NewGitData(remote string, g GitManager) (GitData, error) {
 
 	url, err := g.GetProjectUrlFromNativeGitCmd(remote)
 	if err != nil {
-		return GitData{}, fmt.Errorf("Could not get project Url: %v", err)
+		return GitData{}, fmt.Errorf("could not get project Url: %v", err)
 	}
 
 	/*
@@ -70,7 +70,7 @@ func NewGitData(remote string, g GitManager) (GitData, error) {
 
 	branchName, err := g.GetCurrentBranchNameFromNativeGitCmd()
 	if err != nil {
-		return GitData{}, fmt.Errorf("Failed to get current branch: %v", err)
+		return GitData{}, fmt.Errorf("failed to get current branch: %v", err)
 	}
 
 	return GitData{
