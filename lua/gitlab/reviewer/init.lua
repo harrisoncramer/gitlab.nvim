@@ -146,6 +146,7 @@ M.jump = function(file_name, line_number, new_buffer)
   end
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
   u.open_fold_under_cursor()
+  vim.cmd("normal! zz")
 end
 
 ---Get the data from diffview, such as line information and file name. May be used by
