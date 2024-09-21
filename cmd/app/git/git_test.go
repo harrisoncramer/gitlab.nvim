@@ -198,7 +198,7 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 	tC := FailTestCase{
 		desc:        "Error returned by function to get the project remote url",
 		errMsg:      "Some error",
-		expectedErr: "Could not get project Url: Some error",
+		expectedErr: "could not get project Url: Some error",
 	}
 	t.Run(tC.desc, func(t *testing.T) {
 		g := failingUrlManager{
@@ -227,7 +227,7 @@ func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 	tC := FailTestCase{
 		desc:        "Error returned by function to get the project remote url",
 		errMsg:      "Some error",
-		expectedErr: "Failed to get current branch: Some error",
+		expectedErr: "failed to get current branch: Some error",
 	}
 	t.Run(tC.desc, func(t *testing.T) {
 		g := failingBranchManager{
