@@ -752,4 +752,10 @@ M.get_nested_field = function(table, field)
   end
 end
 
+M.open_fold_under_cursor = function()
+  if vim.fn.foldclosed(vim.fn.line(".")) > -1 then
+    vim.cmd("normal! zo")
+  end
+end
+
 return M

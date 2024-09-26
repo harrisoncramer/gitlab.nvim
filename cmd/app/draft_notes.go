@@ -90,7 +90,7 @@ func (a draftNoteService) listDraftNotes(w http.ResponseWriter, r *http.Request)
 
 type PostDraftNoteRequest struct {
 	Comment      string `json:"comment" validate:"required"`
-	DiscussionId string `json:"discussion_id,omitempty" validate:"required"`
+	DiscussionId string `json:"discussion_id,omitempty"`
 	PositionData        // TODO: How to add validations to data from external package???
 }
 
