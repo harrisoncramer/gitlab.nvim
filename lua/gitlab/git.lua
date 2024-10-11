@@ -43,6 +43,56 @@ M.switch_branch = function(branch)
   return run_system({ "git", "checkout", "-q", branch })
 end
 
+---Fetches the name of the remote tracking branch for the current branch
+---@return string|nil, string|nil
+M.get_remote_branch = function()
+  return run_system({ "git", "rev-parse", "--abbrev-ref", "symbolic-full-name", "@{u}" })
+end
+
+---Determines whether there are unpushed commits from local to remote
+---@param current_branch string
+---@param remote_branch string
+---@return boolean
+M.get_ahead_behind = function(current_branch, remote_branch, log_level)
+  local result, err =
+    run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
+  if err ~= nil or result == nil then
+    u.notify("Could not determine if branch is up-to-date: " .. err, vim.log.levels.ERROR)
+    return false
+  end
+
+  local ahead, behind = result:match("(%d+)%s+(%d+)")
+  if ahead == nil or behind == nil then
+    u.notify("Error parsing ahead/behind information.", vim.log.levels.ERROR)
+    return false
+  end
+
+  ahead = tonumber(ahead)
+  behind = tonumber(behind)
+
+  if ahead > 0 and behind == 0 then
+    u.notify(
+      string.format("You have local commits that are not on %s. Have you forgotten to push?", remote_branch),
+      log_level
+    )
+    return false
+  end
+  if behind > 0 and ahead == 0 then
+    u.notify(string.format("There are remote changes on %s that haven't been pulled yet", remote_branch), log_level)
+    return false
+  end
+
+  if ahead > 0 and behind > 0 then
+    u.notify(
+      string.format("Your branch and the remote %s have diverged. You need to pull and then push.", remote_branch),
+      log_level
+    )
+    return false
+  end
+
+  return true -- Checks passed, branch is up-to-date
+end
+
 ---Return the name of the current branch
 ---@return string|nil, string|nil
 M.get_current_branch = function()
@@ -93,39 +143,22 @@ M.contains_branch = function(current_branch)
   return run_system({ "git", "branch", "-r", "--contains", current_branch })
 end
 
----Returns true if `branch` is up-to-date on remote, false otherwise.
+---Returns true if `branch` is up-to-date on remote
 ---@param log_level integer
----@return boolean|nil
+---@return boolean
 M.current_branch_up_to_date_on_remote = function(log_level)
-  local state = require("gitlab.state")
-  local current_branch = M.get_current_branch()
-  local handle = io.popen("git branch -r --contains " .. current_branch .. " 2>&1")
-  if not handle then
-    require("gitlab.utils").notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-    return nil
+  -- Get current branch
+  local current_branch, err = M.get_current_branch()
+  if not current_branch or err ~= nil then
+    return false
   end
 
-  local remote_branches_with_current_head = {}
-  for line in handle:lines() do
-    table.insert(remote_branches_with_current_head, line)
+  -- Get remote tracking branch
+  local remote_branch, err = M.get_current_branch()
+  if not remote_branch or err ~= nil then
+    return false
   end
-  handle:close()
 
-  local current_head_on_remote = List.new(remote_branches_with_current_head):filter(function(line)
-    return line == string.format("  %s/", state.settings.connection_settings.remote) .. current_branch
-  end)
-  local remote_up_to_date = #current_head_on_remote == 1
-
-  if not remote_up_to_date then
-    require("gitlab.utils").notify(
-      string.format(
-        "You have local commits that are not on %s. Have you forgotten to push?",
-        state.settings.connection_settings.remote
-      ),
-      log_level
-    )
-  end
-  return remote_up_to_date
+  return M.get_ahead_behind(current_branch, remote_branch, log_level)
 end
-
 return M
