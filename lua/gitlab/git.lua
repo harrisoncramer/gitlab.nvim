@@ -154,16 +154,16 @@ M.current_branch_up_to_date_on_remote = function(log_level)
   local u = require("gitlab.utils")
 
   -- Get current branch
-  local current_branch, err = M.get_current_branch()
-  if err or not current_branch then
-    u.notify("Could not get current branch", vim.log.levels.ERROR)
+  local current_branch, err_current_branch = M.get_current_branch()
+  if err_current_branch or not current_branch then
+    u.notify("Could not get current branch: " .. err_current_branch, vim.log.levels.ERROR)
     return false
   end
 
   -- Get remote tracking branch
-  local remote_branch, err = M.get_remote_branch()
-  if err or not remote_branch then
-    u.notify("Could not get remote branch", vim.log.levels.ERROR)
+  local remote_branch, err_remote_branch = M.get_remote_branch()
+  if err_remote_branch or not remote_branch then
+    u.notify("Could not get remote branch: " .. err_remote_branch, vim.log.levels.ERROR)
     return false
   end
 
