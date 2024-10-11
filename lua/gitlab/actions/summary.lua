@@ -83,6 +83,7 @@ M.summary = function()
   end)
 
   git.current_branch_up_to_date_on_remote(vim.log.levels.WARN)
+  git.check_mr_in_good_condition()
 end
 
 -- Builds a lua list of strings that contain metadata about the current MR. Only builds the
