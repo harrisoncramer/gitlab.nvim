@@ -56,7 +56,7 @@ end
 M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   local u = require("gitlab.utils")
   local result, err =
-      run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
+    run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
   if err ~= nil or result == nil then
     u.notify("Could not determine if branch is up-to-date: " .. err, vim.log.levels.ERROR)
     return false
@@ -130,14 +130,14 @@ M.get_all_remote_branches = function()
   local u = require("gitlab.utils")
   local lines = u.lines_into_table(all_branches)
   return List.new(lines)
-      :map(function(line)
-        -- Trim the remote branch
-        return line:match(state.settings.connection_settings.remote .. "/(%S+)")
-      end)
-      :filter(function(branch)
-        -- Don't include the HEAD pointer
-        return not branch:match("^HEAD$")
-      end)
+    :map(function(line)
+      -- Trim the remote branch
+      return line:match(state.settings.connection_settings.remote .. "/(%S+)")
+    end)
+    :filter(function(branch)
+      -- Don't include the HEAD pointer
+      return not branch:match("^HEAD$")
+    end)
 end
 
 ---Return whether something
