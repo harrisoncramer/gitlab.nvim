@@ -49,14 +49,14 @@ M.get_remote_branch = function()
   return run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
 end
 
----Determines whether there are unpushed commits from local to remote
+---Determines whether the tracking branch is ahead of or behind the current branch, and warns the user if so
 ---@param current_branch string
 ---@param remote_branch string
 ---@return boolean
 M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   local u = require("gitlab.utils")
   local result, err =
-    run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
+      run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
   if err ~= nil or result == nil then
     u.notify("Could not determine if branch is up-to-date: " .. err, vim.log.levels.ERROR)
     return false
@@ -130,14 +130,14 @@ M.get_all_remote_branches = function()
   local u = require("gitlab.utils")
   local lines = u.lines_into_table(all_branches)
   return List.new(lines)
-    :map(function(line)
-      -- Trim the remote branch
-      return line:match(state.settings.connection_settings.remote .. "/(%S+)")
-    end)
-    :filter(function(branch)
-      -- Don't include the HEAD pointer
-      return not branch:match("^HEAD$")
-    end)
+      :map(function(line)
+        -- Trim the remote branch
+        return line:match(state.settings.connection_settings.remote .. "/(%S+)")
+      end)
+      :filter(function(branch)
+        -- Don't include the HEAD pointer
+        return not branch:match("^HEAD$")
+      end)
 end
 
 ---Return whether something
