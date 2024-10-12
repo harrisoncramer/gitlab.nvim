@@ -47,7 +47,7 @@ end
 --- continue working on it.
 ---@param args? Mr
 M.start = function(args)
-  if not git.current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
+  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
     return
   end
 

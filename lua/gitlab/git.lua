@@ -43,6 +43,58 @@ M.switch_branch = function(branch)
   return run_system({ "git", "checkout", "-q", branch })
 end
 
+---Fetches the name of the remote tracking branch for the current branch
+---@return string|nil, string|nil
+M.get_remote_branch = function()
+  return run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
+end
+
+---Determines whether the tracking branch is ahead of or behind the current branch, and warns the user if so
+---@param current_branch string
+---@param remote_branch string
+---@param log_level number
+---@return boolean
+M.get_ahead_behind = function(current_branch, remote_branch, log_level)
+  local u = require("gitlab.utils")
+  local result, err =
+    run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
+  if err ~= nil or result == nil then
+    u.notify("Could not determine if branch is up-to-date: " .. err, vim.log.levels.ERROR)
+    return false
+  end
+
+  local ahead, behind = result:match("(%d+)%s+(%d+)")
+  if ahead == nil or behind == nil then
+    u.notify("Error parsing ahead/behind information.", vim.log.levels.ERROR)
+    return false
+  end
+
+  ahead = tonumber(ahead)
+  behind = tonumber(behind)
+
+  if ahead > 0 and behind == 0 then
+    u.notify(string.format("There are local changes that haven't been pushed to %s yet", remote_branch), log_level)
+    return false
+  end
+  if behind > 0 and ahead == 0 then
+    u.notify(string.format("There are remote changes on %s that haven't been pulled yet", remote_branch), log_level)
+    return false
+  end
+
+  if ahead > 0 and behind > 0 then
+    u.notify(
+      string.format(
+        "Your branch and the remote %s have diverged. You need to pull, possibly rebase, and then push.",
+        remote_branch
+      ),
+      log_level
+    )
+    return false
+  end
+
+  return true -- Checks passed, branch is up-to-date
+end
+
 ---Return the name of the current branch
 ---@return string|nil, string|nil
 M.get_current_branch = function()
@@ -93,39 +145,45 @@ M.contains_branch = function(current_branch)
   return run_system({ "git", "branch", "-r", "--contains", current_branch })
 end
 
----Returns true if `branch` is up-to-date on remote, false otherwise.
+---Returns true if `branch` is up-to-date on remote, otherwise false and warns user
 ---@param log_level integer
----@return boolean|nil
-M.current_branch_up_to_date_on_remote = function(log_level)
+---@return boolean
+M.check_current_branch_up_to_date_on_remote = function(log_level)
+  local u = require("gitlab.utils")
+
+  -- Get current branch
+  local current_branch, err_current_branch = M.get_current_branch()
+  if err_current_branch or not current_branch then
+    u.notify("Could not get current branch: " .. err_current_branch, vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Get remote tracking branch
+  local remote_branch, err_remote_branch = M.get_remote_branch()
+  if err_remote_branch or not remote_branch then
+    u.notify("Could not get remote branch: " .. err_remote_branch, vim.log.levels.ERROR)
+    return false
+  end
+
+  return M.get_ahead_behind(current_branch, remote_branch, log_level)
+end
+
+---Warns user if the current MR is in a bad state (closed, has conflicts, merged)
+M.check_mr_in_good_condition = function()
   local state = require("gitlab.state")
-  local current_branch = M.get_current_branch()
-  local handle = io.popen("git branch -r --contains " .. current_branch .. " 2>&1")
-  if not handle then
-    require("gitlab.utils").notify("Error running 'git branch' command.", vim.log.levels.ERROR)
-    return nil
+  local u = require("gitlab.utils")
+
+  if state.INFO.has_conflicts then
+    u.notify("This merge request has conflicts!", vim.log.levels.WARN)
   end
 
-  local remote_branches_with_current_head = {}
-  for line in handle:lines() do
-    table.insert(remote_branches_with_current_head, line)
+  if state.INFO.state == "closed" then
+    u.notify(string.format("This MR was closed %s", u.time_since(state.INFO.closed_at)), vim.log.levels.WARN)
   end
-  handle:close()
 
-  local current_head_on_remote = List.new(remote_branches_with_current_head):filter(function(line)
-    return line == string.format("  %s/", state.settings.connection_settings.remote) .. current_branch
-  end)
-  local remote_up_to_date = #current_head_on_remote == 1
-
-  if not remote_up_to_date then
-    require("gitlab.utils").notify(
-      string.format(
-        "You have local commits that are not on %s. Have you forgotten to push?",
-        state.settings.connection_settings.remote
-      ),
-      log_level
-    )
+  if state.INFO.state == "merged" then
+    u.notify(string.format("This MR was merged %s", u.time_since(state.INFO.merged_at)), vim.log.levels.WARN)
   end
-  return remote_up_to_date
 end
 
 return M
