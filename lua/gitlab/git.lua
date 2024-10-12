@@ -52,6 +52,7 @@ end
 ---Determines whether the tracking branch is ahead of or behind the current branch, and warns the user if so
 ---@param current_branch string
 ---@param remote_branch string
+---@param log_level integer
 ---@return boolean
 M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   local u = require("gitlab.utils")
