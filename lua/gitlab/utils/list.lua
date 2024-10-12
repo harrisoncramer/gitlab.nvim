@@ -33,6 +33,23 @@ function List:filter(func)
   return result
 end
 
+---Partitions a given list into two lists
+---@generic T
+---@param func fun(v: T, i: integer):boolean
+---@return List<T>, List<T> @Returns two lists: the 1st with elements for which func returns true, the 2nd with elements for which it returns false
+function List:partition(func)
+  local result_true = List.new()
+  local result_false = List.new()
+  for i, v in ipairs(self) do
+    if func(v, i) == true then
+      table.insert(result_true, v)
+    else
+      table.insert(result_false, v)
+    end
+  end
+  return result_true, result_false
+end
+
 function List:reduce(func, agg)
   for i, v in ipairs(self) do
     agg = func(agg, v, i)

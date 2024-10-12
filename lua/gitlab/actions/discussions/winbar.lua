@@ -49,9 +49,17 @@ local function content()
   local resolvable_notes, resolved_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
   local draft_notes = require("gitlab.actions.draft_notes")
-  local inline_draft_notes = List.new(state.DRAFT_NOTES):filter(draft_notes.has_position)
-  local unlinked_draft_notes = List.new(state.DRAFT_NOTES):filter(function(note)
-    return not draft_notes.has_position(note)
+  local inline_draft_notes, unlinked_draft_notes = List.new(state.DRAFT_NOTES):partition(function(note)
+    if note.discussion_id == "" then
+      return draft_notes.has_position(note)
+    else
+      for _, discussion in ipairs(state.DISCUSSION_DATA.unlinked_discussions) do
+        if discussion.id == note.discussion_id then
+          return false
+        end
+      end
+    end
+    return true
   end)
 
   local t = {
