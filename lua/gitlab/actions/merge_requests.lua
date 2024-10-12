@@ -38,6 +38,7 @@ M.choose_merge_request = function(opts)
       reviewer.close()
     end
 
+
     vim.schedule(function()
       local _, branch_switch_err = git.switch_branch(choice.source_branch)
       if branch_switch_err ~= nil then
@@ -45,7 +46,7 @@ M.choose_merge_request = function(opts)
       end
 
       vim.schedule(function()
-        state.chosen_target_branch = choice.target_branch
+        state.chosen_mr_iid = choice.iid
         require("gitlab.server").restart(function()
           if opts.open_reviewer then
             require("gitlab").review()

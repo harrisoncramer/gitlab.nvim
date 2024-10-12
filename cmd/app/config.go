@@ -11,7 +11,7 @@ type PluginOptions struct {
 		GitlabRequest  bool `json:"gitlab_request"`
 		GitlabResponse bool `json:"gitlab_response"`
 	} `json:"debug"`
-	ChosenTargetBranch *string `json:"chosen_target_branch,omitempty"`
+	ChosenMrIID        int `json:"chosen_mr_iid"`
 	ConnectionSettings struct {
 		Insecure bool   `json:"insecure"`
 		Remote   string `json:"remote"`

@@ -20,10 +20,10 @@ M.start = function(callback)
     debug = state.settings.debug,
     log_path = state.settings.log_path,
     connection_settings = state.settings.connection_settings,
-    chosen_target_branch = state.chosen_target_branch,
+    chosen_mr_iid = state.chosen_mr_iid,
   }
 
-  state.chosen_target_branch = nil -- Do not let this interfere with subsequent reviewer.open() calls
+  state.chosen_mr_iid = 0 -- Do not let this interfere with subsequent reviewer.open() calls
 
   local settings = vim.json.encode(go_server_settings)
   local command = string.format("%s '%s'", state.settings.bin, settings)
@@ -91,7 +91,7 @@ M.build = function(override)
   end
 
   local cmd = u.is_windows() and "cd %s\\cmd && go build -o bin.exe && move bin.exe ..\\"
-    or "cd %s/cmd && go build -o bin && mv bin ../bin"
+      or "cd %s/cmd && go build -o bin && mv bin ../bin"
 
   local command = string.format(cmd, state.settings.bin_path)
   local null = u.is_windows() and " >NUL" or " > /dev/null"
