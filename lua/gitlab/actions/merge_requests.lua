@@ -38,7 +38,6 @@ M.choose_merge_request = function(opts)
       reviewer.close()
     end
 
-
     vim.schedule(function()
       local _, branch_switch_err = git.switch_branch(choice.source_branch)
       if branch_switch_err ~= nil then
