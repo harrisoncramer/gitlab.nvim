@@ -86,7 +86,7 @@ M.open = function()
     require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
 
-  git.current_branch_up_to_date_on_remote(vim.log.levels.WARN)
+  git.check_current_branch_up_to_date_on_remote(vim.log.levels.WARN)
   git.check_mr_in_good_condition()
 end
 

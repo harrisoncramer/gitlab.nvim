@@ -52,7 +52,7 @@ end
 ---Determines whether the tracking branch is ahead of or behind the current branch, and warns the user if so
 ---@param current_branch string
 ---@param remote_branch string
----@param log_level integer
+---@param log_level number
 ---@return boolean
 M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   local u = require("gitlab.utils")
@@ -73,10 +73,7 @@ M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   behind = tonumber(behind)
 
   if ahead > 0 and behind == 0 then
-    u.notify(
-      string.format("There are local changes that haven't been pushed to %s yet", remote_branch),
-      log_level
-    )
+    u.notify(string.format("There are local changes that haven't been pushed to %s yet", remote_branch), log_level)
     return false
   end
   if behind > 0 and ahead == 0 then
