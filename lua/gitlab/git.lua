@@ -150,7 +150,7 @@ end
 ---Returns true if `branch` is up-to-date on remote, otherwise false and warns user
 ---@param log_level integer
 ---@return boolean
-M.current_branch_up_to_date_on_remote = function(log_level)
+M.check_current_branch_up_to_date_on_remote = function(log_level)
   local u = require("gitlab.utils")
 
   -- Get current branch
