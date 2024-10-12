@@ -73,7 +73,7 @@ M.get_ahead_behind = function(current_branch, remote_branch, log_level)
 
   if ahead > 0 and behind == 0 then
     u.notify(
-      string.format("You have local commits that are not on %s. Have you forgotten to push?", remote_branch),
+      string.format("There are local changes that haven't been pushed to %s yet", remote_branch),
       log_level
     )
     return false
