@@ -105,7 +105,10 @@ func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 			options := gitlab.ListProjectMergeRequestsOptions{
 				Scope:        gitlab.Ptr("all"),
 				SourceBranch: &m.data.gitInfo.BranchName,
-				TargetBranch: pluginOptions.ChosenTargetBranch,
+			}
+
+			if pluginOptions.ChosenMrIID != 0 {
+				options.IIDs = gitlab.Ptr([]int{pluginOptions.ChosenMrIID})
 			}
 
 			mergeRequests, _, err := m.client.ListProjectMergeRequests(m.data.projectInfo.ProjectId, &options)

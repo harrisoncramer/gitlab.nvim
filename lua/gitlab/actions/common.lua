@@ -82,6 +82,7 @@ M.add_empty_titles = function()
           { end_row = linnr - 1, end_col = string.len(v.title), hl_group = "TitleHighlight" }
         )
       end
+      M.switch_can_edit_bufs(false, v.bufnr)
     end
   end
 end

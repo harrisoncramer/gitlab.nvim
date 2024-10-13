@@ -84,7 +84,7 @@ end
 
 ---Publishes all draft notes and comments. Re-renders all discussion views.
 M.confirm_publish_all_drafts = function()
-  local body = {}
+  local body = { publish_all = true }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
