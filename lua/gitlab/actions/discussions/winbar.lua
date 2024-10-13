@@ -52,11 +52,10 @@ local function content()
   local inline_draft_notes, unlinked_draft_notes = List.new(state.DRAFT_NOTES):partition(function(note)
     if note.discussion_id == "" then
       return draft_notes.has_position(note)
-    else
-      for _, discussion in ipairs(state.DISCUSSION_DATA.unlinked_discussions) do
-        if discussion.id == note.discussion_id then
-          return false
-        end
+    end
+    for _, discussion in ipairs(state.DISCUSSION_DATA.unlinked_discussions) do
+      if discussion.id == note.discussion_id then
+        return false
       end
     end
     return true
