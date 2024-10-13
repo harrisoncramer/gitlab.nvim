@@ -251,8 +251,7 @@ M.unlinked_discussion_tree = {
   unresolved_expanded = false,
 }
 
--- Used to set a specific target when choosing a merge request, due to the fact
--- that it's technically possible to have multiple target branches
+-- Used to set a specific MR when choosing a merge request
 M.chosen_mr_iid = 0
 
 -- These keymaps are set globally when the plugin is initialized
