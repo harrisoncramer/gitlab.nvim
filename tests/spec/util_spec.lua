@@ -77,6 +77,8 @@ describe("utils/init.lua", function()
       local want = "November 19, 2011"
       assert.are.same(want, got)
     end)
+
+    it("Parses ")
   end)
 
   describe("remove_first_value", function()
