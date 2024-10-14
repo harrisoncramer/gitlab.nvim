@@ -84,13 +84,6 @@ describe("utils/init.lua", function()
       local want = "5 days ago"
       assert.are.same(want, got)
     end)
-
-    it("Parses TZ w/out offset (absolute)", function()
-      local stamp = "2023-11-14T18:44:02Z"
-      local got = u.format_to_local(stamp, current_date)
-      local want = "Tuesday, November 14"
-      assert.are.same(want, got)
-    end)
   end)
 
   describe("remove_first_value", function()
@@ -223,6 +216,7 @@ describe("utils/init.lua", function()
       { "2016-11-21T20:25:09.482-05:00", "-0500", "11/21/2016 at 20:25" },
       { "2016-11-22T1:25:09.482-00:00", "-0000", "11/22/2016 at 01:25" },
       { "2017-3-22T20:25:09.482+07:00", "+0700", "03/22/2017 at 20:25" },
+      { "2016-11-22T1:25:09Z", "-0000", "11/22/2016 at 01:25" },
     }
     for _, val in ipairs(tests) do
       local got = u.format_to_local(val[1], val[2])
