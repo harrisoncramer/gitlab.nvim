@@ -87,7 +87,7 @@ describe("utils/init.lua", function()
 
     it("Parses TZ w/out offset (absolute)", function()
       local stamp = "2023-11-14T18:44:02Z"
-      local got = u.time_since(stamp, current_date)
+      local got = u.format_to_local(stamp, current_date)
       local want = "Tuesday, November 14"
       assert.are.same(want, got)
     end)
