@@ -78,7 +78,19 @@ describe("utils/init.lua", function()
       assert.are.same(want, got)
     end)
 
-    it("Parses ")
+    it("Parses TZ w/out offset (relative)", function()
+      local stamp = "2023-11-14T18:44:02Z"
+      local got = u.time_since(stamp, current_date)
+      local want = "5 days ago"
+      assert.are.same(want, got)
+    end)
+
+    it("Parses TZ w/out offset (absolute)", function()
+      local stamp = "2023-11-14T18:44:02Z"
+      local got = u.time_since(stamp, current_date)
+      local want = "Tuesday, November 14"
+      assert.are.same(want, got)
+    end)
   end)
 
   describe("remove_first_value", function()
