@@ -63,8 +63,6 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     return
   end
 
-  vim.print("Here: ", unlinked, discussion_id)
-
   local reviewer_data = reviewer.get_reviewer_data()
   if reviewer_data == nil then
     u.notify("Error getting reviewer data", vim.log.levels.ERROR)
