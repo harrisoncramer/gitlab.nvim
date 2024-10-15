@@ -139,7 +139,7 @@ M.open = function(callback)
   local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
   vim.api.nvim_set_current_win(M.split.winid)
 
-  common.switch_can_edit_bufs(true, M.linked_bufnr, M.unliked_bufnr)
+  common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
 
