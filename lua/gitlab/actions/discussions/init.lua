@@ -432,6 +432,17 @@ M.rebuild_discussion_tree = function()
   if M.linked_bufnr == nil then
     return
   end
+
+  -- save current node for restoring cursor position
+  local current_node
+  if
+    vim.api.nvim_get_current_win() == M.split.winid
+    and vim.api.nvim_get_current_buf() == M.linked_bufnr
+    and M.discussion_tree ~= nil
+  then
+    current_node = M.discussion_tree:get_node()
+  end
+
   local expanded_node_ids = M.gather_expanded_node_ids(M.discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
 
@@ -447,12 +458,18 @@ M.rebuild_discussion_tree = function()
     bufnr = M.linked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
   })
+
   -- Re-expand already expanded nodes
   for _, id in ipairs(expanded_node_ids) do
     tree_utils.open_node_by_id(discussion_tree, id)
   end
-
   discussion_tree:render()
+
+  if current_node ~= nil then
+    local root_node = common.get_root_node(M.discussion_tree, current_node)
+    discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_node, root_node)
+  end
+
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
@@ -466,6 +483,17 @@ M.rebuild_unlinked_discussion_tree = function()
   if M.unlinked_bufnr == nil then
     return
   end
+
+  -- save current node for restoring cursor position
+  local current_node
+  if
+    vim.api.nvim_get_current_win() == M.split.winid
+    and vim.api.nvim_get_current_buf() == M.unlinked_bufnr
+    and M.unlinked_discussion_tree ~= nil
+  then
+    current_node = M.unlinked_discussion_tree:get_node()
+  end
+
   local expanded_node_ids = M.gather_expanded_node_ids(M.unlinked_discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
@@ -487,6 +515,11 @@ M.rebuild_unlinked_discussion_tree = function()
     tree_utils.open_node_by_id(unlinked_discussion_tree, id)
   end
   unlinked_discussion_tree:render()
+
+  if current_node ~= nil then
+    local root_node = common.get_root_node(M.unlinked_discussion_tree, current_node)
+    discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_node, root_node)
+  end
 
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
