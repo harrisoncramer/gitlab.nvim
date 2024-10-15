@@ -94,7 +94,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     job.run_job("/mr/draft_notes/", "POST", body, function()
       u.notify("Draft reply created!", vim.log.levels.INFO)
       draft_notes.load_draft_notes(function()
-        discussions.rebuild_view(false, true)
+        discussions.rebuild_view(unlinked)
       end)
     end)
     return
