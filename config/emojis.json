@@ -6364,25 +6364,6 @@
     ],
     "moji": "📦"
   },
-  "party": {
-    "unicode": "1F389",
-    "unicode_alternates": [],
-    "name": "party popper as a 'tada' celebration",
-    "shortname": ":tada:",
-    "category": "people",
-    "aliases": [
-      ":party_popper:"
-    ],
-    "aliases_ascii": [],
-    "keywords": [
-      "celebrate",
-      "celebration",
-      "hooray",
-      "hurrah",
-      "hurray"
-    ],
-    "moji": "🎉"
-  },
   "pensive": {
     "unicode": "1F614",
     "unicode_alternates": [],
@@ -9660,6 +9641,25 @@
       "emotion"
     ],
     "moji": "😅"
+  },
+  "tada": {
+    "unicode": "1F389",
+    "unicode_alternates": [],
+    "name": "party popper as a 'tada' celebration",
+    "shortname": ":tada:",
+    "category": "people",
+    "aliases": [
+      ":party_popper:"
+    ],
+    "aliases_ascii": [],
+    "keywords": [
+      "celebrate",
+      "celebration",
+      "hooray",
+      "hurrah",
+      "hurray"
+    ],
+    "moji": "🎉"
   },
   "thermometer_face": {
     "unicode": "1F912",
