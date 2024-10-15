@@ -41,13 +41,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
     job.run_job("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
-      if is_draft then
-        draft_notes.load_draft_notes(function()
-          discussions.rebuild_view(unlinked)
-        end)
-      else
-        discussions.rebuild_view(unlinked)
-      end
+      discussions.rebuild_view(unlinked)
     end)
     return
   end
