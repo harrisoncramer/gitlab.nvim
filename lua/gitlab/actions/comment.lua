@@ -166,7 +166,7 @@ end
 ---@param opts LayoutOpts
 ---@return NuiLayout|nil
 M.create_comment_layout = function(opts)
-  if opts.unlinked ~= true then
+  if opts.unlinked ~= true and opts.discussion_id == nil then
     -- Check that diffview is initialized
     if reviewer.tabnr == nil then
       u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
