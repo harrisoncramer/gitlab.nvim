@@ -422,12 +422,32 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
   M.restore_cursor_position(winid, tree, current_node, root_node)
 end
 
+-- Get current node for restoring cursor position
+---@param winid integer Window number of the discussions split
+---@param bufnr integer Buffer number of the current tree
+---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
+M.get_node_at_cursor = function(winid, bufnr, tree)
+  if vim.api.nvim_get_current_win() == winid and vim.api.nvim_get_current_buf() == bufnr and tree ~= nil then
+    return tree:get_node()
+  end
+end
+
 ---Restore cursor position to the original node if possible
+---@param winid integer Window number of the discussions split
+---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
+---@param original_node NuiTree.Node|nil The last node with the cursor
+---@param root_node NuiTree.Node|nil The root node of the last node with the cursor
 M.restore_cursor_position = function(winid, tree, original_node, root_node)
+  if original_node == nil or tree == nil then
+    return
+  end
   local _, line_number = tree:get_node("-" .. tostring(original_node.id))
-  -- If current_node is has been collapsed, get line number of root node instead
-  if line_number == nil and root_node then
-    _, line_number = tree:get_node("-" .. tostring(root_node.id))
+  -- If current_node has been collapsed, try to get line number of root node instead
+  if line_number == nil then
+    root_node = root_node and root_node or common.get_root_node(tree, original_node)
+    if root_node ~= nil then
+      _, line_number = tree:get_node("-" .. tostring(root_node.id))
+    end
   end
   if line_number ~= nil then
     vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
