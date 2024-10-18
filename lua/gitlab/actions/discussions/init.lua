@@ -139,7 +139,7 @@ M.open = function(callback)
   local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
   vim.api.nvim_set_current_win(M.split.winid)
 
-  common.switch_can_edit_bufs(true, M.linked_bufnr, M.unliked_bufnr)
+  common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   M.rebuild_discussion_tree()
   M.rebuild_unlinked_discussion_tree()
 
@@ -432,6 +432,9 @@ M.rebuild_discussion_tree = function()
   if M.linked_bufnr == nil then
     return
   end
+
+  local current_node = discussions_tree.get_node_at_cursor(M.discussion_tree, M.last_node_at_cursor)
+
   local expanded_node_ids = M.gather_expanded_node_ids(M.discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
 
@@ -447,12 +450,14 @@ M.rebuild_discussion_tree = function()
     bufnr = M.linked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
   })
+
   -- Re-expand already expanded nodes
   for _, id in ipairs(expanded_node_ids) do
     tree_utils.open_node_by_id(discussion_tree, id)
   end
-
   discussion_tree:render()
+  discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_node)
+
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
@@ -466,6 +471,9 @@ M.rebuild_unlinked_discussion_tree = function()
   if M.unlinked_bufnr == nil then
     return
   end
+
+  local current_node = discussions_tree.get_node_at_cursor(M.unlinked_discussion_tree, M.last_node_at_cursor)
+
   local expanded_node_ids = M.gather_expanded_node_ids(M.unlinked_discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
   vim.api.nvim_buf_set_lines(M.unlinked_bufnr, 0, -1, false, {})
@@ -487,6 +495,7 @@ M.rebuild_unlinked_discussion_tree = function()
     tree_utils.open_node_by_id(unlinked_discussion_tree, id)
   end
   unlinked_discussion_tree:render()
+  discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_node)
 
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
@@ -535,6 +544,14 @@ M.create_split_and_bufs = function()
     buffer = linked_bufnr,
     callback = function()
       M.last_row, M.last_column = unpack(vim.api.nvim_win_get_cursor(0))
+      M.last_node_at_cursor = M.discussion_tree and M.discussion_tree:get_node() or nil
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("WinLeave", {
+    buffer = unlinked_bufnr,
+    callback = function()
+      M.last_node_at_cursor = M.unlinked_discussion_tree and M.unlinked_discussion_tree:get_node() or nil
     end,
   })
 

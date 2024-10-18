@@ -41,13 +41,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
     job.run_job("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
-      if is_draft then
-        draft_notes.load_draft_notes(function()
-          discussions.rebuild_view(unlinked)
-        end)
-      else
-        discussions.rebuild_view(unlinked)
-      end
+      discussions.rebuild_view(unlinked)
     end)
     return
   end
@@ -68,8 +62,6 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     end)
     return
   end
-
-  vim.print("Here: ", unlinked, discussion_id)
 
   local reviewer_data = reviewer.get_reviewer_data()
   if reviewer_data == nil then
@@ -102,7 +94,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     job.run_job("/mr/draft_notes/", "POST", body, function()
       u.notify("Draft reply created!", vim.log.levels.INFO)
       draft_notes.load_draft_notes(function()
-        discussions.rebuild_view(false, true)
+        discussions.rebuild_view(unlinked)
       end)
     end)
     return
