@@ -433,7 +433,7 @@ M.rebuild_discussion_tree = function()
     return
   end
 
-  local current_node = discussions_tree.get_node_at_cursor(M.split.winid, M.linked_bufnr, M.discussion_tree)
+  local current_node = discussions_tree.get_node_at_cursor(M.discussion_tree, M.last_node_at_cursor)
 
   local expanded_node_ids = M.gather_expanded_node_ids(M.discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
@@ -472,8 +472,7 @@ M.rebuild_unlinked_discussion_tree = function()
     return
   end
 
-  -- save current node for restoring cursor position
-  local current_node = discussions_tree.get_node_at_cursor(M.split.winid, M.unlinked_bufnr, M.unlinked_discussion_tree)
+  local current_node = discussions_tree.get_node_at_cursor(M.unlinked_discussion_tree, M.last_node_at_cursor)
 
   local expanded_node_ids = M.gather_expanded_node_ids(M.unlinked_discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
@@ -545,6 +544,14 @@ M.create_split_and_bufs = function()
     buffer = linked_bufnr,
     callback = function()
       M.last_row, M.last_column = unpack(vim.api.nvim_win_get_cursor(0))
+      M.last_node_at_cursor = M.discussion_tree and M.discussion_tree:get_node() or nil
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("WinLeave", {
+    buffer = unlinked_bufnr,
+    callback = function()
+      M.last_node_at_cursor = M.unlinked_discussion_tree and M.unlinked_discussion_tree:get_node() or nil
     end,
   })
 
