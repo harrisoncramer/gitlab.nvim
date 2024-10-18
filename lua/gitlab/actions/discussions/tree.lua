@@ -423,12 +423,16 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
 end
 
 -- Get current node for restoring cursor position
----@param winid integer Window number of the discussions split
----@param bufnr integer Buffer number of the current tree
 ---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
-M.get_node_at_cursor = function(winid, bufnr, tree)
-  if vim.api.nvim_get_current_win() == winid and vim.api.nvim_get_current_buf() == bufnr and tree ~= nil then
+---@param last_node NuiTree.Node|nil The last active discussion tree node in case we are not in any of the discussion trees
+M.get_node_at_cursor = function(tree, last_node)
+  if tree == nil then
+    return
+  end
+  if vim.api.nvim_get_current_win() == vim.fn.win_findbuf(tree.bufnr)[1] then
     return tree:get_node()
+  else
+    return last_node
   end
 end
 
