@@ -3433,7 +3433,7 @@
     "moji": "🤕"
   },
   "heart": {
-    "unicode": "1F495",
+    "unicode": "2764-FE0F",
     "unicode_alternates": [],
     "name": "heart",
     "shortname": ":heart:",
@@ -3454,10 +3454,10 @@
       "emotion",
       "beautiful"
     ],
-    "moji": "❤️ "
+    "moji": "❤️"
   },
   "hearts": {
-    "unicode": "1F495",
+    "unicode": "2764-FE0F",
     "unicode_alternates": [],
     "name": "hearts",
     "shortname": ":hearts:",
@@ -3478,7 +3478,7 @@
       "emotion",
       "beautiful"
     ],
-    "moji": "❤️ "
+    "moji": "❤️"
   },
   "heart_eyes": {
     "unicode": "1F60D",
@@ -7071,7 +7071,7 @@
     "moji": "👉🏿"
   },
   "point_up": {
-    "unicode": "261D",
+    "unicode": "261D-FE0F",
     "unicode_alternates": [
       "261D-FE0F"
     ],
@@ -7089,7 +7089,7 @@
       "emojione",
       "diversity"
     ],
-    "moji": "☝"
+    "moji": "☝️"
   },
   "point_up_2": {
     "unicode": "1F446",
@@ -7190,7 +7190,7 @@
     "moji": "👆🏿"
   },
   "point_up_tone1": {
-    "unicode": "261D-1F3FB",
+    "unicode": "261D-FE0F-1F3FB",
     "unicode_alternates": [],
     "name": "white up pointing index tone 1",
     "shortname": ":point_up_tone1:",
@@ -7203,10 +7203,10 @@
       "hand",
       "one"
     ],
-    "moji": "☝🏻"
+    "moji": "☝️🏻"
   },
   "point_up_tone2": {
-    "unicode": "261D-1F3FC",
+    "unicode": "261D-FE0F-1F3FC",
     "unicode_alternates": [],
     "name": "white up pointing index tone 2",
     "shortname": ":point_up_tone2:",
@@ -7219,10 +7219,10 @@
       "hand",
       "one"
     ],
-    "moji": "☝🏼"
+    "moji": "☝️🏼"
   },
   "point_up_tone3": {
-    "unicode": "261D-1F3FD",
+    "unicode": "261D-FE0F-1F3FD",
     "unicode_alternates": [],
     "name": "white up pointing index tone 3",
     "shortname": ":point_up_tone3:",
@@ -7235,10 +7235,10 @@
       "hand",
       "one"
     ],
-    "moji": "☝🏽"
+    "moji": "☝️🏽"
   },
   "point_up_tone4": {
-    "unicode": "261D-1F3FE",
+    "unicode": "261D-FE0F-1F3FE",
     "unicode_alternates": [],
     "name": "white up pointing index tone 4",
     "shortname": ":point_up_tone4:",
@@ -7251,10 +7251,10 @@
       "hand",
       "one"
     ],
-    "moji": "☝🏾"
+    "moji": "☝️🏾"
   },
   "point_up_tone5": {
-    "unicode": "261D-1F3FF",
+    "unicode": "261D-FE0F-1F3FF",
     "unicode_alternates": [],
     "name": "white up pointing index tone 5",
     "shortname": ":point_up_tone5:",
@@ -7267,7 +7267,7 @@
       "hand",
       "one"
     ],
-    "moji": "☝🏿"
+    "moji": "☝️🏿"
   },
   "poop": {
     "unicode": "1F4A9",
@@ -8320,10 +8320,8 @@
     "moji": "🙋🏿"
   },
   "relaxed": {
-    "unicode": "263A",
-    "unicode_alternates": [
-      "263A-FE0F"
-    ],
+    "unicode": "263A-FE0F",
+    "unicode_alternates": [],
     "name": "white smiling face",
     "shortname": ":relaxed:",
     "category": "people",
@@ -8338,7 +8336,7 @@
       "happy",
       "smiley"
     ],
-    "moji": "☺"
+    "moji": "☺️"
   },
   "relieved": {
     "unicode": "1F60C",
@@ -10150,7 +10148,7 @@
     "moji": "🙃"
   },
   "v": {
-    "unicode": "270C",
+    "unicode": "270C-FE0F",
     "unicode_alternates": [
       "270C-FE0F"
     ],
@@ -10173,10 +10171,10 @@
       "diversity",
       "girls night"
     ],
-    "moji": "✌"
+    "moji": "✌️"
   },
   "v_tone1": {
-    "unicode": "270C-1F3FB",
+    "unicode": "270C-FE0F-1F3FB",
     "unicode_alternates": [],
     "name": "victory hand tone 1",
     "shortname": ":v_tone1:",
@@ -10190,10 +10188,10 @@
       "two",
       "v"
     ],
-    "moji": "✌🏻"
+    "moji": "✌️🏻"
   },
   "v_tone2": {
-    "unicode": "270C-1F3FC",
+    "unicode": "270C-FE0F-1F3FC",
     "unicode_alternates": [],
     "name": "victory hand tone 2",
     "shortname": ":v_tone2:",
@@ -10207,10 +10205,10 @@
       "two",
       "v"
     ],
-    "moji": "✌🏼"
+    "moji": "✌️🏼"
   },
   "v_tone3": {
-    "unicode": "270C-1F3FD",
+    "unicode": "270C-FE0F-1F3FD",
     "unicode_alternates": [],
     "name": "victory hand tone 3",
     "shortname": ":v_tone3:",
@@ -10224,10 +10222,10 @@
       "two",
       "v"
     ],
-    "moji": "✌🏽"
+    "moji": "✌️🏽"
   },
   "v_tone4": {
-    "unicode": "270C-1F3FE",
+    "unicode": "270C-FE0F-1F3FE",
     "unicode_alternates": [],
     "name": "victory hand tone 4",
     "shortname": ":v_tone4:",
@@ -10241,10 +10239,10 @@
       "two",
       "v"
     ],
-    "moji": "✌🏾"
+    "moji": "✌️🏾"
   },
   "v_tone5": {
-    "unicode": "270C-1F3FF",
+    "unicode": "270C-FE0F-1F3FF",
     "unicode_alternates": [],
     "name": "victory hand tone 5",
     "shortname": ":v_tone5:",
@@ -10258,7 +10256,7 @@
       "two",
       "v"
     ],
-    "moji": "✌🏿"
+    "moji": "✌️🏿"
   },
   "vulcan": {
     "unicode": "1F596",
@@ -10829,7 +10827,7 @@
     "moji": "😟"
   },
   "writing_hand": {
-    "unicode": "270D",
+    "unicode": "270D-FE0F",
     "unicode_alternates": [
       "270D-FE0F"
     ],
@@ -10844,10 +10842,10 @@
       "write",
       "diversity"
     ],
-    "moji": "✍"
+    "moji": "✍️"
   },
   "writing_hand_tone1": {
-    "unicode": "270D-1F3FB",
+    "unicode": "270D-FE0F-1F3FB",
     "unicode_alternates": [],
     "name": "writing hand tone 1",
     "shortname": ":writing_hand_tone1:",
@@ -10860,10 +10858,10 @@
       "signature",
       "draw"
     ],
-    "moji": "✍🏻"
+    "moji": "✍️🏻"
   },
   "writing_hand_tone2": {
-    "unicode": "270D-1F3FC",
+    "unicode": "270D-FE0F-1F3FC",
     "unicode_alternates": [],
     "name": "writing hand tone 2",
     "shortname": ":writing_hand_tone2:",
@@ -10876,10 +10874,10 @@
       "signature",
       "draw"
     ],
-    "moji": "✍🏼"
+    "moji": "✍️🏼"
   },
   "writing_hand_tone3": {
-    "unicode": "270D-1F3FD",
+    "unicode": "270D-FE0F-1F3FD",
     "unicode_alternates": [],
     "name": "writing hand tone 3",
     "shortname": ":writing_hand_tone3:",
@@ -10892,10 +10890,10 @@
       "signature",
       "draw"
     ],
-    "moji": "✍🏽"
+    "moji": "✍️🏽"
   },
   "writing_hand_tone4": {
-    "unicode": "270D-1F3FE",
+    "unicode": "270D-FE0F-1F3FE",
     "unicode_alternates": [],
     "name": "writing hand tone 4",
     "shortname": ":writing_hand_tone4:",
@@ -10908,10 +10906,10 @@
       "signature",
       "draw"
     ],
-    "moji": "✍🏾"
+    "moji": "✍️🏾"
   },
   "writing_hand_tone5": {
-    "unicode": "270D-1F3FF",
+    "unicode": "270D-FE0F-1F3FF",
     "unicode_alternates": [],
     "name": "writing hand tone 5",
     "shortname": ":writing_hand_tone5:",
@@ -10924,7 +10922,7 @@
       "signature",
       "draw"
     ],
-    "moji": "✍🏿"
+    "moji": "✍️🏿"
   },
   "yum": {
     "unicode": "1F60B",
