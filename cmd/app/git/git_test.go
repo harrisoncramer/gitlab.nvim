@@ -30,6 +30,7 @@ func (f FakeGitManager) GetProjectUrlFromNativeGitCmd(string) (url string, err e
 
 type TestCase struct {
 	desc        string
+	url         string
 	branch      string
 	projectName string
 	namespace   string
@@ -40,6 +41,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 	testCases := []TestCase{
 		{
 			desc:        "Project configured in SSH under a single folder",
+			url:         "git@custom-gitlab.com",
 			remote:      "git@custom-gitlab.com:namespace-1/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -47,6 +49,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH under a single folder without .git extension",
+			url:         "git@custom-gitlab.com",
 			remote:      "git@custom-gitlab.com:namespace-1/project-name",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -54,6 +57,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH under one nested folder",
+			url:         "git@custom-gitlab.com",
 			remote:      "git@custom-gitlab.com:namespace-1/namespace-2/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -61,6 +65,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH under two nested folders",
+			url:         "git@custom-gitlab.com",
 			remote:      "git@custom-gitlab.com:namespace-1/namespace-2/namespace-3/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -68,6 +73,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH:// under a single folder",
+			url:         "ssh://custom-gitlab.com",
 			remote:      "ssh://custom-gitlab.com/namespace-1/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -75,6 +81,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH:// under a single folder without .git extension",
+			url:         "ssh://custom-gitlab.com",
 			remote:      "ssh://custom-gitlab.com/namespace-1/project-name",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -82,6 +89,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH:// under two nested folders",
+			url:         "ssh://custom-gitlab.com",
 			remote:      "ssh://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -89,13 +97,23 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in SSH:// and have a custom port",
+			url:         "ssh://custom-gitlab.com",
 			remote:      "ssh://custom-gitlab.com:2222/namespace-1/project-name",
 			branch:      "feature/abc",
 			projectName: "project-name",
 			namespace:   "namespace-1",
 		},
 		{
+			desc:        "Project configured in SSH:// and have a custom port (with gitlab url namespace)",
+			url:         "ssh://custom-gitlab.com/a",
+			remote:      "ssh://custom-gitlab.com:2222/a/namespace-1/project-name",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-1",
+		},
+		{
 			desc:        "Project configured in HTTP and under a single folder without .git extension",
+			url:         "http://custom-gitlab.com",
 			remote:      "http://custom-gitlab.com/namespace-1/project-name",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -103,6 +121,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTP and under a single folder without .git extension (with embedded credentials)",
+			url:         "http://custom-gitlab.com",
 			remote:      "http://username:password@custom-gitlab.com/namespace-1/project-name",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -110,6 +129,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTPS and under a single folder",
+			url:         "https://custom-gitlab.com",
 			remote:      "https://custom-gitlab.com/namespace-1/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -117,6 +137,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTPS and under a single folder (with embedded credentials)",
+			url:         "https://custom-gitlab.com",
 			remote:      "https://username:password@custom-gitlab.com/namespace-1/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -124,6 +145,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTPS and under a nested folder",
+			url:         "https://custom-gitlab.com",
 			remote:      "https://custom-gitlab.com/namespace-1/namespace-2/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -131,6 +153,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTPS and under a nested folder (with embedded credentials)",
+			url:         "https://custom-gitlab.com",
 			remote:      "https://username:password@custom-gitlab.com/namespace-1/namespace-2/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -138,6 +161,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTPS and under two nested folders",
+			url:         "https://custom-gitlab.com",
 			remote:      "https://custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
@@ -145,10 +169,27 @@ func TestExtractGitInfo_Success(t *testing.T) {
 		},
 		{
 			desc:        "Project configured in HTTPS and under two nested folders (with embedded credentials)",
+			url:         "https://custom-gitlab.com",
 			remote:      "https://username:password@custom-gitlab.com/namespace-1/namespace-2/namespace-3/project-name.git",
 			branch:      "feature/abc",
 			projectName: "project-name",
 			namespace:   "namespace-1/namespace-2/namespace-3",
+		},
+		{
+			desc:        "Project configured in HTTPS and under one nested folders (with gitlab url namespace)",
+			url:         "https://custom-gitlab.com/gitlab",
+			remote:      "https://username:password@custom-gitlab.com/gitlab/namespace-2/namespace-3/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-2/namespace-3",
+		},
+		{
+			desc:        "Project configured in HTTPS and under one nested folders (with gitlab url namespace + extra slash)",
+			url:         "https://custom-gitlab.com/gitlab/",
+			remote:      "https://username:password@custom-gitlab.com/gitlab/namespace-2/namespace-3/project-name.git",
+			branch:      "feature/abc",
+			projectName: "project-name",
+			namespace:   "namespace-2/namespace-3",
 		},
 	}
 	for _, tC := range testCases {
@@ -159,7 +200,7 @@ func TestExtractGitInfo_Success(t *testing.T) {
 				BranchName:  tC.branch,
 				RemoteUrl:   tC.remote,
 			}
-			data, err := NewGitData(tC.remote, g)
+			data, err := NewGitData(tC.remote, tC.url, g)
 			if err != nil {
 				t.Errorf("No error was expected, got %s", err)
 			}
@@ -204,7 +245,7 @@ func TestExtractGitInfo_FailToGetProjectRemoteUrl(t *testing.T) {
 		g := failingUrlManager{
 			errMsg: tC.errMsg,
 		}
-		_, err := NewGitData("", g)
+		_, err := NewGitData("", "", g)
 		if err == nil {
 			t.Errorf("Expected an error, got none")
 		}
@@ -236,7 +277,7 @@ func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 			},
 			errMsg: tC.errMsg,
 		}
-		_, err := NewGitData("", g)
+		_, err := NewGitData("", "", g)
 		if err == nil {
 			t.Errorf("Expected an error, got none")
 		}

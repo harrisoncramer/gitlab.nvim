@@ -26,7 +26,7 @@ func main() {
 	}
 
 	gitManager := git.Git{}
-	gitData, err := git.NewGitData(pluginOptions.ConnectionSettings.Remote, gitManager)
+	gitData, err := git.NewGitData(pluginOptions.ConnectionSettings.Remote, pluginOptions.GitlabUrl, gitManager)
 
 	if err != nil {
 		log.Fatalf("Failure initializing plugin: %v", err)
