@@ -266,6 +266,19 @@ you call this function with no values the defaults will be used:
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
+      emojis = {
+        picker_preview = { -- A simple description of the emoji is always shown. It can be accompanied by any of "emoji" and "shortname".
+          emoji = true, -- Show the emoji in the picker, e.g., 👍
+          shortname = false, -- Show a short name in the picker, e.g., ":thumbsup:"
+        },
+        -- Function for modifying how emojis are displayed in the picker.
+        -- This is useful if your editor/terminal/font/tmux does not render some emojis properly,
+        -- e.g., you can remove skin tones with `emoji = emoji:gsub("[\240][\159][\143][\187-\191]", "")`.
+        -- This does not affect the actual selected emoji.
+        format_func = function(emoji)
+          return emoji .. "  "
+        end,
+      },
       choose_merge_request = {
         open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
       },
