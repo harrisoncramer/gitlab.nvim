@@ -9970,7 +9970,7 @@
     "moji": "😦"
   },
   "frowning2": {
-    "unicode": "2639",
+    "unicode": "2639-FE0F",
     "unicode_alternates": [],
     "name": "white frowning face",
     "shortname": ":frowning2:",
@@ -9986,7 +9986,7 @@
       "smiley",
       "emotion"
     ],
-    "moji": "☹"
+    "moji": "☹️"
   },
   "fu": {
     "unicode": "1F595",
