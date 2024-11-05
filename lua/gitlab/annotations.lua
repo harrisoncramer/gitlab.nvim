@@ -85,10 +85,12 @@
 ---@field view_type string
 ---@field resolvable_discussions number
 ---@field resolved_discussions number
+---@field non_resolvable_discussions number
 ---@field inline_draft_notes number
 ---@field unlinked_draft_notes number
 ---@field resolvable_notes number
 ---@field resolved_notes number
+---@field non_resolvable_notes number
 ---@field help_keymap string
 ---
 ---@class SignTable
