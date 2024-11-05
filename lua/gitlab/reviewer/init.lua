@@ -152,7 +152,7 @@ M.get_reviewer_data = function()
     return
   end
 
-  local current_file = M.get_current_file()
+  local current_file = M.get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
@@ -207,12 +207,28 @@ end
 
 ---Get currently shown file
 ---@return string|nil
-M.get_current_file = function()
+M.get_current_file_path = function()
   local view = diffview_lib.get_current_view()
   if not view or not view.panel or not view.panel.cur_file then
     return
   end
   return view.panel.cur_file.path
+end
+
+M.get_current_file_data = function()
+  local view = diffview_lib.get_current_view()
+  local file_list = view and view.panel and view.panel:ordered_file_list()
+  return List.new(file_list):find(function(f)
+    return f.active
+  end)
+end
+
+M.is_file_renamed = function(file_data)
+  return file_data.status == "R"
+end
+
+M.does_file_have_changes = function(file_data)
+  return file_data.stats.additions > 0 or file_data.stats.deletions > 0
 end
 
 ---Diffview exposes events which can be used to setup autocommands.

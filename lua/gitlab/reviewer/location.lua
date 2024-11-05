@@ -47,6 +47,16 @@ function Location:build_location_data()
     line_range = nil,
   }
 
+  -- If the file has been renamed, we need to include the old file path as well
+  -- local is_renamed = false
+  -- local view = diffview_lib.get_current_view()
+  -- local active_file = reviewer.get_active_file()
+  -- if active_file and active_file.status == "R" then
+  --   is_renamed = true
+  -- end
+  --
+  -- vim.print("IS RENAMED", is_renamed)
+
   -- Comment on new line: Include only new_line in payload.
   -- Comment on deleted line: Include only old_line in payload.
   -- The line was not found in any hunks, send both lines.
@@ -135,7 +145,7 @@ end
 ---@param visual_range LineRange
 ---@return ReviewerLineInfo|nil
 function Location:set_start_range(visual_range)
-  local current_file = require("gitlab.reviewer").get_current_file()
+  local current_file = require("gitlab.reviewer").get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
@@ -182,7 +192,7 @@ end
 -- for the Gitlab payload
 ---@param visual_range LineRange
 function Location:set_end_range(visual_range)
-  local current_file = require("gitlab.reviewer").get_current_file()
+  local current_file = require("gitlab.reviewer").get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return

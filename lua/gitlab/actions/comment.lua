@@ -3,7 +3,6 @@
 --- to this module the data required to make the API calls
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
-local List = require("gitlab.utils.list")
 local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
@@ -181,18 +180,9 @@ M.create_comment_layout = function(opts)
     end
 
     -- Check that the file has not been renamed
-    local file_list = view and view.panel and view.panel:ordered_file_list()
-    local active_file = List.new(file_list):find(function(f)
-      return f.active
-    end)
-
-    if
-      active_file
-      and active_file.status == "R"
-      and active_file.stats.additions == 0
-      and active_file.stats.deletions == 0
-    then
-      u.notify("Commenting on files that are only moved or renamed is not supported", vim.log.levels.ERROR)
+    local active_file = reviewer.get_current_file_data()
+    if reviewer.is_file_renamed(active_file) and not reviewer.does_file_have_changes(active_file) then
+      u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.ERROR)
       return
     end
 
