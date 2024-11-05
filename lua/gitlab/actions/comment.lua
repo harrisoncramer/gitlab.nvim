@@ -183,8 +183,8 @@ M.create_comment_layout = function(opts)
     -- Check that the file has not been renamed
     local file_list = view and view.panel and view.panel:ordered_file_list()
     if file_list and List.new(file_list):includes(function(f)
-          return f.status == "R" and f.active
-        end) then
+      return f.status == "R" and f.active
+    end) then
       u.notify("Commenting on files that are only moved or renamed is not supported", vim.log.levels.ERROR)
       return
     end
