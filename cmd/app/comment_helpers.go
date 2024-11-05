@@ -23,6 +23,7 @@ type LineRange struct {
 /* PositionData represents the position of a comment or note (relative to a file diff) */
 type PositionData struct {
 	FileName       string     `json:"file_name"`
+	OldFileName    string     `json:"old_file_name"`
 	NewLine        *int       `json:"new_line,omitempty"`
 	OldLine        *int       `json:"old_line,omitempty"`
 	HeadCommitSHA  string     `json:"head_commit_sha"`
@@ -41,13 +42,18 @@ type RequestWithPosition interface {
 func buildCommentPosition(commentWithPositionData RequestWithPosition) *gitlab.PositionOptions {
 	positionData := commentWithPositionData.GetPositionData()
 
+	oldFileName := positionData.OldFileName
+	if oldFileName == "" {
+		oldFileName = positionData.FileName
+	}
+
 	opt := &gitlab.PositionOptions{
 		PositionType: &positionData.Type,
 		StartSHA:     &positionData.StartCommitSHA,
 		HeadSHA:      &positionData.HeadCommitSHA,
 		BaseSHA:      &positionData.BaseCommitSHA,
 		NewPath:      &positionData.FileName,
-		OldPath:      &positionData.FileName,
+		OldPath:      &oldFileName,
 		NewLine:      positionData.NewLine,
 		OldLine:      positionData.OldLine,
 	}

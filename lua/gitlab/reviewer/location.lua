@@ -47,16 +47,6 @@ function Location:build_location_data()
     line_range = nil,
   }
 
-  -- If the file has been renamed, we need to include the old file path as well
-  -- local is_renamed = false
-  -- local view = diffview_lib.get_current_view()
-  -- local active_file = reviewer.get_active_file()
-  -- if active_file and active_file.status == "R" then
-  --   is_renamed = true
-  -- end
-  --
-  -- vim.print("IS RENAMED", is_renamed)
-
   -- Comment on new line: Include only new_line in payload.
   -- Comment on deleted line: Include only old_line in payload.
   -- The line was not found in any hunks, send both lines.
@@ -106,7 +96,13 @@ function Location:get_line_number_from_new_sha(line)
     return line
   end
   -- Otherwise we want to get the matching line in the opposite buffer
-  return hunks.calculate_matching_line_new(self.base_sha, self.head_sha, self.reviewer_data.file_name, line)
+  return hunks.calculate_matching_line_new(
+    self.base_sha,
+    self.head_sha,
+    self.reviewer_data.file_name,
+    self.reviewer_data.old_file_name,
+    line
+  )
 end
 
 -- Returns the matching line from the old SHA.
@@ -122,7 +118,13 @@ function Location:get_line_number_from_old_sha(line)
   end
 
   -- Otherwise we want to get the matching line in the opposite buffer
-  return hunks.calculate_matching_line_new(self.head_sha, self.base_sha, self.reviewer_data.file_name, line)
+  return hunks.calculate_matching_line_new(
+    self.head_sha,
+    self.base_sha,
+    self.reviewer_data.file_name,
+    self.reviewer_data.old_file_name,
+    line
+  )
 end
 
 -- Returns the current line number from whatever SHA (new or old)
@@ -175,7 +177,7 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
     return
@@ -217,7 +219,7 @@ function Location:set_end_range(visual_range)
 
   local reviewer = require("gitlab.reviewer")
   local is_current_sha_focused = reviewer.is_current_sha_focused()
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
     return

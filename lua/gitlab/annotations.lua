@@ -114,6 +114,7 @@
 ---@class DiffviewInfo
 ---@field modification_type string
 ---@field file_name string
+---@field old_file_name string -- Relevant for renamed files
 ---@field current_bufnr integer
 ---@field new_sha_win_id integer
 ---@field old_sha_win_id integer

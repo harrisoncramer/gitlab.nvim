@@ -80,6 +80,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   local revision = state.MR_REVISIONS[1]
   local position_data = {
     file_name = reviewer_data.file_name,
+    old_file_name = reviewer_data.old_file_name,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
     head_commit_sha = revision.head_commit_sha,
@@ -180,8 +181,7 @@ M.create_comment_layout = function(opts)
     end
 
     -- Check that the file has not been renamed
-    local active_file = reviewer.get_current_file_data()
-    if reviewer.is_file_renamed(active_file) and not reviewer.does_file_have_changes(active_file) then
+    if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
       u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.ERROR)
       return
     end
@@ -256,7 +256,6 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  vim.print("Creating comment...")
   local has_clean_tree, err = git.has_clean_tree()
   if err ~= nil then
     return
@@ -300,7 +299,6 @@ end
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
-  vim.print("Creating note...")
   local layout = M.create_comment_layout({ ranged = false, unlinked = true })
   if layout ~= nil then
     layout:mount()

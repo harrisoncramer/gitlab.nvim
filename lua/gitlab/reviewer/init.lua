@@ -163,7 +163,7 @@ M.get_reviewer_data = function()
 
   local is_current_sha_focused = M.is_current_sha_focused()
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type", vim.log.levels.ERROR)
     return
@@ -180,6 +180,7 @@ M.get_reviewer_data = function()
 
   return {
     file_name = layout.a.file.path,
+    old_file_name = M.is_file_renamed() and layout.b.file.path or "",
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
@@ -205,29 +206,37 @@ M.is_current_sha_focused = function()
   return current_win == b_win
 end
 
----Get currently shown file
----@return string|nil
-M.get_current_file_path = function()
-  local view = diffview_lib.get_current_view()
-  if not view or not view.panel or not view.panel.cur_file then
-    return
-  end
-  return view.panel.cur_file.path
-end
-
+---Get currently shown file data
 M.get_current_file_data = function()
   local view = diffview_lib.get_current_view()
-  local file_list = view and view.panel and view.panel:ordered_file_list()
-  return List.new(file_list):find(function(f)
-    return f.active
-  end)
+  return view and view.panel and view.panel.cur_file
 end
 
-M.is_file_renamed = function(file_data)
-  return file_data.status == "R"
+---Get currently shown file path
+---@return string|nil
+M.get_current_file_path = function()
+  local file_data = M.get_current_file_data()
+  return file_data and file_data.path
 end
 
-M.does_file_have_changes = function(file_data)
+---Get currently shown file's old path
+---@return string|nil
+M.get_current_file_oldpath = function()
+  local file_data = M.get_current_file_data()
+  return file_data and file_data.oldpath
+end
+
+---Tell whether current file is renamed or not
+---@return boolean|nil
+M.is_file_renamed = function()
+  local file_data = M.get_current_file_data()
+  return file_data and file_data.status == "R"
+end
+
+---Tell whether current file has changes or not
+---@return boolean|nil
+M.does_file_have_changes = function()
+  local file_data = M.get_current_file_data()
   return file_data.stats.additions > 0 or file_data.stats.deletions > 0
 end
 
