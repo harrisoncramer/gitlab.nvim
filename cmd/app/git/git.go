@@ -36,7 +36,7 @@ Extracts information about the current repository and returns
 it to the client for initialization. The current directory must be a valid
 Gitlab project and the branch must be a feature branch
 */
-func NewGitData(remote string, g GitManager) (GitData, error) {
+func NewGitData(remote string, gitlabUrl string, g GitManager) (GitData, error) {
 	err := g.RefreshProjectInfo(remote)
 	if err != nil {
 		return GitData{}, fmt.Errorf("could not get latest information from remote: %v", err)
@@ -65,7 +65,14 @@ func NewGitData(remote string, g GitManager) (GitData, error) {
 		return GitData{}, fmt.Errorf("invalid git URL format: %s", url)
 	}
 
-	namespace := matches[1]
+	// remove part of the hostname from the parsed namespace
+	url_re := regexp.MustCompile(`[^\/]\/([^\/].*)$`)
+	url_matches := url_re.FindStringSubmatch(gitlabUrl)
+	var namespace string = matches[1]
+	if len(url_matches) == 2 {
+		namespace = strings.TrimLeft(strings.TrimPrefix(namespace, url_matches[1]), "/")
+	}
+
 	projectName := matches[2]
 
 	branchName, err := g.GetCurrentBranchNameFromNativeGitCmd()
