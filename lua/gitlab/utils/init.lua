@@ -254,6 +254,20 @@ M.format_to_local = function(date_string, offset)
     local tzOffsetSign, tzOffsetHour, tzOffsetMin
     year, month, day, hour, min, sec, _, tzOffsetSign, tzOffsetHour, tzOffsetMin =
       date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+).(%d+)([%+%-])(%d%d):(%d%d)")
+
+    -- ISO 8601 format with just "Z" (aka no time offset)
+    -- 2021-01-01T00:00:00Z
+    if year == nil then
+      year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)Z")
+      tzOffsetSign = "-"
+      tzOffsetHour = "00"
+      tzOffsetMin = "00"
+    end
+
+    if year == nil then
+      return "Date Unparseable"
+    end
+
     tzOffset = tzOffsetSign .. tzOffsetHour .. tzOffsetMin
   end
 
