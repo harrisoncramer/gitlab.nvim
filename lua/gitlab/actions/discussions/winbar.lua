@@ -55,7 +55,8 @@ local get_data = function(nodes)
 end
 
 local function content()
-  local resolvable_discussions, resolved_discussions, non_resolvable_discussions = get_data(state.DISCUSSION_DATA.discussions)
+  local resolvable_discussions, resolved_discussions, non_resolvable_discussions =
+    get_data(state.DISCUSSION_DATA.discussions)
   local resolvable_notes, resolved_notes, non_resolvable_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
   local draft_notes = require("gitlab.actions.draft_notes")
@@ -116,7 +117,13 @@ end
 ---@param resolved_count integer
 ---@param drafts_count integer
 ---@return string
-local add_drafts_and_resolvable = function(base_title, resolvable_count, resolved_count, drafts_count, non_resolvable_count)
+local add_drafts_and_resolvable = function(
+  base_title,
+  resolvable_count,
+  resolved_count,
+  drafts_count,
+  non_resolvable_count
+)
   if resolvable_count == 0 and drafts_count == 0 and non_resolvable_count == 0 then
     return base_title
   end
@@ -125,7 +132,9 @@ local add_drafts_and_resolvable = function(base_title, resolvable_count, resolve
     base_title = base_title .. u.pluralize(non_resolvable_count, "comment")
   end
   if resolvable_count ~= 0 then
-    base_title = base_title .. get_connector(base_title) .. string.format("%d/%s", resolved_count, u.pluralize(resolvable_count, "thread"))
+    base_title = base_title
+      .. get_connector(base_title)
+      .. string.format("%d/%s", resolved_count, u.pluralize(resolvable_count, "thread"))
   end
   if drafts_count ~= 0 then
     base_title = base_title .. get_connector(base_title) .. u.pluralize(drafts_count, "draft")
@@ -136,9 +145,20 @@ end
 
 ---@param t WinbarTable
 M.make_winbar = function(t)
-  local discussion_title =
-    add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions, t.resolved_discussions, t.inline_draft_notes, t.non_resolvable_discussions)
-  local notes_title = add_drafts_and_resolvable("Notes", t.resolvable_notes, t.resolved_notes, t.unlinked_draft_notes, t.non_resolvable_notes)
+  local discussion_title = add_drafts_and_resolvable(
+    "Inline Comments",
+    t.resolvable_discussions,
+    t.resolved_discussions,
+    t.inline_draft_notes,
+    t.non_resolvable_discussions
+  )
+  local notes_title = add_drafts_and_resolvable(
+    "Notes",
+    t.resolvable_notes,
+    t.resolved_notes,
+    t.unlinked_draft_notes,
+    t.non_resolvable_notes
+  )
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then
