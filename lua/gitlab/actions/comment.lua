@@ -3,6 +3,7 @@
 --- to this module the data required to make the API calls
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
+local List = require("gitlab.utils.list")
 local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
@@ -176,6 +177,15 @@ M.create_comment_layout = function(opts)
     local tabnr = vim.api.nvim_get_current_tabpage()
     if tabnr ~= reviewer.tabnr then
       u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
+      return
+    end
+
+    -- Check that the file has not been renamed
+    local file_list = view and view.panel and view.panel:ordered_file_list()
+    if file_list and List.new(file_list):includes(function(f)
+          return f.status == "R" and f.active
+        end) then
+      u.notify("Commenting on files that are only moved or renamed is not supported", vim.log.levels.ERROR)
       return
     end
 
