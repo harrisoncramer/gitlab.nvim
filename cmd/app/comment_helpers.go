@@ -42,6 +42,7 @@ type RequestWithPosition interface {
 func buildCommentPosition(commentWithPositionData RequestWithPosition) *gitlab.PositionOptions {
 	positionData := commentWithPositionData.GetPositionData()
 
+	// If the file has been renamed, then this is a relevant part of the payload
 	oldFileName := positionData.OldFileName
 	if oldFileName == "" {
 		oldFileName = positionData.FileName
