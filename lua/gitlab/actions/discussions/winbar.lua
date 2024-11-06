@@ -1,3 +1,4 @@
+local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 
@@ -17,17 +18,26 @@ M.set_buffers = function(linked_bufnr, unlinked_bufnr)
 end
 
 ---@param nodes Discussion[]|UnlinkedDiscussion[]|nil
----@return number, number
+---@return number, number, number
 local get_data = function(nodes)
   local total_resolvable = 0
   local total_resolved = 0
+  local total_non_resolvable = 0
   if nodes == nil or nodes == vim.NIL then
-    return total_resolvable, total_resolved
+    return total_resolvable, total_resolved, total_non_resolvable
   end
 
   total_resolvable = List.new(nodes):reduce(function(agg, d)
     local first_child = d.notes[1]
     if first_child and first_child.resolvable then
+      agg = agg + 1
+    end
+    return agg
+  end, 0)
+
+  total_non_resolvable = List.new(nodes):reduce(function(agg, d)
+    local first_child = d.notes[1]
+    if first_child and not first_child.resolvable then
       agg = agg + 1
     end
     return agg
@@ -41,12 +51,13 @@ local get_data = function(nodes)
     return agg
   end, 0)
 
-  return total_resolvable, total_resolved
+  return total_resolvable, total_resolved, total_non_resolvable
 end
 
 local function content()
-  local resolvable_discussions, resolved_discussions = get_data(state.DISCUSSION_DATA.discussions)
-  local resolvable_notes, resolved_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
+  local resolvable_discussions, resolved_discussions, non_resolvable_discussions =
+    get_data(state.DISCUSSION_DATA.discussions)
+  local resolvable_notes, resolved_notes, non_resolvable_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
   local draft_notes = require("gitlab.actions.draft_notes")
   local inline_draft_notes, unlinked_draft_notes = List.new(state.DRAFT_NOTES):partition(function(note)
@@ -64,10 +75,12 @@ local function content()
   local t = {
     resolvable_discussions = resolvable_discussions,
     resolved_discussions = resolved_discussions,
+    non_resolvable_discussions = non_resolvable_discussions,
     inline_draft_notes = #inline_draft_notes,
     unlinked_draft_notes = #unlinked_draft_notes,
     resolvable_notes = resolvable_notes,
     resolved_notes = resolved_notes,
+    non_resolvable_notes = non_resolvable_notes,
     help_keymap = state.settings.keymaps.help,
   }
 
@@ -94,34 +107,58 @@ M.update_winbar = function()
   vim.api.nvim_set_option_value("winbar", c, { scope = "local", win = win_id })
 end
 
+local function get_connector(base_title)
+  return string.match(base_title, "%($") and "" or "; "
+end
+
 ---Builds the title string for both sections, using the count of resolvable and draft nodes
 ---@param base_title string
 ---@param resolvable_count integer
 ---@param resolved_count integer
 ---@param drafts_count integer
 ---@return string
-local add_drafts_and_resolvable = function(base_title, resolvable_count, resolved_count, drafts_count)
+local add_drafts_and_resolvable = function(
+  base_title,
+  resolvable_count,
+  resolved_count,
+  drafts_count,
+  non_resolvable_count
+)
+  if resolvable_count == 0 and drafts_count == 0 and non_resolvable_count == 0 then
+    return base_title
+  end
+  base_title = base_title .. " ("
+  if non_resolvable_count ~= 0 then
+    base_title = base_title .. u.pluralize(non_resolvable_count, "comment")
+  end
   if resolvable_count ~= 0 then
-    base_title = base_title .. string.format(" (%d/%d resolved", resolvable_count, resolved_count)
+    base_title = base_title
+      .. get_connector(base_title)
+      .. string.format("%d/%s", resolved_count, u.pluralize(resolvable_count, "thread"))
   end
   if drafts_count ~= 0 then
-    if resolvable_count ~= 0 then
-      base_title = base_title .. string.format("; %d drafts)", drafts_count)
-    else
-      base_title = base_title .. string.format(" (%d drafts)", drafts_count)
-    end
-  elseif resolvable_count ~= 0 then
-    base_title = base_title .. ")"
+    base_title = base_title .. get_connector(base_title) .. u.pluralize(drafts_count, "draft")
   end
-
+  base_title = base_title .. ")"
   return base_title
 end
 
 ---@param t WinbarTable
 M.make_winbar = function(t)
-  local discussion_title =
-    add_drafts_and_resolvable("Inline Comments", t.resolvable_discussions, t.resolved_discussions, t.inline_draft_notes)
-  local notes_title = add_drafts_and_resolvable("Notes", t.resolvable_notes, t.resolved_notes, t.unlinked_draft_notes)
+  local discussion_title = add_drafts_and_resolvable(
+    "Inline Comments",
+    t.resolvable_discussions,
+    t.resolved_discussions,
+    t.inline_draft_notes,
+    t.non_resolvable_discussions
+  )
+  local notes_title = add_drafts_and_resolvable(
+    "Notes",
+    t.resolvable_notes,
+    t.resolved_notes,
+    t.unlinked_draft_notes,
+    t.non_resolvable_notes
+  )
 
   -- Colorize the active tab
   if M.current_view_type == "discussions" then
