@@ -163,13 +163,7 @@ M.settings = {
     draft_mode = false,
   },
   emojis = {
-    picker_preview = {
-      emoji = true,
-      shortname = false,
-    },
-    format_func = function(emoji)
-      return emoji .. "  "
-    end,
+    formatter = nil,
   },
   create_mr = {
     target = nil,

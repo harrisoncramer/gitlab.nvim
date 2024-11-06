@@ -267,17 +267,15 @@ you call this function with no values the defaults will be used:
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
       emojis = {
-        picker_preview = { -- A simple description of the emoji is always shown. It can be accompanied by any of "emoji" and "shortname".
-          emoji = true, -- Show the emoji in the picker, e.g., 👍
-          shortname = false, -- Show a short name in the picker, e.g., ":thumbsup:"
-        },
-        -- Function for modifying how emojis are displayed in the picker.
+        -- Function for modifying how emojis are displayed in the picker. This does not affect the actual selected emoji.
+        -- The function is passed an emoji object as a paramter, e.g.,
+        -- {"unicode": "1F44D","name": "thumbs up sign", "shortname": ":thumbsup:", "moji": "👍"}
         -- This is useful if your editor/terminal/font/tmux does not render some emojis properly,
-        -- e.g., you can remove skin tones with `emoji = emoji:gsub("[\240][\159][\143][\187-\191]", "")`.
-        -- This does not affect the actual selected emoji.
-        format_func = function(emoji)
-          return emoji .. "  "
-        end,
+        -- e.g., you can remove skin tones and additionally show the shortname with
+        -- formatter = function(val)
+        --   return string.format("%s %s %s", val.moji:gsub("[\240][\159][\143][\187-\191]", ""), val.shortname, val.name)
+        -- end
+        formatter = nil,
       },
       choose_merge_request = {
         open_reviewer = true, -- Open the reviewer window automatically after switching merge requests

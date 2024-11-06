@@ -132,15 +132,10 @@ M.pick_emoji = function(options, cb)
   vim.ui.select(options, {
     prompt = "Choose emoji",
     format_item = function(val)
-      local result = val.name
-      if state.settings.emojis.picker_preview.shortname then
-        result = string.format("%s  %s", val.shortname, result)
+      if type(state.settings.emojis.formatter) == "function" then
+        return state.settings.emojis.formatter(val)
       end
-      if state.settings.emojis.picker_preview.emoji then
-        local moji = state.settings.emojis.format_func(val.moji)
-        result = string.format("%s%s", moji, result)
-      end
-      return result
+      return string.format("%s %s", val.moji, val.name)
     end,
   }, function(choice)
     if not choice then
