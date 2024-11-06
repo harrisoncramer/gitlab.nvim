@@ -97,10 +97,10 @@ M.build = function(override)
     :wait()
 
   if res.code ~= 0 then
-    u.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
+    u.notify(string.format("Failed to install with status code %d:\n%s", res.code, res.stderr), vim.log.levels.ERROR)
     return false
   end
-  u.notify("Gitlab.nvim installed successfully!", vim.log.levels.INFO)
+  u.notify("Installed successfully!", vim.log.levels.INFO)
   return true
 end
 
