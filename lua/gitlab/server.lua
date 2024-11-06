@@ -80,8 +80,10 @@ end
 M.build = function(override)
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
-  state.settings.bin_path = parent_dir
-  state.settings.bin = parent_dir .. (u.is_windows() and "\\bin.exe" or "/bin")
+
+  local bin_name = u.is_windows() and "bin.exe" or "bin"
+  state.settings.root_path = parent_dir
+  state.settings.bin = parent_dir .. u.path_separator .. "cmd" .. u.path_separator .. bin_name
 
   if not override then
     local binary_exists = vim.loop.fs_stat(state.settings.bin)
@@ -90,13 +92,11 @@ M.build = function(override)
     end
   end
 
-  local cmd = u.is_windows() and "cd %s\\cmd && go build -o bin.exe && move bin.exe ..\\"
-    or "cd %s/cmd && go build -o bin && mv bin ../bin"
+  local res = vim
+    .system({ "go", "build", "-o", bin_name }, { cwd = state.settings.root_path .. u.path_separator .. "cmd" })
+    :wait()
 
-  local command = string.format(cmd, state.settings.bin_path)
-  local null = u.is_windows() and " >NUL" or " > /dev/null"
-  local installCode = os.execute(command .. null)
-  if installCode ~= 0 then
+  if res.code ~= 0 then
     u.notify("Could not install gitlab.nvim!", vim.log.levels.ERROR)
     return false
   end
