@@ -359,6 +359,8 @@ M.create_comment_suggestion = function()
   local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
   if layout ~= nil then
     layout:mount()
+  else
+    return -- Failure in creating the comment layout
   end
   vim.schedule(function()
     if suggestion_lines then
