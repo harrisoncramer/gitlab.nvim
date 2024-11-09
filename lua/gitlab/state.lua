@@ -116,6 +116,7 @@ M.settings = {
       toggle_tree_type = "i",
       publish_draft = "P",
       toggle_draft_mode = "D",
+      toggle_sort_by = "st",
       toggle_node = "t",
       toggle_all_discussions = "T",
       toggle_resolved_discussions = "R",
@@ -153,6 +154,7 @@ M.settings = {
     auto_open = true,
     default_view = "discussions",
     blacklist = {},
+    sort_by = "latest_reply",
     keep_current_open = false,
     position = "left",
     size = "20%",
@@ -606,6 +608,7 @@ M.dependencies = {
     body = function()
       return {
         blacklist = M.settings.discussion_tree.blacklist,
+        sort_by = M.settings.discussion_tree.sort_by,
       }
     end,
   },

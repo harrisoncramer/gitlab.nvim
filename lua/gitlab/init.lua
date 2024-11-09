@@ -92,6 +92,7 @@ return {
     end
   end,
   toggle_draft_mode = discussions.toggle_draft_mode,
+  toggle_sort_by = discussions.toggle_sort_by,
   publish_all_drafts = draft_notes.publish_all_drafts,
   refresh_data = function()
     -- This also rebuilds the regular views
