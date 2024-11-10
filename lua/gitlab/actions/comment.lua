@@ -182,7 +182,7 @@ M.create_comment_layout = function(opts)
 
     -- Check that the file has not been renamed
     if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
-      u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.ERROR)
+      u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
       return
     end
 
