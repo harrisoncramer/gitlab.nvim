@@ -96,7 +96,13 @@ function Location:get_line_number_from_new_sha(line)
     return line
   end
   -- Otherwise we want to get the matching line in the opposite buffer
-  return hunks.calculate_matching_line_new(self.base_sha, self.head_sha, self.reviewer_data.file_name, line)
+  return hunks.calculate_matching_line_new(
+    self.base_sha,
+    self.head_sha,
+    self.reviewer_data.file_name,
+    self.reviewer_data.old_file_name,
+    line
+  )
 end
 
 -- Returns the matching line from the old SHA.
@@ -112,7 +118,13 @@ function Location:get_line_number_from_old_sha(line)
   end
 
   -- Otherwise we want to get the matching line in the opposite buffer
-  return hunks.calculate_matching_line_new(self.head_sha, self.base_sha, self.reviewer_data.file_name, line)
+  return hunks.calculate_matching_line_new(
+    self.head_sha,
+    self.base_sha,
+    self.reviewer_data.file_name,
+    self.reviewer_data.old_file_name,
+    line
+  )
 end
 
 -- Returns the current line number from whatever SHA (new or old)
@@ -135,7 +147,7 @@ end
 ---@param visual_range LineRange
 ---@return ReviewerLineInfo|nil
 function Location:set_start_range(visual_range)
-  local current_file = require("gitlab.reviewer").get_current_file()
+  local current_file = require("gitlab.reviewer").get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
@@ -165,7 +177,7 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
     return
@@ -182,7 +194,7 @@ end
 -- for the Gitlab payload
 ---@param visual_range LineRange
 function Location:set_end_range(visual_range)
-  local current_file = require("gitlab.reviewer").get_current_file()
+  local current_file = require("gitlab.reviewer").get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
@@ -207,7 +219,7 @@ function Location:set_end_range(visual_range)
 
   local reviewer = require("gitlab.reviewer")
   local is_current_sha_focused = reviewer.is_current_sha_focused()
-  local modification_type = hunks.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
     return
