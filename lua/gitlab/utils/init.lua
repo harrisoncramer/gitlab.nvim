@@ -335,12 +335,6 @@ M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
-M.get_colors_for_group = function(group)
-  local normal_fg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "fg")
-  local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "bg")
-  return { fg = normal_fg, bg = normal_bg }
-end
-
 M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
 end
