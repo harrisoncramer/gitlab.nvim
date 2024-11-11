@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -157,8 +157,8 @@ func attachEmojis(a *data, fr FileReader) error {
 		return err
 	}
 
-	binPath := path.Dir(e)
-	filePath := fmt.Sprintf("%s/config/emojis.json", binPath)
+	binPath := filepath.Dir(e)
+	filePath := filepath.Join(binPath, "config", "emojis.json")
 
 	reader, err := fr.ReadFile(filePath)
 
