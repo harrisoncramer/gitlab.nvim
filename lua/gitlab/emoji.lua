@@ -10,8 +10,10 @@ local M = {
 }
 
 M.init = function()
-  local bin_path = state.settings.bin_path
-  local emoji_path = bin_path
+  local root_path = state.settings.root_path
+  local emoji_path = root_path
+    .. state.settings.file_separator
+    .. "cmd"
     .. state.settings.file_separator
     .. "config"
     .. state.settings.file_separator
