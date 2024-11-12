@@ -1,5 +1,4 @@
 local state = require("gitlab.state")
-local u = require("gitlab.utils")
 
 local colors = state.settings.colors
 
@@ -12,13 +11,24 @@ vim.g.gitlab_discussion_tree_resolved = "✓"
 vim.g.gitlab_discussion_tree_unresolved = "-"
 
 local discussion = colors.discussion_tree
-vim.api.nvim_set_hl(0, "GitlabUsername", u.get_colors_for_group(discussion.username))
-vim.api.nvim_set_hl(0, "GitlabMention", u.get_colors_for_group(discussion.mention))
-vim.api.nvim_set_hl(0, "GitlabDate", u.get_colors_for_group(discussion.date))
-vim.api.nvim_set_hl(0, "GitlabExpander", u.get_colors_for_group(discussion.expander))
-vim.api.nvim_set_hl(0, "GitlabDirectory", u.get_colors_for_group(discussion.directory))
-vim.api.nvim_set_hl(0, "GitlabDirectoryIcon", u.get_colors_for_group(discussion.directory_icon))
-vim.api.nvim_set_hl(0, "GitlabFileName", u.get_colors_for_group(discussion.file_name))
-vim.api.nvim_set_hl(0, "GitlabResolved", u.get_colors_for_group(discussion.resolved))
-vim.api.nvim_set_hl(0, "GitlabUnresolved", u.get_colors_for_group(discussion.unresolved))
-vim.api.nvim_set_hl(0, "GitlabDraft", u.get_colors_for_group(discussion.draft))
+
+local function get_colors_for_group(group)
+  local normal_fg = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(group)), "fg")
+  local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(group)), "bg")
+  return { fg = normal_fg, bg = normal_bg }
+end
+
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    vim.api.nvim_set_hl(0, "GitlabUsername", get_colors_for_group(discussion.username))
+    vim.api.nvim_set_hl(0, "GitlabMention", get_colors_for_group(discussion.mention))
+    vim.api.nvim_set_hl(0, "GitlabDate", get_colors_for_group(discussion.date))
+    vim.api.nvim_set_hl(0, "GitlabExpander", get_colors_for_group(discussion.expander))
+    vim.api.nvim_set_hl(0, "GitlabDirectory", get_colors_for_group(discussion.directory))
+    vim.api.nvim_set_hl(0, "GitlabDirectoryIcon", get_colors_for_group(discussion.directory_icon))
+    vim.api.nvim_set_hl(0, "GitlabFileName", get_colors_for_group(discussion.file_name))
+    vim.api.nvim_set_hl(0, "GitlabResolved", get_colors_for_group(discussion.resolved))
+    vim.api.nvim_set_hl(0, "GitlabUnresolved", get_colors_for_group(discussion.unresolved))
+    vim.api.nvim_set_hl(0, "GitlabDraft", get_colors_for_group(discussion.draft))
+  end,
+})

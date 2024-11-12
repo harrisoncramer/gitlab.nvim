@@ -98,7 +98,7 @@ end
 ---@param num integer The count of the item/word
 ---@param word string The word to pluralize
 ---@return string
-local function pluralize(num, word)
+M.pluralize = function(num, word)
   return num .. string.format(" %s", word) .. ((num > 1 or num <= 0) and "s" or "")
 end
 
@@ -122,13 +122,13 @@ M.time_since = function(date_string, current_date_table)
   local time_diff = current_date - date
 
   if time_diff < 60 then
-    return pluralize(time_diff, "second") .. " ago"
+    return M.pluralize(time_diff, "second") .. " ago"
   elseif time_diff < 3600 then
-    return pluralize(math.floor(time_diff / 60), "minute") .. " ago"
+    return M.pluralize(math.floor(time_diff / 60), "minute") .. " ago"
   elseif time_diff < 86400 then
-    return pluralize(math.floor(time_diff / 3600), "hour") .. " ago"
+    return M.pluralize(math.floor(time_diff / 3600), "hour") .. " ago"
   elseif time_diff < 2592000 then
-    return pluralize(math.floor(time_diff / 86400), "day") .. " ago"
+    return M.pluralize(math.floor(time_diff / 86400), "day") .. " ago"
   else
     local formatted_date = os.date("%B %e, %Y", date)
     return tostring(formatted_date)
@@ -335,12 +335,6 @@ M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
-M.get_colors_for_group = function(group)
-  local normal_fg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "fg")
-  local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans((vim.fn.hlID(group))), "bg")
-  return { fg = normal_fg, bg = normal_bg }
-end
-
 M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
 end
@@ -457,13 +451,13 @@ M.format_date = function(date_string)
   local time_diff = current_date - date
 
   if time_diff < 60 then
-    return pluralize(time_diff, "second")
+    return M.pluralize(time_diff, "second")
   elseif time_diff < 3600 then
-    return pluralize(math.floor(time_diff / 60), "minute")
+    return M.pluralize(math.floor(time_diff / 60), "minute")
   elseif time_diff < 86400 then
-    return pluralize(math.floor(time_diff / 3600), "hour")
+    return M.pluralize(math.floor(time_diff / 3600), "hour")
   elseif time_diff < 2592000 then
-    return pluralize(math.floor(time_diff / 86400), "day")
+    return M.pluralize(math.floor(time_diff / 86400), "day")
   else
     local formatted_date = os.date("%A, %B %e", date)
     return formatted_date

@@ -162,6 +162,9 @@ M.settings = {
     tree_type = "simple",
     draft_mode = false,
   },
+  emojis = {
+    formatter = nil,
+  },
   create_mr = {
     target = nil,
     template_file = nil,

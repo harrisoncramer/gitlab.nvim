@@ -90,18 +90,28 @@ local line_was_added = function(linnr, hunk, all_diff_output)
 end
 
 ---Parse git diff hunks.
----@param file_path string Path to file.
 ---@param base_sha string Git base SHA of merge request.
 ---@return HunksAndDiff
-local parse_hunks_and_diff = function(file_path, base_sha)
+local parse_hunks_and_diff = function(base_sha)
   local hunks = {}
   local all_diff_output = {}
 
-  local Job = require("plenary.job")
+  local reviewer = require("gitlab.reviewer")
+  local cmd = {
+    "diff",
+    "--minimal",
+    "--unified=0",
+    "--no-color",
+    base_sha,
+    "--",
+    reviewer.get_current_file_oldpath(),
+    reviewer.get_current_file_path(),
+  }
 
+  local Job = require("plenary.job")
   local diff_job = Job:new({
     command = "git",
-    args = { "diff", "--minimal", "--unified=0", "--no-color", base_sha, "--", file_path },
+    args = cmd,
     on_exit = function(j, return_code)
       if return_code == 0 then
         all_diff_output = j:result()
@@ -139,8 +149,7 @@ end
 
 --- Processes the number of changes until the target is reached. This returns
 --- a negative or positive number indicating the number of lines in the hunk
---that have been added or removed prior to the target line
----comment
+--- that have been added or removed prior to the target line
 ---@param line_number number
 ---@param hunk Hunk
 ---@param lines table
@@ -221,11 +230,10 @@ end
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param old_line number|nil
 ---@param new_line number|nil
----@param current_file string
 ---@param is_current_sha_focused boolean
 ---@return string|nil
-function M.get_modification_type(old_line, new_line, current_file, is_current_sha_focused)
-  local hunk_and_diff_data = parse_hunks_and_diff(current_file, state.INFO.diff_refs.base_sha)
+function M.get_modification_type(old_line, new_line, is_current_sha_focused)
+  local hunk_and_diff_data = parse_hunks_and_diff(state.INFO.diff_refs.base_sha)
   if hunk_and_diff_data.hunks == nil then
     return
   end
@@ -240,11 +248,19 @@ end
 ---@param old_sha string
 ---@param new_sha string
 ---@param file_path string
+---@param old_file_path string
 ---@param line_number number
 ---@return number|nil
-M.calculate_matching_line_new = function(old_sha, new_sha, file_path, line_number)
+M.calculate_matching_line_new = function(old_sha, new_sha, file_path, old_file_path, line_number)
   local net_change = 0
-  local diff_cmd = string.format("git diff --minimal --unified=0 --no-color %s %s -- %s", old_sha, new_sha, file_path)
+  local diff_cmd = string.format(
+    "git diff --minimal --unified=0 --no-color %s %s -- %s %s",
+    old_sha,
+    new_sha,
+    old_file_path,
+    file_path
+  )
+
   local handle = io.popen(diff_cmd)
   if handle == nil then
     u.notify(string.format("Error running git diff command for %s", file_path), vim.log.levels.ERROR)

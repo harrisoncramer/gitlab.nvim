@@ -41,7 +41,7 @@ M.filter_placeable_discussions = function()
     draft_notes = {}
   end
 
-  local file = reviewer.get_current_file()
+  local file = reviewer.get_current_file_path()
   if not file then
     return {}
   end

@@ -10,8 +10,10 @@ local M = {
 }
 
 M.init = function()
-  local bin_path = state.settings.bin_path
-  local emoji_path = bin_path
+  local root_path = state.settings.root_path
+  local emoji_path = root_path
+    .. state.settings.file_separator
+    .. "cmd"
     .. state.settings.file_separator
     .. "config"
     .. state.settings.file_separator
@@ -132,6 +134,9 @@ M.pick_emoji = function(options, cb)
   vim.ui.select(options, {
     prompt = "Choose emoji",
     format_item = function(val)
+      if type(state.settings.emojis.formatter) == "function" then
+        return state.settings.emojis.formatter(val)
+      end
       return string.format("%s %s", val.moji, val.name)
     end,
   }, function(choice)

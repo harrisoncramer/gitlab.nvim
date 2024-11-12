@@ -80,6 +80,7 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
   local revision = state.MR_REVISIONS[1]
   local position_data = {
     file_name = reviewer_data.file_name,
+    old_file_name = reviewer_data.old_file_name,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
     head_commit_sha = revision.head_commit_sha,
@@ -179,6 +180,12 @@ M.create_comment_layout = function(opts)
       return
     end
 
+    -- Check that the file has not been renamed
+    if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
+      u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
+      return
+    end
+
     -- Check that we are hovering over the code
     local filetype = vim.bo[0].filetype
     if not opts.reply and (filetype == "DiffviewFiles" or filetype == "gitlab") then
@@ -249,7 +256,6 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  vim.print("Creating comment...")
   local has_clean_tree, err = git.has_clean_tree()
   if err ~= nil then
     return
@@ -293,7 +299,6 @@ end
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
-  vim.print("Creating note...")
   local layout = M.create_comment_layout({ ranged = false, unlinked = true })
   if layout ~= nil then
     layout:mount()
@@ -354,6 +359,8 @@ M.create_comment_suggestion = function()
   local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
   if layout ~= nil then
     layout:mount()
+  else
+    return -- Failure in creating the comment layout
   end
   vim.schedule(function()
     if suggestion_lines then
