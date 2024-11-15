@@ -166,15 +166,16 @@ M.edit_summary = function()
 end
 
 M.create_layout = function(info_lines)
-  local title_popup = Popup(u.create_box_popup_state(nil, false))
+  local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
+  local title_popup = Popup(u.create_box_popup_state(nil, false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_box_popup_state("Description", true))
+  local description_popup = Popup(u.create_box_popup_state("Description", true, settings))
   M.description_bufnr = description_popup.bufnr
   local details_popup
 
   local internal_layout
   if state.settings.info.enabled then
-    details_popup = Popup(u.create_box_popup_state("Details", false))
+    details_popup = Popup(u.create_box_popup_state("Details", false, settings))
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({
@@ -202,8 +203,8 @@ M.create_layout = function(info_lines)
     position = "50%",
     relative = "editor",
     size = {
-      width = "95%",
-      height = "95%",
+      width = settings.width,
+      height = settings.height,
     },
   }, internal_layout)
 

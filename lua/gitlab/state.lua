@@ -141,6 +141,8 @@ M.settings = {
     note = nil,
     reply = nil,
     squash_message = nil,
+    create_mr = { width = "95%", height = "95%" },
+    summary = { width = "95%", height = "95%" },
     temp_registers = {},
   },
   discussion_tree = {

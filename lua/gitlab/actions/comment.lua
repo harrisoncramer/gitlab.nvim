@@ -197,12 +197,15 @@ M.create_comment_layout = function(opts)
     end
   end
 
-  local title = opts.discussion_id and "Reply" or "Comment"
-  local settings = opts.discussion_id ~= nil and state.settings.popup.reply or state.settings.popup.comment
+  local title = opts.discussion_id and "Reply" or opts.unlinked and "Note" or "Comment"
+
+  local popup = state.settings.popup
+  local overrides = opts.discussion_id ~= nil and popup.reply or opts.unlinked and popup.note or popup.comment
+  local settings = u.merge(popup, overrides or {})
 
   M.current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(u.create_popup_state(title, settings))
-  M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  M.draft_popup = Popup(u.create_box_popup_state("Draft", false, settings))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
 
   local internal_layout = Layout.Box({
@@ -214,8 +217,8 @@ M.create_comment_layout = function(opts)
     position = "50%",
     relative = "editor",
     size = {
-      width = "50%",
-      height = "55%",
+      width = settings.width,
+      height = settings.height,
     },
   }, internal_layout)
 

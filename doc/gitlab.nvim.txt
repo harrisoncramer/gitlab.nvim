@@ -235,8 +235,8 @@ you call this function with no values the defaults will be used:
         },
       },
       popup = { -- The popup for comment creation, editing, and replying
-        width = "40%",
-        height = "60%",
+        width = "40%", -- Can be a percentage (string or decimal, "40%" = 0.4) of editor screen width, or an integer (number of columns)
+        height = "60%", -- Can be a percentage (string or decimal, "60%" = 0.6) of editor screen width, or an integer (number of rows)
         border = "rounded", -- One of "rounded", "single", "double", "solid"
         opacity = 1.0, -- From 0.0 (fully transparent) to 1.0 (fully opaque)
         comment = nil, -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 },
@@ -244,6 +244,8 @@ you call this function with no values the defaults will be used:
         note = nil,
         reply = nil,
         squash_message = nil,
+        create_mr = { width = "95%", height = "95%" },
+        summary = { width = "95%", height = "95%" },
         temp_registers = {}, -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
       },
       discussion_tree = { -- The discussion tree that holds all comments
