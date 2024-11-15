@@ -242,7 +242,6 @@ you call this function with no values the defaults will be used:
         comment = nil, -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 },
         edit = nil,
         note = nil,
-        pipeline = nil,
         reply = nil,
         squash_message = nil,
         temp_registers = {}, -- List of registers for backing up popup content (see `:h gitlab.nvim.temp-registers`)
