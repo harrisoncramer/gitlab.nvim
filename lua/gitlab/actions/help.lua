@@ -18,7 +18,7 @@ M.open = function()
   end, {})
   local longest_line = u.get_longest_string(help_content_lines)
   local help_popup =
-    Popup(u.create_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines + 3, 60))
+    Popup(u.create_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 60))
   help_popup:on(event.BufLeave, function()
     help_popup:unmount()
   end)
