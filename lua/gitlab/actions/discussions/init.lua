@@ -7,6 +7,7 @@ local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup_utils = require("gitlab.utils.popup")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
@@ -292,6 +293,8 @@ M.edit_comment = function(tree, unlinked)
     u.notify("Could not get root or note node", vim.log.levels.ERROR)
     return
   end
+
+  popup_utils.set_up_autocommands(edit_popup)
 
   edit_popup:mount()
 
