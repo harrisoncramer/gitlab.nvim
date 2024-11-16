@@ -7,6 +7,7 @@ local git = require("gitlab.git")
 local job = require("gitlab.job")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
+local popup_utils = require("gitlab.utils.popup")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
@@ -169,7 +170,7 @@ M.create_layout = function(info_lines)
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
   local title_popup = Popup(u.create_box_popup_state(nil, false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_box_popup_state("Description", true, settings))
+  local description_popup = Popup(u.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
   local details_popup
 
@@ -207,6 +208,8 @@ M.create_layout = function(info_lines)
       height = settings.height,
     },
   }, internal_layout)
+
+  popup_utils.set_up_autocommands(description_popup, layout)
 
   layout:mount()
   return layout, title_popup, description_popup, details_popup
