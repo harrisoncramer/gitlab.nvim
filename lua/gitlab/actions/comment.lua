@@ -7,6 +7,7 @@ local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup_utils = require("gitlab.utils.popup")
 local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -223,6 +224,7 @@ M.create_comment_layout = function(opts)
   }, internal_layout)
 
   miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+  popup_utils.set_up_autocommands(M.comment_popup, layout)
 
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
