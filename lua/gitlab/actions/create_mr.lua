@@ -5,6 +5,7 @@ local Input = require("nui.input")
 local Popup = require("nui.popup")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup_utils = require("gitlab.utils.popup")
 local git = require("gitlab.git")
 local state = require("gitlab.state")
 local common = require("gitlab.actions.common")
@@ -331,7 +332,7 @@ M.create_layout = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.create_mr or {})
   local title_popup = Popup(u.create_box_popup_state("Title", false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_box_popup_state("Description", true, settings))
+  local description_popup = Popup(u.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
   local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false, settings))
   M.target_bufnr = target_branch_popup.bufnr
@@ -368,6 +369,8 @@ M.create_layout = function()
       height = settings.height,
     },
   }, internal_layout)
+
+  popup_utils.set_up_autocommands(description_popup, layout)
 
   layout:mount()
 
