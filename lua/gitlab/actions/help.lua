@@ -1,6 +1,7 @@
 local M = {}
 
 local u = require("gitlab.utils")
+local popup_utils = require("gitlab.utils.popup")
 local event = require("nui.utils.autocmd").event
 local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
@@ -16,12 +17,17 @@ M.open = function()
     end
     return agg
   end, {})
+
   local longest_line = u.get_longest_string(help_content_lines)
-  local help_popup =
-    Popup(u.create_popup_state("Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 60))
+  local opts = {"Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 60}
+  local help_popup = Popup(u.create_popup_state(unpack(opts)))
+
   help_popup:on(event.BufLeave, function()
     help_popup:unmount()
   end)
+
+  popup_utils.set_up_autocommands(help_popup, nil, opts)
+
   help_popup:mount()
 
   state.set_popup_keymaps(help_popup, "Help", nil)
