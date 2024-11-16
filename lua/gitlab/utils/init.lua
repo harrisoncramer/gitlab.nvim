@@ -504,8 +504,8 @@ M.create_popup_state = function(title, settings, width, height, zindex)
     },
     position = "50%",
     size = {
-      width = width or settings.width,
-      height = height or settings.height,
+      width = width and math.min(width, vim.o.columns - 2) or settings.width,
+      height = height and math.min(height, vim.o.lines - 3) or settings.height,
     },
     opacity = settings.opacity,
   }
