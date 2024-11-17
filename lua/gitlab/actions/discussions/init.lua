@@ -13,7 +13,6 @@ local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
-local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
 local diffview_lib = require("diffview.lib")
@@ -317,7 +316,7 @@ M.edit_comment = function(tree, unlinked)
       edit_popup,
       draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
       nil,
-      miscellaneous.editable_popup_opts
+      popup_utils.editable_popup_opts
     )
   else
     local comment = require("gitlab.actions.comment")
@@ -325,7 +324,7 @@ M.edit_comment = function(tree, unlinked)
       edit_popup,
       comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
       nil,
-      miscellaneous.editable_popup_opts
+      popup_utils.editable_popup_opts
     )
   end
 end

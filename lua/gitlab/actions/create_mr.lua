@@ -284,7 +284,7 @@ M.open_confirmation_popup = function(mr)
     state.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     state.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     state.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
-    miscellaneous.set_cycle_popups_keymaps(popups)
+    popup_utils.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
   end)

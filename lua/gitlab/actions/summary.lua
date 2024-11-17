@@ -78,7 +78,7 @@ M.summary = function()
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    miscellaneous.set_cycle_popups_keymaps(popups)
+    popup_utils.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
