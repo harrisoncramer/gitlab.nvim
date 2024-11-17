@@ -485,6 +485,7 @@ end
 ---@param settings table|nil User defined popup settings
 ---@param width number? Override default width
 ---@param height number? Override default height
+---@param zindex number? Override default zindex
 ---@return table
 M.create_popup_state = function(title, settings, width, height, zindex)
   settings = M.merge(require("gitlab.state").settings.popup, settings or {})
