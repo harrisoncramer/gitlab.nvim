@@ -31,6 +31,7 @@ M.merge = function(opts)
 
   if merge_body.squash then
     local squash_message_popup = create_squash_message_popup()
+    popup_utils.set_up_autocommands(squash_message_popup, nil, vim.api.nvim_get_current_win())
     squash_message_popup:mount()
     state.set_popup_keymaps(squash_message_popup, function(text)
       M.confirm_merge(merge_body, text)
