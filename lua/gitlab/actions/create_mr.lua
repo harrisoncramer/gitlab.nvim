@@ -370,7 +370,7 @@ M.create_layout = function()
     },
   }, internal_layout)
 
-  popup_utils.set_up_autocommands(description_popup, layout)
+  popup_utils.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
 
   layout:mount()
 

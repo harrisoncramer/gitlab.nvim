@@ -294,7 +294,7 @@ M.edit_comment = function(tree, unlinked)
     return
   end
 
-  popup_utils.set_up_autocommands(edit_popup)
+  popup_utils.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 
   edit_popup:mount()
 

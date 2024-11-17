@@ -224,7 +224,7 @@ M.create_comment_layout = function(opts)
   }, internal_layout)
 
   miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
-  popup_utils.set_up_autocommands(M.comment_popup, layout)
+  popup_utils.set_up_autocommands(M.comment_popup, layout, M.current_win)
 
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
@@ -246,14 +246,6 @@ M.create_comment_layout = function(opts)
     local draft_mode = state.settings.discussion_tree.draft_mode
     vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(draft_mode) })
   end)
-
-  --Send back to previous window on close
-  vim.api.nvim_create_autocmd("BufHidden", {
-    buffer = M.draft_popup.bufnr,
-    callback = function()
-      vim.api.nvim_set_current_win(M.current_win)
-    end,
-  })
 
   return layout
 end

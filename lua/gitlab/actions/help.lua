@@ -26,7 +26,7 @@ M.open = function()
     help_popup:unmount()
   end)
 
-  popup_utils.set_up_autocommands(help_popup, nil, opts)
+  popup_utils.set_up_autocommands(help_popup, nil, vim.api.nvim_get_current_win(), opts)
 
   help_popup:mount()
 
