@@ -362,7 +362,7 @@ M.create_layout = function()
   }, { dir = "col" })
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
       width = settings.width,

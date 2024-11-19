@@ -215,7 +215,7 @@ M.create_comment_layout = function(opts)
   }, { dir = "col" })
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
       width = settings.width,

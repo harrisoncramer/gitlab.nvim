@@ -201,7 +201,7 @@ M.create_layout = function(info_lines)
   end
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
       width = settings.width,

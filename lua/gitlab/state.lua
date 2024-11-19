@@ -134,6 +134,7 @@ M.settings = {
   popup = {
     width = "40%",
     height = "60%",
+    position = "50%",
     border = "rounded",
     opacity = 1.0,
     comment = nil,
