@@ -184,7 +184,7 @@ M.create_layout = function(info_lines)
         Layout.Box({
           Layout.Box(details_popup, { size = longest_line + 3 }),
           Layout.Box(description_popup, { grow = 1 }),
-        }, { dir = "row", size = "100%" }),
+        }, { dir = "row", size = "95%" }),
       }, { dir = "col" })
     else
       internal_layout = Layout.Box({
