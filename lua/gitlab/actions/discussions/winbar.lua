@@ -54,7 +54,19 @@ local get_data = function(nodes)
   return total_resolvable, total_resolved, total_non_resolvable
 end
 
+local spinner_index = 0
+state.discussion_tree.last_updated = nil
+
 local function content()
+  local updated
+  if state.discussion_tree.last_updated then
+    local last_update = tostring(os.date("!%Y-%m-%dT%H:%M:%S", state.discussion_tree.last_updated))
+    updated = "Updated: " .. u.time_since(last_update)
+  else
+    spinner_index = (spinner_index % #state.settings.discussion_tree.spinner_chars) + 1
+    updated = "Updated: " .. state.settings.discussion_tree.spinner_chars[spinner_index]
+  end
+
   local resolvable_discussions, resolved_discussions, non_resolvable_discussions =
     get_data(state.DISCUSSION_DATA.discussions)
   local resolvable_notes, resolved_notes, non_resolvable_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
@@ -82,9 +94,10 @@ local function content()
     resolved_notes = resolved_notes,
     non_resolvable_notes = non_resolvable_notes,
     help_keymap = state.settings.keymaps.help,
+    updated = updated,
   }
 
-  return M.make_winbar(t)
+  return state.settings.discussion_tree.winbar and state.settings.discussion_tree.winbar(t) or M.make_winbar(t)
 end
 
 ---This function updates the winbar
@@ -175,13 +188,16 @@ M.make_winbar = function(t)
   -- Join everything together and return it
   local separator = "%#Comment#|"
   local end_section = "%="
+  local updated = "%#Text#" .. t.updated
   local help = "%#Comment#Help: " .. (t.help_keymap and t.help_keymap:gsub(" ", "<space>") .. " " or "unmapped")
   return string.format(
-    " %s %s %s %s %s %s %s %s %s",
+    " %s %s %s %s %s %s %s %s %s %s %s",
     discussion_title,
     separator,
     notes_title,
     end_section,
+    updated,
+    separator,
     sort_method,
     separator,
     mode,
@@ -224,5 +240,9 @@ M.switch_view_type = function(override)
   vim.api.nvim_set_current_buf(M.bufnr_map[M.current_view_type])
   M.update_winbar()
 end
+
+-- Set up a timer to update the winbar periodically
+local timer = vim.uv.new_timer()
+timer:start(0, 100, vim.schedule_wrap(M.update_winbar))
 
 return M

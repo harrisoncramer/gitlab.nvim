@@ -55,6 +55,7 @@ end
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
+  state.discussion_tree.last_updated = nil
   state.load_new_state("discussion_data", function(data)
     if not state.DISCUSSION_DATA then
       state.DISCUSSION_DATA = {}
@@ -108,6 +109,7 @@ M.refresh_diagnostics_and_winbar = function()
   end
   winbar.update_winbar()
   common.add_empty_titles()
+  state.discussion_tree.last_updated = os.time()
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
@@ -603,7 +605,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.refresh_data then
     vim.keymap.set("n", keymaps.discussion_tree.refresh_data, function()
-      u.notify("Refreshing data...", vim.log.levels.INFO)
       draft_notes.rebuild_view(unlinked, false)
     end, {
       buffer = bufnr,

@@ -253,6 +253,7 @@ you call this function with no values the defaults will be used:
           collapsed = " ",  -- Icon for collapsed discussion thread
           indentation = "  ", -- Indentation Icon
         },
+        spinner_chars = { "/", "|", "\\", "-" }, -- Characters for the refresh animation
         auto_open = true, -- Automatically open when the reviewer is opened
         default_view = "discussions" -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
