@@ -237,7 +237,7 @@ end
 
 M.get_outer_layout = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
-  {
+  return {
     position = settings.position,
     relative = "editor",
     size = {
