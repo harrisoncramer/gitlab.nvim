@@ -35,6 +35,9 @@ M.summary = function()
   local info_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
 
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
+
+  layout:mount()
+
   local popups = {
     title_popup,
     description_popup,
@@ -42,6 +45,9 @@ M.summary = function()
   }
 
   M.layout = layout
+  M.info_popup = info_popup
+  M.title_popup = title_popup
+  M.description_popup = description_popup
   M.layout_buf = layout.bufnr
   M.layout_visible = true
 
@@ -55,9 +61,7 @@ M.summary = function()
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
 
     if info_popup then
-      vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
-      u.switch_can_edit_buf(info_popup.bufnr, false)
-      M.color_details(info_popup.bufnr) -- Color values in details popup
+      M.update_details_popup(info_popup.bufnr, info_lines)
     end
 
     popup.set_popup_keymaps(
@@ -85,6 +89,23 @@ M.summary = function()
 
   git.check_current_branch_up_to_date_on_remote(vim.log.levels.WARN)
   git.check_mr_in_good_condition()
+end
+
+M.update_summary_details = function()
+  if not M.info_popup or not M.info_popup.bufnr then
+    return
+  end
+  local details_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
+  local internal_layout = M.create_internal_layout(details_lines, M.title_popup, M.description_popup, M.info_popup)
+  M.layout:update(M.get_outer_layout(), internal_layout)
+  M.update_details_popup(M.info_popup.bufnr, details_lines)
+end
+
+M.update_details_popup = function(bufnr, info_lines)
+  u.switch_can_edit_buf(bufnr, true)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, info_lines)
+  u.switch_can_edit_buf(bufnr, false)
+  M.color_details(bufnr) -- Color values in details popup
 end
 
 -- Builds a lua list of strings that contain metadata about the current MR. Only builds the
@@ -173,10 +194,22 @@ M.create_layout = function(info_lines)
   local description_popup = Popup(popup.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
   local details_popup
-
-  local internal_layout
   if state.settings.info.enabled then
     details_popup = Popup(popup.create_box_popup_state("Details", false, settings))
+  end
+
+  local internal_layout = M.create_internal_layout(info_lines, title_popup, description_popup, details_popup)
+
+  local layout = Layout(M.get_outer_layout(), internal_layout)
+
+  popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
+
+  return layout, title_popup, description_popup, details_popup
+end
+
+M.create_internal_layout = function(info_lines, title_popup, description_popup, details_popup)
+  local internal_layout
+  if state.settings.info.enabled then
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({
@@ -199,20 +232,19 @@ M.create_layout = function(info_lines)
       Layout.Box(description_popup, { grow = 1 }),
     }, { dir = "col" })
   end
+  return internal_layout
+end
 
-  local layout = Layout({
+M.get_outer_layout = function()
+  local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
+  {
     position = settings.position,
     relative = "editor",
     size = {
       width = settings.width,
       height = settings.height,
     },
-  }, internal_layout)
-
-  popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
-
-  layout:mount()
-  return layout, title_popup, description_popup, details_popup
+  }
 end
 
 M.color_details = function(bufnr)
