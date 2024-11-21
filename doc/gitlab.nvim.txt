@@ -929,6 +929,26 @@ gitlab.toggle_draft_mode() ~
 Toggles between draft mode, where comments and notes are added to a review as
 drafts, and regular (or live) mode, where comments are posted immediately.
 
+                                                                *gitlab.nvim.update_mr*
+gitlab.update_mr({type}, {ids}) ~
+
+Updates the merge request by adding or modifying entries for the specified type (e.g., "assignee" or "reviewer").
+
+This function sends a PUT request to the GitLab API with the provided IDs for the given type.
+
+{type} (string) - Specifies the type to update. Examples: "assignee", "reviewer".
+
+{ids} (table) - A list of numeric IDs to associate with the specified type.
+
+Example:
+>lua
+  require("gitlab").update_mr("assignee", {1101, 1102, 1103})
+<
+This example sets assignees for the current merge request with IDs 1101, 1102, and 1103.
+
+Usage:
+Call this function programmatically when you have a list of IDs to update the merge request without manual intervention. It integrates well with workflows where IDs are predefined.
+
                                                                 *gitlab.nvim.add_assignee*
 gitlab.add_assignee() ~
 

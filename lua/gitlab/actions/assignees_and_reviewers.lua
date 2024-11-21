@@ -75,4 +75,13 @@ M.filter_eligible = function(current, to_remove)
   end)
 end
 
+M.update_mr = function(type, ids)
+  local plural = type .. "s"
+  local body = { ids = ids }
+  job.run_job("/mr/" .. type, "PUT", body, function(data)
+    u.notify(data.message, vim.log.levels.INFO)
+    state.INFO[plural] = data[plural]
+  end)
+end
+
 return M
