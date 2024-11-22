@@ -253,7 +253,7 @@ you call this function with no values the defaults will be used:
           indentation = "  ", -- Indentation Icon
         },
         auto_open = true, -- Automatically open when the reviewer is opened
-        default_view = "discussions" -- Show "discussions" or "notes" by default
+        default_view = "discussions", -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         position = "left", -- "top", "right", "bottom" or "left"
