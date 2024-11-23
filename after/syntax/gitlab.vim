@@ -3,6 +3,7 @@ if filereadable($VIMRUNTIME . '/syntax/markdown.vim')
 endif
 
 let expanders = '^\s*\%(' . g:gitlab_discussion_tree_expander_open . '\|' . g:gitlab_discussion_tree_expander_closed . '\)'
+let username = '@[a-zA-Z0-9.]\+'
 
 syntax match GitlabDate "\v\d+\s+\w+\s+ago"
 
@@ -16,8 +17,8 @@ execute 'syntax match GitlabExpander "' . expanders . '"'
 
 execute 'syntax match GitlabDraft "' . g:gitlab_discussion_tree_draft . '"'
 
-execute 'syntax match GitlabUsername "@[a-zA-Z0-9.]\+"'
+execute 'syntax match GitlabUsername "' . username . '"'
 
-execute 'syntax match GitlabMention "\%(' . expanders . '\)\@<!@[a-zA-Z0-9.]*"'
+execute 'syntax match GitlabMention "\%(' . expanders . '\)\@<!' . username . '"'
 
 let b:current_syntax = 'gitlab'
