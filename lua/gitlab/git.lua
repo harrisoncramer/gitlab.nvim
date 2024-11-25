@@ -32,6 +32,14 @@ M.has_clean_tree = function()
   return changes == "", err
 end
 
+---Returns true if the `file` has got any uncommitted changes
+---@param file string File to check for changes
+---@return boolean, string|nil
+M.has_changes = function(file)
+  local changes, err = run_system({ "git", "status", "--short", "--untracked-files=no", "--", file })
+  return changes ~= "", err
+end
+
 ---Gets the base directory of the current project
 ---@return string|nil, string|nil
 M.base_dir = function()

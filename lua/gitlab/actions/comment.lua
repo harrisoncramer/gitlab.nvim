@@ -262,13 +262,12 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  local has_clean_tree, err = git.has_clean_tree()
+  local has_changes, err = git.has_changes(reviewer.get_current_file_path()) -- Saved modifications
   if err ~= nil then
     return
   end
-
-  local is_modified = vim.bo[0].modified
-  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
+  local is_modified = vim.bo[0].modified -- Unsaved modifications
+  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
     u.notify(
       "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
       vim.log.levels.WARN
