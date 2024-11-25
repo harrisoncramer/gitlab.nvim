@@ -349,7 +349,11 @@ M.can_create_comment = function(must_be_visual)
   end
 
   -- Check that there aren't saved modifications
-  local has_changes, err = git.has_changes(reviewer.get_current_file_path())
+  local file = reviewer.get_current_file_path()
+  if file == nil then
+    return false
+  end
+  local has_changes, err = git.has_changes(file)
   if err ~= nil then
     return false
   end
