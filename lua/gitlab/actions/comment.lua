@@ -224,7 +224,7 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  if not M.can_create_comment() then
+  if not M.can_create_comment(false) then
     return
   end
 
@@ -237,11 +237,7 @@ end
 --- This function will open a multi-line comment popup in order to create a multi-line comment
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
-  if not u.check_visual_mode() then
-    return
-  end
-
-  if not M.can_create_comment() then
+  if not M.can_create_comment(true) then
     return
   end
 
@@ -302,11 +298,7 @@ end
 --- on the changed/updated line in the current MR
 --- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
-  if not u.check_visual_mode() then
-    return
-  end
-
-  if not M.can_create_comment() then
+  if not M.can_create_comment(true) then
     return
   end
 
@@ -326,8 +318,9 @@ M.create_comment_suggestion = function()
 end
 
 ---Returns true if it's possible to create an Inline Comment
+---@param must_be_visual boolean True if current mode must be visual
 ---@return boolean
-M.can_create_comment = function()
+M.can_create_comment = function(must_be_visual)
   -- Check that diffview is initialized
   if reviewer.tabnr == nil then
     u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
@@ -375,6 +368,11 @@ M.can_create_comment = function()
   local is_modified = vim.bo[0].modified -- Unsaved modifications
   if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
     u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.WARN)
+    return false
+  end
+
+  -- Check we're in visual mode for code suggestions and multiline comments
+  if must_be_visual and not u.check_visual_mode() then
     return false
   end
 
