@@ -251,9 +251,7 @@ M.reply = function(tree)
     reply = true,
   })
 
-  if layout then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment

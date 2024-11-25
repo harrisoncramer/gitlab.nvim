@@ -229,9 +229,7 @@ M.create_comment = function()
   end
 
   local layout = M.create_comment_layout({ ranged = false, unlinked = false })
-  if layout ~= nil then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 --- This function will open a multi-line comment popup in order to create a multi-line comment
@@ -242,18 +240,14 @@ M.create_multiline_comment = function()
   end
 
   local layout = M.create_comment_layout({ ranged = true, unlinked = false })
-  if layout ~= nil then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
   local layout = M.create_comment_layout({ ranged = false, unlinked = true })
-  if layout ~= nil then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 ---Given the current visually selected area of text, builds text to fill in the
@@ -305,11 +299,8 @@ M.create_comment_suggestion = function()
   local suggestion_lines, range_length = build_suggestion()
 
   local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
-  if layout ~= nil then
-    layout:mount()
-  else
-    return -- Failure in creating the comment layout
-  end
+  layout:mount()
+
   vim.schedule(function()
     if suggestion_lines then
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
