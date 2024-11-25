@@ -15,7 +15,7 @@ M.choose_merge_request = function(opts)
   local has_clean_tree, clean_tree_err = git.has_clean_tree()
   if clean_tree_err ~= nil then
     return
-  elseif has_clean_tree ~= "" then
+  elseif not has_clean_tree then
     u.notify("Your local branch has changes, please stash or commit and push", vim.log.levels.ERROR)
     return
   end

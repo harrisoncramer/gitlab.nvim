@@ -25,10 +25,11 @@ M.branches = function(args)
   return run_system(u.combine({ "git", "branch" }, args or {}))
 end
 
----Checks whether the tree has any changes that haven't been pushed to the remote
----@return string|nil, string|nil
+---Returns true if the working tree hasn't got any changes that haven't been commited
+---@return boolean, string|nil
 M.has_clean_tree = function()
-  return run_system({ "git", "status", "--short", "--untracked-files=no" })
+  local changes, err = run_system({ "git", "status", "--short", "--untracked-files=no" })
+  return changes == "", err
 end
 
 ---Gets the base directory of the current project
