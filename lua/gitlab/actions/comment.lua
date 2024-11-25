@@ -341,12 +341,6 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
-  -- Check that the file has not been renamed
-  if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
-    u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
-    return false
-  end
-
   -- Check that we are hovering over the code
   local filetype = vim.bo[0].filetype
   if filetype == "DiffviewFiles" or filetype == "gitlab" then
@@ -354,6 +348,12 @@ M.can_create_comment = function(must_be_visual)
       "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
       vim.log.levels.ERROR
     )
+    return false
+  end
+
+  -- Check that the file has not been renamed
+  if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
+    u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
     return false
   end
 
