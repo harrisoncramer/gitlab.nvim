@@ -320,17 +320,10 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
-  -- Check that Diffview is the current view
-  local view = diffview_lib.get_current_view()
-  if view == nil then
-    u.notify("Comments should be left in the reviewer pane", vim.log.levels.ERROR)
-    return false
-  end
-
-  -- Check that we are in the diffview tab
+  -- Check that we are in the Diffview tab
   local tabnr = vim.api.nvim_get_current_tabpage()
   if tabnr ~= reviewer.tabnr then
-    u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
+    u.notify("Comments can only be left in the reviewer pane", vim.log.levels.ERROR)
     return false
   end
 
