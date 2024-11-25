@@ -268,10 +268,7 @@ M.create_comment = function()
   end
   local is_modified = vim.bo[0].modified -- Unsaved modifications
   if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
-    u.notify(
-      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
-      vim.log.levels.WARN
-    )
+    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.WARN)
     return
   end
 
