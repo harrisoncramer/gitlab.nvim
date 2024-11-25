@@ -236,6 +236,7 @@ end
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
   if not M.can_create_comment(true) then
+    u.press_escape()
     return
   end
 
@@ -293,6 +294,7 @@ end
 --- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
   if not M.can_create_comment(true) then
+    u.press_escape()
     return
   end
 
