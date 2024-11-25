@@ -158,46 +158,8 @@ end
 ---multi-line comment. It also sets up the basic keybindings for switching between
 ---window panes, and for the non-primary sections.
 ---@param opts LayoutOpts
----@return NuiLayout|nil
+---@return NuiLayout
 M.create_comment_layout = function(opts)
-  if opts.unlinked ~= true and opts.discussion_id == nil then
-    -- Check that diffview is initialized
-    if reviewer.tabnr == nil then
-      u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Check that Diffview is the current view
-    local view = diffview_lib.get_current_view()
-    if view == nil and not opts.reply then
-      u.notify("Comments should be left in the reviewer pane", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Check that we are in the diffview tab
-    local tabnr = vim.api.nvim_get_current_tabpage()
-    if tabnr ~= reviewer.tabnr then
-      u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Check that the file has not been renamed
-    if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
-      u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
-      return
-    end
-
-    -- Check that we are hovering over the code
-    local filetype = vim.bo[0].filetype
-    if not opts.reply and (filetype == "DiffviewFiles" or filetype == "gitlab") then
-      u.notify(
-        "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
-        vim.log.levels.ERROR
-      )
-      return
-    end
-  end
-
   local popup_settings = state.settings.popup
   local title
   local user_settings
@@ -276,6 +238,10 @@ M.create_comment = function()
     return
   end
 
+  if not M.can_create_comment() then
+    return
+  end
+
   local layout = M.create_comment_layout({ ranged = false, unlinked = false })
   if layout ~= nil then
     layout:mount()
@@ -289,6 +255,10 @@ M.create_multiline_comment = function()
     return
   end
   if not M.sha_exists() then
+    return
+  end
+
+  if not M.can_create_comment() then
     return
   end
 
@@ -356,6 +326,10 @@ M.create_comment_suggestion = function()
     return
   end
 
+  if not M.can_create_comment() then
+    return
+  end
+
   local suggestion_lines, range_length = build_suggestion()
 
   local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
@@ -369,6 +343,47 @@ M.create_comment_suggestion = function()
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
     end
   end)
+end
+
+---Returns true if it's possible to create an Inline Comment
+---@return boolean
+M.can_create_comment = function()
+  -- Check that diffview is initialized
+  if reviewer.tabnr == nil then
+    u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check that Diffview is the current view
+  local view = diffview_lib.get_current_view()
+  if view == nil then
+    u.notify("Comments should be left in the reviewer pane", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check that we are in the diffview tab
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  if tabnr ~= reviewer.tabnr then
+    u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check that the file has not been renamed
+  if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
+    u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
+    return false
+  end
+
+  -- Check that we are hovering over the code
+  local filetype = vim.bo[0].filetype
+  if filetype == "DiffviewFiles" or filetype == "gitlab" then
+    u.notify(
+      "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
+      vim.log.levels.ERROR
+    )
+    return false
+  end
+  return true
 end
 
 ---Checks to see whether you are commenting on a valid buffer. The Diffview plugin names non-existent
