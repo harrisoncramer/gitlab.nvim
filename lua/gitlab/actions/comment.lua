@@ -343,15 +343,18 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
+  -- Check that we are in a valid buffer
   if not M.sha_exists() then
     return false
   end
 
-  local has_changes, err = git.has_changes(reviewer.get_current_file_path()) -- Saved modifications
+  -- Check that there aren't saved modifications
+  local has_changes, err = git.has_changes(reviewer.get_current_file_path())
   if err ~= nil then
     return false
   end
-  local is_modified = vim.bo[0].modified -- Unsaved modifications
+  -- Check that there aren't unsaved modifications
+  local is_modified = vim.bo[0].modified
   if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
     u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.WARN)
     return false
