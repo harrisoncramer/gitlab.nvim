@@ -224,16 +224,6 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  local has_changes, err = git.has_changes(reviewer.get_current_file_path()) -- Saved modifications
-  if err ~= nil then
-    return
-  end
-  local is_modified = vim.bo[0].modified -- Unsaved modifications
-  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
-    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.WARN)
-    return
-  end
-
   if not M.can_create_comment() then
     return
   end
@@ -375,6 +365,16 @@ M.can_create_comment = function()
   end
 
   if not M.sha_exists() then
+    return false
+  end
+
+  local has_changes, err = git.has_changes(reviewer.get_current_file_path()) -- Saved modifications
+  if err ~= nil then
+    return false
+  end
+  local is_modified = vim.bo[0].modified -- Unsaved modifications
+  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
+    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.WARN)
     return false
   end
 
