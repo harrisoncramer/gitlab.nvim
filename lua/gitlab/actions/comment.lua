@@ -234,10 +234,6 @@ M.create_comment = function()
     return
   end
 
-  if not M.sha_exists() then
-    return
-  end
-
   if not M.can_create_comment() then
     return
   end
@@ -252,9 +248,6 @@ end
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
   if not u.check_visual_mode() then
-    return
-  end
-  if not M.sha_exists() then
     return
   end
 
@@ -322,9 +315,6 @@ M.create_comment_suggestion = function()
   if not u.check_visual_mode() then
     return
   end
-  if not M.sha_exists() then
-    return
-  end
 
   if not M.can_create_comment() then
     return
@@ -383,6 +373,11 @@ M.can_create_comment = function()
     )
     return false
   end
+
+  if not M.sha_exists() then
+    return false
+  end
+
   return true
 end
 
