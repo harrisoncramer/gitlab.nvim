@@ -35,7 +35,10 @@ M.choose_merge_request = function(opts)
       if clean_tree_err ~= nil then
         return
       elseif not has_clean_tree then
-        u.notify("Your working tree has changes, please stash or commit and push", vim.log.levels.ERROR)
+        u.notify(
+          "Cannot switch branch when working tree has changes, please stash or commit and push",
+          vim.log.levels.ERROR
+        )
         return
       end
     end
