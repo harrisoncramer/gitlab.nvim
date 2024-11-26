@@ -335,6 +335,11 @@ M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
+-- Re-raise Vimscript error message after removing existing message prefixes
+M.notify_vim_error = function(msg, lvl)
+  M.notify(msg:gsub("^Vim:", ""):gsub("^gitlab.nvim: ", ""), lvl)
+end
+
 M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
 end

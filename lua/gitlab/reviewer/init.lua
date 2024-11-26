@@ -291,12 +291,16 @@ end
 M.execute_callback = function(callback)
   return function()
     vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { "'[V']" } }, {})
-    vim.api.nvim_cmd(
+    local _, err = pcall(
+      vim.api.nvim_cmd,
       { cmd = "lua", args = { ("require'gitlab'.%s()"):format(callback) }, mods = { lockmarks = true } },
       {}
     )
     vim.api.nvim_win_set_cursor(M.old_winnr, M.old_cursor_position)
     vim.opt.operatorfunc = M.old_opfunc
+    if err ~= "" then
+      u.notify_vim_error(err, vim.log.levels.ERROR)
+    end
   end
 end
 

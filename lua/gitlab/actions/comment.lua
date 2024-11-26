@@ -339,7 +339,7 @@ M.can_create_comment = function(must_be_visual)
 
   -- Check that the file has not been renamed
   if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
-    u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
+    u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.ERROR)
     return false
   end
 
@@ -360,7 +360,7 @@ M.can_create_comment = function(must_be_visual)
   -- Check that there aren't unsaved modifications
   local is_modified = vim.bo[0].modified
   if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
-    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.WARN)
+    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.ERROR)
     return false
   end
 
