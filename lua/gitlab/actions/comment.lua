@@ -3,7 +3,6 @@
 --- to this module the data required to make the API calls
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
-local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
