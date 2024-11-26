@@ -47,6 +47,18 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     return
   end
 
+  -- Creating a draft reply, in response to a discussion ID
+  if discussion_id ~= nil and is_draft then
+    local body = { comment = text, discussion_id = discussion_id }
+    job.run_job("/mr/draft_notes/", "POST", body, function()
+      u.notify("Draft reply created!", vim.log.levels.INFO)
+      draft_notes.load_draft_notes(function()
+        discussions.rebuild_view(unlinked)
+      end)
+    end)
+    return
+  end
+
   -- Creating a note (unlinked comment)
   if unlinked and discussion_id == nil then
     local body = { comment = text }
@@ -89,18 +101,6 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     new_line = location_data.new_line,
     line_range = location_data.line_range,
   }
-
-  -- Creating a draft reply, in response to a discussion ID
-  if discussion_id ~= nil and is_draft then
-    local body = { comment = text, discussion_id = discussion_id, position = position_data }
-    job.run_job("/mr/draft_notes/", "POST", body, function()
-      u.notify("Draft reply created!", vim.log.levels.INFO)
-      draft_notes.load_draft_notes(function()
-        discussions.rebuild_view(unlinked)
-      end)
-    end)
-    return
-  end
 
   -- Creating a new comment (linked to specific changes)
   local body = u.merge({ type = "text", comment = text }, position_data)
