@@ -48,6 +48,7 @@ M.rebuild_view = function(unlinked, all)
     else
       M.rebuild_discussion_tree()
     end
+    state.discussion_tree.last_updated = os.time()
     M.refresh_diagnostics()
   end)
 end
@@ -71,6 +72,7 @@ end
 
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
 M.initialize_discussions = function()
+  state.discussion_tree.last_updated = os.time()
   signs.setup_signs()
   reviewer.set_callback_for_file_changed(function()
     M.refresh_diagnostics()
@@ -108,7 +110,6 @@ M.refresh_diagnostics = function()
     diagnostics.refresh_diagnostics()
   end
   common.add_empty_titles()
-  state.discussion_tree.last_updated = os.time()
 end
 
 ---Opens the discussion tree, sets the keybindings. It also
