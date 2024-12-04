@@ -7,7 +7,7 @@ local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
-local popup_utils = require("gitlab.utils.popup")
+local popup = require("gitlab.popup")
 local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -200,9 +200,11 @@ M.create_comment_layout = function(opts)
 
   local title = opts.discussion_id and "Reply" or opts.unlinked and "Note" or "Comment"
 
-  local popup = state.settings.popup
-  local overrides = opts.discussion_id ~= nil and popup.reply or opts.unlinked and popup.note or popup.comment
-  local settings = u.merge(popup, overrides or {})
+  local popup_settings = state.settings.popup
+  local overrides = opts.discussion_id ~= nil and popup_settings.reply
+    or opts.unlinked and popup_settings.note
+    or popup_settings.comment
+  local settings = u.merge(popup_settings, overrides or {})
 
   M.current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(u.create_popup_state(title, settings))
@@ -223,8 +225,8 @@ M.create_comment_layout = function(opts)
     },
   }, internal_layout)
 
-  popup_utils.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
-  popup_utils.set_up_autocommands(M.comment_popup, layout, M.current_win)
+  popup.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+  popup.set_up_autocommands(M.comment_popup, layout, M.current_win)
 
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
@@ -234,13 +236,13 @@ M.create_comment_layout = function(opts)
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.toggle_bool, popup_utils.non_editable_popup_opts)
+  end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
   state.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.attach_file, popup_utils.editable_popup_opts)
+  end, miscellaneous.attach_file, popup.editable_popup_opts)
 
   vim.schedule(function()
     local draft_mode = state.settings.discussion_tree.draft_mode

@@ -1,5 +1,5 @@
 local u = require("gitlab.utils")
-local popup_utils = require("gitlab.utils.popup")
+local popup = require("gitlab.popup")
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
@@ -31,11 +31,11 @@ M.merge = function(opts)
 
   if merge_body.squash then
     local squash_message_popup = create_squash_message_popup()
-    popup_utils.set_up_autocommands(squash_message_popup, nil, vim.api.nvim_get_current_win())
+    popup.set_up_autocommands(squash_message_popup, nil, vim.api.nvim_get_current_win())
     squash_message_popup:mount()
     state.set_popup_keymaps(squash_message_popup, function(text)
       M.confirm_merge(merge_body, text)
-    end, nil, popup_utils.editable_popup_opts)
+    end, nil, popup.editable_popup_opts)
   else
     M.confirm_merge(merge_body)
   end

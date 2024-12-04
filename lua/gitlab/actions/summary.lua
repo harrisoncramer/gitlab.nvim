@@ -7,7 +7,7 @@ local git = require("gitlab.git")
 local job = require("gitlab.job")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
-local popup_utils = require("gitlab.utils.popup")
+local popup = require("gitlab.popup")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
@@ -78,7 +78,7 @@ M.summary = function()
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    popup_utils.set_cycle_popups_keymaps(popups)
+    popup.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
@@ -209,7 +209,7 @@ M.create_layout = function(info_lines)
     },
   }, internal_layout)
 
-  popup_utils.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
+  popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
 
   layout:mount()
   return layout, title_popup, description_popup, details_popup

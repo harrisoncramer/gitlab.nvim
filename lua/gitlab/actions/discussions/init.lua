@@ -7,7 +7,7 @@ local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
-local popup_utils = require("gitlab.utils.popup")
+local popup = require("gitlab.popup")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
@@ -293,7 +293,7 @@ M.edit_comment = function(tree, unlinked)
     return
   end
 
-  popup_utils.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
+  popup.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 
   edit_popup:mount()
 
@@ -316,7 +316,7 @@ M.edit_comment = function(tree, unlinked)
       edit_popup,
       draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
       nil,
-      popup_utils.editable_popup_opts
+      popup.editable_popup_opts
     )
   else
     local comment = require("gitlab.actions.comment")
@@ -324,7 +324,7 @@ M.edit_comment = function(tree, unlinked)
       edit_popup,
       comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
       nil,
-      popup_utils.editable_popup_opts
+      popup.editable_popup_opts
     )
   end
 end

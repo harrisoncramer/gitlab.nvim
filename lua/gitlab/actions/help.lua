@@ -1,7 +1,7 @@
 local M = {}
 
 local u = require("gitlab.utils")
-local popup_utils = require("gitlab.utils.popup")
+local popup = require("gitlab.popup")
 local event = require("nui.utils.autocmd").event
 local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
@@ -26,7 +26,7 @@ M.open = function()
     help_popup:unmount()
   end)
 
-  popup_utils.set_up_autocommands(help_popup, nil, vim.api.nvim_get_current_win(), opts)
+  popup.set_up_autocommands(help_popup, nil, vim.api.nvim_get_current_win(), opts)
 
   help_popup:mount()
 
