@@ -140,6 +140,8 @@ M.settings = {
     comment = nil,
     edit = nil,
     note = nil,
+    help = nil,
+    pipeline = nil,
     reply = nil,
     squash_message = nil,
     create_mr = { width = "95%", height = "95%" },

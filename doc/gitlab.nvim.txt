@@ -243,6 +243,8 @@ you call this function with no values the defaults will be used:
         comment = nil, -- Individual popup overrides, e.g. { width = "60%", height = "80%", border = "single", opacity = 0.85 },
         edit = nil,
         note = nil,
+        help = nil, -- Width and height are calculated automatically and cannot be overridden
+        pipeline = nil, -- Width and height are calculated automatically and cannot be overridden
         reply = nil,
         squash_message = nil,
         create_mr = { width = "95%", height = "95%" },
