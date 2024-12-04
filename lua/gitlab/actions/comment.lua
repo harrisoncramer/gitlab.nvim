@@ -198,13 +198,20 @@ M.create_comment_layout = function(opts)
     end
   end
 
-  local title = opts.discussion_id and "Reply" or opts.unlinked and "Note" or "Comment"
-
   local popup_settings = state.settings.popup
-  local overrides = opts.discussion_id ~= nil and popup_settings.reply
-    or opts.unlinked and popup_settings.note
-    or popup_settings.comment
-  local settings = u.merge(popup_settings, overrides or {})
+  local title
+  local user_settings
+  if opts.discussion_id ~= nil then
+    title = "Reply"
+    user_settings = popup_settings.reply
+  elseif opts.unlinked then
+    title = "Note"
+    user_settings = popup_settings.note
+  else
+    title = "Comment"
+    user_settings = popup_settings.comment
+  end
+  local settings = u.merge(popup_settings, user_settings or {})
 
   M.current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(popup.create_popup_state(title, settings))
