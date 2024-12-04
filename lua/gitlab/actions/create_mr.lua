@@ -278,12 +278,12 @@ M.open_confirmation_popup = function(mr)
       action_before_exit = true,
     }
 
-    state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
-    state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
-    state.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
-    state.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
-    state.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
-    state.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
+    popup.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
+    popup.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
+    popup.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
+    popup.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    popup.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    popup.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
     popup.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)

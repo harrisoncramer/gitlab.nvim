@@ -2,6 +2,95 @@ local u = require("gitlab.utils")
 
 local M = {}
 
+local function exit(popup, opts)
+  if opts.action_before_exit and opts.cb ~= nil then
+    opts.cb()
+    popup:unmount()
+  else
+    popup:unmount()
+    if opts.cb ~= nil then
+      opts.cb()
+    end
+  end
+end
+
+-- These keymaps are buffer specific and are set dynamically when popups mount
+M.set_popup_keymaps = function(popup, action, linewise_action, opts)
+  local settings = require("gitlab.state").settings
+  if settings.keymaps.disable_all or settings.keymaps.popup.disable_all then
+    return
+  end
+
+  if opts == nil then
+    opts = {}
+  end
+  if action ~= "Help" and settings.keymaps.help then -- Don't show help on the help popup
+    vim.keymap.set("n", settings.keymaps.help, function()
+      local help = require("gitlab.actions.help")
+      help.open()
+    end, { buffer = popup.bufnr, desc = "Open help", nowait = settings.keymaps.help_nowait })
+  end
+  if action ~= nil and settings.keymaps.popup.perform_action then
+    vim.keymap.set("n", settings.keymaps.popup.perform_action, function()
+      local text = u.get_buffer_text(popup.bufnr)
+      if opts.action_before_close then
+        action(text, popup.bufnr)
+        exit(popup, opts)
+      else
+        exit(popup, opts)
+        action(text, popup.bufnr)
+      end
+    end, { buffer = popup.bufnr, desc = "Perform action", nowait = settings.keymaps.popup.perform_action_nowait })
+  end
+
+  if linewise_action ~= nil and settings.keymaps.popup.perform_action then
+    vim.keymap.set("n", settings.keymaps.popup.perform_linewise_action, function()
+      local bufnr = vim.api.nvim_get_current_buf()
+      local linnr = vim.api.nvim_win_get_cursor(0)[1]
+      local text = u.get_line_content(bufnr, linnr)
+      linewise_action(text)
+    end, {
+      buffer = popup.bufnr,
+      desc = "Perform linewise action",
+      nowait = settings.keymaps.popup.perform_linewise_action_nowait,
+    })
+  end
+
+  if settings.keymaps.popup.discard_changes then
+    vim.keymap.set("n", settings.keymaps.popup.discard_changes, function()
+      local temp_registers = settings.popup.temp_registers
+      settings.popup.temp_registers = {}
+      vim.cmd("quit!")
+      settings.popup.temp_registers = temp_registers
+    end, {
+      buffer = popup.bufnr,
+      desc = "Quit discarding changes",
+      nowait = settings.keymaps.popup.discard_changes_nowait,
+    })
+  end
+
+  if opts.save_to_temp_register then
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+      buffer = popup.bufnr,
+      callback = function()
+        local text = u.get_buffer_text(popup.bufnr)
+        for _, register in ipairs(settings.popup.temp_registers) do
+          vim.fn.setreg(register, text)
+        end
+      end,
+    })
+  end
+
+  if opts.action_before_exit then
+    vim.api.nvim_create_autocmd("BufWinLeave", {
+      buffer = popup.bufnr,
+      callback = function()
+        exit(popup, opts)
+      end,
+    })
+  end
+end
+
 --- Setup autocommands for the popup
 --- @param popup NuiPopup
 --- @param layout NuiLayout|nil

@@ -93,7 +93,7 @@ M.open = function()
     end
 
     pipeline_popup.border:set_text("top", "Pipeline Status", "center")
-    state.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
+    popup.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
     u.switch_can_edit_buf(bufnr, false)
   end)
 end

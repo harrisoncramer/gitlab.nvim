@@ -30,7 +30,7 @@ M.open = function()
 
   help_popup:mount()
 
-  state.set_popup_keymaps(help_popup, "Help", nil)
+  popup.set_popup_keymaps(help_popup, "Help", nil)
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, #help_content_lines, false, help_content_lines)
   u.switch_can_edit_buf(currentBuffer, false)

@@ -60,19 +60,19 @@ M.summary = function()
       M.color_details(info_popup.bufnr) -- Color values in details popup
     end
 
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       description_popup,
       M.edit_summary,
       miscellaneous.attach_file,
       { cb = exit, action_before_close = true, action_before_exit = true, save_to_temp_register = true }
     )
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       title_popup,
       M.edit_summary,
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       info_popup,
       M.edit_summary,
       nil,

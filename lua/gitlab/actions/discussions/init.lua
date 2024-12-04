@@ -312,7 +312,7 @@ M.edit_comment = function(tree, unlinked)
 
   -- Draft notes module handles edits for draft notes
   if M.is_draft_note(tree) then
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       edit_popup,
       draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
       nil,
@@ -320,7 +320,7 @@ M.edit_comment = function(tree, unlinked)
     )
   else
     local comment = require("gitlab.actions.comment")
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       edit_popup,
       comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
       nil,

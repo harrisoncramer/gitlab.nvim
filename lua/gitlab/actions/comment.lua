@@ -232,14 +232,14 @@ M.create_comment_layout = function(opts)
   local unlinked = opts.unlinked or false
 
   ---Keybinding for focus on draft section
-  state.set_popup_keymaps(M.draft_popup, function()
+  popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
-  state.set_popup_keymaps(M.comment_popup, function(text)
+  popup.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.attach_file, popup.editable_popup_opts)
