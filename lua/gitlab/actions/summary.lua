@@ -168,15 +168,15 @@ end
 
 M.create_layout = function(info_lines)
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
-  local title_popup = Popup(u.create_box_popup_state(nil, false, settings))
+  local title_popup = Popup(popup.create_box_popup_state(nil, false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_popup_state("Description", settings))
+  local description_popup = Popup(popup.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
   local details_popup
 
   local internal_layout
   if state.settings.info.enabled then
-    details_popup = Popup(u.create_box_popup_state("Details", false, settings))
+    details_popup = Popup(popup.create_box_popup_state("Details", false, settings))
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({

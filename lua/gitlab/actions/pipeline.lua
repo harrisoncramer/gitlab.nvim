@@ -41,7 +41,7 @@ M.open = function()
   local height = 6 + #M.pipeline_jobs + 3
 
   local pipeline_popup =
-    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+    Popup(popup.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
   popup.set_up_autocommands(pipeline_popup, nil, vim.api.nvim_get_current_win())
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()

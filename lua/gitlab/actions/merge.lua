@@ -8,7 +8,7 @@ local reviewer = require("gitlab.reviewer")
 local M = {}
 
 local function create_squash_message_popup()
-  return Popup(u.create_popup_state("Squash Commit Message", state.settings.popup.squash_message))
+  return Popup(popup.create_popup_state("Squash Commit Message", state.settings.popup.squash_message))
 end
 
 ---@class MergeOpts

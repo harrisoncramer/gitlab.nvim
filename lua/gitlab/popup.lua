@@ -2,6 +2,62 @@ local u = require("gitlab.utils")
 
 local M = {}
 
+---Get the popup view_opts
+---@param title string The string to appear on top of the popup
+---@param user_settings table|nil User-defined popup settings
+---@param width number? Override default width
+---@param height number? Override default height
+---@param zindex number? Override default zindex
+---@return table
+M.create_popup_state = function(title, user_settings, width, height, zindex)
+  local settings = u.merge(require("gitlab.state").settings.popup, user_settings or {})
+  local view_opts = {
+    buf_options = {
+      filetype = "markdown",
+    },
+    relative = "editor",
+    enter = true,
+    focusable = true,
+    zindex = zindex or 50,
+    border = {
+      style = settings.border,
+      text = {
+        top = title,
+      },
+    },
+    position = settings.position,
+    size = {
+      width = width and math.min(width, vim.o.columns - 2) or settings.width,
+      height = height and math.min(height, vim.o.lines - 3) or settings.height,
+    },
+    opacity = settings.opacity,
+  }
+
+  return view_opts
+end
+
+---Create view_opts for Box popups used inside popup Layouts
+---@param title string|nil The string to appear on top of the popup
+---@param enter boolean Whether the pop should be focused after creation
+---@param settings table User defined popup settings
+---@return table
+M.create_box_popup_state = function(title, enter, settings)
+  return {
+    buf_options = {
+      filetype = "markdown",
+    },
+    enter = enter or false,
+    focusable = true,
+    border = {
+      style = settings.border,
+      text = {
+        top = title,
+      },
+    },
+    opacity = settings.opacity,
+  }
+end
+
 local function exit(popup, opts)
   if opts.action_before_exit and opts.cb ~= nil then
     opts.cb()
@@ -102,7 +158,7 @@ M.set_up_autocommands = function(popup, layout, previous_window, opts)
     if layout ~= nil then
       layout:update()
     else
-      popup:update_layout(opts and u.create_popup_state(unpack(opts)))
+      popup:update_layout(opts and M.create_popup_state(unpack(opts)))
     end
   end)
 

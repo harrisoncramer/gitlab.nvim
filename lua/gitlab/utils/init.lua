@@ -480,62 +480,6 @@ M.difference = function(a, b)
   return not_included
 end
 
----Get the popup view_opts
----@param title string The string to appear on top of the popup
----@param settings table|nil User defined popup settings
----@param width number? Override default width
----@param height number? Override default height
----@param zindex number? Override default zindex
----@return table
-M.create_popup_state = function(title, settings, width, height, zindex)
-  settings = M.merge(require("gitlab.state").settings.popup, settings or {})
-  local view_opts = {
-    buf_options = {
-      filetype = "markdown",
-    },
-    relative = "editor",
-    enter = true,
-    focusable = true,
-    zindex = zindex or 50,
-    border = {
-      style = settings.border,
-      text = {
-        top = title,
-      },
-    },
-    position = settings.position,
-    size = {
-      width = width and math.min(width, vim.o.columns - 2) or settings.width,
-      height = height and math.min(height, vim.o.lines - 3) or settings.height,
-    },
-    opacity = settings.opacity,
-  }
-
-  return view_opts
-end
-
----Create view_opts for Box popups used inside popup Layouts
----@param title string|nil The string to appear on top of the popup
----@param enter boolean Whether the pop should be focused after creation
----@param settings table User defined popup settings
----@return table
-M.create_box_popup_state = function(title, enter, settings)
-  return {
-    buf_options = {
-      filetype = "markdown",
-    },
-    enter = enter or false,
-    focusable = true,
-    border = {
-      style = settings.border,
-      text = {
-        top = title,
-      },
-    },
-    opacity = settings.opacity,
-  }
-end
-
 M.read_file = function(file_path, opts)
   local file = io.open(file_path, "r")
   if file == nil then

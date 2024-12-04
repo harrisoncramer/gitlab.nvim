@@ -207,8 +207,8 @@ M.create_comment_layout = function(opts)
   local settings = u.merge(popup_settings, overrides or {})
 
   M.current_win = vim.api.nvim_get_current_win()
-  M.comment_popup = Popup(u.create_popup_state(title, settings))
-  M.draft_popup = Popup(u.create_box_popup_state("Draft", false, settings))
+  M.comment_popup = Popup(popup.create_popup_state(title, settings))
+  M.draft_popup = Popup(popup.create_box_popup_state("Draft", false, settings))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
 
   local internal_layout = Layout.Box({

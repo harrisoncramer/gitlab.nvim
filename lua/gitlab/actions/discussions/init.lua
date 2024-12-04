@@ -284,7 +284,7 @@ end
 
 -- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
-  local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
+  local edit_popup = Popup(popup.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)

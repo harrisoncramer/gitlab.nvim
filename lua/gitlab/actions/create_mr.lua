@@ -330,19 +330,19 @@ end
 
 M.create_layout = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.create_mr or {})
-  local title_popup = Popup(u.create_box_popup_state("Title", false, settings))
+  local title_popup = Popup(popup.create_box_popup_state("Title", false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_popup_state("Description", settings))
+  local description_popup = Popup(popup.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
-  local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false, settings))
+  local target_branch_popup = Popup(popup.create_box_popup_state("Target branch", false, settings))
   M.target_bufnr = target_branch_popup.bufnr
   local delete_title = vim.o.columns > 110 and "Delete source branch" or "Delete source"
-  local delete_branch_popup = Popup(u.create_box_popup_state(delete_title, false, settings))
+  local delete_branch_popup = Popup(popup.create_box_popup_state(delete_title, false, settings))
   M.delete_branch_bufnr = delete_branch_popup.bufnr
   local squash_title = vim.o.columns > 110 and "Squash commits" or "Squash"
-  local squash_popup = Popup(u.create_box_popup_state(squash_title, false, settings))
+  local squash_popup = Popup(popup.create_box_popup_state(squash_title, false, settings))
   M.squash_bufnr = squash_popup.bufnr
-  local forked_project_id_popup = Popup(u.create_box_popup_state("Forked Project ID", false, settings))
+  local forked_project_id_popup = Popup(popup.create_box_popup_state("Forked Project ID", false, settings))
   M.forked_project_id_bufnr = forked_project_id_popup.bufnr
 
   local boxes = {}
