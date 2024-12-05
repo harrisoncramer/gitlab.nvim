@@ -813,7 +813,7 @@ M.toggle_sort_method = function()
   else
     state.settings.discussion_tree.sort_by = "original_comment"
   end
-  u.notify("Sort discussion tree by '" .. state.settings.discussion_tree.sort_by .. "'", vim.log.levels.INFO)
+  winbar.update_winbar()
   M.rebuild_view(false, true)
 end
 
