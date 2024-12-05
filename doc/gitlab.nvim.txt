@@ -938,8 +938,8 @@ drafts, and regular (or live) mode, where comments are posted immediately.
 gitlab.toggle_sort_method() ~
 
 Toggles whether the discussion tree is sorted by the "latest_reply", with
-threads with the most recent activity on top, or by "original_comment", with
-the oldest threads on top.
+threads with the most recent activity on top (the default), or by
+"original_comment", with the oldest threads on top.
 
                                                                 *gitlab.nvim.add_assignee*
 gitlab.add_assignee() ~

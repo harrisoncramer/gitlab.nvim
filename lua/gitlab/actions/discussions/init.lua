@@ -805,7 +805,8 @@ M.toggle_draft_mode = function()
   winbar.update_winbar()
 end
 
----Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
+---Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the
+---top).
 M.toggle_sort_method = function()
   if state.settings.discussion_tree.sort_by == "original_comment" then
     state.settings.discussion_tree.sort_by = "latest_reply"
