@@ -646,13 +646,13 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     })
   end
 
-  if keymaps.discussion_tree.toggle_sort_by then
-    vim.keymap.set("n", keymaps.discussion_tree.toggle_sort_by, function()
-      M.toggle_sort_by()
+  if keymaps.discussion_tree.toggle_sort_method then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_sort_method, function()
+      M.toggle_sort_method()
     end, {
       buffer = bufnr,
-      desc = "Toggle sort order: by 'latest reply' or by 'original comment'",
-      nowait = keymaps.discussion_tree.toggle_sort_by_nowait,
+      desc = "Toggle sort method: by 'latest reply' or by 'original comment'",
+      nowait = keymaps.discussion_tree.toggle_sort_method_nowait,
     })
   end
 
@@ -806,7 +806,7 @@ M.toggle_draft_mode = function()
 end
 
 ---Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
-M.toggle_sort_by = function()
+M.toggle_sort_method = function()
   if state.settings.discussion_tree.sort_by == "original_comment" then
     state.settings.discussion_tree.sort_by = "latest_reply"
   else
