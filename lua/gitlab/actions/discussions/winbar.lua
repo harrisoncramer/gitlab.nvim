@@ -201,9 +201,9 @@ end
 ---@return string
 M.get_mode = function()
   if state.settings.discussion_tree.draft_mode then
-    return "%#DiagnosticWarn#Draft Mode"
+    return "%#GitlabDraftMode#Draft Mode"
   else
-    return "%#DiagnosticOK#Live Mode"
+    return "%#GitlabLiveMode#Live Mode"
   end
 end
 

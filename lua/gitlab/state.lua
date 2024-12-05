@@ -242,6 +242,8 @@ M.settings = {
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
       draft = "DiffviewNonText",
+      draft_mode = "DiagnosticWarn",
+      live_mode = "DiagnosticOk",
       sort_method = "Keyword",
     },
   },
