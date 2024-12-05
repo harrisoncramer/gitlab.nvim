@@ -351,6 +351,7 @@ you call this function with no values the defaults will be used:
           resolved = "DiagnosticSignOk",
           unresolved = "DiagnosticSignWarn",
           draft = "DiffviewNonText",
+          sort_method = "Keyword",
         }
       }
     })

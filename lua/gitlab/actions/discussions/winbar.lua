@@ -169,6 +169,7 @@ M.make_winbar = function(t)
     notes_title = "%#Text#" .. notes_title
   end
 
+  local sort_method = M.get_sort_method()
   local mode = M.get_mode()
 
   -- Join everything together and return it
@@ -176,15 +177,24 @@ M.make_winbar = function(t)
   local end_section = "%="
   local help = "%#Comment#Help: " .. (t.help_keymap and t.help_keymap:gsub(" ", "<space>") .. " " or "unmapped")
   return string.format(
-    " %s %s %s %s %s %s %s",
+    " %s %s %s %s %s %s %s %s %s",
     discussion_title,
     separator,
     notes_title,
     end_section,
+    sort_method,
+    separator,
     mode,
     separator,
     help
   )
+end
+
+---Returns a string for the winbar indicating the sort method
+---@return string
+M.get_sort_method = function()
+  local sort_method = state.settings.discussion_tree.sort_by == "original_comment" and "↓ by thread" or "↑ by reply"
+  return "%#GitlabSortMethod#" .. sort_method
 end
 
 ---Returns a string for the winbar indicating the mode type, live or draft

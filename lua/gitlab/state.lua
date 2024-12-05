@@ -242,6 +242,7 @@ M.settings = {
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
       draft = "DiffviewNonText",
+      sort_method = "Keyword",
     },
   },
 }
