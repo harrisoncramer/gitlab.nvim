@@ -97,7 +97,7 @@ M.update_summary_details = function()
   end
   local details_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
   local internal_layout = M.create_internal_layout(details_lines, M.title_popup, M.description_popup, M.info_popup)
-  M.layout:update(M.get_outer_layout(), internal_layout)
+  M.layout:update(M.get_outer_layout_config(), internal_layout)
   M.update_details_popup(M.info_popup.bufnr, details_lines)
 end
 
@@ -200,7 +200,7 @@ M.create_layout = function(info_lines)
 
   local internal_layout = M.create_internal_layout(info_lines, title_popup, description_popup, details_popup)
 
-  local layout = Layout(M.get_outer_layout(), internal_layout)
+  local layout = Layout(M.get_outer_layout_config(), internal_layout)
 
   popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
 
@@ -235,7 +235,7 @@ M.create_internal_layout = function(info_lines, title_popup, description_popup, 
   return internal_layout
 end
 
-M.get_outer_layout = function()
+M.get_outer_layout_config = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
   return {
     position = settings.position,
