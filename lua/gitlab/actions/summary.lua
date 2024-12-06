@@ -187,6 +187,8 @@ M.edit_summary = function()
   end)
 end
 
+---Create the Summary layout and individual popups that make up the Layout.
+---@return NuiLayout, NuiPopup, NuiPopup, NuiPopup
 M.create_layout = function(info_lines)
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
   local title_popup = Popup(popup.create_box_popup_state(nil, false, settings))
@@ -207,6 +209,12 @@ M.create_layout = function(info_lines)
   return layout, title_popup, description_popup, details_popup
 end
 
+---Create the internal layout of the Summary and individual popups that make up the Layout.
+---@param info_lines string[] Table of strings that make up the details content
+---@param title_popup NuiPopup
+---@param description_popup NuiPopup
+---@param details_popup NuiPopup
+---@return NuiLayout.Box
 M.create_internal_layout = function(info_lines, title_popup, description_popup, details_popup)
   local internal_layout
   if state.settings.info.enabled then
@@ -235,6 +243,8 @@ M.create_internal_layout = function(info_lines, title_popup, description_popup, 
   return internal_layout
 end
 
+---Create the config for the outer Layout of the Summary
+---@return nui_layout_options
 M.get_outer_layout_config = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
   return {
