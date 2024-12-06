@@ -7,6 +7,7 @@ local git = require("gitlab.git")
 local job = require("gitlab.job")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
@@ -59,25 +60,25 @@ M.summary = function()
       M.color_details(info_popup.bufnr) -- Color values in details popup
     end
 
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       description_popup,
       M.edit_summary,
       miscellaneous.attach_file,
       { cb = exit, action_before_close = true, action_before_exit = true, save_to_temp_register = true }
     )
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       title_popup,
       M.edit_summary,
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       info_popup,
       M.edit_summary,
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    miscellaneous.set_cycle_popups_keymaps(popups)
+    popup.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
@@ -166,15 +167,16 @@ M.edit_summary = function()
 end
 
 M.create_layout = function(info_lines)
-  local title_popup = Popup(u.create_box_popup_state(nil, false))
+  local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
+  local title_popup = Popup(popup.create_box_popup_state(nil, false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_box_popup_state("Description", true))
+  local description_popup = Popup(popup.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
   local details_popup
 
   local internal_layout
   if state.settings.info.enabled then
-    details_popup = Popup(u.create_box_popup_state("Details", false))
+    details_popup = Popup(popup.create_box_popup_state("Details", false, settings))
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({
@@ -199,13 +201,15 @@ M.create_layout = function(info_lines)
   end
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
-      width = "95%",
-      height = "95%",
+      width = settings.width,
+      height = settings.height,
     },
   }, internal_layout)
+
+  popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
 
   layout:mount()
   return layout, title_popup, description_popup, details_popup

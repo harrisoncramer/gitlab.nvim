@@ -7,6 +7,7 @@ local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -197,12 +198,24 @@ M.create_comment_layout = function(opts)
     end
   end
 
-  local title = opts.discussion_id and "Reply" or "Comment"
-  local settings = opts.discussion_id ~= nil and state.settings.popup.reply or state.settings.popup.comment
+  local popup_settings = state.settings.popup
+  local title
+  local user_settings
+  if opts.discussion_id ~= nil then
+    title = "Reply"
+    user_settings = popup_settings.reply
+  elseif opts.unlinked then
+    title = "Note"
+    user_settings = popup_settings.note
+  else
+    title = "Comment"
+    user_settings = popup_settings.comment
+  end
+  local settings = u.merge(popup_settings, user_settings or {})
 
   M.current_win = vim.api.nvim_get_current_win()
-  M.comment_popup = Popup(u.create_popup_state(title, settings))
-  M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  M.comment_popup = Popup(popup.create_popup_state(title, settings))
+  M.draft_popup = Popup(popup.create_box_popup_state("Draft", false, settings))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
 
   local internal_layout = Layout.Box({
@@ -211,44 +224,37 @@ M.create_comment_layout = function(opts)
   }, { dir = "col" })
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
-      width = "50%",
-      height = "55%",
+      width = settings.width,
+      height = settings.height,
     },
   }, internal_layout)
 
-  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+  popup.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+  popup.set_up_autocommands(M.comment_popup, layout, M.current_win)
 
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
 
   ---Keybinding for focus on draft section
-  state.set_popup_keymaps(M.draft_popup, function()
+  popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.toggle_bool, miscellaneous.non_editable_popup_opts)
+  end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
-  state.set_popup_keymaps(M.comment_popup, function(text)
+  popup.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+  end, miscellaneous.attach_file, popup.editable_popup_opts)
 
   vim.schedule(function()
     local draft_mode = state.settings.discussion_tree.draft_mode
     vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(draft_mode) })
   end)
-
-  --Send back to previous window on close
-  vim.api.nvim_create_autocmd("BufHidden", {
-    buffer = M.draft_popup.bufnr,
-    callback = function()
-      vim.api.nvim_set_current_win(M.current_win)
-    end,
-  })
 
   return layout
 end

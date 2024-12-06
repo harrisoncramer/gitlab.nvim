@@ -7,12 +7,12 @@ local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
-local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
 local diffview_lib = require("diffview.lib")
@@ -284,7 +284,7 @@ end
 
 -- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
-  local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
+  local edit_popup = Popup(popup.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
@@ -292,6 +292,8 @@ M.edit_comment = function(tree, unlinked)
     u.notify("Could not get root or note node", vim.log.levels.ERROR)
     return
   end
+
+  popup.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 
   edit_popup:mount()
 
@@ -310,19 +312,19 @@ M.edit_comment = function(tree, unlinked)
 
   -- Draft notes module handles edits for draft notes
   if M.is_draft_note(tree) then
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       edit_popup,
       draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
       nil,
-      miscellaneous.editable_popup_opts
+      popup.editable_popup_opts
     )
   else
     local comment = require("gitlab.actions.comment")
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       edit_popup,
       comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
       nil,
-      miscellaneous.editable_popup_opts
+      popup.editable_popup_opts
     )
   end
 end
