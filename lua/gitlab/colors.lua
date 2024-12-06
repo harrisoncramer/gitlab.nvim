@@ -30,5 +30,8 @@ vim.api.nvim_create_autocmd("VimEnter", {
     vim.api.nvim_set_hl(0, "GitlabResolved", get_colors_for_group(discussion.resolved))
     vim.api.nvim_set_hl(0, "GitlabUnresolved", get_colors_for_group(discussion.unresolved))
     vim.api.nvim_set_hl(0, "GitlabDraft", get_colors_for_group(discussion.draft))
+    vim.api.nvim_set_hl(0, "GitlabDraftMode", get_colors_for_group(discussion.draft_mode))
+    vim.api.nvim_set_hl(0, "GitlabLiveMode", get_colors_for_group(discussion.live_mode))
+    vim.api.nvim_set_hl(0, "GitlabSortMethod", get_colors_for_group(discussion.sort_method))
   end,
 })

@@ -646,6 +646,16 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     })
   end
 
+  if keymaps.discussion_tree.toggle_sort_method then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_sort_method, function()
+      M.toggle_sort_method()
+    end, {
+      buffer = bufnr,
+      desc = "Toggle sort method: by 'latest reply' or by 'original comment'",
+      nowait = keymaps.discussion_tree.toggle_sort_method_nowait,
+    })
+  end
+
   if keymaps.discussion_tree.toggle_resolved then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_resolved, function()
       if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
@@ -793,6 +803,18 @@ end
 M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
   winbar.update_winbar()
+end
+
+---Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the
+---top).
+M.toggle_sort_method = function()
+  if state.settings.discussion_tree.sort_by == "original_comment" then
+    state.settings.discussion_tree.sort_by = "latest_reply"
+  else
+    state.settings.discussion_tree.sort_by = "original_comment"
+  end
+  winbar.update_winbar()
+  M.rebuild_view(false, true)
 end
 
 ---Indicates whether the node under the cursor is a draft note or not
