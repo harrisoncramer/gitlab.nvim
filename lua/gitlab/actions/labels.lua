@@ -14,8 +14,10 @@ M.delete_label = function()
   M.delete_popup("label")
 end
 
-local refresh_label_state = function(labels)
+local refresh_label_state = function(labels, message)
+  u.notify(message, vim.log.levels.INFO)
   state.INFO.labels = labels
+  require("gitlab.actions.summary").update_summary_details()
 end
 
 local get_current_labels = function()
@@ -41,9 +43,7 @@ M.add_popup = function(type)
     table.insert(current_labels, choice)
     local body = { labels = current_labels }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
-      u.notify(data.message, vim.log.levels.INFO)
-
-      refresh_label_state(data.labels)
+      refresh_label_state(data.labels, data.message)
     end)
   end)
 end
@@ -59,8 +59,7 @@ M.delete_popup = function(type)
     local filtered_labels = u.filter(current_labels, choice)
     local body = { labels = filtered_labels }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
-      u.notify(data.message, vim.log.levels.INFO)
-      refresh_label_state(data.labels)
+      refresh_label_state(data.labels, data.message)
     end)
   end)
 end
