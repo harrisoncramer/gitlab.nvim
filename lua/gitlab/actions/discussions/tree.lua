@@ -457,7 +457,9 @@ M.restore_cursor_position = function(winid, tree, original_node, root_node)
     end
   end
   if line_number ~= nil then
-    vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
+    if vim.api.nvim_win_is_valid(winid) then
+      vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
+    end
   end
 end
 
