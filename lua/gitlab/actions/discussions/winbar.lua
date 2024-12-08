@@ -61,14 +61,14 @@ local function content()
   local updated
   if state.discussion_tree.last_updated then
     local last_update = tostring(os.date("!%Y-%m-%dT%H:%M:%S", state.discussion_tree.last_updated))
-    updated = "Updated: " .. u.time_since(last_update)
+    updated = u.time_since(last_update) .. " ⟳"
   else
     spinner_index = (spinner_index % #state.settings.discussion_tree.spinner_chars) + 1
-    updated = "Updated: " .. state.settings.discussion_tree.spinner_chars[spinner_index]
+    updated = state.settings.discussion_tree.spinner_chars[spinner_index]
   end
 
   local resolvable_discussions, resolved_discussions, non_resolvable_discussions =
-    get_data(state.DISCUSSION_DATA.discussions)
+      get_data(state.DISCUSSION_DATA.discussions)
   local resolvable_notes, resolved_notes, non_resolvable_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
   local draft_notes = require("gitlab.actions.draft_notes")
@@ -131,35 +131,34 @@ end
 ---@param drafts_count integer
 ---@return string
 local add_drafts_and_resolvable = function(
-  base_title,
-  resolvable_count,
-  resolved_count,
-  drafts_count,
-  non_resolvable_count
+    base_title,
+    resolvable_count,
+    resolved_count,
+    drafts_count,
+    non_resolvable_count
 )
   if resolvable_count == 0 and drafts_count == 0 and non_resolvable_count == 0 then
     return base_title
   end
-  base_title = base_title .. " ("
-  if non_resolvable_count ~= 0 then
-    base_title = base_title .. u.pluralize(non_resolvable_count, "comment")
-  end
   if resolvable_count ~= 0 then
     base_title = base_title
-      .. get_connector(base_title)
-      .. string.format("%d/%s", resolved_count, u.pluralize(resolvable_count, "thread"))
+        .. " "
+        .. string.format("%s%d/%d", state.settings.discussion_tree.resolved, resolved_count, resolvable_count)
   end
   if drafts_count ~= 0 then
-    base_title = base_title .. get_connector(base_title) .. u.pluralize(drafts_count, "draft")
+    base_title = base_title .. get_connector(base_title) .. drafts_count .. "✎"
   end
-  base_title = base_title .. ")"
+  if non_resolvable_count ~= 0 then
+    base_title = base_title ..
+        get_connector(base_title) .. string.format("%d%s", non_resolvable_count, state.settings.discussion_tree.unlinked)
+  end
   return base_title
 end
 
 ---@param t WinbarTable
 M.make_winbar = function(t)
   local discussion_title = add_drafts_and_resolvable(
-    "Inline Comments",
+    "Comments",
     t.resolvable_discussions,
     t.resolved_discussions,
     t.inline_draft_notes,
@@ -217,9 +216,9 @@ end
 ---@return string
 M.get_mode = function()
   if state.settings.discussion_tree.draft_mode then
-    return "%#GitlabDraftMode#Draft Mode"
+    return "%#GitlabDraftMode#Draft"
   else
-    return "%#GitlabLiveMode#Live Mode"
+    return "%#GitlabLiveMode#Live"
   end
 end
 

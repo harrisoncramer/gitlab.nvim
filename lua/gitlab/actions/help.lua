@@ -18,6 +18,11 @@ M.open = function()
     return agg
   end, {})
 
+  table.insert(help_content_lines, "")
+  table.insert(help_content_lines,
+    string.format("✎ = draft; %s = unlinked comment; %s = resolved", state.settings.discussion_tree.unlinked,
+      state.settings.discussion_tree.resolved))
+
   local longest_line = u.get_longest_string(help_content_lines)
   local opts = { "Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 70 }
   local help_popup = Popup(popup.create_popup_state(unpack(opts)))
