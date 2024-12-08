@@ -68,7 +68,7 @@ local function content()
   end
 
   local resolvable_discussions, resolved_discussions, non_resolvable_discussions =
-      get_data(state.DISCUSSION_DATA.discussions)
+    get_data(state.DISCUSSION_DATA.discussions)
   local resolvable_notes, resolved_notes, non_resolvable_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
 
   local draft_notes = require("gitlab.actions.draft_notes")
@@ -121,7 +121,7 @@ M.update_winbar = function()
 end
 
 local function get_connector(base_title)
-  return string.match(base_title, "%($") and "" or "; "
+  return string.match(base_title, "%($") and "" or " "
 end
 
 ---Builds the title string for both sections, using the count of resolvable and draft nodes
@@ -129,56 +129,58 @@ end
 ---@param resolvable_count integer
 ---@param resolved_count integer
 ---@param drafts_count integer
+---@param focused boolean
 ---@return string
 local add_drafts_and_resolvable = function(
-    base_title,
-    resolvable_count,
-    resolved_count,
-    drafts_count,
-    non_resolvable_count
+  base_title,
+  resolvable_count,
+  resolved_count,
+  drafts_count,
+  non_resolvable_count,
+  focused
 )
   if resolvable_count == 0 and drafts_count == 0 and non_resolvable_count == 0 then
     return base_title
   end
   if resolvable_count ~= 0 then
-    base_title = base_title
-        .. " "
-        .. string.format("%s%d/%d", state.settings.discussion_tree.resolved, resolved_count, resolvable_count)
+    base_title = base_title .. M.get_resolved_text(focused, resolved_count, resolvable_count)
   end
   if drafts_count ~= 0 then
-    base_title = base_title .. get_connector(base_title) .. drafts_count .. "✎"
+    base_title = base_title .. M.get_drafts_text(base_title, drafts_count, focused)
   end
   if non_resolvable_count ~= 0 then
-    base_title = base_title ..
-        get_connector(base_title) .. string.format("%d%s", non_resolvable_count, state.settings.discussion_tree.unlinked)
+    base_title = base_title .. M.get_nonresolveable_text(base_title, non_resolvable_count, focused)
   end
   return base_title
 end
 
 ---@param t WinbarTable
 M.make_winbar = function(t)
-  local discussion_title = add_drafts_and_resolvable(
-    "Comments",
+  local discussions_focused = M.current_view_type == "discussions"
+  local discussion_text = add_drafts_and_resolvable(
+    "Comments:",
     t.resolvable_discussions,
     t.resolved_discussions,
     t.inline_draft_notes,
-    t.non_resolvable_discussions
+    t.non_resolvable_discussions,
+    discussions_focused
   )
-  local notes_title = add_drafts_and_resolvable(
-    "Notes",
+  local notes_text = add_drafts_and_resolvable(
+    "Notes:",
     t.resolvable_notes,
     t.resolved_notes,
     t.unlinked_draft_notes,
-    t.non_resolvable_notes
+    t.non_resolvable_notes,
+    not discussions_focused
   )
 
   -- Colorize the active tab
-  if M.current_view_type == "discussions" then
-    discussion_title = "%#Text#" .. discussion_title
-    notes_title = "%#Comment#" .. notes_title
-  elseif M.current_view_type == "notes" then
-    discussion_title = "%#Comment#" .. discussion_title
-    notes_title = "%#Text#" .. notes_title
+  if discussions_focused then
+    discussion_text = "%#Text#" .. discussion_text
+    notes_text = "%#Comment#" .. notes_text
+  else
+    discussion_text = "%#Comment#" .. discussion_text
+    notes_text = "%#Text#" .. notes_text
   end
 
   local sort_method = M.get_sort_method()
@@ -190,10 +192,10 @@ M.make_winbar = function(t)
   local updated = "%#Text#" .. t.updated
   local help = "%#Comment#Help: " .. (t.help_keymap and t.help_keymap:gsub(" ", "<space>") .. " " or "unmapped")
   return string.format(
-    " %s %s %s %s %s %s %s %s %s %s %s",
-    discussion_title,
+    " %s  %s  %s %s %s %s %s %s %s %s %s",
+    discussion_text,
     separator,
-    notes_title,
+    notes_text,
     end_section,
     updated,
     separator,
@@ -209,7 +211,30 @@ end
 ---@return string
 M.get_sort_method = function()
   local sort_method = state.settings.discussion_tree.sort_by == "original_comment" and "↓ by thread" or "↑ by reply"
-  return "%#GitlabSortMethod#" .. sort_method
+  return "%#GitlabSortMethod#" .. sort_method .. "%#Comment#"
+end
+
+M.get_resolved_text = function(focused, resolved_count, resolvable_count)
+  local text = focused and ("%#GitlabResolved#" .. state.settings.discussion_tree.resolved .. "%#Text#")
+    or state.settings.discussion_tree.resolved
+  return " " .. string.format("%d/%d%s", resolved_count, resolvable_count, text)
+end
+
+M.get_drafts_text = function(base_title, drafts_count, focused)
+  return get_connector(base_title)
+    .. string.format("%d%s", drafts_count, (focused and ("%#GitlabDraft#" .. "✎" .. "%#Text#") or "✎"))
+end
+
+M.get_nonresolveable_text = function(base_title, non_resolvable_count, focused)
+  return get_connector(base_title)
+    .. string.format(
+      "%d%s",
+      non_resolvable_count,
+      (
+        focused and ("%#GitlabUnlinked#" .. state.settings.discussion_tree.unlinked .. "%#Text#")
+        or state.settings.discussion_tree.unlinked
+      )
+    )
 end
 
 ---Returns a string for the winbar indicating the mode type, live or draft
