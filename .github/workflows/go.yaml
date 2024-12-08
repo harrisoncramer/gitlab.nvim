@@ -4,8 +4,10 @@ on:
     branches:
       - main
       - develop
-    paths-ignore:
-      - 'lua/**' # Ignore changes to the Lua code
+    paths:
+      - 'cmd/**' # Ignore changes to the Lua code
+      - 'go.sum'
+      - 'go.mod'
 jobs:
   go_lint:
     name: Lint Go 💅 
