@@ -158,7 +158,7 @@ end
 M.make_winbar = function(t)
   local discussions_focused = M.current_view_type == "discussions"
   local discussion_text = add_drafts_and_resolvable(
-    "Comments:",
+    "Inline Comments:",
     t.resolvable_discussions,
     t.resolved_discussions,
     t.inline_draft_notes,

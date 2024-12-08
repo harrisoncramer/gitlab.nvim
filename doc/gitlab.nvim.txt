@@ -263,7 +263,7 @@ you call this function with no values the defaults will be used:
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
         sort_by = "latest_reply" -- Sort discussion tree by the "latest_reply", or by "original_comment", see `:h gitlab.nvim.toggle_sort_method`
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
-        position = "left", -- "top", "right", "bottom" or "left"
+        position = "bottom", -- "top", "right", "bottom" or "left"
         size = "20%", -- Size of split
         relative = "editor", -- Position of tree split relative to "editor" or "window"
         resolved = '✓', -- Symbol to show next to resolved discussions
