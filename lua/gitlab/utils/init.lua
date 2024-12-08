@@ -122,7 +122,7 @@ M.time_since = function(date_string, current_date_table)
   local time_diff = current_date - date
 
   if time_diff < 60 then
-    return M.pluralize(time_diff, "second") .. " ago"
+    return "just now"
   elseif time_diff < 3600 then
     return M.pluralize(math.floor(time_diff / 60), "minute") .. " ago"
   elseif time_diff < 86400 then

@@ -48,13 +48,15 @@ M.rebuild_view = function(unlinked, all)
     else
       M.rebuild_discussion_tree()
     end
-    M.refresh_diagnostics_and_winbar()
+    state.discussion_tree.last_updated = os.time()
+    M.refresh_diagnostics()
   end)
 end
 
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
+  state.discussion_tree.last_updated = nil
   state.load_new_state("discussion_data", function(data)
     if not state.DISCUSSION_DATA then
       state.DISCUSSION_DATA = {}
@@ -70,9 +72,10 @@ end
 
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
 M.initialize_discussions = function()
+  state.discussion_tree.last_updated = os.time()
   signs.setup_signs()
   reviewer.set_callback_for_file_changed(function()
-    M.refresh_diagnostics_and_winbar()
+    M.refresh_diagnostics()
     M.modifiable(false)
     reviewer.set_reviewer_keymaps()
   end)
@@ -102,11 +105,10 @@ M.modifiable = function(bool)
 end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
-M.refresh_diagnostics_and_winbar = function()
+M.refresh_diagnostics = function()
   if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
   end
-  winbar.update_winbar()
   common.add_empty_titles()
 end
 
@@ -154,7 +156,7 @@ M.open = function(callback)
   end
 
   vim.schedule(function()
-    M.refresh_diagnostics_and_winbar()
+    M.refresh_diagnostics()
   end)
 end
 
@@ -587,7 +589,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     if keymaps.discussion_tree.jump_to_reviewer then
       vim.keymap.set("n", keymaps.discussion_tree.jump_to_reviewer, function()
         if M.is_current_node_note(tree) then
-          common.jump_to_reviewer(tree, M.refresh_diagnostics_and_winbar)
+          common.jump_to_reviewer(tree, M.refresh_diagnostics)
         end
       end, { buffer = bufnr, desc = "Jump to reviewer", nowait = keymaps.discussion_tree.jump_to_reviewer_nowait })
     end
@@ -605,7 +607,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.refresh_data then
     vim.keymap.set("n", keymaps.discussion_tree.refresh_data, function()
-      u.notify("Refreshing data...", vim.log.levels.INFO)
       draft_notes.rebuild_view(unlinked, false)
     end, {
       buffer = bufnr,
@@ -804,7 +805,6 @@ end
 ---Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
 M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
-  winbar.update_winbar()
 end
 
 ---Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the

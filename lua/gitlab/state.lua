@@ -154,6 +154,7 @@ M.settings = {
       collapsed = " ",
       indentation = "  ",
     },
+    spinner_chars = { "-", "\\", "|", "/" },
     auto_open = true,
     default_view = "discussions",
     blacklist = {},
