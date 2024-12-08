@@ -12,14 +12,6 @@ local M = {}
 ---Opens up a select menu that lets you choose a different merge request.
 ---@param opts ChooseMergeRequestOptions|nil
 M.choose_merge_request = function(opts)
-  local has_clean_tree, clean_tree_err = git.has_clean_tree()
-  if clean_tree_err ~= nil then
-    return
-  elseif has_clean_tree ~= "" then
-    u.notify("Your local branch has changes, please stash or commit and push", vim.log.levels.ERROR)
-    return
-  end
-
   if opts == nil then
     opts = state.settings.choose_merge_request
   end
@@ -36,6 +28,19 @@ M.choose_merge_request = function(opts)
 
     if reviewer.is_open then
       reviewer.close()
+    end
+
+    if choice.source_branch ~= git.get_current_branch() then
+      local has_clean_tree, clean_tree_err = git.has_clean_tree()
+      if clean_tree_err ~= nil then
+        return
+      elseif not has_clean_tree then
+        u.notify(
+          "Cannot switch branch when working tree has changes, please stash or commit and push",
+          vim.log.levels.ERROR
+        )
+        return
+      end
     end
 
     vim.schedule(function()

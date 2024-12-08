@@ -335,6 +335,11 @@ M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
+-- Re-raise Vimscript error message after removing existing message prefixes
+M.notify_vim_error = function(msg, lvl)
+  M.notify(msg:gsub("^Vim:", ""):gsub("^gitlab.nvim: ", ""), lvl)
+end
+
 M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
 end
@@ -425,6 +430,10 @@ end
 
 M.press_enter = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
+end
+
+M.press_escape = function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
 end
 
 ---Return timestamp from ISO 8601 formatted date string.
@@ -578,7 +587,7 @@ end
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
-    M.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
+    M.notify("Code suggestions and multiline comments are only available in visual mode", vim.log.levels.WARN)
     return false
   end
   return true
@@ -588,7 +597,7 @@ end
 ---Exists visual mode in order to access marks "<" , ">"
 ---@return integer start,integer end Start line and end line
 M.get_visual_selection_boundaries = function()
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
+  M.press_escape()
   local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
   local end_line = vim.api.nvim_buf_get_mark(0, ">")[1]
   return start_line, end_line
