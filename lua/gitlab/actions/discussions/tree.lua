@@ -277,13 +277,16 @@ local function build_note_body(note, resolve_info)
     )
   end
 
-  local resolve_symbol = ""
+  local symbol = ""
+  local is_draft = note.note ~= nil
   if resolve_info ~= nil and resolve_info.resolvable then
-    resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
+    symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
       or state.settings.discussion_tree.unresolved
+  elseif not is_draft and resolve_info and not resolve_info.resolvable then
+    symbol = state.settings.discussion_tree.unlinked
   end
 
-  local noteHeader = common.build_note_header(note) .. " " .. resolve_symbol
+  local noteHeader = common.build_note_header(note) .. " " .. symbol
 
   return noteHeader, text_nodes
 end

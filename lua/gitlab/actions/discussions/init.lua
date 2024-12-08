@@ -654,7 +654,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       M.toggle_sort_method()
     end, {
       buffer = bufnr,
-      desc = "Toggle sort method: by 'latest reply' or by 'original comment'",
+      desc = "Toggle sort method",
       nowait = keymaps.discussion_tree.toggle_sort_method_nowait,
     })
   end
@@ -756,16 +756,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       buffer = bufnr,
       desc = "Copy the URL of the current node to clipboard",
       nowait = keymaps.discussion_tree.copy_node_url_nowait,
-    })
-  end
-
-  if keymaps.discussion_tree.print_node then
-    vim.keymap.set("n", keymaps.discussion_tree.print_node, function()
-      common.print_node(tree)
-    end, {
-      buffer = bufnr,
-      desc = "Print current node (for debugging)",
-      nowait = keymaps.discussion_tree.print_node_nowait,
     })
   end
 

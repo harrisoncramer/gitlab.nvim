@@ -10,8 +10,7 @@ This Neovim plugin is designed to make it easy to review Gitlab MRs from within 
 - View and manage pipeline Jobs
 - Upload files, jump to the browser, and a lot more!
 
-![Screenshot 2024-01-13 at 10 43 32 AM](https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/8dd8b961-a6b5-4e09-b87f-dc4a17b14149)
-![Screenshot 2024-01-13 at 10 43 17 AM](https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/079842de-e8a4-45c5-98c2-dcafc799c904)
+![Screenshot 2024-12-08 at 5 43 53 PM](https://github.com/user-attachments/assets/cb9e94e3-3817-4846-ba44-16ec06ea7654)
 
 https://github.com/harrisoncramer/gitlab.nvim/assets/32515581/dc5c07de-4ae6-4335-afe1-d554e3804372
 

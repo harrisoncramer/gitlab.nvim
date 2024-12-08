@@ -13,7 +13,7 @@ local M = {}
 ---@return string
 M.build_note_header = function(note)
   if note.note then
-    return "@" .. state.USER.username .. " " .. ""
+    return "@" .. state.USER.username .. " " .. "✎"
   end
   return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end

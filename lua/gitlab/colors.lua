@@ -6,9 +6,10 @@ local colors = state.settings.colors
 local expanders = state.settings.discussion_tree.expanders
 vim.g.gitlab_discussion_tree_expander_open = expanders.expanded
 vim.g.gitlab_discussion_tree_expander_closed = expanders.collapsed
-vim.g.gitlab_discussion_tree_draft = ""
+vim.g.gitlab_discussion_tree_draft = "✎"
 vim.g.gitlab_discussion_tree_resolved = "✓"
 vim.g.gitlab_discussion_tree_unresolved = "-"
+vim.g.gitlab_discussion_tree_unlinked = "󰌸"
 
 local discussion = colors.discussion_tree
 
@@ -17,7 +18,6 @@ local function get_colors_for_group(group)
   local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(group)), "bg")
   return { fg = normal_fg, bg = normal_bg }
 end
-
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
     vim.api.nvim_set_hl(0, "GitlabUsername", get_colors_for_group(discussion.username))
@@ -29,6 +29,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
     vim.api.nvim_set_hl(0, "GitlabFileName", get_colors_for_group(discussion.file_name))
     vim.api.nvim_set_hl(0, "GitlabResolved", get_colors_for_group(discussion.resolved))
     vim.api.nvim_set_hl(0, "GitlabUnresolved", get_colors_for_group(discussion.unresolved))
+    vim.api.nvim_set_hl(0, "GitlabUnlinked", get_colors_for_group(discussion.unlinked))
     vim.api.nvim_set_hl(0, "GitlabDraft", get_colors_for_group(discussion.draft))
     vim.api.nvim_set_hl(0, "GitlabDraftMode", get_colors_for_group(discussion.draft_mode))
     vim.api.nvim_set_hl(0, "GitlabLiveMode", get_colors_for_group(discussion.live_mode))
