@@ -4,6 +4,8 @@ on:
     branches:
       - main
       - develop
+    paths-ignore:
+      - 'lua/**' # Ignore changes to the Lua code
 jobs:
   go_lint:
     name: Lint Go 💅 
