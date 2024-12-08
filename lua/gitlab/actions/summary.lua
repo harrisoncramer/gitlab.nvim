@@ -7,6 +7,7 @@ local git = require("gitlab.git")
 local job = require("gitlab.job")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
@@ -34,6 +35,9 @@ M.summary = function()
   local info_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
 
   local layout, title_popup, description_popup, info_popup = M.create_layout(info_lines)
+
+  layout:mount()
+
   local popups = {
     title_popup,
     description_popup,
@@ -41,6 +45,9 @@ M.summary = function()
   }
 
   M.layout = layout
+  M.info_popup = info_popup
+  M.title_popup = title_popup
+  M.description_popup = description_popup
   M.layout_buf = layout.bufnr
   M.layout_visible = true
 
@@ -54,36 +61,51 @@ M.summary = function()
     vim.api.nvim_buf_set_lines(title_popup.bufnr, 0, -1, false, { title })
 
     if info_popup then
-      vim.api.nvim_buf_set_lines(info_popup.bufnr, 0, -1, false, info_lines)
-      u.switch_can_edit_buf(info_popup.bufnr, false)
-      M.color_details(info_popup.bufnr) -- Color values in details popup
+      M.update_details_popup(info_popup.bufnr, info_lines)
     end
 
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       description_popup,
       M.edit_summary,
       miscellaneous.attach_file,
       { cb = exit, action_before_close = true, action_before_exit = true, save_to_temp_register = true }
     )
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       title_popup,
       M.edit_summary,
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       info_popup,
       M.edit_summary,
       nil,
       { cb = exit, action_before_close = true, action_before_exit = true }
     )
-    miscellaneous.set_cycle_popups_keymaps(popups)
+    popup.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
 
   git.check_current_branch_up_to_date_on_remote(vim.log.levels.WARN)
   git.check_mr_in_good_condition()
+end
+
+M.update_summary_details = function()
+  if not M.info_popup or not M.info_popup.bufnr then
+    return
+  end
+  local details_lines = state.settings.info.enabled and M.build_info_lines() or { "" }
+  local internal_layout = M.create_internal_layout(details_lines, M.title_popup, M.description_popup, M.info_popup)
+  M.layout:update(M.get_outer_layout_config(), internal_layout)
+  M.update_details_popup(M.info_popup.bufnr, details_lines)
+end
+
+M.update_details_popup = function(bufnr, info_lines)
+  u.switch_can_edit_buf(bufnr, true)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, info_lines)
+  u.switch_can_edit_buf(bufnr, false)
+  M.color_details(bufnr) -- Color values in details popup
 end
 
 -- Builds a lua list of strings that contain metadata about the current MR. Only builds the
@@ -165,16 +187,37 @@ M.edit_summary = function()
   end)
 end
 
+---Create the Summary layout and individual popups that make up the Layout.
+---@return NuiLayout, NuiPopup, NuiPopup, NuiPopup
 M.create_layout = function(info_lines)
-  local title_popup = Popup(u.create_box_popup_state(nil, false))
+  local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
+  local title_popup = Popup(popup.create_box_popup_state(nil, false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_box_popup_state("Description", true))
+  local description_popup = Popup(popup.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
   local details_popup
+  if state.settings.info.enabled then
+    details_popup = Popup(popup.create_box_popup_state("Details", false, settings))
+  end
 
+  local internal_layout = M.create_internal_layout(info_lines, title_popup, description_popup, details_popup)
+
+  local layout = Layout(M.get_outer_layout_config(), internal_layout)
+
+  popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
+
+  return layout, title_popup, description_popup, details_popup
+end
+
+---Create the internal layout of the Summary and individual popups that make up the Layout.
+---@param info_lines string[] Table of strings that make up the details content
+---@param title_popup NuiPopup
+---@param description_popup NuiPopup
+---@param details_popup NuiPopup
+---@return NuiLayout.Box
+M.create_internal_layout = function(info_lines, title_popup, description_popup, details_popup)
   local internal_layout
   if state.settings.info.enabled then
-    details_popup = Popup(u.create_box_popup_state("Details", false))
     if state.settings.info.horizontal then
       local longest_line = u.get_longest_string(info_lines)
       internal_layout = Layout.Box({
@@ -182,7 +225,7 @@ M.create_layout = function(info_lines)
         Layout.Box({
           Layout.Box(details_popup, { size = longest_line + 3 }),
           Layout.Box(description_popup, { grow = 1 }),
-        }, { dir = "row", size = "100%" }),
+        }, { dir = "row", size = "95%" }),
       }, { dir = "col" })
     else
       internal_layout = Layout.Box({
@@ -197,18 +240,21 @@ M.create_layout = function(info_lines)
       Layout.Box(description_popup, { grow = 1 }),
     }, { dir = "col" })
   end
+  return internal_layout
+end
 
-  local layout = Layout({
-    position = "50%",
+---Create the config for the outer Layout of the Summary
+---@return nui_layout_options
+M.get_outer_layout_config = function()
+  local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
+  return {
+    position = settings.position,
     relative = "editor",
     size = {
-      width = "95%",
-      height = "95%",
+      width = settings.width,
+      height = settings.height,
     },
-  }, internal_layout)
-
-  layout:mount()
-  return layout, title_popup, description_popup, details_popup
+  }
 end
 
 M.color_details = function(bufnr)

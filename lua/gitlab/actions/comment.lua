@@ -3,10 +3,10 @@
 --- to this module the data required to make the API calls
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
-local diffview_lib = require("diffview.lib")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local git = require("gitlab.git")
 local discussions = require("gitlab.actions.discussions")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -42,6 +42,18 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     job.run_job("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
       discussions.rebuild_view(unlinked)
+    end)
+    return
+  end
+
+  -- Creating a draft reply, in response to a discussion ID
+  if discussion_id ~= nil and is_draft then
+    local body = { comment = text, discussion_id = discussion_id }
+    job.run_job("/mr/draft_notes/", "POST", body, function()
+      u.notify("Draft reply created!", vim.log.levels.INFO)
+      draft_notes.load_draft_notes(function()
+        discussions.rebuild_view(unlinked)
+      end)
     end)
     return
   end
@@ -88,18 +100,6 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     new_line = location_data.new_line,
     line_range = location_data.line_range,
   }
-
-  -- Creating a draft reply, in response to a discussion ID
-  if discussion_id ~= nil and is_draft then
-    local body = { comment = text, discussion_id = discussion_id, position = position_data }
-    job.run_job("/mr/draft_notes/", "POST", body, function()
-      u.notify("Draft reply created!", vim.log.levels.INFO)
-      draft_notes.load_draft_notes(function()
-        discussions.rebuild_view(unlinked)
-      end)
-    end)
-    return
-  end
 
   -- Creating a new comment (linked to specific changes)
   local body = u.merge({ type = "text", comment = text }, position_data)
@@ -157,52 +157,26 @@ end
 ---multi-line comment. It also sets up the basic keybindings for switching between
 ---window panes, and for the non-primary sections.
 ---@param opts LayoutOpts
----@return NuiLayout|nil
+---@return NuiLayout
 M.create_comment_layout = function(opts)
-  if opts.unlinked ~= true and opts.discussion_id == nil then
-    -- Check that diffview is initialized
-    if reviewer.tabnr == nil then
-      u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Check that Diffview is the current view
-    local view = diffview_lib.get_current_view()
-    if view == nil and not opts.reply then
-      u.notify("Comments should be left in the reviewer pane", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Check that we are in the diffview tab
-    local tabnr = vim.api.nvim_get_current_tabpage()
-    if tabnr ~= reviewer.tabnr then
-      u.notify("Line location can only be determined within reviewer window", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Check that the file has not been renamed
-    if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
-      u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.WARN)
-      return
-    end
-
-    -- Check that we are hovering over the code
-    local filetype = vim.bo[0].filetype
-    if not opts.reply and (filetype == "DiffviewFiles" or filetype == "gitlab") then
-      u.notify(
-        "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
-        vim.log.levels.ERROR
-      )
-      return
-    end
+  local popup_settings = state.settings.popup
+  local title
+  local user_settings
+  if opts.discussion_id ~= nil then
+    title = "Reply"
+    user_settings = popup_settings.reply
+  elseif opts.unlinked then
+    title = "Note"
+    user_settings = popup_settings.note
+  else
+    title = "Comment"
+    user_settings = popup_settings.comment
   end
-
-  local title = opts.discussion_id and "Reply" or "Comment"
-  local settings = opts.discussion_id ~= nil and state.settings.popup.reply or state.settings.popup.comment
+  local settings = u.merge(popup_settings, user_settings or {})
 
   M.current_win = vim.api.nvim_get_current_win()
-  M.comment_popup = Popup(u.create_popup_state(title, settings))
-  M.draft_popup = Popup(u.create_box_popup_state("Draft", false))
+  M.comment_popup = Popup(popup.create_popup_state(title, settings))
+  M.draft_popup = Popup(popup.create_box_popup_state("Draft", false, settings))
   M.start_line, M.end_line = u.get_visual_selection_boundaries()
 
   local internal_layout = Layout.Box({
@@ -211,44 +185,37 @@ M.create_comment_layout = function(opts)
   }, { dir = "col" })
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
-      width = "50%",
-      height = "55%",
+      width = settings.width,
+      height = settings.height,
     },
   }, internal_layout)
 
-  miscellaneous.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+  popup.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
+  popup.set_up_autocommands(M.comment_popup, layout, M.current_win)
 
   local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
 
   ---Keybinding for focus on draft section
-  state.set_popup_keymaps(M.draft_popup, function()
+  popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.toggle_bool, miscellaneous.non_editable_popup_opts)
+  end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
-  state.set_popup_keymaps(M.comment_popup, function(text)
+  popup.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, range, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
-  end, miscellaneous.attach_file, miscellaneous.editable_popup_opts)
+  end, miscellaneous.attach_file, popup.editable_popup_opts)
 
   vim.schedule(function()
     local draft_mode = state.settings.discussion_tree.draft_mode
     vim.api.nvim_buf_set_lines(M.draft_popup.bufnr, 0, -1, false, { u.bool_to_string(draft_mode) })
   end)
-
-  --Send back to previous window on close
-  vim.api.nvim_create_autocmd("BufHidden", {
-    buffer = M.draft_popup.bufnr,
-    callback = function()
-      vim.api.nvim_set_current_win(M.current_win)
-    end,
-  })
 
   return layout
 end
@@ -256,53 +223,31 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
-  local has_clean_tree, err = git.has_clean_tree()
-  if err ~= nil then
-    return
-  end
-
-  local is_modified = vim.bo[0].modified
-  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or not has_clean_tree) then
-    u.notify(
-      "Cannot leave comments on changed files. \n Please stash all local changes or push them to the feature branch.",
-      vim.log.levels.WARN
-    )
-    return
-  end
-
-  if not M.sha_exists() then
+  if not M.can_create_comment(false) then
     return
   end
 
   local layout = M.create_comment_layout({ ranged = false, unlinked = false })
-  if layout ~= nil then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 --- This function will open a multi-line comment popup in order to create a multi-line comment
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
-  if not u.check_visual_mode() then
-    return
-  end
-  if not M.sha_exists() then
+  if not M.can_create_comment(true) then
+    u.press_escape()
     return
   end
 
   local layout = M.create_comment_layout({ ranged = true, unlinked = false })
-  if layout ~= nil then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
   local layout = M.create_comment_layout({ ranged = false, unlinked = true })
-  if layout ~= nil then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 ---Given the current visually selected area of text, builds text to fill in the
@@ -347,26 +292,83 @@ end
 --- on the changed/updated line in the current MR
 --- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
-  if not u.check_visual_mode() then
-    return
-  end
-  if not M.sha_exists() then
+  if not M.can_create_comment(true) then
+    u.press_escape()
     return
   end
 
   local suggestion_lines, range_length = build_suggestion()
 
   local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
-  if layout ~= nil then
-    layout:mount()
-  else
-    return -- Failure in creating the comment layout
-  end
+  layout:mount()
+
   vim.schedule(function()
     if suggestion_lines then
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
     end
   end)
+end
+
+---Returns true if it's possible to create an Inline Comment
+---@param must_be_visual boolean True if current mode must be visual
+---@return boolean
+M.can_create_comment = function(must_be_visual)
+  -- Check that diffview is initialized
+  if reviewer.tabnr == nil then
+    u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check that we are in the Diffview tab
+  local tabnr = vim.api.nvim_get_current_tabpage()
+  if tabnr ~= reviewer.tabnr then
+    u.notify("Comments can only be left in the reviewer pane", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check that we are hovering over the code
+  local filetype = vim.bo[0].filetype
+  if filetype == "DiffviewFiles" or filetype == "gitlab" then
+    u.notify(
+      "Comments can only be left on the code. To leave unlinked comments, use gitlab.create_note() instead",
+      vim.log.levels.ERROR
+    )
+    return false
+  end
+
+  -- Check that the file has not been renamed
+  if reviewer.is_file_renamed() and not reviewer.does_file_have_changes() then
+    u.notify("Commenting on (unchanged) renamed or moved files is not supported", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check that we are in a valid buffer
+  if not M.sha_exists() then
+    return false
+  end
+
+  -- Check that there aren't saved modifications
+  local file = reviewer.get_current_file_path()
+  if file == nil then
+    return false
+  end
+  local has_changes, err = git.has_changes(file)
+  if err ~= nil then
+    return false
+  end
+  -- Check that there aren't unsaved modifications
+  local is_modified = vim.bo[0].modified
+  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
+    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check we're in visual mode for code suggestions and multiline comments
+  if must_be_visual and not u.check_visual_mode() then
+    return false
+  end
+
+  return true
 end
 
 ---Checks to see whether you are commenting on a valid buffer. The Diffview plugin names non-existent

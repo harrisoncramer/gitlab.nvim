@@ -8,6 +8,9 @@ highlight link Date GitlabDate
 execute 'syntax match Unresolved /\s' . g:gitlab_discussion_tree_unresolved . '\s\?/'
 highlight link Unresolved GitlabUnresolved
 
+execute 'syntax match Unlinked /\s' . g:gitlab_discussion_tree_unlinked . '\s\?/'
+highlight link Unlinked GitlabUnlinked
+
 execute 'syntax match Resolved /\s' . g:gitlab_discussion_tree_resolved . '\s\?/'
 highlight link Resolved GitlabResolved
 

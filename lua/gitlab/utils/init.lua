@@ -122,7 +122,7 @@ M.time_since = function(date_string, current_date_table)
   local time_diff = current_date - date
 
   if time_diff < 60 then
-    return M.pluralize(time_diff, "second") .. " ago"
+    return "just now"
   elseif time_diff < 3600 then
     return M.pluralize(math.floor(time_diff / 60), "minute") .. " ago"
   elseif time_diff < 86400 then
@@ -335,6 +335,11 @@ M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
+-- Re-raise Vimscript error message after removing existing message prefixes
+M.notify_vim_error = function(msg, lvl)
+  M.notify(msg:gsub("^Vim:", ""):gsub("^gitlab.nvim: ", ""), lvl)
+end
+
 M.get_current_line_number = function()
   return vim.api.nvim_call_function("line", { "." })
 end
@@ -427,6 +432,10 @@ M.press_enter = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
 end
 
+M.press_escape = function()
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
+end
+
 ---Return timestamp from ISO 8601 formatted date string.
 ---@param date_string string ISO 8601 formatted date string
 ---@return integer timestamp
@@ -478,62 +487,6 @@ M.difference = function(a, b)
   end
 
   return not_included
-end
-
----Get the popup view_opts
----@param title string The string to appear on top of the popup
----@param settings table|nil User defined popup settings
----@param width number? Override default width
----@param height number? Override default height
----@return table
-M.create_popup_state = function(title, settings, width, height, zindex)
-  local default_settings = require("gitlab.state").settings.popup
-  local user_settings = settings or {}
-  local view_opts = {
-    buf_options = {
-      filetype = "markdown",
-    },
-    relative = "editor",
-    enter = true,
-    focusable = true,
-    zindex = zindex or 50,
-    border = {
-      style = user_settings.border or default_settings.border,
-      text = {
-        top = title,
-      },
-    },
-    position = "50%",
-    size = {
-      width = user_settings.width or width or default_settings.width,
-      height = user_settings.height or height or default_settings.height,
-    },
-    opacity = user_settings.opacity or default_settings.opacity,
-  }
-
-  return view_opts
-end
-
----Create view_opts for Box popups used inside popup Layouts
----@param title string|nil The string to appear on top of the popup
----@param enter boolean Whether the pop should be focused after creation
----@return table
-M.create_box_popup_state = function(title, enter)
-  local settings = require("gitlab.state").settings.popup
-  return {
-    buf_options = {
-      filetype = "markdown",
-    },
-    enter = enter or false,
-    focusable = true,
-    border = {
-      style = settings.border,
-      text = {
-        top = title,
-      },
-    },
-    opacity = settings.opacity,
-  }
 end
 
 M.read_file = function(file_path, opts)
@@ -634,7 +587,7 @@ end
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
-    M.notify("Code suggestions are only available in visual mode", vim.log.levels.WARN)
+    M.notify("Code suggestions and multiline comments are only available in visual mode", vim.log.levels.WARN)
     return false
   end
   return true
@@ -644,7 +597,7 @@ end
 ---Exists visual mode in order to access marks "<" , ">"
 ---@return integer start,integer end Start line and end line
 M.get_visual_selection_boundaries = function()
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
+  M.press_escape()
   local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
   local end_line = vim.api.nvim_buf_get_mark(0, ">")[1]
   return start_line, end_line

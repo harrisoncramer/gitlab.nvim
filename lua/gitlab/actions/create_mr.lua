@@ -5,6 +5,7 @@ local Input = require("nui.input")
 local Popup = require("nui.popup")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local git = require("gitlab.git")
 local state = require("gitlab.state")
 local common = require("gitlab.actions.common")
@@ -277,13 +278,13 @@ M.open_confirmation_popup = function(mr)
       action_before_exit = true,
     }
 
-    state.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
-    state.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
-    state.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
-    state.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
-    state.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
-    state.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
-    miscellaneous.set_cycle_popups_keymaps(popups)
+    popup.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
+    popup.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
+    popup.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
+    popup.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    popup.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
+    popup.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
+    popup.set_cycle_popups_keymaps(popups)
 
     vim.api.nvim_set_current_buf(M.description_bufnr)
   end)
@@ -328,19 +329,20 @@ M.create_mr = function()
 end
 
 M.create_layout = function()
-  local title_popup = Popup(u.create_box_popup_state("Title", false))
+  local settings = u.merge(state.settings.popup, state.settings.popup.create_mr or {})
+  local title_popup = Popup(popup.create_box_popup_state("Title", false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(u.create_box_popup_state("Description", true))
+  local description_popup = Popup(popup.create_popup_state("Description", settings))
   M.description_bufnr = description_popup.bufnr
-  local target_branch_popup = Popup(u.create_box_popup_state("Target branch", false))
+  local target_branch_popup = Popup(popup.create_box_popup_state("Target branch", false, settings))
   M.target_bufnr = target_branch_popup.bufnr
   local delete_title = vim.o.columns > 110 and "Delete source branch" or "Delete source"
-  local delete_branch_popup = Popup(u.create_box_popup_state(delete_title, false))
+  local delete_branch_popup = Popup(popup.create_box_popup_state(delete_title, false, settings))
   M.delete_branch_bufnr = delete_branch_popup.bufnr
   local squash_title = vim.o.columns > 110 and "Squash commits" or "Squash"
-  local squash_popup = Popup(u.create_box_popup_state(squash_title, false))
+  local squash_popup = Popup(popup.create_box_popup_state(squash_title, false, settings))
   M.squash_bufnr = squash_popup.bufnr
-  local forked_project_id_popup = Popup(u.create_box_popup_state("Forked Project ID", false))
+  local forked_project_id_popup = Popup(popup.create_box_popup_state("Forked Project ID", false, settings))
   M.forked_project_id_bufnr = forked_project_id_popup.bufnr
 
   local boxes = {}
@@ -360,13 +362,15 @@ M.create_layout = function()
   }, { dir = "col" })
 
   local layout = Layout({
-    position = "50%",
+    position = settings.position,
     relative = "editor",
     size = {
-      width = "95%",
-      height = "95%",
+      width = settings.width,
+      height = settings.height,
     },
   }, internal_layout)
+
+  popup.set_up_autocommands(description_popup, layout, vim.api.nvim_get_current_win())
 
   layout:mount()
 

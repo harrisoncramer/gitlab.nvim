@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 	"sync"
+	"time"
 
 	"encoding/json"
 
@@ -19,8 +20,16 @@ func Contains[T comparable](elems []T, v T) bool {
 	return false
 }
 
+type SortBy string
+
+const (
+	SortByLatestReply     SortBy = "latest_reply"
+	SortByOriginalComment SortBy = "original_comment"
+)
+
 type DiscussionsRequest struct {
 	Blacklist []string `json:"blacklist" validate:"required"`
+	SortBy    SortBy   `json:"sort_by"`
 }
 
 type DiscussionsResponse struct {
@@ -30,20 +39,30 @@ type DiscussionsResponse struct {
 	Emojis              map[int][]*gitlab.AwardEmoji `json:"emojis"`
 }
 
-type SortableDiscussions []*gitlab.Discussion
-
-func (n SortableDiscussions) Len() int {
-	return len(n)
+type SortableDiscussions struct {
+	Discussions []*gitlab.Discussion
+	SortBy      SortBy
 }
 
-func (d SortableDiscussions) Less(i int, j int) bool {
-	iTime := d[i].Notes[len(d[i].Notes)-1].CreatedAt
-	jTime := d[j].Notes[len(d[j].Notes)-1].CreatedAt
-	return iTime.After(*jTime)
+func (d SortableDiscussions) Len() int {
+	return len(d.Discussions)
 }
 
-func (n SortableDiscussions) Swap(i, j int) {
-	n[i], n[j] = n[j], n[i]
+func (d SortableDiscussions) Less(i, j int) bool {
+	var iTime, jTime *time.Time
+	if d.SortBy == SortByOriginalComment {
+		iTime = d.Discussions[i].Notes[0].CreatedAt
+		jTime = d.Discussions[j].Notes[0].CreatedAt
+		return iTime.Before(*jTime)
+	} else { // SortByLatestReply
+		iTime = d.Discussions[i].Notes[len(d.Discussions[i].Notes)-1].CreatedAt
+		jTime = d.Discussions[j].Notes[len(d.Discussions[j].Notes)-1].CreatedAt
+		return iTime.After(*jTime)
+	}
+}
+
+func (d SortableDiscussions) Swap(i, j int) {
+	d.Discussions[i], d.Discussions[j] = d.Discussions[j], d.Discussions[i]
 }
 
 type DiscussionsLister interface {
@@ -115,8 +134,14 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sortedLinkedDiscussions := SortableDiscussions(linkedDiscussions)
-	sortedUnlinkedDiscussions := SortableDiscussions(unlinkedDiscussions)
+	sortedLinkedDiscussions := SortableDiscussions{
+		Discussions: linkedDiscussions,
+		SortBy:      request.SortBy,
+	}
+	sortedUnlinkedDiscussions := SortableDiscussions{
+		Discussions: unlinkedDiscussions,
+		SortBy:      request.SortBy,
+	}
 
 	sort.Sort(sortedLinkedDiscussions)
 	sort.Sort(sortedUnlinkedDiscussions)

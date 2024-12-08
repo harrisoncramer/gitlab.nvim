@@ -4,6 +4,10 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'cmd/**' # Ignore changes to the Lua code
+      - 'go.sum'
+      - 'go.mod'
 jobs:
   go_lint:
     name: Lint Go 💅 
