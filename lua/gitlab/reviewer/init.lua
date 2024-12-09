@@ -246,22 +246,6 @@ M.does_file_have_changes = function()
   return file_data.stats.additions > 0 or file_data.stats.deletions > 0
 end
 
----Diffview exposes events which can be used to setup autocommands.
----@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
-M.set_callback_for_file_changed = function(callback)
-  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
-  vim.api.nvim_create_autocmd("User", {
-    pattern = { "DiffviewDiffBufWinEnter" },
-    group = group,
-    callback = function(...)
-      M.stored_win = vim.api.nvim_get_current_win()
-      if M.tabnr == vim.api.nvim_get_current_tabpage() then
-        callback(...)
-      end
-    end,
-  })
-end
-
 ---Run callback the first time a new diff buff is created and loaded into a window
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_buf_read = function(callback)
