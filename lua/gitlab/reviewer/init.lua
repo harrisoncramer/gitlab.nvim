@@ -62,6 +62,8 @@ M.open = function()
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
 
   M.is_open = true
+  local cur_view = diffview_lib.get_current_view()
+  M.diffview_layout = cur_view.cur_layout
   M.tabnr = vim.api.nvim_get_current_tabpage()
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
@@ -77,9 +79,11 @@ M.open = function()
       M.tabnr = nil
     end
   end
-  require("diffview.config").user_emitter:on("view_closed", function(_, ...)
-    M.is_open = false
-    on_diffview_closed(...)
+  require("diffview.config").user_emitter:on("view_closed", function(_, args)
+    if M.tabnr == args.tabpage then
+      M.is_open = false
+      on_diffview_closed(args)
+    end
   end)
 
   if state.settings.discussion_tree.auto_open then
@@ -258,6 +262,21 @@ M.set_callback_for_file_changed = function(callback)
   })
 end
 
+---Run callback the first time a new diff buff is created and loaded into a window
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+M.set_callback_for_buf_read = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.buf_read", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewDiffBufRead" },
+    group = group,
+    callback = function(...)
+      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+        callback(...)
+      end
+    end,
+  })
+end
+
 ---Diffview exposes events which can be used to setup autocommands.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_reviewer_leave = function(callback)
@@ -276,9 +295,12 @@ end
 M.set_callback_for_reviewer_enter = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.enter", {})
   vim.api.nvim_create_autocmd("User", {
-    pattern = { "DiffviewViewOpened" },
+    pattern = { "DiffviewViewEnter", "DiffviewViewOpened" },
     group = group,
     callback = function(...)
+      if vim.api.nvim_get_current_tabpage() ~= M.tabnr then
+        return
+      end
       callback(...)
     end,
   })
@@ -319,8 +341,16 @@ end
 
 ---Set keymaps for creating comments, suggestions and for jumping to discussion tree.
 ---@param bufnr integer Number of the buffer for which the keybindings will be created.
----@param keymaps table The settings keymaps table.
-local set_keymaps = function(bufnr, keymaps)
+M.set_keymaps = function(bufnr)
+  if bufnr == nil or not vim.api.nvim_buf_is_loaded(bufnr) then
+    return
+  end
+  -- Require keymaps only after user settings have been merged with defaults
+  local keymaps = require("gitlab.state").settings.keymaps
+  if keymaps.disable_all or keymaps.reviewer.disable_all then
+    return
+  end
+
   -- Set mappings for creating comments
   if keymaps.reviewer.create_comment ~= false then
     -- Set keymap for repeated operator keybinding
@@ -391,29 +421,17 @@ local set_keymaps = function(bufnr, keymaps)
   end
 end
 
---- Sets up keymaps for both buffers in the reviewer.
-M.set_reviewer_keymaps = function()
+---Delete keymaps from reviewer buffers.
+---@param bufnr integer Number of the buffer from which the keybindings will be removed.
+local del_keymaps = function(bufnr)
+  if bufnr == nil or not vim.api.nvim_buf_is_loaded(bufnr) then
+    return
+  end
   -- Require keymaps only after user settings have been merged with defaults
   local keymaps = require("gitlab.state").settings.keymaps
   if keymaps.disable_all or keymaps.reviewer.disable_all then
     return
   end
-
-  local view = diffview_lib.get_current_view()
-  local a = view.cur_layout.a.file.bufnr
-  local b = view.cur_layout.b.file.bufnr
-  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
-    set_keymaps(a, keymaps)
-  end
-  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
-    set_keymaps(b, keymaps)
-  end
-end
-
----Delete keymaps from reviewer buffers.
----@param bufnr integer Number of the buffer from which the keybindings will be removed.
----@param keymaps table The settings keymaps table.
-local del_keymaps = function(bufnr, keymaps)
   for _, func in ipairs({ "create_comment", "create_suggestion" }) do
     if keymaps.reviewer[func] ~= false then
       for _, mode in ipairs({ "n", "o", "v" }) do
@@ -426,23 +444,26 @@ local del_keymaps = function(bufnr, keymaps)
   end
 end
 
---- Deletes keymaps from both buffers in the reviewer.
-M.del_reviewer_keymaps = function()
-  -- Require keymaps only after user settings have been merged with defaults
-  local keymaps = require("gitlab.state").settings.keymaps
-  if keymaps.disable_all or keymaps.reviewer.disable_all then
-    return
-  end
-
-  local view = diffview_lib.get_current_view()
-  local a = view.cur_layout.a.file.bufnr
-  local b = view.cur_layout.b.file.bufnr
-  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
-    del_keymaps(a, keymaps)
-  end
-  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
-    del_keymaps(b, keymaps)
-  end
+--- Set up autocaommands that will take case of setting and unsetting buffer-local options and keymaps
+M.set_reviewer_autocommands = function(bufnr)
+  local buf_winid = vim.fn.bufwinid(bufnr)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
+  vim.api.nvim_create_autocmd({"WinEnter", "BufWinEnter"}, {
+    group = group,
+    buffer = bufnr,
+    callback = function()
+      if vim.api.nvim_get_current_win() == buf_winid then
+        M.stored_win = vim.api.nvim_get_current_win()
+        vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
+        M.set_keymaps(bufnr)
+      else
+        if M.diffview_layout.b.id == buf_winid then
+          vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
+        end
+        del_keymaps(bufnr)
+      end
+    end,
+  })
 end
 
 return M
