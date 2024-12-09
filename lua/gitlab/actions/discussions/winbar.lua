@@ -145,11 +145,11 @@ local add_drafts_and_resolvable = function(
   if resolvable_count ~= 0 then
     base_title = base_title .. M.get_resolved_text(focused, resolved_count, resolvable_count)
   end
-  if drafts_count ~= 0 then
-    base_title = base_title .. M.get_drafts_text(base_title, drafts_count, focused)
-  end
   if non_resolvable_count ~= 0 then
     base_title = base_title .. M.get_nonresolveable_text(base_title, non_resolvable_count, focused)
+  end
+  if drafts_count ~= 0 then
+    base_title = base_title .. M.get_drafts_text(base_title, drafts_count, focused)
   end
   return base_title
 end
@@ -217,7 +217,7 @@ end
 M.get_resolved_text = function(focused, resolved_count, resolvable_count)
   local text = focused and ("%#GitlabResolved#" .. state.settings.discussion_tree.resolved .. "%#Text#")
     or state.settings.discussion_tree.resolved
-  return " " .. string.format("%d/%d%s", resolved_count, resolvable_count, text)
+  return " " .. string.format("%d%s/%d", resolved_count, text, resolvable_count)
 end
 
 M.get_drafts_text = function(base_title, drafts_count, focused)
