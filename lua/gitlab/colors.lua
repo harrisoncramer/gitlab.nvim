@@ -3,13 +3,13 @@ local state = require("gitlab.state")
 local colors = state.settings.colors
 
 -- Set icons into global vim variables for syntax matching
-local expanders = state.settings.discussion_tree.expanders
-vim.g.gitlab_discussion_tree_expander_open = expanders.expanded
-vim.g.gitlab_discussion_tree_expander_closed = expanders.collapsed
-vim.g.gitlab_discussion_tree_draft = "✎"
-vim.g.gitlab_discussion_tree_resolved = "✓"
-vim.g.gitlab_discussion_tree_unresolved = "-"
-vim.g.gitlab_discussion_tree_unlinked = "󰌸"
+local discussion_tree = state.settings.discussion_tree
+vim.g.gitlab_discussion_tree_expander_open = discussion_tree.expanders.expanded
+vim.g.gitlab_discussion_tree_expander_closed = discussion_tree.expanders.collapsed
+vim.g.gitlab_discussion_tree_draft = discussion_tree.draft
+vim.g.gitlab_discussion_tree_resolved = discussion_tree.resolved
+vim.g.gitlab_discussion_tree_unresolved = discussion_tree.unresolved
+vim.g.gitlab_discussion_tree_unlinked = discussion_tree.unlinked
 
 local discussion = colors.discussion_tree
 

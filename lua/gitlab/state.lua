@@ -166,6 +166,7 @@ M.settings = {
     resolved = "✓",
     unresolved = "-",
     unlinked = "󰌸",
+    draft = "✎",
     tree_type = "simple",
     draft_mode = false,
   },
