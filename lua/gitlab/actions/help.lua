@@ -21,7 +21,8 @@ M.open = function()
   table.insert(
     help_content_lines,
     string.format(
-      "✎ = draft; %s = unlinked comment; %s = resolved",
+      "%s = draft; %s = unlinked comment; %s = resolved",
+      state.settings.discussion_tree.draft,
       state.settings.discussion_tree.unlinked,
       state.settings.discussion_tree.resolved
     )

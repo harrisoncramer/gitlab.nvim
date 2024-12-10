@@ -268,6 +268,8 @@ you call this function with no values the defaults will be used:
         relative = "editor", -- Position of tree split relative to "editor" or "window"
         resolved = '✓', -- Symbol to show next to resolved discussions
         unresolved = '-', -- Symbol to show next to unresolved discussions
+        unlinked = "󰌸", -- Symbol to show next to unliked comments (i.e., not threads)
+        draft = "✎", -- Symbol to show next to draft comments/notes
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
         winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
