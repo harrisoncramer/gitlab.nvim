@@ -222,7 +222,14 @@ end
 
 M.get_drafts_text = function(base_title, drafts_count, focused)
   return get_connector(base_title)
-    .. string.format("%d%s", drafts_count, (focused and ("%#GitlabDraft#" .. "✎" .. "%#Text#") or "✎"))
+    .. string.format(
+      "%d%s",
+      drafts_count,
+      (
+        focused and ("%#GitlabDraft#" .. state.settings.discussion_tree.draft .. "%#Text#")
+        or state.settings.discussion_tree.draft
+      )
+    )
 end
 
 M.get_nonresolveable_text = function(base_title, non_resolvable_count, focused)
