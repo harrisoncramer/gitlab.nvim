@@ -16,6 +16,7 @@ local M = {
   bufnr = nil,
   tabnr = nil,
   stored_win = nil,
+  buf_winids = {},
 }
 
 -- Checks for legacy installations, only Diffview is supported.
@@ -246,7 +247,22 @@ M.does_file_have_changes = function()
   return file_data.stats.additions > 0 or file_data.stats.deletions > 0
 end
 
----Run callback the first time a new diff buff is created and loaded into a window
+---Run callback every time the buffer in one of the the reviewer windows changes.
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+M.set_callback_for_file_changed = function(callback)
+  local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
+  vim.api.nvim_create_autocmd("User", {
+    pattern = { "DiffviewDiffBufWinEnter" },
+    group = group,
+    callback = function(...)
+      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+        callback(...)
+      end
+    end,
+  })
+end
+
+---Run callback the first time a new diff buff is created and loaded into a window.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_buf_read = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.buf_read", {})
@@ -430,24 +446,31 @@ end
 
 --- Set up autocaommands that will take care of setting and unsetting buffer-local options and keymaps
 M.set_reviewer_autocommands = function(bufnr)
-  local buf_winid = vim.fn.bufwinid(bufnr)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
   vim.api.nvim_create_autocmd({"WinEnter", "BufWinEnter"}, {
     group = group,
     buffer = bufnr,
     callback = function()
-      if vim.api.nvim_get_current_win() == buf_winid then
+      if vim.api.nvim_get_current_win() == M.buf_winids[bufnr] then
         M.stored_win = vim.api.nvim_get_current_win()
         vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
         M.set_keymaps(bufnr)
       else
-        if M.diffview_layout.b.id == buf_winid then
+        if M.diffview_layout.b.id == M.buf_winids[bufnr] then
           vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
         end
         del_keymaps(bufnr)
       end
     end,
   })
+end
+
+--- Update the stored winid for a given reviewer buffer. This is necessary for the
+--- M.set_reviewer_autocommands function to work correctly in cases like when the user closes one of
+--- the original reviewer windows and Diffview automatically creates a new pair
+--- of reviewer windows or the user wipes out a buffer and Diffview reloads it with a different ID.
+M.update_winid_for_buffer = function(bufnr)
+  M.buf_winids[bufnr] = vim.fn.bufwinid(bufnr)
 end
 
 return M
