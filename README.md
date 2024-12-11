@@ -73,6 +73,10 @@ And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
 
 Add `branch = "develop",` to your configuration if you want to use the (possibly unstable) development version of `gitlab.nvim`.
 
+## Contributing
+
+Contributions to the plugin are welcome. Please read [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) before you start working on a pull request.
+
 ## Connecting to Gitlab
 
 This plugin requires an <a href="https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html#create-a-personal-access-token">auth token</a> to connect to Gitlab. The token can be set in the root directory of the project in a `.gitlab.nvim` environment file, or can be set via a shell environment variable called `GITLAB_TOKEN` instead. If both are present, the `.gitlab.nvim` file will take precedence.
@@ -118,7 +122,3 @@ For a list of all these settings please run `:h gitlab.nvim.configuring-the-plug
 The plugin sets up a number of useful keybindings in the special buffers it creates, and some global keybindings as well. Refer to the relevant section of the manual `:h gitlab.nvim.keybindings` for more details.
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`
-
-## Contributing
-
-Contributions to the plugin are welcome. Please read [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) before you start working on a pull request.
