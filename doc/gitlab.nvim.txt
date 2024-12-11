@@ -59,25 +59,24 @@ INSTALLATION                                        *gitlab.nvim.installation*
 
 With Lazy:
 >lua
-    return {
+    {
       "harrisoncramer/gitlab.nvim",
       dependencies = {
         "MunifTanjim/nui.nvim",
         "nvim-lua/plenary.nvim",
         "sindrets/diffview.nvim",
         "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-        "nvim-tree/nvim-web-devicons" -- Recommended but not required. Icons in discussion tree.
+        "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
       },
-      enabled = true,
       build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
       config = function()
         require("gitlab").setup()
       end,
     }
 <
-And with Packer:
+And with pckr.nvim:
 >lua
-    use {
+    {
       "harrisoncramer/gitlab.nvim",
       requires = {
         "MunifTanjim/nui.nvim",
@@ -86,14 +85,10 @@ And with Packer:
         "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
         "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
       },
-      build = function()
-        require("gitlab.server").build()
-      end,
-      branch = "develop",
+      run = function() require("gitlab.server").build() end, -- Builds the Go binary
       config = function()
         require("diffview") -- We require some global state from diffview
-        local gitlab = require("gitlab")
-        gitlab.setup()
+        require("gitlab").setup()
       end,
     }
 <
