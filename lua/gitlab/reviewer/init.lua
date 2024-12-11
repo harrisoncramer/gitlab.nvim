@@ -285,7 +285,7 @@ M.set_callback_for_reviewer_leave = function(callback)
     pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
     group = group,
     callback = function(...)
-      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+      if vim.api.nvim_get_current_tabpage() == M.tabnr then
         callback(...)
       end
     end,
@@ -301,10 +301,9 @@ M.set_callback_for_reviewer_enter = function(callback)
     pattern = { "DiffviewViewEnter", "DiffviewViewOpened" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() ~= M.tabnr then
-        return
+      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+        callback(...)
       end
-      callback(...)
     end,
   })
 end
