@@ -247,7 +247,7 @@ M.does_file_have_changes = function()
   return file_data.stats.additions > 0 or file_data.stats.deletions > 0
 end
 
----Run callback every time the buffer in one of the the reviewer windows changes.
+---Run callback every time the buffer in one of the two reviewer windows changes.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_file_changed = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
@@ -262,7 +262,7 @@ M.set_callback_for_file_changed = function(callback)
   })
 end
 
----Run callback the first time a new diff buff is created and loaded into a window.
+---Run callback the first time a new diff buffer is created and loaded into a window.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_buf_read = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.buf_read", {})
@@ -277,7 +277,7 @@ M.set_callback_for_buf_read = function(callback)
   })
 end
 
----Run callback when the reviewer is closd or the user switches to another tab.
+---Run callback when the reviewer is closed or the user switches to another tab.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_reviewer_leave = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.leave", {})
