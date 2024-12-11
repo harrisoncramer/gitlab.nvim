@@ -277,7 +277,7 @@ M.set_callback_for_buf_read = function(callback)
   })
 end
 
----Diffview exposes events which can be used to setup autocommands.
+---Run callback when the reviewer is closd or the user switches to another tab.
 ---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_reviewer_leave = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.leave", {})
@@ -292,6 +292,9 @@ M.set_callback_for_reviewer_leave = function(callback)
   })
 end
 
+---Run callback when the reviewer is opened for the first time or the view is entered from another
+---tab page.
+---@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
 M.set_callback_for_reviewer_enter = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.enter", {})
   vim.api.nvim_create_autocmd("User", {
