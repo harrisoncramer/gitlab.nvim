@@ -21,8 +21,14 @@ func (f fakeDiscussionsLister) ListMergeRequestDiscussions(pid interface{}, merg
 	if err != nil {
 		return nil, nil, err
 	}
-	now := time.Now()
-	newer := now.Add(time.Second * 100)
+
+	timePointers := make([]*time.Time, 6)
+	timePointers[0] = new(time.Time)
+	*timePointers[0] = time.Now()
+	for i := 1; i < len(timePointers); i++ {
+		timePointers[i] = new(time.Time)
+		*timePointers[i] = timePointers[i-1].Add(time.Second * 100)
+	}
 
 	type Author struct {
 		ID        int    `json:"id"`
@@ -35,8 +41,18 @@ func (f fakeDiscussionsLister) ListMergeRequestDiscussions(pid interface{}, merg
 	}
 
 	testListDiscussionsResponse := []*gitlab.Discussion{
-		{Notes: []*gitlab.Note{{CreatedAt: &now, Type: "DiffNote", Author: Author{Username: "hcramer"}}}},
-		{Notes: []*gitlab.Note{{CreatedAt: &newer, Type: "DiffNote", Author: Author{Username: "hcramer2"}}}},
+		{Notes: []*gitlab.Note{
+			{CreatedAt: timePointers[0], Type: "DiffNote", Author: Author{Username: "hcramer0"}},
+			{CreatedAt: timePointers[4], Type: "DiffNote", Author: Author{Username: "hcramer1"}},
+		}},
+		{Notes: []*gitlab.Note{
+			{CreatedAt: timePointers[2], Type: "DiffNote", Author: Author{Username: "hcramer2"}},
+			{CreatedAt: timePointers[3], Type: "DiffNote", Author: Author{Username: "hcramer3"}},
+		}},
+		{Notes: []*gitlab.Note{
+			{CreatedAt: timePointers[1], Type: "DiffNote", Author: Author{Username: "hcramer4"}},
+			{CreatedAt: timePointers[5], Type: "DiffNote", Author: Author{Username: "hcramer5"}},
+		}},
 	}
 	return testListDiscussionsResponse, resp, err
 }
@@ -66,8 +82,8 @@ func getDiscussionsList(t *testing.T, svc http.Handler, request *http.Request) D
 }
 
 func TestListDiscussions(t *testing.T) {
-	t.Run("Returns sorted discussions", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})
+	t.Run("Returns discussions sorted by latest reply", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}, SortBy: "latest_reply"})
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
@@ -76,12 +92,28 @@ func TestListDiscussions(t *testing.T) {
 		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.Message, "Discussions retrieved")
-		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2") /* Sorting applied */
-		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer")
+		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer4") /* Sorting applied */
+		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer0")
+		assert(t, data.Discussions[2].Notes[0].Author.Username, "hcramer2")
+	})
+
+	t.Run("Returns discussions sorted by original comment", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}, SortBy: "original_comment"})
+		svc := middleware(
+			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[DiscussionsRequest]}),
+			withMethodCheck(http.MethodPost),
+		)
+		data := getDiscussionsList(t, svc, request)
+		assert(t, data.Message, "Discussions retrieved")
+		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer0") /* Sorting applied */
+		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer4")
+		assert(t, data.Discussions[2].Notes[0].Author.Username, "hcramer2")
 	})
 
 	t.Run("Uses blacklist to filter unwanted authors", func(t *testing.T) {
-		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer"}})
+		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{"hcramer0"}, SortBy: "latest_reply"})
 		svc := middleware(
 			discussionsListerService{testProjectData, fakeDiscussionsLister{}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
@@ -90,8 +122,9 @@ func TestListDiscussions(t *testing.T) {
 		)
 		data := getDiscussionsList(t, svc, request)
 		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
-		assert(t, len(data.Discussions), 1)
-		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer2")
+		assert(t, len(data.Discussions), 2)
+		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer4")
+		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer2")
 	})
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/discussions/list", DiscussionsRequest{Blacklist: []string{}})

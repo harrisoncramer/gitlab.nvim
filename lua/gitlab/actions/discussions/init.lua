@@ -7,12 +7,12 @@ local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
-local miscellaneous = require("gitlab.actions.miscellaneous")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
 local diffview_lib = require("diffview.lib")
@@ -48,13 +48,15 @@ M.rebuild_view = function(unlinked, all)
     else
       M.rebuild_discussion_tree()
     end
-    M.refresh_diagnostics_and_winbar()
+    state.discussion_tree.last_updated = os.time()
+    M.refresh_diagnostics()
   end)
 end
 
 ---Makes API call to get the discussion data, stores it in the state, and calls the callback
 ---@param callback function|nil
 M.load_discussions = function(callback)
+  state.discussion_tree.last_updated = nil
   state.load_new_state("discussion_data", function(data)
     if not state.DISCUSSION_DATA then
       state.DISCUSSION_DATA = {}
@@ -70,9 +72,10 @@ end
 
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
 M.initialize_discussions = function()
+  state.discussion_tree.last_updated = os.time()
   signs.setup_signs()
   reviewer.set_callback_for_file_changed(function()
-    M.refresh_diagnostics_and_winbar()
+    M.refresh_diagnostics()
     M.modifiable(false)
     reviewer.set_reviewer_keymaps()
   end)
@@ -102,11 +105,10 @@ M.modifiable = function(bool)
 end
 
 --- Take existing data and refresh the diagnostics, the winbar, and the signs
-M.refresh_diagnostics_and_winbar = function()
+M.refresh_diagnostics = function()
   if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
   end
-  winbar.update_winbar()
   common.add_empty_titles()
 end
 
@@ -154,7 +156,7 @@ M.open = function(callback)
   end
 
   vim.schedule(function()
-    M.refresh_diagnostics_and_winbar()
+    M.refresh_diagnostics()
   end)
 end
 
@@ -251,9 +253,7 @@ M.reply = function(tree)
     reply = true,
   })
 
-  if layout then
-    layout:mount()
-  end
+  layout:mount()
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
@@ -284,7 +284,7 @@ end
 
 -- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
-  local edit_popup = Popup(u.create_popup_state("Edit Comment", state.settings.popup.edit))
+  local edit_popup = Popup(popup.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
@@ -292,6 +292,8 @@ M.edit_comment = function(tree, unlinked)
     u.notify("Could not get root or note node", vim.log.levels.ERROR)
     return
   end
+
+  popup.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 
   edit_popup:mount()
 
@@ -310,19 +312,19 @@ M.edit_comment = function(tree, unlinked)
 
   -- Draft notes module handles edits for draft notes
   if M.is_draft_note(tree) then
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       edit_popup,
       draft_notes.confirm_edit_draft_note(note_node.id, unlinked),
       nil,
-      miscellaneous.editable_popup_opts
+      popup.editable_popup_opts
     )
   else
     local comment = require("gitlab.actions.comment")
-    state.set_popup_keymaps(
+    popup.set_popup_keymaps(
       edit_popup,
       comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
       nil,
-      miscellaneous.editable_popup_opts
+      popup.editable_popup_opts
     )
   end
 end
@@ -585,7 +587,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     if keymaps.discussion_tree.jump_to_reviewer then
       vim.keymap.set("n", keymaps.discussion_tree.jump_to_reviewer, function()
         if M.is_current_node_note(tree) then
-          common.jump_to_reviewer(tree, M.refresh_diagnostics_and_winbar)
+          common.jump_to_reviewer(tree, M.refresh_diagnostics)
         end
       end, { buffer = bufnr, desc = "Jump to reviewer", nowait = keymaps.discussion_tree.jump_to_reviewer_nowait })
     end
@@ -603,7 +605,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.refresh_data then
     vim.keymap.set("n", keymaps.discussion_tree.refresh_data, function()
-      u.notify("Refreshing data...", vim.log.levels.INFO)
       draft_notes.rebuild_view(unlinked, false)
     end, {
       buffer = bufnr,
@@ -643,6 +644,16 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       buffer = bufnr,
       desc = "Toggle between draft mode and live mode",
       nowait = keymaps.discussion_tree.toggle_draft_mode_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.toggle_sort_method then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_sort_method, function()
+      M.toggle_sort_method()
+    end, {
+      buffer = bufnr,
+      desc = "Toggle sort method",
+      nowait = keymaps.discussion_tree.toggle_sort_method_nowait,
     })
   end
 
@@ -746,16 +757,6 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     })
   end
 
-  if keymaps.discussion_tree.print_node then
-    vim.keymap.set("n", keymaps.discussion_tree.print_node, function()
-      common.print_node(tree)
-    end, {
-      buffer = bufnr,
-      desc = "Print current node (for debugging)",
-      nowait = keymaps.discussion_tree.print_node_nowait,
-    })
-  end
-
   if keymaps.discussion_tree.add_emoji then
     vim.keymap.set("n", keymaps.discussion_tree.add_emoji, function()
       M.add_emoji_to_note(tree, unlinked)
@@ -792,7 +793,18 @@ end
 ---Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
 M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
+end
+
+---Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the
+---top).
+M.toggle_sort_method = function()
+  if state.settings.discussion_tree.sort_by == "original_comment" then
+    state.settings.discussion_tree.sort_by = "latest_reply"
+  else
+    state.settings.discussion_tree.sort_by = "original_comment"
+  end
   winbar.update_winbar()
+  M.rebuild_view(false, true)
 end
 
 ---Indicates whether the node under the cursor is a draft note or not

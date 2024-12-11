@@ -277,13 +277,16 @@ local function build_note_body(note, resolve_info)
     )
   end
 
-  local resolve_symbol = ""
+  local symbol = ""
+  local is_draft = note.note ~= nil
   if resolve_info ~= nil and resolve_info.resolvable then
-    resolve_symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
+    symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
       or state.settings.discussion_tree.unresolved
+  elseif not is_draft and resolve_info and not resolve_info.resolvable then
+    symbol = state.settings.discussion_tree.unlinked
   end
 
-  local noteHeader = common.build_note_header(note) .. " " .. resolve_symbol
+  local noteHeader = common.build_note_header(note) .. " " .. symbol
 
   return noteHeader, text_nodes
 end
@@ -454,7 +457,9 @@ M.restore_cursor_position = function(winid, tree, original_node, root_node)
     end
   end
   if line_number ~= nil then
-    vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
+    if vim.api.nvim_win_is_valid(winid) then
+      vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
+    end
   end
 end
 

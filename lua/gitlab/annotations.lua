@@ -92,6 +92,7 @@
 ---@field resolved_notes number
 ---@field non_resolvable_notes number
 ---@field help_keymap string
+---@field updated string
 ---
 ---@class SignTable
 ---@field name string

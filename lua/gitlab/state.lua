@@ -116,6 +116,7 @@ M.settings = {
       toggle_tree_type = "i",
       publish_draft = "P",
       toggle_draft_mode = "D",
+      toggle_sort_method = "st",
       toggle_node = "t",
       toggle_all_discussions = "T",
       toggle_resolved_discussions = "R",
@@ -133,15 +134,18 @@ M.settings = {
   popup = {
     width = "40%",
     height = "60%",
+    position = "50%",
     border = "rounded",
     opacity = 1.0,
-    edit = nil,
     comment = nil,
+    edit = nil,
     note = nil,
     help = nil,
     pipeline = nil,
     reply = nil,
     squash_message = nil,
+    create_mr = { width = "95%", height = "95%" },
+    summary = { width = "95%", height = "95%" },
     temp_registers = {},
   },
   discussion_tree = {
@@ -150,15 +154,19 @@ M.settings = {
       collapsed = " ",
       indentation = "  ",
     },
+    spinner_chars = { "-", "\\", "|", "/" },
     auto_open = true,
     default_view = "discussions",
     blacklist = {},
+    sort_by = "latest_reply",
     keep_current_open = false,
-    position = "left",
+    position = "bottom",
     size = "20%",
     relative = "editor",
     resolved = "✓",
     unresolved = "-",
+    unlinked = "󰌸",
+    draft = "✎",
     tree_type = "simple",
     draft_mode = false,
   },
@@ -233,13 +241,17 @@ M.settings = {
       username = "Keyword",
       mention = "WarningMsg",
       date = "Comment",
+      unlinked = "DiffviewNonText",
       expander = "DiffviewNonText",
       directory = "Directory",
       directory_icon = "DiffviewFolderSign",
       file_name = "Normal",
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
-      draft = "DiffviewNonText",
+      draft = "DiffviewReference",
+      draft_mode = "DiagnosticWarn",
+      live_mode = "DiagnosticOk",
+      sort_method = "Keyword",
     },
   },
 }
@@ -427,94 +439,6 @@ M.setPluginConfiguration = function()
   return true
 end
 
-local function exit(popup, opts)
-  if opts.action_before_exit and opts.cb ~= nil then
-    opts.cb()
-    popup:unmount()
-  else
-    popup:unmount()
-    if opts.cb ~= nil then
-      opts.cb()
-    end
-  end
-end
-
--- These keymaps are buffer specific and are set dynamically when popups mount
-M.set_popup_keymaps = function(popup, action, linewise_action, opts)
-  if M.settings.keymaps.disable_all or M.settings.keymaps.popup.disable_all then
-    return
-  end
-
-  if opts == nil then
-    opts = {}
-  end
-  if action ~= "Help" and M.settings.keymaps.help then -- Don't show help on the help popup
-    vim.keymap.set("n", M.settings.keymaps.help, function()
-      local help = require("gitlab.actions.help")
-      help.open()
-    end, { buffer = popup.bufnr, desc = "Open help", nowait = M.settings.keymaps.help_nowait })
-  end
-  if action ~= nil and M.settings.keymaps.popup.perform_action then
-    vim.keymap.set("n", M.settings.keymaps.popup.perform_action, function()
-      local text = u.get_buffer_text(popup.bufnr)
-      if opts.action_before_close then
-        action(text, popup.bufnr)
-        exit(popup, opts)
-      else
-        exit(popup, opts)
-        action(text, popup.bufnr)
-      end
-    end, { buffer = popup.bufnr, desc = "Perform action", nowait = M.settings.keymaps.popup.perform_action_nowait })
-  end
-
-  if linewise_action ~= nil and M.settings.keymaps.popup.perform_action then
-    vim.keymap.set("n", M.settings.keymaps.popup.perform_linewise_action, function()
-      local bufnr = vim.api.nvim_get_current_buf()
-      local linnr = vim.api.nvim_win_get_cursor(0)[1]
-      local text = u.get_line_content(bufnr, linnr)
-      linewise_action(text)
-    end, {
-      buffer = popup.bufnr,
-      desc = "Perform linewise action",
-      nowait = M.settings.keymaps.popup.perform_linewise_action_nowait,
-    })
-  end
-
-  if M.settings.keymaps.popup.discard_changes then
-    vim.keymap.set("n", M.settings.keymaps.popup.discard_changes, function()
-      local temp_registers = M.settings.popup.temp_registers
-      M.settings.popup.temp_registers = {}
-      vim.cmd("quit!")
-      M.settings.popup.temp_registers = temp_registers
-    end, {
-      buffer = popup.bufnr,
-      desc = "Quit discarding changes",
-      nowait = M.settings.keymaps.popup.discard_changes_nowait,
-    })
-  end
-
-  if opts.save_to_temp_register then
-    vim.api.nvim_create_autocmd("BufWinLeave", {
-      buffer = popup.bufnr,
-      callback = function()
-        local text = u.get_buffer_text(popup.bufnr)
-        for _, register in ipairs(M.settings.popup.temp_registers) do
-          vim.fn.setreg(register, text)
-        end
-      end,
-    })
-  end
-
-  if opts.action_before_exit then
-    vim.api.nvim_create_autocmd("BufWinLeave", {
-      buffer = popup.bufnr,
-      callback = function()
-        exit(popup, opts)
-      end,
-    })
-  end
-end
-
 -- Dependencies
 -- These tables are passed to the async.sequence function, which calls them in sequence
 -- before calling an action. They are used to set global state that's required
@@ -606,6 +530,7 @@ M.dependencies = {
     body = function()
       return {
         blacklist = M.settings.discussion_tree.blacklist,
+        sort_by = M.settings.discussion_tree.sort_by,
       }
     end,
   },
