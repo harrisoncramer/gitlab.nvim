@@ -6,7 +6,7 @@ Thank you for taking time to contribute to this plugin! Please follow these step
 
 It's possible that the feature you want is already implemented, or does not belong in `gitlab.nvim` at all. By creating an issue first you can have a conversation with the maintainers about the functionality first. While this is not strictly necessary, it greatly increases the likelihood that your merge request will be accepted.
 
-2. Fork the repository, and create a new feature branch for your desired functionality. Make your changes.
+2. Fork the repository, and create a new feature branch off the `develop` branch for your desired functionality. Make your changes.
 
 If you are using Lazy as a plugin manager, the easiest way to work on changes is by setting a specific path for the plugin that points to your repository locally. This is what I do:
 

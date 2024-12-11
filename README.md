@@ -35,16 +35,15 @@ For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 
 ```lua
-return {
+{
   "harrisoncramer/gitlab.nvim",
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
     "sindrets/diffview.nvim",
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-    "nvim-tree/nvim-web-devicons" -- Recommended but not required. Icons in discussion tree.
+    "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
   },
-  enabled = true,
   build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
   config = function()
     require("gitlab").setup()
@@ -52,29 +51,31 @@ return {
 }
 ```
 
-And with Packer:
+And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
 
 ```lua
-  use {
-    "harrisoncramer/gitlab.nvim",
-    requires = {
-      "MunifTanjim/nui.nvim",
-      "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim"
-      "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-      "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
-    },
-    build = function()
-      require("gitlab.server").build()
-    end,
-    branch = "develop",
-    config = function()
-      require("diffview") -- We require some global state from diffview
-      local gitlab = require("gitlab")
-      gitlab.setup()
-    end,
-  }
+{
+  "harrisoncramer/gitlab.nvim",
+  requires = {
+    "MunifTanjim/nui.nvim",
+    "nvim-lua/plenary.nvim",
+    "sindrets/diffview.nvim",
+    "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+    "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
+  },
+  run = function() require("gitlab.server").build() end, -- Builds the Go binary
+  config = function()
+    require("diffview") -- We require some global state from diffview
+    require("gitlab").setup()
+  end,
+}
 ```
+
+Add `branch = "develop",` to your configuration if you want to use the (possibly unstable) development version of `gitlab.nvim`.
+
+## Contributing
+
+Contributions to the plugin are welcome. Please read [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) before you start working on a pull request.
 
 ## Connecting to Gitlab
 
@@ -121,7 +122,3 @@ For a list of all these settings please run `:h gitlab.nvim.configuring-the-plug
 The plugin sets up a number of useful keybindings in the special buffers it creates, and some global keybindings as well. Refer to the relevant section of the manual `:h gitlab.nvim.keybindings` for more details.
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`
-
-## Contributing
-
-Contributions to the plugin are welcome. Please read [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) before you start working on a pull request.

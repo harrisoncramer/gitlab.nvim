@@ -59,25 +59,24 @@ INSTALLATION                                        *gitlab.nvim.installation*
 
 With Lazy:
 >lua
-    return {
+    {
       "harrisoncramer/gitlab.nvim",
       dependencies = {
         "MunifTanjim/nui.nvim",
         "nvim-lua/plenary.nvim",
         "sindrets/diffview.nvim",
         "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-        "nvim-tree/nvim-web-devicons" -- Recommended but not required. Icons in discussion tree.
+        "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
       },
-      enabled = true,
       build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
       config = function()
         require("gitlab").setup()
       end,
     }
 <
-And with Packer:
+And with pckr.nvim:
 >lua
-    use {
+    {
       "harrisoncramer/gitlab.nvim",
       requires = {
         "MunifTanjim/nui.nvim",
@@ -86,14 +85,10 @@ And with Packer:
         "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
         "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
       },
-      build = function()
-        require("gitlab.server").build()
-      end,
-      branch = "develop",
+      run = function() require("gitlab.server").build() end, -- Builds the Go binary
       config = function()
         require("diffview") -- We require some global state from diffview
-        local gitlab = require("gitlab")
-        gitlab.setup()
+        require("gitlab").setup()
       end,
     }
 <
@@ -200,7 +195,7 @@ you call this function with no values the defaults will be used:
           next_field = "<Tab>", -- Cycle to the next field. Accepts |count|.
           prev_field = "<S-Tab>", -- Cycle to the previous field. Accepts |count|.
           perform_action = "ZZ", -- Once in normal mode, does action (like saving comment or applying description edit, etc)
-          perform_linewise_action = "ZA", -- Once in normal mode, does the linewise action (see logs for this job, etc)
+          perform_linewise_action, = "ZA", -- Once in normal mode, does the linewise action (see logs for this job, etc)
           discard_changes = "ZQ", -- Quit the popup discarding changes, the popup content is not saved to the `temp_registers` (see `:h gitlab.nvim.temp-registers`)
         },
         discussion_tree = {
@@ -254,14 +249,14 @@ you call this function with no values the defaults will be used:
       discussion_tree = { -- The discussion tree that holds all comments
         expanders = { -- Discussion tree icons
           expanded = " ", -- Icon for expanded discussion thread
-          collapsed = " ",  -- Icon for collapsed discussion thread
+          collapsed = " ", -- Icon for collapsed discussion thread
           indentation = "  ", -- Indentation Icon
         },
         spinner_chars = { "/", "|", "\\", "-" }, -- Characters for the refresh animation
         auto_open = true, -- Automatically open when the reviewer is opened
-        default_view = "discussions" -- Show "discussions" or "notes" by default
+        default_view = "discussions", -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
-        sort_by = "latest_reply" -- Sort discussion tree by the "latest_reply", or by "original_comment", see `:h gitlab.nvim.toggle_sort_method`
+        sort_by = "latest_reply", -- Sort discussion tree by the "latest_reply", or by "original_comment", see `:h gitlab.nvim.toggle_sort_method`
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         position = "bottom", -- "top", "right", "bottom" or "left"
         size = "20%", -- Size of split
@@ -272,7 +267,7 @@ you call this function with no values the defaults will be used:
         draft = "✎", -- Symbol to show next to draft comments/notes
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
-        winbar = nil -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
+        winbar = nil, -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
       emojis = {
@@ -339,7 +334,7 @@ you call this function with no values the defaults will be used:
         squash = false, -- Whether the commits will be marked for squashing
         fork = {
           enabled = false, -- If making an MR from a fork
-          forked_project_id = nil -- The ID of the project you are merging into. If nil, will be prompted.
+          forked_project_id = nil, -- The ID of the project you are merging into. If nil, will be prompted.
         },
         title_input = { -- Default settings for MR title input window
           width = 40,
