@@ -35,7 +35,7 @@ For more detailed information about the Lua APIs please run `:h gitlab.nvim.api`
 With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
 
 ```lua
-return {
+{
   "harrisoncramer/gitlab.nvim",
   dependencies = {
     "MunifTanjim/nui.nvim",
@@ -44,7 +44,6 @@ return {
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     "nvim-tree/nvim-web-devicons" -- Recommended but not required. Icons in discussion tree.
   },
-  enabled = true,
   build = function () require("gitlab.server").build(true) end, -- Builds the Go binary
   config = function()
     require("gitlab").setup()
