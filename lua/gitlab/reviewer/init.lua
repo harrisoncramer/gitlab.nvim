@@ -428,7 +428,7 @@ local del_keymaps = function(bufnr)
   end
 end
 
---- Set up autocaommands that will take case of setting and unsetting buffer-local options and keymaps
+--- Set up autocaommands that will take care of setting and unsetting buffer-local options and keymaps
 M.set_reviewer_autocommands = function(bufnr)
   local buf_winid = vim.fn.bufwinid(bufnr)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
