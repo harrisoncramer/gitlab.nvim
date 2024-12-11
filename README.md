@@ -52,28 +52,24 @@ return {
 }
 ```
 
-And with Packer:
+And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
 
 ```lua
-  use {
-    "harrisoncramer/gitlab.nvim",
-    requires = {
-      "MunifTanjim/nui.nvim",
-      "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim"
-      "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
-      "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
-    },
-    build = function()
-      require("gitlab.server").build()
-    end,
-    branch = "develop",
-    config = function()
-      require("diffview") -- We require some global state from diffview
-      local gitlab = require("gitlab")
-      gitlab.setup()
-    end,
-  }
+{
+  "harrisoncramer/gitlab.nvim",
+  requires = {
+    "MunifTanjim/nui.nvim",
+    "nvim-lua/plenary.nvim",
+    "sindrets/diffview.nvim",
+    "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
+    "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
+  },
+  run = function() require("gitlab.server").build() end, -- Builds the Go binary
+  config = function()
+    require("diffview") -- We require some global state from diffview
+    require("gitlab").setup()
+  end,
+}
 ```
 
 ## Connecting to Gitlab
