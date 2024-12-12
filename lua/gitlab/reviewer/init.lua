@@ -449,7 +449,7 @@ end
 --- Set up autocaommands that will take care of setting and unsetting buffer-local options and keymaps
 M.set_reviewer_autocommands = function(bufnr)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
-  vim.api.nvim_create_autocmd({"WinEnter", "BufWinEnter"}, {
+  vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
     group = group,
     buffer = bufnr,
     callback = function()
