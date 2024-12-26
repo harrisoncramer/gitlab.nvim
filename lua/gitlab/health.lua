@@ -10,7 +10,7 @@ local function check_go_version()
     if major and tonumber(major) >= 1 and tonumber(minor) >= 19 then
       return
     else
-      return "Go is installed, but version is older than 1.19."
+      return "Go is installed, but version is older than 1.23.4."
     end
   else
     return "Go is not installed."
