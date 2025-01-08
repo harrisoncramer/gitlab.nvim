@@ -119,6 +119,13 @@ M.jump = function(file_name, line_number, new_buffer)
   local file = List.new(files):find(function(file)
     return file.path == file_name
   end)
+  if file == nil then
+    u.notify(
+      string.format("The file %s for which the comment was made doesn't exist in HEAD.", file_name),
+      vim.log.levels.WARN
+    )
+    return
+  end
   async.await(view:set_file(file))
 
   local layout = view.cur_layout
