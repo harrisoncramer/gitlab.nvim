@@ -42,25 +42,27 @@ M.open = function()
   end
 
   local diffview_open_command = "DiffviewOpen"
-  local has_clean_tree, err = git.has_clean_tree()
-  if err ~= nil then
-    return
-  end
-  if state.settings.reviewer_settings.diffview.imply_local and has_clean_tree then
-    diffview_open_command = diffview_open_command .. " --imply-local"
+
+  if state.settings.reviewer_settings.diffview.imply_local then
+    local has_clean_tree, err = git.has_clean_tree()
+    if err ~= nil then
+      return
+    end
+    if has_clean_tree then
+      diffview_open_command = diffview_open_command .. " --imply-local"
+    else
+      u.notify(
+        "Your working tree has changes, cannot use 'imply_local' setting for gitlab reviews.\n Stash or commit all changes to use.",
+        vim.log.levels.WARN
+      )
+      state.settings.reviewer_settings.diffview.imply_local = false
+    end
   end
 
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
 
   M.is_open = true
   M.tabnr = vim.api.nvim_get_current_tabpage()
-
-  if state.settings.reviewer_settings.diffview.imply_local and not has_clean_tree then
-    u.notify(
-      "There are uncommited changes in the working tree, cannot use 'imply_local' setting for gitlab reviews.\n Stash or commit all changes to use.",
-      vim.log.levels.WARN
-    )
-  end
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
     u.notify(
@@ -107,7 +109,6 @@ M.jump = function(file_name, line_number, new_buffer)
     return
   end
   vim.api.nvim_set_current_tabpage(M.tabnr)
-  vim.cmd("DiffviewFocusFiles")
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
@@ -118,6 +119,13 @@ M.jump = function(file_name, line_number, new_buffer)
   local file = List.new(files):find(function(file)
     return file.path == file_name
   end)
+  if file == nil then
+    u.notify(
+      string.format("The file %s for which the comment was made doesn't exist in HEAD.", file_name),
+      vim.log.levels.WARN
+    )
+    return
+  end
   async.await(view:set_file(file))
 
   local layout = view.cur_layout
@@ -289,12 +297,16 @@ end
 M.execute_callback = function(callback)
   return function()
     vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { "'[V']" } }, {})
-    vim.api.nvim_cmd(
+    local _, err = pcall(
+      vim.api.nvim_cmd,
       { cmd = "lua", args = { ("require'gitlab'.%s()"):format(callback) }, mods = { lockmarks = true } },
       {}
     )
     vim.api.nvim_win_set_cursor(M.old_winnr, M.old_cursor_position)
     vim.opt.operatorfunc = M.old_opfunc
+    if err ~= "" then
+      u.notify_vim_error(err, vim.log.levels.ERROR)
+    end
   end
 end
 
@@ -319,7 +331,8 @@ local set_keymaps = function(bufnr, keymaps)
   if keymaps.reviewer.create_comment ~= false then
     -- Set keymap for repeated operator keybinding
     vim.keymap.set("o", keymaps.reviewer.create_comment, function()
-      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "$" } }, {})
+      -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
     end, {
       buffer = bufnr,
       desc = "Create comment for [count] lines",
@@ -349,7 +362,8 @@ local set_keymaps = function(bufnr, keymaps)
   if keymaps.reviewer.create_suggestion ~= false then
     -- Set keymap for repeated operator keybinding
     vim.keymap.set("o", keymaps.reviewer.create_suggestion, function()
-      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "$" } }, {})
+      -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
     end, {
       buffer = bufnr,
       desc = "Create suggestion for [count] lines",

@@ -4,6 +4,8 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'lua/**' # Ignore changes to the Go code
 jobs:
   lua_lint:
     name: Lint Lua 💅

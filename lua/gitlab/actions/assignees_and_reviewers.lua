@@ -22,6 +22,12 @@ M.delete_reviewer = function()
   M.delete_popup("reviewer")
 end
 
+local refresh_user_state = function(type, data, message)
+  u.notify(message, vim.log.levels.INFO)
+  state.INFO[type] = data
+  require("gitlab.actions.summary").update_summary_details()
+end
+
 M.add_popup = function(type)
   local plural = type .. "s"
   local current = state.INFO[plural]
@@ -39,8 +45,7 @@ M.add_popup = function(type)
     table.insert(current_ids, choice.id)
     local body = { ids = current_ids }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
-      u.notify(data.message, vim.log.levels.INFO)
-      state.INFO[plural] = data[plural]
+      refresh_user_state(plural, data[plural], data.message)
     end)
   end)
 end
@@ -61,7 +66,7 @@ M.delete_popup = function(type)
     local body = { ids = ids }
     job.run_job("/mr/" .. type, "PUT", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
-      state.INFO[plural] = data[plural]
+      refresh_user_state(plural, data[plural], data.message)
     end)
   end)
 end

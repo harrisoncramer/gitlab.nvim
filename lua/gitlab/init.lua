@@ -92,10 +92,10 @@ return {
     end
   end,
   toggle_draft_mode = discussions.toggle_draft_mode,
+  toggle_sort_method = discussions.toggle_sort_method,
   publish_all_drafts = draft_notes.publish_all_drafts,
   refresh_data = function()
     -- This also rebuilds the regular views
-    u.notify("Refreshing data...", vim.log.levels.INFO)
     draft_notes.rebuild_view(false, true)
   end,
   -- Other functions 🤷

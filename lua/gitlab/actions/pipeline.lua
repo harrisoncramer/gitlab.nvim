@@ -5,6 +5,7 @@ local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
+local popup = require("gitlab.popup")
 local M = {
   pipeline_jobs = nil,
   latest_pipeline = nil,
@@ -40,7 +41,8 @@ M.open = function()
   local height = 6 + #M.pipeline_jobs + 3
 
   local pipeline_popup =
-    Popup(u.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+    Popup(popup.create_popup_state("Loading Pipeline...", state.settings.popup.pipeline, width, height, 60))
+  popup.set_up_autocommands(pipeline_popup, nil, vim.api.nvim_get_current_win())
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
 
@@ -91,7 +93,7 @@ M.open = function()
     end
 
     pipeline_popup.border:set_text("top", "Pipeline Status", "center")
-    state.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
+    popup.set_popup_keymaps(pipeline_popup, M.retrigger, M.see_logs)
     u.switch_can_edit_buf(bufnr, false)
   end)
 end

@@ -13,7 +13,7 @@ local M = {}
 ---@return string
 M.build_note_header = function(note)
   if note.note then
-    return "@" .. state.USER.username .. " " .. ""
+    return "@" .. state.USER.username .. " " .. state.settings.discussion_tree.draft
   end
   return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
 end
@@ -291,6 +291,13 @@ M.jump_to_file = function(tree)
   end
   if root_node.file_name == nil then
     u.notify("This comment was not left on a particular location", vim.log.levels.WARN)
+    return
+  end
+  if vim.fn.filereadable(root_node.file_name) == 0 then
+    u.notify(
+      string.format("The file %s for which the comment was made doesn't exist in HEAD.", root_node.file_name),
+      vim.log.levels.WARN
+    )
     return
   end
   vim.cmd.tabnew()
