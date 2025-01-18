@@ -114,7 +114,6 @@ M.jump = function(file_name, line_number, new_buffer)
     return
   end
   vim.api.nvim_set_current_tabpage(M.tabnr)
-  vim.cmd("DiffviewFocusFiles")
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
@@ -125,6 +124,13 @@ M.jump = function(file_name, line_number, new_buffer)
   local file = List.new(files):find(function(file)
     return file.path == file_name
   end)
+  if file == nil then
+    u.notify(
+      string.format("The file %s for which the comment was made doesn't exist in HEAD.", file_name),
+      vim.log.levels.WARN
+    )
+    return
+  end
   async.await(view:set_file(file))
 
   local layout = view.cur_layout
@@ -357,7 +363,8 @@ M.set_keymaps = function(bufnr)
   if keymaps.reviewer.create_comment ~= false then
     -- Set keymap for repeated operator keybinding
     vim.keymap.set("o", keymaps.reviewer.create_comment, function()
-      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "$" } }, {})
+      -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
     end, {
       buffer = bufnr,
       desc = "Create comment for [count] lines",
@@ -387,7 +394,8 @@ M.set_keymaps = function(bufnr)
   if keymaps.reviewer.create_suggestion ~= false then
     -- Set keymap for repeated operator keybinding
     vim.keymap.set("o", keymaps.reviewer.create_suggestion, function()
-      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { tostring(vim.v.count1) .. "$" } }, {})
+      -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
     end, {
       buffer = bufnr,
       desc = "Create suggestion for [count] lines",
