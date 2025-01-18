@@ -97,8 +97,8 @@ M.build = function(override)
   end
 
   local res = vim
-      .system({ "go", "build", "-o", bin_name }, { cwd = state.settings.root_path .. u.path_separator .. "cmd" })
-      :wait()
+    .system({ "go", "build", "-o", bin_name }, { cwd = state.settings.root_path .. u.path_separator .. "cmd" })
+    :wait()
 
   if res.code ~= 0 then
     u.notify(string.format("Failed to install with status code %d:\n%s", res.code, res.stderr), vim.log.levels.ERROR)
