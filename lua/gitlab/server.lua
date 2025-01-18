@@ -26,7 +26,11 @@ M.start = function(callback)
   state.chosen_mr_iid = 0 -- Do not let this interfere with subsequent reviewer.open() calls
 
   local settings = vim.json.encode(go_server_settings)
-  local command = string.format("%s '%s'", state.settings.bin, settings)
+  if vim.fn.has("win32") then
+    settings = settings:gsub('"', '\\"')
+  end
+
+  local command = string.format('"%s" "%s"', state.settings.bin, settings)
 
   local job_id = vim.fn.jobstart(command, {
     on_stdout = function(_, data)
@@ -93,8 +97,8 @@ M.build = function(override)
   end
 
   local res = vim
-    .system({ "go", "build", "-o", bin_name }, { cwd = state.settings.root_path .. u.path_separator .. "cmd" })
-    :wait()
+      .system({ "go", "build", "-o", bin_name }, { cwd = state.settings.root_path .. u.path_separator .. "cmd" })
+      :wait()
 
   if res.code ~= 0 then
     u.notify(string.format("Failed to install with status code %d:\n%s", res.code, res.stderr), vim.log.levels.ERROR)
