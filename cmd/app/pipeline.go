@@ -107,47 +107,46 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+    if res.StatusCode >= 300 {
+        handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
+        return
+    }
+
+	pipelines := []PipelineWithJobs{}
+	pipelines = append(pipelines, PipelineWithJobs{
+		Jobs:           jobs,
+		LatestPipeline: pipeline,
+	})
+
 	bridges, res, err := a.client.ListPipelineBridges(a.projectInfo.ProjectId, pipeline.ID, &gitlab.ListJobsOptions{})
 
-	pipelineIdInBridge := bridges[0].DownstreamPipeline.ID
-    bridgePipelineJobs := []*gitlab.Job{}
-	if len(jobs) == 0 {
-		bridgePipelineJobs, res, err = a.client.ListPipelineJobs(a.projectInfo.ProjectId, pipelineIdInBridge, &gitlab.ListJobsOptions{})
+	// Iterate through all bridges
+	for _, bridge := range bridges {
+		if bridge.DownstreamPipeline == nil {
+			continue
+		}
+
+		pipelineIdInBridge := bridge.DownstreamPipeline.ID
+		bridgePipelineJobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, pipelineIdInBridge, &gitlab.ListJobsOptions{})
 		if err != nil {
-			handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
+			handleError(w, err, "Could not get pipeline jobs for bridge", http.StatusInternalServerError)
 			return
 		}
 		if res.StatusCode >= 300 {
-			handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
+			handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs for bridge", res.StatusCode)
 			return
 		}
-	}
 
-	if err != nil {
-		handleError(w, err, "Could not get pipeline bridges", http.StatusInternalServerError)
-		return
+		pipelines = append(pipelines, PipelineWithJobs{
+			Jobs:           bridgePipelineJobs,
+			LatestPipeline: bridge.DownstreamPipeline,
+		})
 	}
-
-	if res.StatusCode >= 300 {
-		handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
-		return
-	}
-
-    pipelines := []PipelineWithJobs{
-        {
-            Jobs:           bridgePipelineJobs,
-            LatestPipeline: bridges[0].DownstreamPipeline,
-        },
-        {
-            Jobs:           jobs,
-            LatestPipeline: pipeline,
-        },
-    }
 
 	w.WriteHeader(http.StatusOK)
 	response := GetPipelineAndJobsResponse{
 		SuccessResponse: SuccessResponse{Message: "Pipeline retrieved"},
-		Pipelines: pipelines,
+		Pipelines:       pipelines,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
