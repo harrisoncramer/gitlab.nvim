@@ -117,7 +117,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	pipelines = append(pipelines, PipelineWithJobs{
 		Jobs:           jobs,
 		LatestPipeline: pipeline,
-		Name:           "",
+		Name:           "root",
 	})
 
 	bridges, res, err := a.client.ListPipelineBridges(a.projectInfo.ProjectId, pipeline.ID, &gitlab.ListJobsOptions{})

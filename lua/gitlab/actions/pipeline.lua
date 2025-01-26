@@ -59,7 +59,7 @@ M.open = function()
     max_width = math.max(max_width, width)
     local pipeline_jobs = get_pipeline_jobs(idx)
     local pipeline_status = M.get_pipeline_status(idx, false)
-    local height = 6 + #pipeline_jobs + 3
+    local height = 6 + #pipeline_jobs + 4
     total_height = total_height + height
 
     table.insert(pipelines_data, {
@@ -87,7 +87,7 @@ M.open = function()
     local pipeline = data.pipeline
     local lines = data.lines
 
-    table.insert(lines, "Status: " .. data.pipeline_status)
+    table.insert(lines, data.pipeline_status)
     table.insert(lines, "")
     table.insert(lines, string.format("Last Run: %s", u.time_since(pipeline.created_at)))
     table.insert(lines, string.format("Url: %s", pipeline.web_url))
@@ -245,7 +245,7 @@ end
 ---@param wrap_with_color boolean
 ---@return string
 M.get_pipeline_status = function(idx, wrap_with_color)
-  return string.format("%s %s (%s)", state.PIPELINE[idx].name, M.get_pipeline_icon(idx, wrap_with_color), state.PIPELINE[idx].latest_pipeline.status)
+  return string.format("[%s]: Status: %s (%s)", state.PIPELINE[idx].name, M.get_pipeline_icon(idx, wrap_with_color), state.PIPELINE[idx].latest_pipeline.status)
 end
 
 M.color_status = function(status, bufnr, status_line, linnr)
