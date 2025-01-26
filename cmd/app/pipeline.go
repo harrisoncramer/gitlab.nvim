@@ -20,6 +20,7 @@ type RetriggerPipelineResponse struct {
 type PipelineWithJobs struct {
 	Jobs           []*gitlab.Job        `json:"jobs"`
 	LatestPipeline *gitlab.PipelineInfo `json:"latest_pipeline"`
+	Name           string               `json:"name"`
 }
 
 type GetPipelineAndJobsResponse struct {
@@ -107,18 +108,28 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-    if res.StatusCode >= 300 {
-        handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
-        return
-    }
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
+		return
+	}
 
 	pipelines := []PipelineWithJobs{}
 	pipelines = append(pipelines, PipelineWithJobs{
 		Jobs:           jobs,
 		LatestPipeline: pipeline,
+		Name:           "",
 	})
 
 	bridges, res, err := a.client.ListPipelineBridges(a.projectInfo.ProjectId, pipeline.ID, &gitlab.ListJobsOptions{})
+
+	if err != nil {
+		handleError(w, err, "Could not get pipeline jobs", http.StatusInternalServerError)
+		return
+	}
+	if res.StatusCode >= 300 {
+		handleError(w, GenericError{r.URL.Path}, "Could not get pipeline jobs", res.StatusCode)
+		return
+	}
 
 	// Iterate through all bridges
 	for _, bridge := range bridges {
@@ -140,6 +151,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		pipelines = append(pipelines, PipelineWithJobs{
 			Jobs:           bridgePipelineJobs,
 			LatestPipeline: bridge.DownstreamPipeline,
+			Name:           bridge.Name,
 		})
 	}
 

@@ -245,7 +245,7 @@ end
 ---@param wrap_with_color boolean
 ---@return string
 M.get_pipeline_status = function(idx, wrap_with_color)
-  return string.format("%s (%s)", M.get_pipeline_icon(idx, wrap_with_color), state.PIPELINE[idx].latest_pipeline.status)
+  return string.format("%s %s (%s)", state.PIPELINE[idx].name, M.get_pipeline_icon(idx, wrap_with_color), state.PIPELINE[idx].latest_pipeline.status)
 end
 
 M.color_status = function(status, bufnr, status_line, linnr)
