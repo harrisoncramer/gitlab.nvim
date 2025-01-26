@@ -131,7 +131,6 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Iterate through all bridges
 	for _, bridge := range bridges {
 		if bridge.DownstreamPipeline == nil {
 			continue
