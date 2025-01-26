@@ -139,11 +139,11 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		pipelineIdInBridge := bridge.DownstreamPipeline.ID
 		bridgePipelineJobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, pipelineIdInBridge, &gitlab.ListJobsOptions{})
 		if err != nil {
-			handleError(w, err, "Could not get jobs for a pipeline form trigger a trigger job", http.StatusInternalServerError)
+			handleError(w, err, "Could not get jobs for a pipeline from a trigger job", http.StatusInternalServerError)
 			return
 		}
 		if res.StatusCode >= 300 {
-			handleError(w, GenericError{r.URL.Path}, "Could not get jobs for a pipeline form trigger a trigger job", res.StatusCode)
+			handleError(w, GenericError{r.URL.Path}, "Could not get jobs for a pipeline from a trigger job", res.StatusCode)
 			return
 		}
 
