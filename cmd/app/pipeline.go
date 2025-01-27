@@ -137,7 +137,7 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 		}
 
 		pipelineIdInBridge := bridge.DownstreamPipeline.ID
-		bridgePipelineJobs, res, err := a.client.ListPipelineJobs(a.projectInfo.ProjectId, pipelineIdInBridge, &gitlab.ListJobsOptions{})
+		bridgePipelineJobs, res, err := a.client.ListPipelineJobs(bridge.DownstreamPipeline.ProjectID, pipelineIdInBridge, &gitlab.ListJobsOptions{})
 		if err != nil {
 			handleError(w, err, "Could not get jobs for a pipeline from a trigger job", http.StatusInternalServerError)
 			return
