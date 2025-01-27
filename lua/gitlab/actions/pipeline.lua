@@ -59,7 +59,7 @@ M.open = function()
     max_width = math.max(max_width, width)
     local pipeline_jobs = get_pipeline_jobs(idx)
     local pipeline_status = M.get_pipeline_status(idx, false)
-    local height = 6 + #pipeline_jobs + 4
+    local height = 6 + #pipeline_jobs + 3
     total_height = total_height + height
 
     table.insert(pipelines_data, {
@@ -83,7 +83,7 @@ M.open = function()
   u.switch_can_edit_buf(bufnr, true)
 
   local all_lines = {}
-  for _, data in ipairs(pipelines_data) do
+  for i, data in ipairs(pipelines_data) do
     local pipeline = data.pipeline
     local lines = data.lines
 
@@ -118,11 +118,12 @@ M.open = function()
     end
 
     -- Add separator between pipelines
-    table.insert(lines, "")
-    table.insert(lines, string.rep("-", max_width))
-    table.insert(lines, "")
+    if i < #pipelines_data then
+        table.insert(lines, "")
+        table.insert(lines, string.rep("-", max_width))
+        table.insert(lines, "")
+      end
 
-    -- Append to all_lines
     for _, line in ipairs(lines) do
       table.insert(all_lines, line)
     end
