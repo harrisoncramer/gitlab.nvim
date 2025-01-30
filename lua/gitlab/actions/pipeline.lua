@@ -35,7 +35,6 @@ local function get_latest_pipelines(count)
   return pipelines
 end
 
-
 local function get_pipeline_jobs(idx)
   return u.reverse(type(state.PIPELINE[idx].jobs) == "table" and state.PIPELINE[idx].jobs or {})
 end
@@ -68,11 +67,12 @@ M.open = function()
       jobs = pipeline_jobs,
       width = width,
       height = 6 + #pipeline_jobs + 3,
-      lines = {}
+      lines = {},
     })
   end
 
-  local pipeline_popup = Popup(popup.create_popup_state("Loading Pipelines...", state.settings.popup.pipeline, max_width, total_height, 60))
+  local pipeline_popup =
+    Popup(popup.create_popup_state("Loading Pipelines...", state.settings.popup.pipeline, max_width, total_height, 60))
   popup.set_up_autocommands(pipeline_popup, nil, vim.api.nvim_get_current_win())
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
@@ -119,10 +119,10 @@ M.open = function()
 
     -- Add separator between pipelines
     if i < #pipelines_data then
-        table.insert(lines, "")
-        table.insert(lines, string.rep("-", max_width))
-        table.insert(lines, "")
-      end
+      table.insert(lines, "")
+      table.insert(lines, string.rep("-", max_width))
+      table.insert(lines, "")
+    end
 
     for _, line in ipairs(lines) do
       table.insert(all_lines, line)
@@ -133,7 +133,7 @@ M.open = function()
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, all_lines)
 
     local line_offset = 0
-    for i, data in ipairs(pipelines_data) do
+    for _, data in ipairs(pipelines_data) do
       local pipeline = data.pipeline
       local lines = data.lines
 
@@ -246,7 +246,12 @@ end
 ---@param wrap_with_color boolean
 ---@return string
 M.get_pipeline_status = function(idx, wrap_with_color)
-  return string.format("[%s]: Status: %s (%s)", state.PIPELINE[idx].name, M.get_pipeline_icon(idx, wrap_with_color), state.PIPELINE[idx].latest_pipeline.status)
+  return string.format(
+    "[%s]: Status: %s (%s)",
+    state.PIPELINE[idx].name,
+    M.get_pipeline_icon(idx, wrap_with_color),
+    state.PIPELINE[idx].latest_pipeline.status
+  )
 end
 
 M.color_status = function(status, bufnr, status_line, linnr)
