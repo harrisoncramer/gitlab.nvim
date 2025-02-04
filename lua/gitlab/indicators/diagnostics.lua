@@ -121,11 +121,17 @@ M.refresh_diagnostics = function()
       return
     end
 
-    local new_diagnostics = M.parse_new_diagnostics(filtered_discussions)
-    set_diagnostics_in_new_sha(diagnostics_namespace, new_diagnostics, create_display_opts())
+    local new_diagnostics, old_diagnostics = List.new(filtered_discussions):partition(indicators_common.is_new_sha)
 
-    local old_diagnostics = M.parse_old_diagnostics(filtered_discussions)
-    set_diagnostics_in_old_sha(diagnostics_namespace, old_diagnostics, create_display_opts())
+    new_diagnostics = M.parse_diagnostics(new_diagnostics)
+    if #new_diagnostics ~= 0 then
+      set_diagnostics_in_new_sha(diagnostics_namespace, new_diagnostics, create_display_opts())
+    end
+
+    old_diagnostics = M.parse_diagnostics(old_diagnostics)
+    if #old_diagnostics ~= 0 then
+      set_diagnostics_in_old_sha(diagnostics_namespace, old_diagnostics, create_display_opts())
+    end
   end)
 
   if not ok then
@@ -134,24 +140,13 @@ M.refresh_diagnostics = function()
 end
 
 ---Iterates over each discussion and returns a list of tables with sign
----data, for instance group, priority, line number etc for the new SHA
----@param discussions Discussion[]
+---data, for instance group, priority, line number etc
+---@param discussions List
 ---@return DiagnosticTable[]
-M.parse_new_diagnostics = function(discussions)
-  local new_diagnostics = List.new(discussions):filter(indicators_common.is_new_sha)
-  local single_line = new_diagnostics:filter(indicators_common.is_single_line):map(create_single_line_diagnostic)
-  local multi_line = new_diagnostics:filter(indicators_common.is_multi_line):map(create_multiline_diagnostic)
-  return u.combine(single_line, multi_line)
-end
-
----Iterates over each discussion and returns a list of tables with sign
----data, for instance group, priority, line number etc for the old SHA
----@param discussions Discussion[]
----@return DiagnosticTable[]
-M.parse_old_diagnostics = function(discussions)
-  local old_diagnostics = List.new(discussions):filter(indicators_common.is_old_sha)
-  local single_line = old_diagnostics:filter(indicators_common.is_single_line):map(create_single_line_diagnostic)
-  local multi_line = old_diagnostics:filter(indicators_common.is_multi_line):map(create_multiline_diagnostic)
+M.parse_diagnostics = function(discussions)
+  local single_line, multi_line = discussions:partition(indicators_common.is_single_line)
+  single_line = single_line:map(create_single_line_diagnostic)
+  multi_line = multi_line:map(create_multiline_diagnostic)
   return u.combine(single_line, multi_line)
 end
 
