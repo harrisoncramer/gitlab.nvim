@@ -744,6 +744,16 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     })
   end
 
+  if keymaps.discussion_tree.print_node then
+    vim.keymap.set("n", keymaps.discussion_tree.print_node, function()
+      common.print_node(tree)
+    end, {
+      buffer = bufnr,
+      desc = "Print current node (for debugging)",
+      nowait = keymaps.discussion_tree.print_node_nowait,
+    })
+  end
+
   if keymaps.discussion_tree.add_emoji then
     vim.keymap.set("n", keymaps.discussion_tree.add_emoji, function()
       M.add_emoji_to_note(tree, unlinked)
