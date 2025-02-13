@@ -156,6 +156,9 @@ end
 ---@return DiffviewInfo | nil
 M.get_reviewer_data = function()
   local view = diffview_lib.get_current_view()
+  if view == nil then
+    return
+  end
   local layout = view.cur_layout
   local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
