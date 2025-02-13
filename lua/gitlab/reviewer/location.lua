@@ -19,16 +19,22 @@ local state = require("gitlab.state")
 
 local Location = {}
 Location.__index = Location
----@param reviewer_data DiffviewInfo
+---The new() function returns nil when the location cannot be created due to missing
+---reviewer data.
 ---@param visual_range LineRange | nil
----@return Location
-function Location.new(reviewer_data, visual_range)
+---@return Location | nil
+function Location.new(visual_range)
+  local reviewer_data = require("gitlab.reviewer").get_reviewer_data()
+  if reviewer_data == nil then
+    return nil
+  end
   local location = {}
   local instance = setmetatable(location, Location)
   instance.reviewer_data = reviewer_data
   instance.visual_range = visual_range
   instance.base_sha = state.INFO.diff_refs.base_sha
   instance.head_sha = state.INFO.diff_refs.head_sha
+  instance:build_location_data()
   return instance
 end
 

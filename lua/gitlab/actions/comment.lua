@@ -25,10 +25,9 @@ local M = {
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.keymaps.popup.perform_action keybinding
 ---@param text string comment text
----@param visual_range LineRange | nil range of visual selection or nil
 ---@param unlinked boolean if true, the comment is not linked to a line
 ---@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
-local confirm_create_comment = function(text, visual_range, unlinked, discussion_id)
+local confirm_create_comment = function(text, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
@@ -75,30 +74,16 @@ local confirm_create_comment = function(text, visual_range, unlinked, discussion
     return
   end
 
-  local reviewer_data = reviewer.get_reviewer_data()
-  if reviewer_data == nil then
-    u.notify("Error getting reviewer data", vim.log.levels.ERROR)
-    return
-  end
-
-  local location = Location.new(reviewer_data, visual_range)
-  location:build_location_data()
-  local location_data = location.location_data
-  if location_data == nil then
-    u.notify("Error getting location information", vim.log.levels.ERROR)
-    return
-  end
-
   local revision = state.MR_REVISIONS[1]
   local position_data = {
-    file_name = reviewer_data.file_name,
-    old_file_name = reviewer_data.old_file_name,
+    file_name = M.location.reviewer_data.file_name,
+    old_file_name = M.location.reviewer_data.old_file_name,
     base_commit_sha = revision.base_commit_sha,
     start_commit_sha = revision.start_commit_sha,
     head_commit_sha = revision.head_commit_sha,
-    old_line = location_data.old_line,
-    new_line = location_data.new_line,
-    line_range = location_data.line_range,
+    old_line = M.location.location_data.old_line,
+    new_line = M.location.location_data.new_line,
+    line_range = M.location.location_data.line_range,
   }
 
   -- Creating a new comment (linked to specific changes)
@@ -177,7 +162,6 @@ M.create_comment_layout = function(opts)
   M.current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(popup.create_popup_state(title, settings))
   M.draft_popup = Popup(popup.create_box_popup_state("Draft", false, settings))
-  M.start_line, M.end_line = u.get_visual_selection_boundaries()
 
   local internal_layout = Layout.Box({
     Layout.Box(M.comment_popup, { grow = 1 }),
@@ -196,19 +180,18 @@ M.create_comment_layout = function(opts)
   popup.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
   popup.set_up_autocommands(M.comment_popup, layout, M.current_win)
 
-  local range = opts.ranged and { start_line = M.start_line, end_line = M.end_line } or nil
   local unlinked = opts.unlinked or false
 
   ---Keybinding for focus on draft section
   popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
-    confirm_create_comment(text, range, unlinked, opts.discussion_id)
+    confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
   popup.set_popup_keymaps(M.comment_popup, function(text)
-    confirm_create_comment(text, range, unlinked, opts.discussion_id)
+    confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(M.current_win)
   end, miscellaneous.attach_file, popup.editable_popup_opts)
 
@@ -223,41 +206,41 @@ end
 --- This function will open a comment popup in order to create a comment on the changed/updated
 --- line in the current MR
 M.create_comment = function()
+  M.location = Location.new()
   if not M.can_create_comment(false) then
     return
   end
 
-  local layout = M.create_comment_layout({ ranged = false, unlinked = false })
+  local layout = M.create_comment_layout({ unlinked = false })
   layout:mount()
 end
 
 --- This function will open a multi-line comment popup in order to create a multi-line comment
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
+  M.start_line, M.end_line = u.get_visual_selection_boundaries()
+  M.location = Location.new({ start_line = M.start_line, end_line = M.end_line })
   if not M.can_create_comment(true) then
     u.press_escape()
     return
   end
 
-  local layout = M.create_comment_layout({ ranged = true, unlinked = false })
+  local layout = M.create_comment_layout({ unlinked = false })
   layout:mount()
 end
 
 --- This function will open a a popup to create a "note" (e.g. unlinked comment)
 --- on the changed/updated line in the current MR
 M.create_note = function()
-  local layout = M.create_comment_layout({ ranged = false, unlinked = true })
+  local layout = M.create_comment_layout({ unlinked = true })
   layout:mount()
 end
 
 ---Given the current visually selected area of text, builds text to fill in the
 ---comment popup with a suggested change
 ---@return LineRange|nil
----@return integer
 local build_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  M.start_line, M.end_line = u.get_visual_selection_boundaries()
-
   local range_length = M.end_line - M.start_line
   local backticks = "```"
   local selected_lines = u.get_lines(M.start_line, M.end_line)
@@ -277,7 +260,7 @@ local build_suggestion = function()
   else
     --- This should never happen afaik
     u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
-    return nil, 0
+    return nil
   end
   suggestion_start = suggestion_start
   local suggestion_lines = {}
@@ -285,21 +268,23 @@ local build_suggestion = function()
   vim.list_extend(suggestion_lines, selected_lines)
   table.insert(suggestion_lines, backticks)
 
-  return suggestion_lines, range_length
+  return suggestion_lines
 end
 
 --- This function will open a a popup to create a suggestion comment
 --- on the changed/updated line in the current MR
 --- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
+  M.start_line, M.end_line = u.get_visual_selection_boundaries()
+  M.location = Location.new((M.end_line > M.start_line) and { start_line = M.start_line, end_line = M.end_line } or nil)
   if not M.can_create_comment(true) then
     u.press_escape()
     return
   end
 
-  local suggestion_lines, range_length = build_suggestion()
+  local suggestion_lines = build_suggestion()
 
-  local layout = M.create_comment_layout({ ranged = range_length > 0, unlinked = false })
+  local layout = M.create_comment_layout({ unlinked = false })
   layout:mount()
 
   vim.schedule(function()

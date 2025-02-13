@@ -234,7 +234,6 @@ M.reply = function(tree)
   local comment = require("gitlab.actions.comment")
   local unlinked = tree.bufnr == M.unlinked_bufnr
   local layout = comment.create_comment_layout({
-    ranged = false,
     discussion_id = discussion_id,
     unlinked = unlinked,
     reply = true,
