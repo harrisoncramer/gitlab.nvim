@@ -142,8 +142,8 @@ function Location:get_current_line()
   return current_line
 end
 
--- Given a new_line and old_line from the start of a ranged comment, returns the start
--- range information for the Gitlab payload
+-- Given a modification type, a visual selection range, and the hunk data, sets the start range
+-- information to the location_data for the Gitlab payload
 ---@param visual_range LineRange
 ---@return ReviewerLineInfo|nil
 function Location:set_start_range(visual_range)
@@ -190,8 +190,8 @@ function Location:set_start_range(visual_range)
   }
 end
 
--- Given a modification type, a range, and the hunk data, returns the end range information
--- for the Gitlab payload
+-- Given a modification type, a visual selection range, and the hunk data, sets the end range
+-- information to the location_data for the Gitlab payload
 ---@param visual_range LineRange
 function Location:set_end_range(visual_range)
   local current_file = require("gitlab.reviewer").get_current_file_path()
