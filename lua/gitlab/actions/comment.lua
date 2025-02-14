@@ -353,6 +353,11 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
+  if M.location == nil or M.location.location_data == nil then
+    u.notify("Error getting location information", vim.log.levels.ERROR)
+    return false
+  end
+
   return true
 end
 
