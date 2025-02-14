@@ -222,8 +222,7 @@ end
 --- This function will open a multi-line comment popup in order to create a multi-line comment
 --- on the changed/updated line in the current MR
 M.create_multiline_comment = function()
-  M.start_line, M.end_line = u.get_visual_selection_boundaries()
-  M.location = Location.new({ start_line = M.start_line, end_line = M.end_line })
+  M.location = Location.new()
   if not M.can_create_comment(true) then
     u.press_escape()
     return
@@ -245,9 +244,9 @@ end
 ---@return LineRange|nil
 local build_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local range_length = M.end_line - M.start_line
+  local range_length = M.location.visual_range.end_line - M.location.visual_range.start_line
   local backticks = "```"
-  local selected_lines = u.get_lines(M.start_line, M.end_line)
+  local selected_lines = u.get_lines(M.location.visual_range.start_line, M.location.visual_range.end_line)
 
   for _, line in ipairs(selected_lines) do
     if string.match(line, "^```%S*$") then
@@ -257,9 +256,9 @@ local build_suggestion = function()
   end
 
   local suggestion_start
-  if M.start_line == current_line then
+  if M.location.visual_range.start_line == current_line then
     suggestion_start = backticks .. "suggestion:-0+" .. range_length
-  elseif M.end_line == current_line then
+  elseif M.location.visual_range.end_line == current_line then
     suggestion_start = backticks .. "suggestion:-" .. range_length .. "+0"
   else
     --- This should never happen afaik
@@ -279,8 +278,7 @@ end
 --- on the changed/updated line in the current MR
 --- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
-  M.start_line, M.end_line = u.get_visual_selection_boundaries()
-  M.location = Location.new((M.end_line > M.start_line) and { start_line = M.start_line, end_line = M.end_line } or nil)
+  M.location = Location.new()
   if not M.can_create_comment(true) then
     u.press_escape()
     return
