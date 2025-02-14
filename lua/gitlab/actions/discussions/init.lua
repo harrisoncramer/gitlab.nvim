@@ -237,6 +237,7 @@ M.reply = function(tree)
     discussion_id = discussion_id,
     unlinked = unlinked,
     reply = true,
+    file_name = discussion_node.file_name,
   })
 
   layout:mount()
@@ -270,7 +271,6 @@ end
 
 -- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
-  local edit_popup = Popup(popup.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
@@ -278,6 +278,9 @@ M.edit_comment = function(tree, unlinked)
     u.notify("Could not get root or note node", vim.log.levels.ERROR)
     return
   end
+  local title = "Edit Comment"
+  title = root_node.file_name ~= nil and string.format("%s [%s]", title, root_node.file_name) or title
+  local edit_popup = Popup(popup.create_popup_state(title, state.settings.popup.edit))
 
   popup.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 

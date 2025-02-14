@@ -137,6 +137,7 @@ end
 ---@field unlinked boolean
 ---@field discussion_id string|nil
 ---@field reply boolean|nil
+---@field file_name string|nil
 
 ---This function sets up the layout and popups needed to create a comment, note and
 ---multi-line comment. It also sets up the basic keybindings for switching between
@@ -148,13 +149,16 @@ M.create_comment_layout = function(opts)
   local title
   local user_settings
   if opts.discussion_id ~= nil then
-    title = "Reply"
+    title = "Reply" .. (opts.file_name and string.format(" [%s]", opts.file_name) or "")
     user_settings = popup_settings.reply
   elseif opts.unlinked then
     title = "Note"
     user_settings = popup_settings.note
   else
-    title = "Comment"
+    -- TODO: investigate why `old_file_name` is in fact the new name for renamed files!
+    local file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
+      or M.location.reviewer_data.file_name
+    title = string.format("Comment [%s]", file_name)
     user_settings = popup_settings.comment
   end
   local settings = u.merge(popup_settings, user_settings or {})
