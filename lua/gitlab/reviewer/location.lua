@@ -48,7 +48,7 @@ function Location:build_location_data()
   self.visual_range = { start_line = start_line, end_line = end_line }
 
   ---@type LocationData
-  local location_data = {
+  self.location_data = {
     old_line = nil,
     new_line = nil,
     line_range = nil,
@@ -58,19 +58,18 @@ function Location:build_location_data()
   -- Comment on deleted line: Include only old_line in payload.
   -- The line was not found in any hunks, send both lines.
   if reviewer_data.modification_type == "added" then
-    location_data.old_line = nil
-    location_data.new_line = reviewer_data.new_line_from_buf
+    self.location_data.old_line = nil
+    self.location_data.new_line = reviewer_data.new_line_from_buf
   elseif reviewer_data.modification_type == "deleted" then
-    location_data.old_line = reviewer_data.old_line_from_buf
-    location_data.new_line = nil
+    self.location_data.old_line = reviewer_data.old_line_from_buf
+    self.location_data.new_line = nil
   elseif
     reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
   then
-    location_data.old_line = reviewer_data.old_line_from_buf
-    location_data.new_line = reviewer_data.new_line_from_buf
+    self.location_data.old_line = reviewer_data.old_line_from_buf
+    self.location_data.new_line = reviewer_data.new_line_from_buf
   end
 
-  self.location_data = location_data
   if end_line > start_line then
     self.location_data.line_range = {
       start = {},
