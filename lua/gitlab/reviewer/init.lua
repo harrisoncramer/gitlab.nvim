@@ -195,6 +195,8 @@ M.get_reviewer_data = function()
   local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
   return {
+    -- TODO: swap 'a' and 'b' to fix lua/gitlab/actions/comment.lua:158, and hopefully also
+    -- lua/gitlab/indicators/diagnostics.lua:129.
     file_name = layout.a.file.path,
     old_file_name = M.is_file_renamed() and layout.b.file.path or "",
     old_line_from_buf = old_line,
