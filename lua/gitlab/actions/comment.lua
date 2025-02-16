@@ -15,7 +15,6 @@ local reviewer = require("gitlab.reviewer")
 local Location = require("gitlab.reviewer.location")
 
 local M = {
-  current_win = nil,
   start_line = nil,
   end_line = nil,
   draft_popup = nil,
@@ -163,7 +162,7 @@ M.create_comment_layout = function(opts)
   end
   local settings = u.merge(popup_settings, user_settings or {})
 
-  M.current_win = vim.api.nvim_get_current_win()
+  local current_win = vim.api.nvim_get_current_win()
   M.comment_popup = Popup(popup.create_popup_state(title, settings))
   M.draft_popup = Popup(popup.create_box_popup_state("Draft", false, settings))
 
@@ -182,7 +181,7 @@ M.create_comment_layout = function(opts)
   }, internal_layout)
 
   popup.set_cycle_popups_keymaps({ M.comment_popup, M.draft_popup })
-  popup.set_up_autocommands(M.comment_popup, layout, M.current_win)
+  popup.set_up_autocommands(M.comment_popup, layout, current_win)
 
   local unlinked = opts.unlinked or false
 
@@ -190,13 +189,13 @@ M.create_comment_layout = function(opts)
   popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
     confirm_create_comment(text, unlinked, opts.discussion_id)
-    vim.api.nvim_set_current_win(M.current_win)
+    vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
   popup.set_popup_keymaps(M.comment_popup, function(text)
     confirm_create_comment(text, unlinked, opts.discussion_id)
-    vim.api.nvim_set_current_win(M.current_win)
+    vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.attach_file, popup.editable_popup_opts)
 
   vim.schedule(function()

@@ -8,6 +8,7 @@ local state = require("gitlab.state")
 ---@field run function
 ---@field build_location_data function
 ---@field visual_range table
+---@field current_win integer
 
 ---@class ReviewerLineInfo
 ---@field old_line integer|nil
@@ -24,7 +25,8 @@ Location.__index = Location
 ---reviewer data.
 ---@return Location | nil
 function Location.new()
-  local reviewer_data = require("gitlab.reviewer").get_reviewer_data()
+  local current_win = vim.api.nvim_get_current_win()
+  local reviewer_data = require("gitlab.reviewer").get_reviewer_data(current_win)
   if reviewer_data == nil then
     return nil
   end
@@ -96,9 +98,7 @@ end
 ---@param line number
 ---@return number|nil
 function Location:get_line_number_from_new_sha(line)
-  local reviewer = require("gitlab.reviewer")
-  local new_sha_focused = reviewer.is_new_sha_focused()
-  if new_sha_focused then
+  if self.reviewer_data.new_sha_focused then
     return line
   end
   -- Otherwise we want to get the matching line in the opposite buffer
@@ -117,9 +117,7 @@ end
 ---@param line number
 ---@return number|nil
 function Location:get_line_number_from_old_sha(line)
-  local reviewer = require("gitlab.reviewer")
-  local new_sha_focused = reviewer.is_new_sha_focused()
-  if not new_sha_focused then
+  if not self.reviewer_data.new_sha_focused then
     return line
   end
 
@@ -137,8 +135,7 @@ end
 -- the reviewer is focused in.
 ---@return number|nil
 function Location:get_current_line()
-  local reviewer = require("gitlab.reviewer")
-  local win_id = reviewer.is_new_sha_focused() and self.reviewer_data.new_sha_win_id
+  local win_id = self.reviewer_data.new_sha_focused and self.reviewer_data.new_sha_win_id
     or self.reviewer_data.old_sha_win_id
   if win_id == nil then
     return
@@ -157,9 +154,7 @@ function Location:set_start_range()
     return
   end
 
-  local reviewer = require("gitlab.reviewer")
-  local new_sha_focused = reviewer.is_new_sha_focused()
-  local win_id = new_sha_focused and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
+  local win_id = self.reviewer_data.new_sha_focused and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
   if win_id == nil then
     u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
     return
@@ -181,7 +176,7 @@ function Location:set_start_range()
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, self.reviewer_data.new_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
     return
@@ -220,9 +215,7 @@ function Location:set_end_range()
     return
   end
 
-  local reviewer = require("gitlab.reviewer")
-  local new_sha_focused = reviewer.is_new_sha_focused()
-  local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, self.reviewer_data.new_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
     return

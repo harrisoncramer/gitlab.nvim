@@ -125,6 +125,8 @@
 ---@field opposite_bufnr integer
 ---@field new_line_from_buf integer
 ---@field old_line_from_buf integer
+---@field new_sha_focused boolean
+---@field current_win_id integer
 
 ---@class LocationData
 ---@field old_line integer | nil

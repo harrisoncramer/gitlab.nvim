@@ -153,8 +153,9 @@ end
 
 ---Get the data from diffview, such as line information and file name. May be used by
 ---other modules such as the comment module to create line codes or set diagnostics
+---@param current_win integer The ID of the currently focused window
 ---@return DiffviewInfo | nil
-M.get_reviewer_data = function()
+M.get_reviewer_data = function(current_win)
   local view = diffview_lib.get_current_view()
   if view == nil then
     return
@@ -177,7 +178,7 @@ M.get_reviewer_data = function()
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
-  local new_sha_focused = M.is_new_sha_focused()
+  local new_sha_focused = M.is_new_sha_focused(current_win)
 
   local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
   if modification_type == nil then
@@ -206,17 +207,19 @@ M.get_reviewer_data = function()
     current_bufnr = current_bufnr,
     old_sha_win_id = old_sha_win_id,
     opposite_bufnr = opposite_bufnr,
+    new_sha_focused = new_sha_focused,
+    current_win_id = current_win,
   }
 end
 
 ---Return whether user is focused on the new version of the file
+---@param current_win integer The ID of the currently focused window
 ---@return boolean
-M.is_new_sha_focused = function()
+M.is_new_sha_focused = function(current_win)
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local current_win = require("gitlab.actions.comment").current_win
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil
