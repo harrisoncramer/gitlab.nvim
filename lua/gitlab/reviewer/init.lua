@@ -177,9 +177,9 @@ M.get_reviewer_data = function()
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
-  local is_current_sha_focused = M.is_current_sha_focused()
+  local new_sha_focused = M.is_new_sha_focused()
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type", vim.log.levels.ERROR)
     return
@@ -189,8 +189,8 @@ M.get_reviewer_data = function()
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  local current_bufnr = is_current_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
-  local opposite_bufnr = is_current_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
+  local current_bufnr = new_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
+  local opposite_bufnr = new_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
   local old_sha_win_id = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
@@ -211,7 +211,7 @@ end
 
 ---Return whether user is focused on the new version of the file
 ---@return boolean
-M.is_current_sha_focused = function()
+M.is_new_sha_focused = function()
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
