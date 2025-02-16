@@ -192,8 +192,6 @@ M.get_reviewer_data = function(current_win)
 
   local current_bufnr = new_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
   local opposite_bufnr = new_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
-  local old_sha_win_id = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
   return {
     -- TODO: swap 'a' and 'b' to fix lua/gitlab/actions/comment.lua:158, and hopefully also
@@ -203,9 +201,7 @@ M.get_reviewer_data = function(current_win)
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
-    new_sha_win_id = new_sha_win_id,
     current_bufnr = current_bufnr,
-    old_sha_win_id = old_sha_win_id,
     opposite_bufnr = opposite_bufnr,
     new_sha_focused = new_sha_focused,
     current_win_id = current_win,

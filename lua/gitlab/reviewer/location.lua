@@ -135,8 +135,7 @@ end
 -- the reviewer is focused in.
 ---@return number|nil
 function Location:get_current_line()
-  local win_id = self.reviewer_data.new_sha_focused and self.reviewer_data.new_sha_win_id
-    or self.reviewer_data.old_sha_win_id
+  local win_id = self.reviewer_data.current_win_id
   if win_id == nil then
     return
   end
@@ -154,7 +153,7 @@ function Location:set_start_range()
     return
   end
 
-  local win_id = self.reviewer_data.new_sha_focused and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
+  local win_id = self.reviewer_data.current_win_id
   if win_id == nil then
     u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
     return
