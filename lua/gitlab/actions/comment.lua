@@ -156,7 +156,7 @@ M.create_comment_layout = function(opts)
     -- TODO: investigate why `old_file_name` is in fact the new name for renamed files!
     local file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
       or M.location.reviewer_data.file_name
-    title = string.format("Comment [%s]", file_name)
+    title = popup.create_title("Comment", file_name, M.location.visual_range.start_line, M.location.visual_range.end_line)
     user_settings = popup_settings.comment
   end
   local settings = u.merge(popup_settings, user_settings or {})
