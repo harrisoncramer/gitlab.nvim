@@ -8,7 +8,6 @@ local state = require("gitlab.state")
 ---@field run function
 ---@field build_location_data function
 ---@field visual_range table
----@field current_win integer
 
 ---@class ReviewerLineInfo
 ---@field old_line integer|nil

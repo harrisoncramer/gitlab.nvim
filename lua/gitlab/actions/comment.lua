@@ -132,7 +132,6 @@ M.confirm_edit_comment = function(discussion_id, note_id, unlinked)
 end
 
 ---@class LayoutOpts
----@field ranged boolean
 ---@field unlinked boolean
 ---@field discussion_id string|nil
 ---@field reply boolean|nil
