@@ -230,9 +230,9 @@ end
 ---This is in order to build the payload for Gitlab correctly by setting the old line and new line.
 ---@param old_line number|nil
 ---@param new_line number|nil
----@param is_current_sha_focused boolean
+---@param new_sha_focused boolean
 ---@return string|nil
-function M.get_modification_type(old_line, new_line, is_current_sha_focused)
+function M.get_modification_type(old_line, new_line, new_sha_focused)
   local hunk_and_diff_data = parse_hunks_and_diff(state.INFO.diff_refs.base_sha)
   if hunk_and_diff_data.hunks == nil then
     return
@@ -240,7 +240,7 @@ function M.get_modification_type(old_line, new_line, is_current_sha_focused)
 
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
-  return is_current_sha_focused and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
+  return new_sha_focused and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
     or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
 end
 

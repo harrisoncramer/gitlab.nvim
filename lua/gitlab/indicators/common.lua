@@ -12,7 +12,6 @@ local M = {}
 
 ---Return true if discussion has a placeable diagnostic, false otherwise.
 ---@param note NoteWithValues
----@param file string
 ---@return boolean
 local filter_discussions_and_notes = function(note)
   ---Do not include unlinked notes
