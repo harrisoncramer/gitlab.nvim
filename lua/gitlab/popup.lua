@@ -237,7 +237,7 @@ M.set_cycle_popups_keymaps = function(popups)
 end
 
 ---Create the title for the comment popup.
----@param title string The main title, e.g., "Comment". 
+---@param title string The main title, e.g., "Comment".
 ---@param file_name string Name of file for which comment is created.
 ---@param start_line integer Start of the line range.
 ---@param end_line integer End of the line range.
