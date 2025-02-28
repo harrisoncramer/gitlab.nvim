@@ -6,11 +6,9 @@ local M = {}
 ---@param command table
 ---@return string|nil, string|nil
 local run_system = function(command)
-  -- Load here to prevent loop
-  local u = require("gitlab.utils")
   local result = vim.fn.trim(vim.fn.system(command))
   if vim.v.shell_error ~= 0 then
-    u.notify(result, vim.log.levels.ERROR)
+    require("gitlab.utils").notify(result, vim.log.levels.ERROR)
     return nil, result
   end
   return result, nil
