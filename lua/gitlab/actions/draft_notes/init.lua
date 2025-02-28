@@ -4,6 +4,7 @@
 -- under lua/gitlab/actions/discussions/init.lua
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
+local git = require("gitlab.git")
 local job = require("gitlab.job")
 local NuiTree = require("nui.tree")
 local List = require("gitlab.utils.list")
@@ -92,8 +93,13 @@ M.confirm_publish_all_drafts = function()
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
-    local discussions = require("gitlab.actions.discussions")
-    discussions.rebuild_view(false, true)
+    require("gitlab.actions.discussions").rebuild_view(false, true)
+  end, function()
+    require("gitlab.actions.discussions").rebuild_view(false, true)
+    u.notify(
+      "Draft(s) may have been published despite the error. Check the discussion tree. Try publishing drafts individually.",
+      vim.log.levels.WARN
+    )
   end)
 end
 
