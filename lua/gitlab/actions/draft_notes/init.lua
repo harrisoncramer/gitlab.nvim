@@ -85,6 +85,9 @@ end
 
 ---Publishes all draft notes and comments. Re-renders all discussion views.
 M.confirm_publish_all_drafts = function()
+  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
+    return
+  end
   local body = { publish_all = true }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
