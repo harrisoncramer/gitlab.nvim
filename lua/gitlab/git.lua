@@ -58,12 +58,29 @@ M.get_remote_branch = function()
   return run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
 end
 
+---Fetch the remote branch
+---@param remote_branch string The name of the repo and branch to fetch (e.g., "origin/some_branch")
+---@return boolean fetch_successfull False if an error occurred while fetching, true otherwise.
+M.fetch_remote_branch = function(remote_branch)
+  local remote, branch = string.match(remote_branch, "([^/]+)/(.*)")
+  local _, fetch_err = run_system({ "git", "fetch", remote, branch })
+  if fetch_err ~= nil then
+    require("gitlab.utils").notify("Error fetching remote-tracking branch: " .. fetch_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
 ---Determines whether the tracking branch is ahead of or behind the current branch, and warns the user if so
 ---@param current_branch string
 ---@param remote_branch string
 ---@param log_level number
 ---@return boolean
 M.get_ahead_behind = function(current_branch, remote_branch, log_level)
+  if not M.fetch_remote_branch(remote_branch) then
+    return false
+  end
+
   local u = require("gitlab.utils")
   local result, err =
     run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
