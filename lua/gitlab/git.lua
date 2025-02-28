@@ -52,10 +52,15 @@ M.switch_branch = function(branch)
   return run_system({ "git", "checkout", "-q", branch })
 end
 
----Fetches the name of the remote tracking branch for the current branch
----@return string|nil, string|nil
+---Returns the name of the remote-tracking branch for the current branch or nil if it can't be found
+---@return string|nil
 M.get_remote_branch = function()
-  return run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
+  local remote_branch, err = run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
+  if err or not remote_branch then
+    require("gitlab.utils").notify("Could not get remote branch: " .. err, vim.log.levels.ERROR)
+    return nil
+  end
+  return remote_branch
 end
 
 ---Fetch the remote branch
@@ -180,17 +185,13 @@ end
 ---@param log_level integer
 ---@return boolean
 M.check_current_branch_up_to_date_on_remote = function(log_level)
-  local u = require("gitlab.utils")
-
   local current_branch = M.get_current_branch()
   if current_branch == nil then
     return false
   end
 
-  -- Get remote tracking branch
-  local remote_branch, err_remote_branch = M.get_remote_branch()
-  if err_remote_branch or not remote_branch then
-    u.notify("Could not get remote branch: " .. err_remote_branch, vim.log.levels.ERROR)
+  local remote_branch = M.get_remote_branch()
+  if remote_branch == nil then
     return false
   end
 
