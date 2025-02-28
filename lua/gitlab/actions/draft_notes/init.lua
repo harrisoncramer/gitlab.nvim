@@ -108,6 +108,9 @@ end
 ---and re-render it.
 ---@param tree NuiTree
 M.confirm_publish_draft = function(tree)
+  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
+    return
+  end
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
@@ -120,12 +123,13 @@ M.confirm_publish_draft = function(tree)
   ---@type integer
   local note_id = note_node.is_root and root_node.id or note_node.id
   local body = { note = note_id }
+  local unlinked = tree.bufnr == require("gitlab.actions.discussions").unlinked_bufnr
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-
-    local discussions = require("gitlab.actions.discussions")
-    local unlinked = tree.bufnr == discussions.unlinked_bufnr
     M.rebuild_view(unlinked)
+  end, function()
+    M.rebuild_view(unlinked)
+    u.notify("Draft may have been published despite the error. Check the discussion tree.", vim.log.levels.WARN)
   end)
 end
 
