@@ -121,17 +121,22 @@ M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   return true -- Checks passed, branch is up-to-date
 end
 
----Return the name of the current branch
----@return string|nil, string|nil
+---Return the name of the current branch or nil if it can't be retrieved
+---@return string|nil
 M.get_current_branch = function()
-  return run_system({ "git", "branch", "--show-current" })
+  local current_branch, err = run_system({ "git", "branch", "--show-current" })
+  if err or not current_branch then
+    require("gitlab.utils").notify("Could not get current branch: " .. err, vim.log.levels.ERROR)
+    return nil
+  end
+  return current_branch
 end
 
 ---Return the list of possible merge targets.
 ---@return table|nil
 M.get_all_merge_targets = function()
-  local current_branch, err = M.get_current_branch()
-  if not current_branch or err ~= nil then
+  local current_branch = M.get_current_branch()
+  if current_branch == nil then
     return
   end
   return List.new(M.get_all_remote_branches()):filter(function(branch)
@@ -177,10 +182,8 @@ end
 M.check_current_branch_up_to_date_on_remote = function(log_level)
   local u = require("gitlab.utils")
 
-  -- Get current branch
-  local current_branch, err_current_branch = M.get_current_branch()
-  if err_current_branch or not current_branch then
-    u.notify("Could not get current branch: " .. err_current_branch, vim.log.levels.ERROR)
+  local current_branch = M.get_current_branch()
+  if current_branch == nil then
     return false
   end
 
