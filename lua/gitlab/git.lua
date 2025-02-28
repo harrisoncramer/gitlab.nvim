@@ -56,7 +56,7 @@ end
 ---@return string|nil
 M.get_remote_branch = function()
   local remote_branch, err = run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
-  if err or not remote_branch then
+  if err or remote_branch == "" then
     require("gitlab.utils").notify("Could not get remote branch: " .. err, vim.log.levels.ERROR)
     return nil
   end
@@ -130,7 +130,7 @@ end
 ---@return string|nil
 M.get_current_branch = function()
   local current_branch, err = run_system({ "git", "branch", "--show-current" })
-  if err or not current_branch then
+  if err or current_branch == "" then
     require("gitlab.utils").notify("Could not get current branch: " .. err, vim.log.levels.ERROR)
     return nil
   end
