@@ -587,19 +587,20 @@ end
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
-    M.notify("Code suggestions and multiline comments are only available in visual mode", vim.log.levels.WARN)
+    M.notify("Code suggestions and multiline comments are only available in visual mode", vim.log.levels.ERROR)
     return false
   end
   return true
 end
 
 ---Return start line and end line of visual selection.
----Exists visual mode in order to access marks "<" , ">"
 ---@return integer start,integer end Start line and end line
 M.get_visual_selection_boundaries = function()
-  M.press_escape()
-  local start_line = vim.api.nvim_buf_get_mark(0, "<")[1]
-  local end_line = vim.api.nvim_buf_get_mark(0, ">")[1]
+  local start_line = vim.fn.line("v")
+  local end_line = vim.fn.line(".")
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
+  end
   return start_line, end_line
 end
 

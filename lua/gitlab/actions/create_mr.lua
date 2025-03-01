@@ -215,7 +215,7 @@ M.open_confirmation_popup = function(mr)
     return
   end
 
-  local layout, title_popup, description_popup, target_popup, delete_branch_popup, squash_popup, forked_project_id_popup =
+  local layout, title_popup, description_popup, target_popup, source_popup, delete_branch_popup, squash_popup, forked_project_id_popup =
     M.create_layout()
 
   local popups = {
@@ -224,6 +224,7 @@ M.open_confirmation_popup = function(mr)
     delete_branch_popup,
     squash_popup,
     target_popup,
+    source_popup,
   }
 
   if state.settings.create_mr.fork.enabled then
@@ -261,6 +262,7 @@ M.open_confirmation_popup = function(mr)
     vim.api.nvim_buf_set_lines(M.description_bufnr, 0, -1, false, description_lines)
     vim.api.nvim_buf_set_lines(M.title_bufnr, 0, -1, false, { mr.title })
     vim.api.nvim_buf_set_lines(M.target_bufnr, 0, -1, false, { mr.target })
+    vim.api.nvim_buf_set_lines(M.source_bufnr, 0, -1, false, { require("gitlab.git").get_current_branch() })
     vim.api.nvim_buf_set_lines(M.delete_branch_bufnr, 0, -1, false, { u.bool_to_string(delete_branch) })
     vim.api.nvim_buf_set_lines(M.squash_bufnr, 0, -1, false, { u.bool_to_string(squash) })
     if state.settings.create_mr.fork.enabled then
@@ -281,6 +283,7 @@ M.open_confirmation_popup = function(mr)
     popup.set_popup_keymaps(description_popup, M.create_mr, miscellaneous.attach_file, popup_opts)
     popup.set_popup_keymaps(title_popup, M.create_mr, nil, popup_opts)
     popup.set_popup_keymaps(target_popup, M.create_mr, M.select_new_target, popup_opts)
+    popup.set_popup_keymaps(source_popup, M.create_mr, nil, popup_opts)
     popup.set_popup_keymaps(delete_branch_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     popup.set_popup_keymaps(squash_popup, M.create_mr, miscellaneous.toggle_bool, popup_opts)
     popup.set_popup_keymaps(forked_project_id_popup, M.create_mr, nil, popup_opts)
@@ -336,6 +339,8 @@ M.create_layout = function()
   M.description_bufnr = description_popup.bufnr
   local target_branch_popup = Popup(popup.create_box_popup_state("Target branch", false, settings))
   M.target_bufnr = target_branch_popup.bufnr
+  local source_branch_popup = Popup(popup.create_box_popup_state("Source branch", false, settings))
+  M.source_bufnr = source_branch_popup.bufnr
   local delete_title = vim.o.columns > 110 and "Delete source branch" or "Delete source"
   local delete_branch_popup = Popup(popup.create_box_popup_state(delete_title, false, settings))
   M.delete_branch_bufnr = delete_branch_popup.bufnr
@@ -352,6 +357,7 @@ M.create_layout = function()
   table.insert(boxes, Layout.Box(delete_branch_popup, { size = { width = #delete_title + 4 } }))
   table.insert(boxes, Layout.Box(squash_popup, { size = { width = #squash_title + 4 } }))
   table.insert(boxes, Layout.Box(target_branch_popup, { grow = 1 }))
+  table.insert(boxes, Layout.Box(source_branch_popup, { grow = 1 }))
 
   local internal_layout = Layout.Box({
     Layout.Box({
@@ -378,6 +384,7 @@ M.create_layout = function()
     title_popup,
     description_popup,
     target_branch_popup,
+    source_branch_popup,
     delete_branch_popup,
     squash_popup,
     forked_project_id_popup

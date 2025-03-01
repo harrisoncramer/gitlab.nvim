@@ -120,7 +120,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       settings.popup.temp_registers = temp_registers
     end, {
       buffer = popup.bufnr,
-      desc = "Quit discarding changes",
+      desc = "Quit, discarding changes",
       nowait = settings.keymaps.popup.discard_changes_nowait,
     })
   end
@@ -234,6 +234,18 @@ M.set_cycle_popups_keymaps = function(popups)
       end, { desc = "Go to previous field (accepts count)", nowait = keymaps.popup.prev_field_nowait })
     end
   end
+end
+
+---Create the title for the comment popup.
+---@param title string The main title, e.g., "Comment".
+---@param file_name string Name of file for which comment is created.
+---@param start_line integer Start of the line range.
+---@param end_line integer End of the line range.
+---@return string title The full title of the popup.
+M.create_title = function(title, file_name, start_line, end_line)
+  local range = start_line < end_line and string.format("-%s", end_line) or ""
+  local position = string.format("%s%s", start_line, range)
+  return string.format("%s [%s:%s]", title, file_name, position)
 end
 
 return M

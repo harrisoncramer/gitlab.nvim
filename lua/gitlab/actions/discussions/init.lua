@@ -15,7 +15,6 @@ local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
-local diffview_lib = require("diffview.lib")
 local signs = require("gitlab.indicators.signs")
 local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
@@ -74,37 +73,25 @@ end
 M.initialize_discussions = function()
   state.discussion_tree.last_updated = os.time()
   signs.setup_signs()
-  reviewer.set_callback_for_file_changed(function()
-    M.refresh_diagnostics()
-    M.modifiable(false)
-    reviewer.set_reviewer_keymaps()
+  reviewer.set_callback_for_file_changed(function(args)
+    diagnostics.place_diagnostics(args.buf)
+    reviewer.update_winid_for_buffer(args.buf)
   end)
   reviewer.set_callback_for_reviewer_enter(function()
-    M.modifiable(false)
+    M.refresh_diagnostics()
+  end)
+  reviewer.set_callback_for_buf_read(function(args)
+    vim.api.nvim_buf_set_option(args.buf, "modifiable", false)
+    reviewer.set_keymaps(args.buf)
+    reviewer.set_reviewer_autocommands(args.buf)
   end)
   reviewer.set_callback_for_reviewer_leave(function()
     signs.clear_signs()
     diagnostics.clear_diagnostics()
-    M.modifiable(true)
-    reviewer.del_reviewer_keymaps()
   end)
 end
 
---- Ensures that the both buffers in the reviewer are/not modifiable. Relevant if the user is using
---- the --imply-local setting
-M.modifiable = function(bool)
-  local view = diffview_lib.get_current_view()
-  local a = view.cur_layout.a.file.bufnr
-  local b = view.cur_layout.b.file.bufnr
-  if a ~= nil and vim.api.nvim_buf_is_loaded(a) then
-    vim.api.nvim_buf_set_option(a, "modifiable", bool)
-  end
-  if b ~= nil and vim.api.nvim_buf_is_loaded(b) then
-    vim.api.nvim_buf_set_option(b, "modifiable", bool)
-  end
-end
-
---- Take existing data and refresh the diagnostics, the winbar, and the signs
+--- Take existing data and refresh the diagnostics and the signs
 M.refresh_diagnostics = function()
   if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
@@ -115,7 +102,9 @@ end
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
-M.open = function(callback)
+---@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed).
+M.open = function(callback, view_type)
+  view_type = view_type and view_type or state.settings.discussion_tree.default_view
   state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
   state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
   state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
@@ -136,7 +125,7 @@ M.open = function(callback)
 
   -- Initialize winbar module with data from buffers
   winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr)
-  winbar.switch_view_type(state.settings.discussion_tree.default_view)
+  winbar.switch_view_type(view_type)
 
   local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
   vim.api.nvim_set_current_win(M.split.winid)
@@ -146,7 +135,7 @@ M.open = function(callback)
   M.rebuild_unlinked_discussion_tree()
 
   -- Set default buffer
-  local default_buffer = winbar.bufnr_map[state.settings.discussion_tree.default_view]
+  local default_buffer = winbar.bufnr_map[view_type]
   vim.api.nvim_set_current_buf(default_buffer)
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
 
@@ -192,12 +181,13 @@ M.move_to_discussion_tree = function()
         discussion_node:expand()
       end
       M.discussion_tree:render()
-      vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
       vim.api.nvim_set_current_win(M.split.winid)
+      winbar.switch_view_type("discussions")
+      vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
     end
 
     if not M.split_visible then
-      M.toggle(jump_after_tree_opened)
+      M.open(jump_after_tree_opened, "discussions")
     else
       jump_after_tree_opened()
     end
@@ -247,10 +237,10 @@ M.reply = function(tree)
   local comment = require("gitlab.actions.comment")
   local unlinked = tree.bufnr == M.unlinked_bufnr
   local layout = comment.create_comment_layout({
-    ranged = false,
     discussion_id = discussion_id,
     unlinked = unlinked,
     reply = true,
+    file_name = discussion_node.file_name,
   })
 
   layout:mount()
@@ -284,7 +274,6 @@ end
 
 -- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
 M.edit_comment = function(tree, unlinked)
-  local edit_popup = Popup(popup.create_popup_state("Edit Comment", state.settings.popup.edit))
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
@@ -292,6 +281,9 @@ M.edit_comment = function(tree, unlinked)
     u.notify("Could not get root or note node", vim.log.levels.ERROR)
     return
   end
+  local title = "Edit Comment"
+  title = root_node.file_name ~= nil and string.format("%s [%s]", title, root_node.file_name) or title
+  local edit_popup = Popup(popup.create_popup_state(title, state.settings.popup.edit))
 
   popup.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 
@@ -587,7 +579,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     if keymaps.discussion_tree.jump_to_reviewer then
       vim.keymap.set("n", keymaps.discussion_tree.jump_to_reviewer, function()
         if M.is_current_node_note(tree) then
-          common.jump_to_reviewer(tree, M.refresh_diagnostics)
+          common.jump_to_reviewer(tree)
         end
       end, { buffer = bufnr, desc = "Jump to reviewer", nowait = keymaps.discussion_tree.jump_to_reviewer_nowait })
     end
@@ -754,6 +746,16 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       buffer = bufnr,
       desc = "Copy the URL of the current node to clipboard",
       nowait = keymaps.discussion_tree.copy_node_url_nowait,
+    })
+  end
+
+  if keymaps.discussion_tree.print_node then
+    vim.keymap.set("n", keymaps.discussion_tree.print_node, function()
+      common.print_node(tree)
+    end, {
+      buffer = bufnr,
+      desc = "Print current node (for debugging)",
+      nowait = keymaps.discussion_tree.print_node_nowait,
     })
   end
 
