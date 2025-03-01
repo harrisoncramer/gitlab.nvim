@@ -301,7 +301,7 @@ M.jump_to_file = function(tree)
   end
   vim.cmd.tabnew()
   local line_number = get_new_line(root_node) or get_old_line(root_node)
-  if line_number == nil then
+  if line_number == nil or line_number == 0 then
     line_number = 1
   end
   local bufnr = vim.fn.bufnr(root_node.file_name)
