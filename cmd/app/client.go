@@ -68,8 +68,8 @@ func NewClient() (*Client, error) {
 
 	retryClient := retryablehttp.NewClient()
 	retryClient.HTTPClient.Transport = tr
-	retryClient.RetryMax = 0
 	gitlabOptions = append(gitlabOptions, gitlab.WithHTTPClient(retryClient.HTTPClient))
+	gitlabOptions = append(gitlabOptions, gitlab.WithoutRetries())
 
 	client, err := gitlab.NewClient(pluginOptions.AuthToken, gitlabOptions...)
 
