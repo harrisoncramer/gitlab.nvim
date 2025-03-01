@@ -7,7 +7,7 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local M = {
-  pipeline_jobs = nil,
+  pipeline_jobs = {},
   latest_pipeline = nil,
   pipeline_popup = nil,
 }
@@ -56,7 +56,12 @@ M.open = function()
   for idx, pipeline in ipairs(M.latest_pipelines) do
     local width = string.len(pipeline.web_url) + 10
     max_width = math.max(max_width, width)
+
     local pipeline_jobs = get_pipeline_jobs(idx)
+    for _, j in ipairs(pipeline_jobs) do
+      table.insert(M.pipeline_jobs, j)
+    end
+
     local pipeline_status = M.get_pipeline_status(idx, false)
     local height = 6 + #pipeline_jobs + 3
     total_height = total_height + height
@@ -151,19 +156,32 @@ M.open = function()
     u.switch_can_edit_buf(bufnr, false)
   end)
 end
+
 M.retrigger = function()
-  M.latest_pipeline = get_latest_pipelines()
-  if not M.latest_pipeline then
-    return
-  end
-  if M.latest_pipeline.status ~= "failed" then
-    u.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
+  local pipelines = get_latest_pipelines()
+  if not pipelines then
     return
   end
 
-  job.run_job("/pipeline/" .. M.latest_pipeline.id, "POST", nil, function()
-    u.notify("Pipeline re-triggered!", vim.log.levels.INFO)
-  end)
+  local failed_pipelines = {}
+
+  for idx, pipeline in ipairs(pipelines) do
+    local pipeline_jobs = get_pipeline_jobs(idx)
+    for _, pjob in ipairs(pipeline_jobs) do
+      if pjob.status == "failed" then
+        if pipeline.status ~= "failed" then
+          u.notify("Pipeline is not in a failed state!", vim.log.levels.WARN)
+          return
+        end
+        if not failed_pipelines[pipeline.id] then
+          job.run_job("/pipeline/trigger/" .. pipeline.id, "POST", nil, function()
+            u.notify("Pipeline " .. pipeline.id .. " re-triggered!", vim.log.levels.INFO)
+          end)
+          failed_pipelines[pipeline.id] = true
+        end
+      end
+    end
+  end
 end
 
 M.see_logs = function()
