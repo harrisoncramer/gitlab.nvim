@@ -200,8 +200,18 @@ M.get_reviewer_data = function(current_win)
   local opposite_bufnr = new_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
 
   return {
+<<<<<<< HEAD
     old_file_name = M.is_file_renamed() and layout.a.file.path or "",
     file_name = layout.b.file.path,
+||||||| parent of f57cc84 (Fix: Store reviewer data before creating comment popup (#476))
+    old_file_name = layout.a.file.path,
+    file_name = layout.b.file.path,
+=======
+    -- TODO: swap 'a' and 'b' to fix lua/gitlab/actions/comment.lua:158, and hopefully also
+    -- lua/gitlab/indicators/diagnostics.lua:129.
+    file_name = layout.a.file.path,
+    old_file_name = M.is_file_renamed() and layout.b.file.path or "",
+>>>>>>> f57cc84 (Fix: Store reviewer data before creating comment popup (#476))
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
