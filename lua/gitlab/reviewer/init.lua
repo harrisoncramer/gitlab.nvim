@@ -105,10 +105,11 @@ M.close = function()
 end
 
 --- Jumps to the location provided in the reviewer window
----@param file_name string
----@param line_number number
----@param new_buffer boolean
-M.jump = function(file_name, line_number, new_buffer)
+---@param file_name string The file name after change.
+---@param old_file_name string The file name before change (different from file_name for renamed/moved files).
+---@param line_number number Line number from the discussion node.
+---@param new_buffer boolean If true, jump to the NEW SHA.
+M.jump = function(file_name, old_file_name, line_number, new_buffer)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
@@ -122,7 +123,7 @@ M.jump = function(file_name, line_number, new_buffer)
 
   local files = view.panel:ordered_file_list()
   local file = List.new(files):find(function(file)
-    return file.path == file_name
+    return file.path == file_name or file.oldpath == old_file_name
   end)
   if file == nil then
     u.notify(

@@ -277,7 +277,7 @@ M.jump_to_reviewer = function(tree)
     u.notify("Could not get line number", vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(root_node.file_name, line_number, is_new_sha)
+  reviewer.jump(root_node.file_name, root_node.old_file_name, line_number, is_new_sha)
 end
 
 -- This function (settings.keymaps.discussion_tree.jump_to_file) will jump to the file changed in a new tab
