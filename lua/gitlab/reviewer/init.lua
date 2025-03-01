@@ -122,8 +122,8 @@ M.jump = function(file_name, old_file_name, line_number, new_buffer)
   end
 
   local files = view.panel:ordered_file_list()
-  local file = List.new(files):find(function(file)
-    return file.path == file_name or file.oldpath == old_file_name
+  local file = List.new(files):find(function(f)
+    return f.path == file_name or f.oldpath == old_file_name
   end)
   if file == nil then
     u.notify(
