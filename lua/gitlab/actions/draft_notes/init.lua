@@ -4,6 +4,7 @@
 -- under lua/gitlab/actions/discussions/init.lua
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
+local git = require("gitlab.git")
 local job = require("gitlab.job")
 local NuiTree = require("nui.tree")
 local List = require("gitlab.utils.list")
@@ -85,12 +86,20 @@ end
 
 ---Publishes all draft notes and comments. Re-renders all discussion views.
 M.confirm_publish_all_drafts = function()
+  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
+    return
+  end
   local body = { publish_all = true }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
-    local discussions = require("gitlab.actions.discussions")
-    discussions.rebuild_view(false, true)
+    require("gitlab.actions.discussions").rebuild_view(false, true)
+  end, function()
+    require("gitlab.actions.discussions").rebuild_view(false, true)
+    u.notify(
+      "Draft(s) may have been published despite the error. Check the discussion tree. Try publishing drafts individually.",
+      vim.log.levels.WARN
+    )
   end)
 end
 
@@ -99,6 +108,9 @@ end
 ---and re-render it.
 ---@param tree NuiTree
 M.confirm_publish_draft = function(tree)
+  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
+    return
+  end
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
@@ -111,12 +123,13 @@ M.confirm_publish_draft = function(tree)
   ---@type integer
   local note_id = note_node.is_root and root_node.id or note_node.id
   local body = { note = note_id }
+  local unlinked = tree.bufnr == require("gitlab.actions.discussions").unlinked_bufnr
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
-
-    local discussions = require("gitlab.actions.discussions")
-    local unlinked = tree.bufnr == discussions.unlinked_bufnr
     M.rebuild_view(unlinked)
+  end, function()
+    M.rebuild_view(unlinked)
+    u.notify("Draft may have been published despite the error. Check the discussion tree.", vim.log.levels.WARN)
   end)
 end
 

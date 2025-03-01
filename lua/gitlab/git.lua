@@ -6,11 +6,9 @@ local M = {}
 ---@param command table
 ---@return string|nil, string|nil
 local run_system = function(command)
-  -- Load here to prevent loop
-  local u = require("gitlab.utils")
   local result = vim.fn.trim(vim.fn.system(command))
   if vim.v.shell_error ~= 0 then
-    u.notify(result, vim.log.levels.ERROR)
+    require("gitlab.utils").notify(result, vim.log.levels.ERROR)
     return nil, result
   end
   return result, nil
@@ -52,10 +50,28 @@ M.switch_branch = function(branch)
   return run_system({ "git", "checkout", "-q", branch })
 end
 
----Fetches the name of the remote tracking branch for the current branch
----@return string|nil, string|nil
+---Returns the name of the remote-tracking branch for the current branch or nil if it can't be found
+---@return string|nil
 M.get_remote_branch = function()
-  return run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
+  local remote_branch, err = run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
+  if err or remote_branch == "" then
+    require("gitlab.utils").notify("Could not get remote branch: " .. err, vim.log.levels.ERROR)
+    return nil
+  end
+  return remote_branch
+end
+
+---Fetch the remote branch
+---@param remote_branch string The name of the repo and branch to fetch (e.g., "origin/some_branch")
+---@return boolean fetch_successfull False if an error occurred while fetching, true otherwise.
+M.fetch_remote_branch = function(remote_branch)
+  local remote, branch = string.match(remote_branch, "([^/]+)/(.*)")
+  local _, fetch_err = run_system({ "git", "fetch", remote, branch })
+  if fetch_err ~= nil then
+    require("gitlab.utils").notify("Error fetching remote-tracking branch: " .. fetch_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
 end
 
 ---Determines whether the tracking branch is ahead of or behind the current branch, and warns the user if so
@@ -64,6 +80,10 @@ end
 ---@param log_level number
 ---@return boolean
 M.get_ahead_behind = function(current_branch, remote_branch, log_level)
+  if not M.fetch_remote_branch(remote_branch) then
+    return false
+  end
+
   local u = require("gitlab.utils")
   local result, err =
     run_system({ "git", "rev-list", "--left-right", "--count", current_branch .. "..." .. remote_branch })
@@ -104,17 +124,22 @@ M.get_ahead_behind = function(current_branch, remote_branch, log_level)
   return true -- Checks passed, branch is up-to-date
 end
 
----Return the name of the current branch
----@return string|nil, string|nil
+---Return the name of the current branch or nil if it can't be retrieved
+---@return string|nil
 M.get_current_branch = function()
-  return run_system({ "git", "branch", "--show-current" })
+  local current_branch, err = run_system({ "git", "branch", "--show-current" })
+  if err or current_branch == "" then
+    require("gitlab.utils").notify("Could not get current branch: " .. err, vim.log.levels.ERROR)
+    return nil
+  end
+  return current_branch
 end
 
 ---Return the list of possible merge targets.
 ---@return table|nil
 M.get_all_merge_targets = function()
-  local current_branch, err = M.get_current_branch()
-  if not current_branch or err ~= nil then
+  local current_branch = M.get_current_branch()
+  if current_branch == nil then
     return
   end
   return List.new(M.get_all_remote_branches()):filter(function(branch)
@@ -158,19 +183,13 @@ end
 ---@param log_level integer
 ---@return boolean
 M.check_current_branch_up_to_date_on_remote = function(log_level)
-  local u = require("gitlab.utils")
-
-  -- Get current branch
-  local current_branch, err_current_branch = M.get_current_branch()
-  if err_current_branch or not current_branch then
-    u.notify("Could not get current branch: " .. err_current_branch, vim.log.levels.ERROR)
+  local current_branch = M.get_current_branch()
+  if current_branch == nil then
     return false
   end
 
-  -- Get remote tracking branch
-  local remote_branch, err_remote_branch = M.get_remote_branch()
-  if err_remote_branch or not remote_branch then
-    u.notify("Could not get remote branch: " .. err_remote_branch, vim.log.levels.ERROR)
+  local remote_branch = M.get_remote_branch()
+  if remote_branch == nil then
     return false
   end
 
