@@ -192,8 +192,8 @@ M.get_reviewer_data = function()
   local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
   return {
-    file_name = layout.a.file.path,
-    old_file_name = M.is_file_renamed() and layout.b.file.path or "",
+    old_file_name = layout.a.file.path,
+    file_name = layout.b.file.path,
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
