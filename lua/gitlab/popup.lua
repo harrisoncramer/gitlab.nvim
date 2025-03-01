@@ -120,7 +120,7 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       settings.popup.temp_registers = temp_registers
     end, {
       buffer = popup.bufnr,
-      desc = "Quit discarding changes",
+      desc = "Quit, discarding changes",
       nowait = settings.keymaps.popup.discard_changes_nowait,
     })
   end
