@@ -102,7 +102,9 @@ end
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
 ---@param callback function?
-M.open = function(callback)
+---@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed).
+M.open = function(callback, view_type)
+  view_type = view_type and view_type or state.settings.discussion_tree.default_view
   state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
   state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
   state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
@@ -123,7 +125,7 @@ M.open = function(callback)
 
   -- Initialize winbar module with data from buffers
   winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr)
-  winbar.switch_view_type(state.settings.discussion_tree.default_view)
+  winbar.switch_view_type(view_type)
 
   local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
   vim.api.nvim_set_current_win(M.split.winid)
@@ -133,7 +135,7 @@ M.open = function(callback)
   M.rebuild_unlinked_discussion_tree()
 
   -- Set default buffer
-  local default_buffer = winbar.bufnr_map[state.settings.discussion_tree.default_view]
+  local default_buffer = winbar.bufnr_map[view_type]
   vim.api.nvim_set_current_buf(default_buffer)
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
 
@@ -179,12 +181,13 @@ M.move_to_discussion_tree = function()
         discussion_node:expand()
       end
       M.discussion_tree:render()
-      vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
       vim.api.nvim_set_current_win(M.split.winid)
+      winbar.switch_view_type("discussions")
+      vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
     end
 
     if not M.split_visible then
-      M.toggle(jump_after_tree_opened)
+      M.open(jump_after_tree_opened, "discussions")
     else
       jump_after_tree_opened()
     end

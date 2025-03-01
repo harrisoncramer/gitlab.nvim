@@ -254,9 +254,8 @@ M.get_mode = function()
   end
 end
 
----Sets the current view type (if provided an argument)
----and then updates the view
----@param override any
+---Toggles the current view type (or sets it to `override`) and then updates the view.
+---@param override "discussions"|"notes" Defines the view type to select.
 M.switch_view_type = function(override)
   if override then
     M.current_view_type = override
