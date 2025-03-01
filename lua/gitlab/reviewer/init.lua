@@ -154,9 +154,13 @@ end
 
 ---Get the data from diffview, such as line information and file name. May be used by
 ---other modules such as the comment module to create line codes or set diagnostics
+---@param current_win integer The ID of the currently focused window
 ---@return DiffviewInfo | nil
-M.get_reviewer_data = function()
+M.get_reviewer_data = function(current_win)
   local view = diffview_lib.get_current_view()
+  if view == nil then
+    return
+  end
   local layout = view.cur_layout
   local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
@@ -175,9 +179,9 @@ M.get_reviewer_data = function()
   local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
   local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
 
-  local is_current_sha_focused = M.is_current_sha_focused()
+  local new_sha_focused = M.is_new_sha_focused(current_win)
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type", vim.log.levels.ERROR)
     return
@@ -187,32 +191,32 @@ M.get_reviewer_data = function()
     u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
   end
 
-  local current_bufnr = is_current_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
-  local opposite_bufnr = is_current_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
-  local old_sha_win_id = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local current_bufnr = new_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
+  local opposite_bufnr = new_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
 
   return {
-    old_file_name = layout.a.file.path,
-    file_name = layout.b.file.path,
+    -- TODO: swap 'a' and 'b' to fix lua/gitlab/actions/comment.lua:158, and hopefully also
+    -- lua/gitlab/indicators/diagnostics.lua:129.
+    file_name = layout.a.file.path,
+    old_file_name = M.is_file_renamed() and layout.b.file.path or "",
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
-    new_sha_win_id = new_sha_win_id,
     current_bufnr = current_bufnr,
-    old_sha_win_id = old_sha_win_id,
     opposite_bufnr = opposite_bufnr,
+    new_sha_focused = new_sha_focused,
+    current_win_id = current_win,
   }
 end
 
 ---Return whether user is focused on the new version of the file
+---@param current_win integer The ID of the currently focused window
 ---@return boolean
-M.is_current_sha_focused = function()
+M.is_new_sha_focused = function(current_win)
   local view = diffview_lib.get_current_view()
   local layout = view.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local current_win = require("gitlab.actions.comment").current_win
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil

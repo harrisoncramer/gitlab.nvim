@@ -7,6 +7,7 @@ local state = require("gitlab.state")
 ---@field reviewer_data DiffviewInfo
 ---@field run function
 ---@field build_location_data function
+---@field visual_range table
 
 ---@class ReviewerLineInfo
 ---@field old_line integer|nil
@@ -19,16 +20,21 @@ local state = require("gitlab.state")
 
 local Location = {}
 Location.__index = Location
----@param reviewer_data DiffviewInfo
----@param visual_range LineRange | nil
----@return Location
-function Location.new(reviewer_data, visual_range)
+---The new() function returns nil when the location cannot be created due to missing
+---reviewer data.
+---@return Location | nil
+function Location.new()
+  local current_win = vim.api.nvim_get_current_win()
+  local reviewer_data = require("gitlab.reviewer").get_reviewer_data(current_win)
+  if reviewer_data == nil then
+    return nil
+  end
   local location = {}
   local instance = setmetatable(location, Location)
   instance.reviewer_data = reviewer_data
-  instance.visual_range = visual_range
   instance.base_sha = state.INFO.diff_refs.base_sha
   instance.head_sha = state.INFO.diff_refs.head_sha
+  instance:build_location_data()
   return instance
 end
 
@@ -37,11 +43,13 @@ end
 function Location:build_location_data()
   ---@type DiffviewInfo
   local reviewer_data = self.reviewer_data
-  ---@type LineRange | nil
-  local visual_range = self.visual_range
+
+  local start_line, end_line = u.get_visual_selection_boundaries()
+  ---@type LineRange
+  self.visual_range = { start_line = start_line, end_line = end_line }
 
   ---@type LocationData
-  local location_data = {
+  self.location_data = {
     old_line = nil,
     new_line = nil,
     line_range = nil,
@@ -51,30 +59,29 @@ function Location:build_location_data()
   -- Comment on deleted line: Include only old_line in payload.
   -- The line was not found in any hunks, send both lines.
   if reviewer_data.modification_type == "added" then
-    location_data.old_line = nil
-    location_data.new_line = reviewer_data.new_line_from_buf
+    self.location_data.old_line = nil
+    self.location_data.new_line = reviewer_data.new_line_from_buf
   elseif reviewer_data.modification_type == "deleted" then
-    location_data.old_line = reviewer_data.old_line_from_buf
-    location_data.new_line = nil
+    self.location_data.old_line = reviewer_data.old_line_from_buf
+    self.location_data.new_line = nil
   elseif
     reviewer_data.modification_type == "unmodified" or reviewer_data.modification_type == "bad_file_unmodified"
   then
-    location_data.old_line = reviewer_data.old_line_from_buf
-    location_data.new_line = reviewer_data.new_line_from_buf
+    self.location_data.old_line = reviewer_data.old_line_from_buf
+    self.location_data.new_line = reviewer_data.new_line_from_buf
   end
 
-  self.location_data = location_data
-  if visual_range == nil then
-    return
-  else
+  if end_line > start_line then
     self.location_data.line_range = {
       start = {},
       ["end"] = {},
     }
+  else
+    return
   end
 
-  self:set_start_range(visual_range)
-  self:set_end_range(visual_range)
+  self:set_start_range()
+  self:set_end_range()
 
   -- Ranged comments should always use the end of the range.
   -- Otherwise they will not highlight the full comment in Gitlab.
@@ -90,9 +97,7 @@ end
 ---@param line number
 ---@return number|nil
 function Location:get_line_number_from_new_sha(line)
-  local reviewer = require("gitlab.reviewer")
-  local is_current_sha_focused = reviewer.is_current_sha_focused()
-  if is_current_sha_focused then
+  if self.reviewer_data.new_sha_focused then
     return line
   end
   -- Otherwise we want to get the matching line in the opposite buffer
@@ -111,9 +116,7 @@ end
 ---@param line number
 ---@return number|nil
 function Location:get_line_number_from_old_sha(line)
-  local reviewer = require("gitlab.reviewer")
-  local is_current_sha_focused = reviewer.is_current_sha_focused()
-  if not is_current_sha_focused then
+  if not self.reviewer_data.new_sha_focused then
     return line
   end
 
@@ -131,32 +134,24 @@ end
 -- the reviewer is focused in.
 ---@return number|nil
 function Location:get_current_line()
-  local reviewer = require("gitlab.reviewer")
-  local win_id = reviewer.is_current_sha_focused() and self.reviewer_data.new_sha_win_id
-    or self.reviewer_data.old_sha_win_id
-  if win_id == nil then
+  if self.reviewer_data.current_win_id == nil then
     return
   end
 
-  local current_line = vim.api.nvim_win_get_cursor(win_id)[1]
+  local current_line = vim.api.nvim_win_get_cursor(self.reviewer_data.current_win_id)[1]
   return current_line
 end
 
--- Given a new_line and old_line from the start of a ranged comment, returns the start
--- range information for the Gitlab payload
----@param visual_range LineRange
----@return ReviewerLineInfo|nil
-function Location:set_start_range(visual_range)
+-- Given a modification type, a visual selection range, and the hunk data, sets the start range
+-- information to the location_data for the Gitlab payload
+function Location:set_start_range()
   local current_file = require("gitlab.reviewer").get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
     return
   end
 
-  local reviewer = require("gitlab.reviewer")
-  local is_current_sha_focused = reviewer.is_current_sha_focused()
-  local win_id = is_current_sha_focused and self.reviewer_data.new_sha_win_id or self.reviewer_data.old_sha_win_id
-  if win_id == nil then
+  if self.reviewer_data.current_win_id == nil then
     u.notify("Error getting window number of SHA for start range", vim.log.levels.ERROR)
     return
   end
@@ -167,8 +162,8 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  local new_line = self:get_line_number_from_new_sha(visual_range.start_line)
-  local old_line = self:get_line_number_from_old_sha(visual_range.start_line)
+  local new_line = self:get_line_number_from_new_sha(self.visual_range.start_line)
+  local old_line = self:get_line_number_from_old_sha(self.visual_range.start_line)
   if
     (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
     or (old_line == nil and self.reviewer_data.modification_type ~= "added")
@@ -177,7 +172,7 @@ function Location:set_start_range(visual_range)
     return
   end
 
-  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, self.reviewer_data.new_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for start of range", vim.log.levels.ERROR)
     return
@@ -190,10 +185,9 @@ function Location:set_start_range(visual_range)
   }
 end
 
--- Given a modification type, a range, and the hunk data, returns the end range information
--- for the Gitlab payload
----@param visual_range LineRange
-function Location:set_end_range(visual_range)
+-- Given a modification type, a visual selection range, and the hunk data, sets the end range
+-- information to the location_data for the Gitlab payload
+function Location:set_end_range()
   local current_file = require("gitlab.reviewer").get_current_file_path()
   if current_file == nil then
     u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
@@ -206,8 +200,8 @@ function Location:set_end_range(visual_range)
     return
   end
 
-  local new_line = self:get_line_number_from_new_sha(visual_range.end_line)
-  local old_line = self:get_line_number_from_old_sha(visual_range.end_line)
+  local new_line = self:get_line_number_from_new_sha(self.visual_range.end_line)
+  local old_line = self:get_line_number_from_old_sha(self.visual_range.end_line)
 
   if
     (new_line == nil and self.reviewer_data.modification_type ~= "deleted")
@@ -217,9 +211,7 @@ function Location:set_end_range(visual_range)
     return
   end
 
-  local reviewer = require("gitlab.reviewer")
-  local is_current_sha_focused = reviewer.is_current_sha_focused()
-  local modification_type = hunks.get_modification_type(old_line, new_line, is_current_sha_focused)
+  local modification_type = hunks.get_modification_type(old_line, new_line, self.reviewer_data.new_sha_focused)
   if modification_type == nil then
     u.notify("Error getting modification type for end of range", vim.log.levels.ERROR)
     return
