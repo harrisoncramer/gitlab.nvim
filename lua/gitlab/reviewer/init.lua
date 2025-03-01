@@ -105,10 +105,11 @@ M.close = function()
 end
 
 --- Jumps to the location provided in the reviewer window
----@param file_name string
----@param line_number number
----@param new_buffer boolean
-M.jump = function(file_name, line_number, new_buffer)
+---@param file_name string The file name after change.
+---@param old_file_name string The file name before change (different from file_name for renamed/moved files).
+---@param line_number number Line number from the discussion node.
+---@param new_buffer boolean If true, jump to the NEW SHA.
+M.jump = function(file_name, old_file_name, line_number, new_buffer)
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
@@ -121,8 +122,8 @@ M.jump = function(file_name, line_number, new_buffer)
   end
 
   local files = view.panel:ordered_file_list()
-  local file = List.new(files):find(function(file)
-    return file.path == file_name
+  local file = List.new(files):find(function(f)
+    return new_buffer and f.path == file_name or f.oldpath == old_file_name
   end)
   if file == nil then
     u.notify(
@@ -192,8 +193,8 @@ M.get_reviewer_data = function()
   local new_sha_win_id = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
   return {
-    file_name = layout.a.file.path,
-    old_file_name = M.is_file_renamed() and layout.b.file.path or "",
+    old_file_name = layout.a.file.path,
+    file_name = layout.b.file.path,
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,

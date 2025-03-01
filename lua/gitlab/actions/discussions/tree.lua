@@ -28,6 +28,8 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_note_id = ""
     ---@type string?
     local root_file_name = ""
+    ---@type string?
+    local root_old_file_name = ""
     ---@type string
     local root_id
     local root_text_nodes = {}
@@ -43,6 +45,7 @@ M.add_discussions_to_table = function(items, unlinked)
       if j == 1 then
         _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
+        root_old_file_name = (type(note.position) == "table" and note.position.old_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
         root_old_line = (type(note.position) == "table" and note.position.old_line or nil)
         root_id = discussion.id
@@ -79,6 +82,7 @@ M.add_discussions_to_table = function(items, unlinked)
       id = root_id,
       root_note_id = root_note_id,
       file_name = root_file_name,
+      old_file_name = root_old_file_name,
       new_line = root_new_line,
       old_line = root_old_line,
       resolvable = resolvable,
