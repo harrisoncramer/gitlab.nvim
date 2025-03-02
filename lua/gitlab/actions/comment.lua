@@ -153,9 +153,9 @@ M.create_comment_layout = function(opts)
     title = "Note"
     user_settings = popup_settings.note
   else
-    -- TODO: investigate why `old_file_name` is in fact the new name for renamed files!
-    local file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
-      or M.location.reviewer_data.file_name
+    local file_name = (M.location.reviewer_data.new_sha_focused or M.location.reviewer_data.old_file_name == "")
+        and M.location.reviewer_data.file_name
+      or M.location.reviewer_data.old_file_name
     title =
       popup.create_title("Comment", file_name, M.location.visual_range.start_line, M.location.visual_range.end_line)
     user_settings = popup_settings.comment
