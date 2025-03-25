@@ -126,8 +126,10 @@ M.place_diagnostics = function(bufnr)
   local ok, err = pcall(function()
     local file_discussions = List.new(M.placeable_discussions):filter(function(discussion_or_note)
       local note = discussion_or_note.notes and discussion_or_note.notes[1] or discussion_or_note
-      return note.position.new_path == view.cur_layout.b.file.path
-        or note.position.old_path == view.cur_layout.a.file.path
+      -- Surprisingly, the following line works even if I'd expect it should match new/old paths
+      -- with a/b buffers the other way round!
+      return note.position.new_path == view.cur_layout.a.file.path
+        or note.position.old_path == view.cur_layout.b.file.path
     end)
 
     if #file_discussions == 0 then

@@ -277,7 +277,7 @@ M.jump_to_reviewer = function(tree)
     u.notify("Could not get line number", vim.log.levels.ERROR)
     return
   end
-  reviewer.jump(root_node.file_name, root_node.old_file_name, line_number, is_new_sha)
+  reviewer.jump(root_node.file_name, line_number, is_new_sha)
 end
 
 -- This function (settings.keymaps.discussion_tree.jump_to_file) will jump to the file changed in a new tab
@@ -301,7 +301,7 @@ M.jump_to_file = function(tree)
   end
   vim.cmd.tabnew()
   local line_number = get_new_line(root_node) or get_old_line(root_node)
-  if line_number == nil or line_number == 0 then
+  if line_number == nil then
     line_number = 1
   end
   local bufnr = vim.fn.bufnr(root_node.file_name)
