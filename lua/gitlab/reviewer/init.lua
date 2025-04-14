@@ -123,7 +123,8 @@ M.jump = function(file_name, old_file_name, line_number, new_buffer)
 
   local files = view.panel:ordered_file_list()
   local file = List.new(files):find(function(f)
-    return new_buffer and f.path == file_name or f.oldpath == old_file_name
+    local oldpath = f.oldpath ~= nil and f.oldpath or f.path
+    return new_buffer and f.path == file_name or oldpath == old_file_name
   end)
   if file == nil then
     u.notify(
@@ -195,10 +196,8 @@ M.get_reviewer_data = function(current_win)
   local opposite_bufnr = new_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
 
   return {
-    -- TODO: swap 'a' and 'b' to fix lua/gitlab/actions/comment.lua:158, and hopefully also
-    -- lua/gitlab/indicators/diagnostics.lua:129.
-    file_name = layout.a.file.path,
-    old_file_name = M.is_file_renamed() and layout.b.file.path or "",
+    old_file_name = M.is_file_renamed() and layout.a.file.path or "",
+    file_name = layout.b.file.path,
     old_line_from_buf = old_line,
     new_line_from_buf = new_line,
     modification_type = modification_type,
