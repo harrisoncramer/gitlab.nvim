@@ -5,10 +5,11 @@ endif
 let expanders = '^\s*\%(' . g:gitlab_discussion_tree_expander_open . '\|' . g:gitlab_discussion_tree_expander_closed . '\)'
 let username = '@[a-zA-Z0-9.]\+'
 
-" Covers times like '14 days ago', 'just now', as well as 'October  3, 2024'
+" Covers times like '14 days ago', 'just now', as well as 'October  3, 2024', and '02/28/2025 at 00:50'
 let time_ago = '\d\+ \w\+ ago'
 let formatted_date = '\w\+ \{1,2}\d\{1,2}, \d\{4}'
-let date = '\%(' . time_ago . '\|' . formatted_date . '\|just now\)'
+let absolute_time = '\d\{2}/\d\{2}/\d\{4} at \d\{2}:\d\{2}'
+let date = '\%(' . time_ago . '\|' . formatted_date . '\|' . absolute_time . '\|just now\)'
 
 let published = date . ' \%(' . g:gitlab_discussion_tree_resolved . '\|' . g:gitlab_discussion_tree_unresolved . '\|' . g:gitlab_discussion_tree_unlinked . '\)\?'
 let state = ' \%(' . published . '\|' . g:gitlab_discussion_tree_draft . '\)'
