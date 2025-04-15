@@ -725,7 +725,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.help then
     vim.keymap.set("n", keymaps.help, function()
-      help.open()
+      help.open({ discussion_tree = true })
     end, { buffer = bufnr, desc = "Open help popup", nowait = keymaps.help_nowait })
   end
 

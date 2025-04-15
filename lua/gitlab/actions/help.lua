@@ -6,7 +6,12 @@ local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
 
-M.open = function()
+---@class HelpPopupOpts
+---@field discussion_tree boolean|nil Whether help popup is for the discussion tree
+
+--- @param opts HelpPopupOpts|nil Table with options for the help popup
+M.open = function(opts)
+  local help_opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
   local keymaps = vim.api.nvim_buf_get_keymap(bufnr, "n")
   local help_content_lines = List.new(keymaps):reduce(function(agg, keymap)
@@ -17,26 +22,28 @@ M.open = function()
     return agg
   end, {})
 
-  table.insert(help_content_lines, "")
-  table.insert(
-    help_content_lines,
-    string.format(
-      "%s = draft; %s = unlinked comment; %s = resolved",
-      state.settings.discussion_tree.draft,
-      state.settings.discussion_tree.unlinked,
-      state.settings.discussion_tree.resolved
+  if help_opts.discussion_tree then
+    table.insert(help_content_lines, "")
+    table.insert(
+      help_content_lines,
+      string.format(
+        "%s = draft; %s = unlinked comment; %s = resolved",
+        state.settings.discussion_tree.draft,
+        state.settings.discussion_tree.unlinked,
+        state.settings.discussion_tree.resolved
+      )
     )
-  )
+  end
 
   local longest_line = u.get_longest_string(help_content_lines)
-  local opts = { "Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 70 }
-  local help_popup = Popup(popup.create_popup_state(unpack(opts)))
+  local popup_opts = { "Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 70 }
+  local help_popup = Popup(popup.create_popup_state(unpack(popup_opts)))
 
   help_popup:on(event.BufLeave, function()
     help_popup:unmount()
   end)
 
-  popup.set_up_autocommands(help_popup, nil, vim.api.nvim_get_current_win(), opts)
+  popup.set_up_autocommands(help_popup, nil, vim.api.nvim_get_current_win(), popup_opts)
 
   help_popup:mount()
 
