@@ -46,6 +46,7 @@ M.settings = {
   auth_provider = M.default_auth_provider,
   file_separator = u.path_separator,
   port = nil, -- choose random port
+  bin = nil,  -- use the plugins internal
   debug = {
     request = false,
     response = false,
