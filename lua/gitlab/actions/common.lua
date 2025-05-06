@@ -240,7 +240,9 @@ M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end
     return (old_line - range), old_line, false
   elseif new_line ~= nil then
     local range = new_end_line - new_start_line
-    return (new_line - range), new_line, true
+    -- Force start_line to be greater than 0
+    local start_line = (new_line - range > 0) and (new_line - range) or 1
+    return start_line, new_line, true
   else
     u.notify("Error getting new or old line for range", vim.log.levels.ERROR)
     return 1, 1, false
