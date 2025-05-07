@@ -87,7 +87,7 @@ M.build = function(override)
   state.settings.root_path = parent_dir
 
   if state.settings.bin ~= nil then
-    u.notify(string.format("skipping server intallation, using: %s", state.settings.bin), vim.log.levels.INFO)
+    u.notify(string.format("Skipping server installation, using: %s", state.settings.bin), vim.log.levels.INFO)
     return true
   end
 
