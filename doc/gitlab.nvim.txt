@@ -147,6 +147,7 @@ you call this function with no values the defaults will be used:
       port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
       log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
       config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
+      bin = nil,  -- Custom path to Go server binary, if not set the internal one is used. Only change if really needed
       debug = {
           request = false, -- Requests to/from Go server
           response = false,
