@@ -104,6 +104,9 @@ end
 ---Filter and place the diagnostics for the given buffer.
 ---@param bufnr number The number of the buffer for placing diagnostics.
 M.place_diagnostics = function(bufnr)
+  if bufnr and vim.api.nvim_buf_get_name(bufnr) == "diffview://null" then
+    return
+  end
   if not state.settings.discussion_signs.enabled then
     return
   end
