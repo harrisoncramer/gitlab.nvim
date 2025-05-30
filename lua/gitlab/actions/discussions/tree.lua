@@ -39,6 +39,8 @@ M.add_discussions_to_table = function(items, unlinked)
     local resolved = false
     local root_new_line = nil
     local root_old_line = nil
+    local root_head_sha = nil
+    local root_base_sha = nil
     local root_url
 
     for j, note in ipairs(discussion.notes) do
@@ -48,6 +50,8 @@ M.add_discussions_to_table = function(items, unlinked)
         root_old_file_name = (type(note.position) == "table" and note.position.old_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
         root_old_line = (type(note.position) == "table" and note.position.old_line or nil)
+        root_head_sha = (type(note.position) == "table" and note.position.head_sha)
+        root_base_sha = (type(note.position) == "table" and note.position.base_sha)
         root_id = discussion.id
         root_note_id = tostring(note.id)
         resolvable = note.resolvable
@@ -85,6 +89,8 @@ M.add_discussions_to_table = function(items, unlinked)
       old_file_name = root_old_file_name,
       new_line = root_new_line,
       old_line = root_old_line,
+      head_sha = root_head_sha,
+      base_sha = root_base_sha,
       resolvable = resolvable,
       resolved = resolved,
       url = root_url,
@@ -310,6 +316,8 @@ M.build_note = function(note, resolve_info)
     file_name = (type(note.position) == "table" and note.position.new_path),
     new_line = (type(note.position) == "table" and note.position.new_line),
     old_line = (type(note.position) == "table" and note.position.old_line),
+    head_sha = (type(note.position) == "table" and note.position.head_sha),
+    base_sha = (type(note.position) == "table" and note.position.base_sha),
     url = state.INFO.web_url .. "#note_" .. note.id,
     type = "note",
   }, text_nodes)

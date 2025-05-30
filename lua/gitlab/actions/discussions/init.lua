@@ -11,7 +11,6 @@ local popup = require("gitlab.popup")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
-local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -251,6 +250,15 @@ M.reply = function(tree)
   layout:mount()
 end
 
+-- Preview the suggestion(s) in the current discussion tree node
+M.preview_suggestion = function(tree)
+  local suggestion = require("gitlab.actions.suggestion")
+  suggestion.show_preview({
+    node = tree:get_node(),
+    tree = tree,
+  })
+end
+
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
 M.delete_comment = function(tree, unlinked)
   vim.ui.select({ "Confirm", "Cancel" }, {
@@ -294,15 +302,7 @@ M.edit_comment = function(tree, unlinked)
 
   edit_popup:mount()
 
-  -- Gather all lines from immediate children that aren't note nodes
-  local lines = List.new(note_node:get_child_ids()):reduce(function(agg, child_id)
-    local child_node = tree:get_node(child_id)
-    if not child_node:has_children() then
-      local line = tree:get_node(child_id).text
-      table.insert(agg, line)
-    end
-    return agg
-  end, {})
+  local lines = common.get_note_lines(tree)
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
@@ -597,6 +597,15 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
         nowait = keymaps.discussion_tree.toggle_tree_type_nowait,
       })
     end
+
+    if keymaps.discussion_tree.preview_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.preview_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.preview_suggestion(tree)
+        end
+      end, { buffer = bufnr, desc = "Preview suggestion", nowait = keymaps.discussion_tree.preview_suggestion_nowait })
+    end
+
   end
 
   if keymaps.discussion_tree.refresh_data then
