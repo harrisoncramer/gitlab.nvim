@@ -91,14 +91,41 @@ local get_temp_file_name = function(revision, node_id, file_name)
   return buf_name
 end
 
+---Check if buffer already exists and return the number of the tab it's open in
+---@param bufname string The full name of the buffer to check.
+---@return number|nil tabnr The tabpage number if buffer is already open or nil.
+local get_tabnr_for_buf = function(bufname)
+  local bufnr = vim.fn.bufnr(bufname)
+  if bufnr == -1 then
+    return nil
+  end
+  for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
+    for _, winnr in ipairs( vim.api.nvim_tabpage_list_wins(tabnr)) do
+      if vim.api.nvim_win_get_buf(winnr) == bufnr then
+        return tabnr
+      end
+    end
+  end
+  return nil
+end
 
 M.show_preview = function(opts)
-  local note_lines = common.get_note_lines(opts.tree)
   local root_node = common.get_root_node(opts.tree, opts.node)
   if root_node == nil then
     u.notify("Couldn't get root node", vim.log.levels.ERROR)
     return
   end
+
+ -- If preview is already open for given note, go to the tab with a warning.
+  local note_bufname = string.format("gitlab://NOTE/%s", root_node._id)
+  local tabnr = get_tabnr_for_buf(note_bufname)
+  if tabnr ~= nil then
+    vim.api.nvim_set_current_tabpage(tabnr)
+    u.notify("Previously created preview can be outdated", vim.log.levels.WARN)
+    return
+  end
+
+  local note_lines = common.get_note_lines(opts.tree)
   local suggestions = M.get_suggestions(note_lines)
   if #suggestions == 0 then
     u.notify("Note doesn't contain any suggestion.", vim.log.levels.WARN)
@@ -232,7 +259,7 @@ M.show_preview = function(opts)
   vim.bo.filetype = "markdown"
   vim.bo.modifiable = false
   vim.bo.buflisted = false
-  vim.api.nvim_buf_set_name(note_buf, string.format("gitlab://note/%s", root_node._id))
+  vim.api.nvim_buf_set_name(note_buf, note_bufname)
 
   -- Focus the note window
   local note_winid = vim.fn.win_getid(3)
