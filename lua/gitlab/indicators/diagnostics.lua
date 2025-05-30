@@ -14,17 +14,6 @@ M.clear_diagnostics = function()
   vim.diagnostic.reset(M.diagnostics_namespace)
 end
 
----Return display options for the diagnostics.
----@return vim.diagnostic.Opts
-local create_display_opts = function()
-  return {
-    virtual_text = state.settings.discussion_signs.virtual_text,
-    severity_sort = true,
-    underline = false,
-    signs = state.settings.discussion_signs.use_diagnostic_signs,
-  }
-end
-
 ---@class RangeInfo
 ---@field lnum integer The starting line of the diagnostic (0-indexed)
 ---@field end_lnum? integer The final line of the diagnostic (0-indexed)
@@ -132,9 +121,6 @@ M.place_diagnostics = function(bufnr)
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
-  if vim.api.nvim_buf_get_name(bufnr) == "diffview://null" then
-    return
-  end
 
   local ok, err = pcall(function()
     local file_discussions = List.new(M.placeable_discussions):filter(function(discussion_or_note)
@@ -150,9 +136,19 @@ M.place_diagnostics = function(bufnr)
     local new_discussions, old_discussions = List.new(file_discussions):partition(indicators_common.is_new_sha)
 
     if bufnr == view.cur_layout.a.file.bufnr then
-      set_diagnostics(M.diagnostics_namespace, bufnr, M.parse_diagnostics(old_discussions), create_display_opts())
+      set_diagnostics(
+        M.diagnostics_namespace,
+        bufnr,
+        M.parse_diagnostics(old_discussions),
+        indicators_common.create_display_opts()
+      )
     elseif bufnr == view.cur_layout.b.file.bufnr then
-      set_diagnostics(M.diagnostics_namespace, bufnr, M.parse_diagnostics(new_discussions), create_display_opts())
+      set_diagnostics(
+        M.diagnostics_namespace,
+        bufnr,
+        M.parse_diagnostics(new_discussions),
+        indicators_common.create_display_opts()
+      )
     end
   end)
 
