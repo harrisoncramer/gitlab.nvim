@@ -120,6 +120,9 @@ M.place_diagnostics = function(bufnr)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
+  if bufnr and vim.api.nvim_buf_get_name(bufnr) == "diffview://null" then
+    return
+  end
   if not state.settings.discussion_signs.enabled then
     return
   end
