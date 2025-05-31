@@ -109,6 +109,50 @@ local get_tabnr_for_buf = function(bufname)
   return nil
 end
 
+local get_suggestions = function(note_lines)
+  local suggestions = {}
+  local in_suggestion = false
+  local suggestion = {}
+  local quote
+
+  for i, line in ipairs(note_lines) do
+    local start_quote = string.match(line, "^%s*(`+)suggestion:%-%d+%+%d+")
+    local end_quote = string.match(line, "^%s*(`+)%s*$")
+
+    if start_quote ~= nil and not in_suggestion then
+      quote = start_quote
+      in_suggestion = true
+      suggestion.start_line_offset, suggestion.end_line_offset = string.match(line, "^%s*`+suggestion:%-(%d+)%+(%d+)")
+      suggestion.note_start_linenr = i
+      suggestion.lines = {}
+    elseif end_quote and end_quote == quote then
+      suggestion.note_end_linenr = i
+      table.insert(suggestions, suggestion)
+      in_suggestion = false
+      suggestion = {}
+    elseif in_suggestion then
+      table.insert(suggestion.lines, line)
+    end
+  end
+  return suggestions
+end
+
+local create_diagnostics = function(suggestions)
+  local diagnostics_data = {}
+  for _, suggestion in ipairs(suggestions) do
+    local diagnostic = {
+      message = table.concat(suggestion.lines, "\n") .. "\n",
+      col = 0,
+      severity = vim.diagnostic.severity.INFO,
+      source = "gitlab",
+      code = "gitlab.nvim",
+      lnum = suggestion.note_start_linenr - 1
+    }
+    table.insert(diagnostics_data, diagnostic)
+  end
+  return diagnostics_data
+end
+
 M.show_preview = function(opts)
   local root_node = common.get_root_node(opts.tree, opts.node)
   if root_node == nil then
@@ -126,7 +170,7 @@ M.show_preview = function(opts)
   end
 
   local note_lines = common.get_note_lines(opts.tree)
-  local suggestions = M.get_suggestions(note_lines)
+  local suggestions = get_suggestions(note_lines)
   if #suggestions == 0 then
     u.notify("Note doesn't contain any suggestion.", vim.log.levels.WARN)
     return
@@ -285,7 +329,7 @@ M.show_preview = function(opts)
   })
 
   -- Show diagnostics for suggestions (enables using built-in navigation)
-  local diagnostics_data = M.create_diagnostics(suggestions)
+  local diagnostics_data = create_diagnostics(suggestions)
   vim.diagnostic.set(suggestion_namespace, note_buf, diagnostics_data, indicators_common.create_display_opts())
 
   -- Show the discussion heading as virtual text
@@ -293,50 +337,6 @@ M.show_preview = function(opts)
   vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
   -- An extmark above the first line is not visible by default, so let's scroll the window:
   vim.cmd("normal! ")
-end
-
-M.create_diagnostics = function(suggestions)
-  local diagnostics_data = {}
-  for _, suggestion in ipairs(suggestions) do
-    local diagnostic = {
-      message = table.concat(suggestion.lines, "\n") .. "\n",
-      col = 0,
-      severity = vim.diagnostic.severity.INFO,
-      source = "gitlab",
-      code = "gitlab.nvim",
-      lnum = suggestion.note_start_linenr - 1
-    }
-    table.insert(diagnostics_data, diagnostic)
-  end
-  return diagnostics_data
-end
-
-M.get_suggestions = function(note_lines)
-  local suggestions = {}
-  local in_suggestion = false
-  local suggestion = {}
-  local quote
-
-  for i, line in ipairs(note_lines) do
-    local start_quote = string.match(line, "^%s*(`+)suggestion:%-%d+%+%d+")
-    local end_quote = string.match(line, "^%s*(`+)%s*$")
-
-    if start_quote ~= nil and not in_suggestion then
-      quote = start_quote
-      in_suggestion = true
-      suggestion.start_line_offset, suggestion.end_line_offset = string.match(line, "^%s*`+suggestion:%-(%d+)%+(%d+)")
-      suggestion.note_start_linenr = i
-      suggestion.lines = {}
-    elseif end_quote and end_quote == quote then
-      suggestion.note_end_linenr = i
-      table.insert(suggestions, suggestion)
-      in_suggestion = false
-      suggestion = {}
-    elseif in_suggestion then
-      table.insert(suggestion.lines, line)
-    end
-  end
-  return suggestions
 end
 
 return M
