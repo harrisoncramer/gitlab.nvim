@@ -186,21 +186,17 @@ M.show_preview = function(opts)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
-  vim.api.nvim_cmd({ cmd = "tabnew" }, {})
   local original_lines = vim.fn.split(original_head_text, "\n", true)
-  local original_buf = vim.api.nvim_create_buf(true, true)
+  local original_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(original_buf, 0, -1, false, original_lines)
-  vim.bo[original_buf].modifiable = false
-  vim.bo[original_buf].buftype = "nofile"
-  vim.bo[original_buf].buflisted = false
-
-  -- TODO: Make sure a buffer with the same name does not already exist (should be instead prevented
-  -- by a proper cleanup when the suggestion tab is closed). Should detect that a tab is already
-  -- open for the given suggestion.
-
   local buf_name = get_temp_file_name("ORIGINAL", root_node._id, root_node.file_name)
   vim.api.nvim_buf_set_name(original_buf, buf_name)
-  vim.api.nvim_set_current_buf(original_buf)
+  vim.api.nvim_cmd({ cmd = "tabnew", args = { buf_name } }, {})
+  vim.bo.bufhidden = "wipe"
+  vim.bo.buflisted = false
+  vim.bo.buftype = "nofile"
+  vim.bo.modifiable = false
+
   vim.cmd.filetype("detect")
   local buf_filetype = vim.api.nvim_get_option_value('filetype', { buf = 0 })
 
@@ -229,6 +225,7 @@ M.show_preview = function(opts)
     vim.fn.mkdir(vim.fn.fnamemodify(sug_file_name, ":h"), "p")
     vim.api.nvim_cmd({ cmd = "vnew", args = { sug_file_name } }, {})
     vim.bo.bufhidden = "wipe"
+    vim.bo.buflisted = false
     vim.bo.buftype = "nofile"
     vim.bo.filetype = buf_filetype
     M.local_implied = false
@@ -250,16 +247,15 @@ M.show_preview = function(opts)
   vim.cmd("1,2windo diffthis")
 
   -- Create the note window
-  local note_buf = vim.api.nvim_create_buf(true, true)
-  vim.cmd("vsplit")
-  vim.api.nvim_set_current_buf(note_buf)
+  local note_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_name(note_buf, note_bufname)
+  vim.api.nvim_cmd({ cmd = "vnew", args = { note_bufname } }, {})
   vim.api.nvim_buf_set_lines(note_buf, 0, -1, false, note_lines)
-  vim.bo.buftype = "nofile"
   vim.bo.bufhidden = "wipe"
+  vim.bo.buflisted = false
+  vim.bo.buftype = "nofile"
   vim.bo.filetype = "markdown"
   vim.bo.modifiable = false
-  vim.bo.buflisted = false
-  vim.api.nvim_buf_set_name(note_buf, note_bufname)
 
   -- Focus the note window
   local note_winid = vim.fn.win_getid(3)
