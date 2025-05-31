@@ -153,6 +153,12 @@ local create_diagnostics = function(suggestions)
   return diagnostics_data
 end
 
+---@class ShowPreviewOpts
+---@field tree NuiTree The current discussion tree instance
+---@field node NuiTreeNode The current node in the discussion tree
+
+---Get suggestions from the current note and preview them in a new tab
+---@param opts ShowPreviewOpts
 M.show_preview = function(opts)
   local root_node = common.get_root_node(opts.tree, opts.node)
   if root_node == nil then
@@ -160,7 +166,7 @@ M.show_preview = function(opts)
     return
   end
 
- -- If preview is already open for given note, go to the tab with a warning.
+  -- If preview is already open for given note, go to the tab with a warning.
   local note_bufname = string.format("gitlab://NOTE/%s", root_node._id)
   local tabnr = get_tabnr_for_buf(note_bufname)
   if tabnr ~= nil then
@@ -169,6 +175,7 @@ M.show_preview = function(opts)
     return
   end
 
+  -- Return early when there're no suggestions.
   local note_lines = common.get_note_lines(opts.tree)
   local suggestions = get_suggestions(note_lines)
   if #suggestions == 0 then
