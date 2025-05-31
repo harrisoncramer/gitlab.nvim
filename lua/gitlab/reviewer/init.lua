@@ -110,6 +110,9 @@ end
 ---@param line_number number Line number from the discussion node.
 ---@param new_buffer boolean If true, jump to the NEW SHA.
 M.jump = function(file_name, old_file_name, line_number, new_buffer)
+  -- Draft comments don't have `old_file_name` set
+  old_file_name = old_file_name or file_name
+
   if M.tabnr == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
