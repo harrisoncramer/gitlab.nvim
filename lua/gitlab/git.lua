@@ -245,4 +245,18 @@ M.revision_exists = function(revision)
   return result ~= nil
 end
 
+---@class FileDiffersInRevisionsOpts
+---@field original_revision string
+---@field head_revision string
+---@field old_file_name string
+---@field file_name string
+
+---Returns true if the file differs in two revisions (handles renames)
+---@param opts FileDiffersInRevisionsOpts
+---@return boolean
+M.file_differs_in_revisions = function(opts)
+  local result = run_system({ "git", "diff", "-M", opts.original_revision, opts.head_revision, "--", opts.old_file_name, opts.file_name })
+  return result ~= ""
+end
+
 return M

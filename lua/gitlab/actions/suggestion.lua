@@ -2,7 +2,6 @@
 --- The data required to make the API calls are drawn from the discussion nodes.
 
 local common = require("gitlab.actions.common")
-local diffview_lib = require("diffview.lib")
 local git = require("gitlab.git")
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
@@ -109,6 +108,16 @@ local get_tabnr_for_buf = function(bufname)
   return nil
 end
 
+---@class Suggestion
+---@field start_line_offset number The offset for the start of the suggestion (e.g., "2" in suggestion:-2+3)
+---@field end_line_offset number The offset for the end of the suggestion (e.g., "3" in suggestion:-2+3)
+---@field note_start_linenr number The line number in the note text where the suggesion begins
+---@field note_end_linenr number The line number in the note text where the suggesion ends
+---@field lines string[] The text of the suggesion
+---@field full_text string[] The full text of the file with the suggesion applied
+
+--- Create the suggestion list from the note text
+---@return Suggestion[]
 local get_suggestions = function(note_lines)
   local suggestions = {}
   local in_suggestion = false
@@ -137,6 +146,8 @@ local get_suggestions = function(note_lines)
   return suggestions
 end
 
+--- Create diagnostics data from suggesions
+---@param suggestions Suggestion[]
 local create_diagnostics = function(suggestions)
   local diagnostics_data = {}
   for _, suggestion in ipairs(suggestions) do
@@ -151,6 +162,27 @@ local create_diagnostics = function(suggestions)
     table.insert(diagnostics_data, diagnostic)
   end
   return diagnostics_data
+end
+
+local is_modified = function(file_name)
+  local has_changes = git.has_changes(file_name)
+  local bufnr = vim.fn.bufnr(file_name, true)
+  if vim.bo[bufnr].modified or has_changes then
+    return true
+  end
+  return false
+end
+
+--- Update suggestions with the changes applied to the original text
+---@param suggestions Suggestion[]
+---@param end_line_number integer The last number of the comment range
+---@param original_lines string[] Array of original lines
+local add_full_text_to_suggestions = function(suggestions, end_line_number, original_lines)
+  for _, suggestion in ipairs(suggestions) do
+    local start_line = end_line_number - suggestion.start_line_offset
+    local end_line = end_line_number + suggestion.end_line_offset
+    suggestion.full_text = replace_range(original_lines, start_line, end_line, suggestion.lines)
+  end
 end
 
 ---@class ShowPreviewOpts
@@ -189,6 +221,7 @@ M.show_preview = function(opts)
     root_node.base_sha = require("gitlab.state").INFO.target_branch
   end
 
+  -- Decide which revision to use for the ORIGINAL text
   local _, is_new_sha, end_line_number = common.get_line_number_from_node(root_node)
   local revision, original_file_name
   if is_new_sha then
@@ -198,49 +231,29 @@ M.show_preview = function(opts)
     revision = root_node.base_sha
     original_file_name = root_node.old_file_name
   end
-
   if not git.revision_exists(revision) then
     u.notify(string.format("Revision `%s` for which the comment was made does not exist", revision),
       vim.log.levels.WARN)
     return
   end
 
+  -- Get the text on which the suggestion was created
   local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
-  local head_text = git.get_file_revision({ file_name = root_node.file_name, revision = "HEAD" })
-
-  -- The original revision doesn't contain the file, the branch was possibly rebased, and the
-  -- original revision could not been found. In that case `git.get_file_revision` should have logged
-  -- an error.
+  -- If the original revision doesn't contain the file, the branch was possibly rebased, and the
+  -- original revision could not been found.
   if original_head_text == nil then
     u.notify(
-      string.format("File `%s` doesn't contain any text in revision `%s` for which the comment was made", original_file_name, revision),
+      string.format("File `%s` doesn't contain any text in revision `%s` for which comment was made", original_file_name, revision),
       vim.log.levels.WARN
     )
     return
   end
+  local original_lines = vim.fn.split(original_head_text, "\n", true)
 
-  local view = diffview_lib.get_current_view()
-  if view == nil then
-    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
-    return
-  end
-
-  -- TODO: Use some common function to get the current file, deal with possible renames, decide if
-  -- the suggestion was made for the OLD version or NEW, etc.
-  local files = view.panel:ordered_file_list()
-  local file_name = List.new(files):find(function(file)
-    local file_name_ = is_new_sha and file.path or file.oldpath
-    return file_name_ ==  original_file_name
-  end)
-
-  if file_name == nil then
-    u.notify(string.format("File `%s` not found in revision `%s`.", revision))
-    return
-  end
+  add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
-  local original_lines = vim.fn.split(original_head_text, "\n", true)
   local original_buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(original_buf, 0, -1, false, original_lines)
   local buf_name = get_temp_file_name("ORIGINAL", root_node._id, root_node.file_name)
@@ -250,31 +263,42 @@ M.show_preview = function(opts)
   vim.bo.buflisted = false
   vim.bo.buftype = "nofile"
   vim.bo.modifiable = false
-
   vim.cmd.filetype("detect")
   local buf_filetype = vim.api.nvim_get_option_value('filetype', { buf = 0 })
 
-  -- TODO: Don't use local version when file contains changes (reuse `lua/gitlab/actions/comment.lua` lines 336-350)
-  if original_head_text == head_text and is_new_sha then
-    -- TODO: add check that file is not modified or doesn't have local uncommitted changes
-    u.notify("Original head is the same as HEAD. Using local version of " .. original_file_name,
-      vim.log.levels.INFO
+  -- Decide if local file should be used to show suggestion preview
+  local head_differs_from_original = git.file_differs_in_revisions({
+    original_revision = revision,
+    head_revision = "HEAD",
+    old_file_name = root_node.old_file_name,
+    file_name = root_node.file_name
+  })
+  if not is_new_sha then
+    M.local_implied = false
+    u.notify(
+      string.format("Comment on unchanged text. Using target-branch version of `%s`", original_file_name),
+      vim.log.levels.WARNING
     )
-    vim.api.nvim_cmd({ cmd = "vsplit", args = { file_name.path } }, {})
-    M.local_implied = true
+  elseif head_differs_from_original then
+    M.local_implied = false
+    u.notify(
+      string.format("File changed since comment created. Using feature-branch version of `%s`", original_file_name),
+      vim.log.levels.WARNING
+    )
+  elseif is_modified(original_file_name) then
+    M.local_implied = false
+    u.notify(
+      string.format("File has unsaved or uncommited changes. Using feature-branch version for `%s`", original_file_name),
+      vim.log.levels.WARNING
+    )
   else
-    -- TODO: Handle renamed files
-    if is_new_sha then
-      u.notify(
-        "Original head differs from HEAD. Using original version of " .. file_name.path,
-        vim.log.levels.WARNING
-      )
-    else
-      u.notify(
-        "Comment was made on unchanged text. Using original version of " .. file_name.path,
-        vim.log.levels.WARNING
-      )
-    end
+    M.local_implied = true
+  end
+
+  -- Create the suggestion buffer and show a diff with the original version
+  if M.local_implied then
+    vim.api.nvim_cmd({ cmd = "vsplit", args = { original_file_name } }, {})
+  else
     local sug_file_name = get_temp_file_name("SUGGESTION", root_node._id, root_node.file_name)
     vim.fn.mkdir(vim.fn.fnamemodify(sug_file_name, ":h"), "p")
     vim.api.nvim_cmd({ cmd = "vnew", args = { sug_file_name } }, {})
@@ -282,22 +306,9 @@ M.show_preview = function(opts)
     vim.bo.buflisted = false
     vim.bo.buftype = "nofile"
     vim.bo.filetype = buf_filetype
-    M.local_implied = false
   end
-
   local suggestion_buf = vim.api.nvim_get_current_buf()
-
-  -- Create the file texts with suggestions applied
-  for _, suggestion in ipairs(suggestions) do
-    -- subtract 1 because nvim_buf_set_lines indexing is zero-based
-    local start_line = end_line_number - suggestion.start_line_offset
-    -- don't subtract 1 because nvim_buf_set_lines indexing is end-exclusive
-    local end_line = end_line_number + suggestion.end_line_offset
-
-    suggestion.full_text = replace_range(original_lines, start_line, end_line, suggestion.lines)
-  end
   set_buffer_lines(suggestion_buf, suggestions[1].full_text)
-
   vim.cmd("1,2windo diffthis")
 
   -- Create the note window
