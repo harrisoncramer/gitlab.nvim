@@ -155,6 +155,7 @@ M.build_root_draft_note = function(note)
     id = note.id,
     root_note_id = note.id,
     file_name = (type(note.position) == "table" and note.position.new_path or nil),
+    old_file_name = (type(note.position) == "table" and note.position.old_path or nil),
     new_line = (type(note.position) == "table" and note.position.new_line or nil),
     old_line = (type(note.position) == "table" and note.position.old_line or nil),
     resolvable = false,
