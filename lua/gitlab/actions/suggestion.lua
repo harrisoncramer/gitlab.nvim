@@ -190,20 +190,22 @@ M.show_preview = function(opts)
   end
 
   local _, is_new_sha, end_line_number = common.get_line_number_from_node(root_node)
-  local revision
+  local revision, original_file_name
   if is_new_sha then
     revision = root_node.head_sha
+    original_file_name = root_node.file_name
   else
     revision = root_node.base_sha
+    original_file_name = root_node.old_file_name
   end
 
   if not git.revision_exists(revision) then
-    u.notify(string.format("Revision %s for which the comment was made does not exist", revision),
+    u.notify(string.format("Revision `%s` for which the comment was made does not exist", revision),
       vim.log.levels.WARN)
     return
   end
 
-  local original_head_text = git.get_file_revision({ file_name = root_node.file_name, revision = revision })
+  local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
   local head_text = git.get_file_revision({ file_name = root_node.file_name, revision = "HEAD" })
 
   -- The original head_sha doesn't contain the file, the branch was possibly rebased, and the
@@ -211,8 +213,7 @@ M.show_preview = function(opts)
   -- an error.
   if original_head_text == nil then
     u.notify(
-      string.format("File %s doesn't contain any text in revision %s for which the comment was made", root_node
-        .file_name, revision),
+      string.format("File `%s` doesn't contain any text in revision `%s` for which the comment was made", original_file_name, revision),
       vim.log.levels.WARN
     )
     return
@@ -228,11 +229,12 @@ M.show_preview = function(opts)
   -- the suggestion was made for the OLD version or NEW, etc.
   local files = view.panel:ordered_file_list()
   local file_name = List.new(files):find(function(file)
-    return file.path == root_node.file_name
+    local file_name_ = is_new_sha and file.path or file.oldpath
+    return file_name_ ==  original_file_name
   end)
 
   if file_name == nil then
-    u.notify("File %s not found in HEAD.", file_name)
+    u.notify(string.format("File `%s` not found in revision `%s`.", revision))
     return
   end
 
@@ -255,8 +257,8 @@ M.show_preview = function(opts)
   -- TODO: Don't use local version when file contains changes (reuse `lua/gitlab/actions/comment.lua` lines 336-350)
   if original_head_text == head_text and is_new_sha then
     -- TODO: add check that file is not modified or doesn't have local uncommitted changes
-    u.notify("Original head is the same as HEAD. Using local version of " .. file_name.path,
-      vim.log.levels.WARNING
+    u.notify("Original head is the same as HEAD. Using local version of " .. original_file_name,
+      vim.log.levels.INFO
     )
     vim.api.nvim_cmd({ cmd = "vsplit", args = { file_name.path } }, {})
     M.local_implied = true
