@@ -208,8 +208,8 @@ M.show_preview = function(opts)
   local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
   local head_text = git.get_file_revision({ file_name = root_node.file_name, revision = "HEAD" })
 
-  -- The original head_sha doesn't contain the file, the branch was possibly rebased, and the
-  -- original head_sha could not been found. In that case `git.get_file_revision` should have logged
+  -- The original revision doesn't contain the file, the branch was possibly rebased, and the
+  -- original revision could not been found. In that case `git.get_file_revision` should have logged
   -- an error.
   if original_head_text == nil then
     u.notify(
