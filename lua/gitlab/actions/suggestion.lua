@@ -183,9 +183,10 @@ M.show_preview = function(opts)
     return
   end
 
+  -- Hack: draft notes don't have head_sha and base_sha yet
   if root_node.is_draft then
-    u.notify("Previewing a draft suggestion, showing diff against current HEAD.")
     root_node.head_sha = "HEAD"
+    root_node.base_sha = require("gitlab.state").INFO.target_branch
   end
 
   local _, is_new_sha, end_line_number = common.get_line_number_from_node(root_node)
