@@ -347,6 +347,7 @@ M.show_preview = function(opts)
   vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
   -- An extmark above the first line is not visible by default, so let's scroll the window:
   vim.cmd("normal! ")
+  -- TODO: Add virtual text (or winbar?) to show the diffed revision of the ORIGINAL.
 end
 
 return M
