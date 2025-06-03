@@ -1,5 +1,5 @@
---- This module is responsible for previewing changes suggested in comments.
---- The data required to make the API calls are drawn from the discussion nodes.
+---This module is responsible for previewing changes suggested in comments.
+---The data required to make the API calls are drawn from the discussion nodes.
 
 local common = require("gitlab.actions.common")
 local git = require("gitlab.git")
@@ -116,7 +116,7 @@ end
 ---@field lines string[] The text of the suggesion
 ---@field full_text string[] The full text of the file with the suggesion applied
 
---- Create the suggestion list from the note text
+---Create the suggestion list from the note text
 ---@return Suggestion[]
 local get_suggestions = function(note_lines)
   local suggestions = {}
@@ -146,7 +146,7 @@ local get_suggestions = function(note_lines)
   return suggestions
 end
 
---- Create diagnostics data from suggesions
+---Create diagnostics data from suggesions
 ---@param suggestions Suggestion[]
 local create_diagnostics = function(suggestions)
   local diagnostics_data = {}
@@ -173,7 +173,7 @@ local is_modified = function(file_name)
   return false
 end
 
---- Update suggestions with the changes applied to the original text
+---Update suggestions with the changes applied to the original text
 ---@param suggestions Suggestion[]
 ---@param end_line_number integer The last number of the comment range
 ---@param original_lines string[] Array of original lines
