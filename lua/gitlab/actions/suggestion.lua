@@ -123,7 +123,7 @@ local get_tabnr_for_buf = function(bufname)
     return nil
   end
   for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
-    for _, winnr in ipairs( vim.api.nvim_tabpage_list_wins(tabnr)) do
+    for _, winnr in ipairs(vim.api.nvim_tabpage_list_wins(tabnr)) do
       if vim.api.nvim_win_get_buf(winnr) == bufnr then
         return tabnr
       end
@@ -181,7 +181,7 @@ local create_diagnostics = function(suggestions)
       severity = vim.diagnostic.severity.INFO,
       source = "gitlab",
       code = "gitlab.nvim",
-      lnum = suggestion.note_start_linenr - 1
+      lnum = suggestion.note_start_linenr - 1,
     }
     table.insert(diagnostics_data, diagnostic)
   end
@@ -269,8 +269,10 @@ M.show_preview = function(opts)
     original_file_name = root_node.old_file_name
   end
   if not git.revision_exists(revision) then
-    u.notify(string.format("Revision `%s` for which the comment was made does not exist", revision),
-      vim.log.levels.WARN)
+    u.notify(
+      string.format("Revision `%s` for which the comment was made does not exist", revision),
+      vim.log.levels.WARN
+    )
     return
   end
 
@@ -280,7 +282,11 @@ M.show_preview = function(opts)
   -- original revision could not been found.
   if original_head_text == nil then
     u.notify(
-      string.format("File `%s` doesn't contain any text in revision `%s` for which comment was made", original_file_name, revision),
+      string.format(
+        "File `%s` doesn't contain any text in revision `%s` for which comment was made",
+        original_file_name,
+        revision
+      ),
       vim.log.levels.WARN
     )
     return
@@ -301,14 +307,14 @@ M.show_preview = function(opts)
   vim.bo.buftype = "nofile"
   vim.bo.modifiable = false
   vim.cmd.filetype("detect")
-  local buf_filetype = vim.api.nvim_get_option_value('filetype', { buf = 0 })
+  local buf_filetype = vim.api.nvim_get_option_value("filetype", { buf = 0 })
 
   -- Decide if local file should be used to show suggestion preview
   local head_differs_from_original = git.file_differs_in_revisions({
     original_revision = revision,
     head_revision = "HEAD",
     old_file_name = root_node.old_file_name,
-    file_name = root_node.file_name
+    file_name = root_node.file_name,
   })
   M.imply_local = false
   if not is_new_sha then
@@ -369,7 +375,7 @@ M.show_preview = function(opts)
   vim.api.nvim_create_autocmd({ "CursorMoved" }, {
     buffer = note_buf,
     callback = function()
-      local current_line = vim.fn.line('.')
+      local current_line = vim.fn.line(".")
       if current_line ~= last_line then
         local suggestion = List.new(suggestions):find(function(sug)
           return current_line <= sug.note_end_linenr
@@ -381,7 +387,7 @@ M.show_preview = function(opts)
           refresh_signs(suggestion, note_buf)
         end
       end
-    end
+    end,
   })
 
   -- Create autocommand to update suggestions list based on the note buffer content.
@@ -391,9 +397,9 @@ M.show_preview = function(opts)
       local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
       suggestions = get_suggestions(updated_note_lines)
       add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
-      vim.api.nvim_exec_autocmds('CursorMoved', { buffer = note_buf })
+      vim.api.nvim_exec_autocmds("CursorMoved", { buffer = note_buf })
       refresh_diagnostics(suggestions, note_buf)
-    end
+    end,
   })
 
   refresh_diagnostics(suggestions, note_buf)
