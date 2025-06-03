@@ -18,7 +18,7 @@ local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_no
 
 local set_buffer_lines = function(bufnr, lines)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-  if M.local_implied then
+  if M.imply_local then
     vim.api.nvim_buf_call(bufnr, function()
       vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
     end)
@@ -273,30 +273,28 @@ M.show_preview = function(opts)
     old_file_name = root_node.old_file_name,
     file_name = root_node.file_name
   })
+  M.imply_local = false
   if not is_new_sha then
-    M.local_implied = false
     u.notify(
       string.format("Comment on unchanged text. Using target-branch version of `%s`", original_file_name),
       vim.log.levels.WARNING
     )
   elseif head_differs_from_original then
-    M.local_implied = false
     u.notify(
       string.format("File changed since comment created. Using feature-branch version of `%s`", original_file_name),
       vim.log.levels.WARNING
     )
   elseif is_modified(original_file_name) then
-    M.local_implied = false
     u.notify(
       string.format("File has unsaved or uncommited changes. Using feature-branch version for `%s`", original_file_name),
       vim.log.levels.WARNING
     )
   else
-    M.local_implied = true
+    M.imply_local = true
   end
 
   -- Create the suggestion buffer and show a diff with the original version
-  if M.local_implied then
+  if M.imply_local then
     vim.api.nvim_cmd({ cmd = "vsplit", args = { original_file_name } }, {})
   else
     local sug_file_name = get_temp_file_name("SUGGESTION", root_node._id, root_node.file_name)
