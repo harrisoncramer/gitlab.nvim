@@ -16,7 +16,13 @@ vim.fn.sign_define("GitlabSuggestion", {
 
 local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note")
 
+---Reset the contents of the suggestion buffer
+---@param bufnr integer
+---@param lines string[]
 local set_buffer_lines = function(bufnr, lines)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   if M.imply_local then
     vim.api.nvim_buf_call(bufnr, function()
@@ -25,24 +31,42 @@ local set_buffer_lines = function(bufnr, lines)
   end
 end
 
-local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines)
+---Set keymaps for the suggestion tab buffers
+---@param note_buf integer Number of the note buffer
+---@param original_buf integer Number of the buffer with the original contents of the file
+---@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch)
+---@param original_lines string[] The list of lines in the original (commented on) version of the file
+---@param root_node NuiTree.Node The root node of the comment in the discussion tree
+---@param tree NuiTree The discussion tree instance
+local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, tree)
+  local keymaps = require("gitlab.state").settings.keymaps
+
+  -- Reset suggestion buffer to original state and close preview tab
   for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
-    vim.keymap.set("n", "q", function()
+    vim.keymap.set("n", keymaps.popup.discard_changes, function()
+      set_buffer_lines(suggestion_buf, original_lines)
       vim.cmd.tabclose()
-      if original_buf ~= nil then
-        if vim.api.nvim_buf_is_valid(original_buf) then
-          vim.cmd.bwipeout(original_buf)
-        end
-      end
-      if suggestion_buf ~= nil then
-        if vim.api.nvim_buf_is_valid(suggestion_buf) then
-          vim.api.nvim_set_option_value("modifiable", true, { buf = suggestion_buf })
-          set_buffer_lines(suggestion_buf, original_lines)
-        end
-      end
-      -- TODO: restore suggestion buffer if it's HEAD!
-    end, { buffer = bufnr, desc = "Close suggestion preview tab" })
+    end, { buffer = bufnr, desc = "Close preview tab discarding changes" })
   end
+
+  -- Post updated suggestion note buffer to the server.
+  vim.keymap.set("n", keymaps.popup.perform_action, function()
+    vim.api.nvim_buf_call(note_buf, function()
+      vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
+    end)
+    local note_node = common.get_note_node(tree, tree:get_node())
+    if note_node == nil then
+      u.notify("Couldn't get note node", vim.log.levels.ERROR)
+      return
+    end
+    local note_id = note_node.is_root and note_node.root_note_id or note_node.id
+    local edit_action = root_node.is_draft
+        and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
+      or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
+    edit_action(u.get_buffer_text(note_buf))
+    set_buffer_lines(suggestion_buf, original_lines)
+    vim.cmd.tabclose()
+  end, { buffer = note_buf, desc = "Update suggestion note on Gitlab" })
 end
 
 local replace_range = function(full_text, start_idx, end_idx, new_lines)
@@ -337,7 +361,7 @@ M.show_preview = function(opts)
   local note_winid = vim.fn.win_getid(3)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines)
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, opts.tree)
 
   -- Create autocommand for showing the active suggestion buffer in window 2
   local last_line = suggestions[1].note_start_linenr
@@ -371,38 +395,6 @@ M.show_preview = function(opts)
       refresh_diagnostics(suggestions, note_buf)
     end
   })
-
-  -- Set keymap for posting updated note buffer to the server.
-  vim.keymap.set("n", "ZZ", function()
-    vim.api.nvim_buf_call(note_buf, function()
-      vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
-    end)
-    local text = u.get_buffer_text(note_buf)
-    local root_id = tostring(root_node.id)
-
-    local current_node = opts.tree:get_node()
-    local note_node = common.get_note_node(opts.tree, current_node)
-    if note_node == nil then
-      u.notify("Couldn't get note node", vim.log.levels.ERROR)
-      return
-    end
-    local note_id = tonumber(note_node.root_note_id or note_node.id)
-
-    if root_node.is_draft then
-      require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)(text)
-    else
-      require("gitlab.actions.comment").confirm_edit_comment(root_id, note_id, false)(text)
-    end
-
-
-    if suggestion_buf ~= nil then
-      if vim.api.nvim_buf_is_valid(suggestion_buf) then
-        vim.api.nvim_set_option_value("modifiable", true, { buf = suggestion_buf })
-        set_buffer_lines(suggestion_buf, original_lines)
-      end
-    end
-    vim.cmd.tabclose()
-  end, { buffer = note_buf, desc = "Send the suggestion note to the server." })
 
   refresh_diagnostics(suggestions, note_buf)
 
