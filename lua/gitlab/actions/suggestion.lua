@@ -164,6 +164,18 @@ local create_diagnostics = function(suggestions)
   return diagnostics_data
 end
 
+---Show diagnostics for suggestions (enables using built-in navigation)
+---@param suggestions Suggestion[] The list of suggestions for which diagnostics should be created.
+---@param note_buf integer The number of the note buffer
+local refresh_diagnostics = function(suggestions, note_buf)
+  local diagnostics_data = create_diagnostics(suggestions)
+  vim.diagnostic.reset(suggestion_namespace, note_buf)
+  vim.diagnostic.set(suggestion_namespace, note_buf, diagnostics_data, indicators_common.create_display_opts())
+end
+
+---Return true if the file has uncommitted or unsaved changes.
+---@param file_name string Name of file to check.
+---@return boolean
 local is_modified = function(file_name)
   local has_changes = git.has_changes(file_name)
   local bufnr = vim.fn.bufnr(file_name, true)
@@ -198,14 +210,15 @@ M.show_preview = function(opts)
     return
   end
 
-  -- If preview is already open for given note, go to the tab with a warning.
-  local note_bufname = string.format("gitlab://NOTE/%s", root_node._id)
-  local tabnr = get_tabnr_for_buf(note_bufname)
-  if tabnr ~= nil then
-    vim.api.nvim_set_current_tabpage(tabnr)
-    u.notify("Previously created preview can be outdated", vim.log.levels.WARN)
-    return
-  end
+  -- -- If preview is already open for given note, go to the tab with a warning.
+  -- -- TODO: fix checking that note is already being edited.
+  -- local note_bufname = string.format("gitlab://NOTE/%s", root_node._id)
+  -- local tabnr = get_tabnr_for_buf(note_bufname)
+  -- if tabnr ~= nil then
+  --   vim.api.nvim_set_current_tabpage(tabnr)
+  --   u.notify("Previously created preview can be outdated", vim.log.levels.WARN)
+  --   return
+  -- end
 
   -- Return early when there're no suggestions.
   local note_lines = common.get_note_lines(opts.tree)
@@ -310,15 +323,15 @@ M.show_preview = function(opts)
   vim.cmd("1,2windo diffthis")
 
   -- Create the note window
-  local note_buf = vim.api.nvim_create_buf(false, true)
+  local note_buf = vim.api.nvim_create_buf(false, false)
+  local note_bufname = vim.fn.tempname()
   vim.api.nvim_buf_set_name(note_buf, note_bufname)
   vim.api.nvim_cmd({ cmd = "vnew", args = { note_bufname } }, {})
   vim.api.nvim_buf_set_lines(note_buf, 0, -1, false, note_lines)
   vim.bo.bufhidden = "wipe"
   vim.bo.buflisted = false
-  vim.bo.buftype = "nofile"
   vim.bo.filetype = "markdown"
-  vim.bo.modifiable = false
+  vim.bo.modified = false
 
   -- Focus the note window
   local note_winid = vim.fn.win_getid(3)
@@ -337,7 +350,7 @@ M.show_preview = function(opts)
         local suggestion = List.new(suggestions):find(function(sug)
           return current_line <= sug.note_end_linenr
         end)
-        if suggestion ~= last_suggestion then
+        if suggestion and suggestion ~= last_suggestion then
           set_buffer_lines(suggestion_buf, suggestion.full_text)
           last_line = current_line
           last_suggestion = suggestion
@@ -347,9 +360,51 @@ M.show_preview = function(opts)
     end
   })
 
-  -- Show diagnostics for suggestions (enables using built-in navigation)
-  local diagnostics_data = create_diagnostics(suggestions)
-  vim.diagnostic.set(suggestion_namespace, note_buf, diagnostics_data, indicators_common.create_display_opts())
+  -- Create autocommand to update suggestions list based on the note buffer content.
+  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+    buffer = note_buf,
+    callback = function()
+      local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
+      suggestions = get_suggestions(updated_note_lines)
+      add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
+      vim.api.nvim_exec_autocmds('CursorMoved', { buffer = note_buf })
+      refresh_diagnostics(suggestions, note_buf)
+    end
+  })
+
+  -- Set keymap for posting updated note buffer to the server.
+  vim.keymap.set("n", "ZZ", function()
+    vim.api.nvim_buf_call(note_buf, function()
+      vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
+    end)
+    local text = u.get_buffer_text(note_buf)
+    local root_id = tostring(root_node.id)
+
+    local current_node = opts.tree:get_node()
+    local note_node = common.get_note_node(opts.tree, current_node)
+    if note_node == nil then
+      u.notify("Couldn't get note node", vim.log.levels.ERROR)
+      return
+    end
+    local note_id = tonumber(note_node.root_note_id or note_node.id)
+
+    if root_node.is_draft then
+      require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)(text)
+    else
+      require("gitlab.actions.comment").confirm_edit_comment(root_id, note_id, false)(text)
+    end
+
+
+    if suggestion_buf ~= nil then
+      if vim.api.nvim_buf_is_valid(suggestion_buf) then
+        vim.api.nvim_set_option_value("modifiable", true, { buf = suggestion_buf })
+        set_buffer_lines(suggestion_buf, original_lines)
+      end
+    end
+    vim.cmd.tabclose()
+  end, { buffer = note_buf, desc = "Send the suggestion note to the server." })
+
+  refresh_diagnostics(suggestions, note_buf)
 
   -- Show the discussion heading as virtual text
   local mark_opts = { virt_lines = { { { opts.node.text, "WarningMsg" } } }, virt_lines_above = true }
