@@ -221,6 +221,48 @@ local add_full_text_to_suggestions = function(suggestions, end_line_number, orig
   end
 end
 
+---Create autocommands for the note buffer
+---@param note_buf integer Note buffer number
+---@param suggestion_buf integer Suggestion buffer number
+---@param suggestions Suggestion[]
+---@param end_line_number integer The last number of the comment range
+---@param original_lines string[] Array of original lines
+local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
+  -- Create autocommand for showing the active suggestion buffer in window 2
+  local last_line = suggestions[1].note_start_linenr
+  local last_suggestion = suggestions[1]
+  vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+    buffer = note_buf,
+    callback = function()
+      local current_line = vim.fn.line(".")
+      if current_line ~= last_line then
+        local suggestion = List.new(suggestions):find(function(sug)
+          return current_line <= sug.note_end_linenr
+        end)
+        if suggestion and suggestion ~= last_suggestion then
+          set_buffer_lines(suggestion_buf, suggestion.full_text)
+          last_line = current_line
+          last_suggestion = suggestion
+          refresh_signs(suggestion, note_buf)
+        end
+      end
+    end,
+  })
+
+  -- Create autocommand to update suggestions list based on the note buffer content.
+  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+    buffer = note_buf,
+    callback = function()
+      local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
+      suggestions = get_suggestions(updated_note_lines)
+      add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
+      last_line = 0
+      vim.api.nvim_exec_autocmds("CursorMoved", { buffer = note_buf })
+      refresh_diagnostics(suggestions, note_buf)
+    end,
+  })
+end
+
 ---@class ShowPreviewOpts
 ---@field tree NuiTree The current discussion tree instance
 ---@field node NuiTreeNode The current node in the discussion tree
@@ -368,41 +410,8 @@ M.show_preview = function(opts)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
   set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, opts.tree)
-
-  -- Create autocommand for showing the active suggestion buffer in window 2
-  local last_line = suggestions[1].note_start_linenr
-  local last_suggestion = suggestions[1]
-  vim.api.nvim_create_autocmd({ "CursorMoved" }, {
-    buffer = note_buf,
-    callback = function()
-      local current_line = vim.fn.line(".")
-      if current_line ~= last_line then
-        local suggestion = List.new(suggestions):find(function(sug)
-          return current_line <= sug.note_end_linenr
-        end)
-        if suggestion and suggestion ~= last_suggestion then
-          set_buffer_lines(suggestion_buf, suggestion.full_text)
-          last_line = current_line
-          last_suggestion = suggestion
-          refresh_signs(suggestion, note_buf)
-        end
-      end
-    end,
-  })
-
-  -- Create autocommand to update suggestions list based on the note buffer content.
-  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
-    buffer = note_buf,
-    callback = function()
-      local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
-      suggestions = get_suggestions(updated_note_lines)
-      add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
-      vim.api.nvim_exec_autocmds("CursorMoved", { buffer = note_buf })
-      refresh_diagnostics(suggestions, note_buf)
-    end,
-  })
-
   refresh_diagnostics(suggestions, note_buf)
+  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
 
   -- Show the discussion heading as virtual text
   local mark_opts = { virt_lines = { { { opts.node.text, "WarningMsg" } } }, virt_lines_above = true }
