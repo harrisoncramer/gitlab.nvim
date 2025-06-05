@@ -45,7 +45,9 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
   for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
     vim.keymap.set("n", keymaps.popup.discard_changes, function()
       set_buffer_lines(suggestion_buf, original_lines)
-      vim.bo[note_buf].modified = false
+      if vim.api.nvim_buf_is_valid(note_buf) then
+        vim.bo[note_buf].modified = false
+      end
       vim.cmd.tabclose()
     end, { buffer = bufnr, desc = "Close preview tab discarding changes" })
   end
