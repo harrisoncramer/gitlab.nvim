@@ -418,7 +418,11 @@ M.show_preview = function(opts)
   create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
 
   -- Show the discussion heading as virtual text
-  local mark_opts = { virt_lines = { { { opts.node.text, "WarningMsg" } } }, virt_lines_above = true }
+  local mark_opts = {
+    virt_lines = { { { opts.node.text, "WarningMsg" } } },
+    virt_lines_above = true,
+    right_gravity = false,
+  }
   vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
   -- An extmark above the first line is not visible by default, so let's scroll the window:
   vim.cmd("normal! ")
