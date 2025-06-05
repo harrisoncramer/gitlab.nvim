@@ -36,9 +36,9 @@ end
 ---@param original_buf integer Number of the buffer with the original contents of the file
 ---@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch)
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file
----@param root_node NuiTree.Node The root node of the comment in the discussion tree
----@param tree NuiTree The discussion tree instance
-local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, tree)
+---@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment)
+---@param note_node NuiTreeNode The first node of a comment or reply
+local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
   local keymaps = require("gitlab.state").settings.keymaps
 
   -- Reset suggestion buffer to original state and close preview tab
@@ -57,11 +57,6 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
     vim.api.nvim_buf_call(note_buf, function()
       vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
     end)
-    local note_node = common.get_note_node(tree, tree:get_node())
-    if note_node == nil then
-      u.notify("Couldn't get note node", vim.log.levels.ERROR)
-      return
-    end
     local note_id = note_node.is_root and note_node.root_note_id or note_node.id
     local edit_action = root_node.is_draft
         and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
@@ -266,16 +261,29 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
   })
 end
 
----@class ShowPreviewOpts
----@field tree NuiTree The current discussion tree instance
----@field node NuiTreeNode The current node in the discussion tree
+---Show the note header as virtual text
+---@param text string The text to show in the header
+---@param note_buf integer The number of the note buffer
+local add_window_header = function(text, note_buf)
+  local mark_opts = {
+    virt_lines = { { { text, "WarningMsg" } } },
+    virt_lines_above = true,
+    right_gravity = false,
+  }
+  vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
+  -- An extmark above the first line is not visible by default, so let's scroll the window:
+  vim.cmd("normal! ")
+  -- TODO: Add virtual text (or winbar?) to show the diffed revision of the ORIGINAL.
+end
 
 ---Get suggestions from the current note and preview them in a new tab
----@param opts ShowPreviewOpts
-M.show_preview = function(opts)
-  local root_node = common.get_root_node(opts.tree, opts.node)
-  if root_node == nil then
-    u.notify("Couldn't get root node", vim.log.levels.ERROR)
+---@param tree NuiTree The current discussion tree instance
+M.show_preview = function(tree)
+  local current_node = tree:get_node()
+  local root_node = common.get_root_node(tree, current_node)
+  local note_node = common.get_note_node(tree, current_node)
+  if root_node == nil or note_node == nil then
+    u.notify("Couldn't get root node or note node", vim.log.levels.ERROR)
     return
   end
 
@@ -290,7 +298,7 @@ M.show_preview = function(opts)
   -- end
 
   -- Return early when there're no suggestions.
-  local note_lines = common.get_note_lines(opts.tree)
+  local note_lines = common.get_note_lines(tree)
   local suggestions = get_suggestions(note_lines)
   if #suggestions == 0 then
     u.notify("Note doesn't contain any suggestion.", vim.log.levels.WARN)
@@ -413,20 +421,10 @@ M.show_preview = function(opts)
   local note_winid = vim.fn.win_getid(3)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, opts.tree)
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
   refresh_diagnostics(suggestions, note_buf)
   create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
-
-  -- Show the discussion heading as virtual text
-  local mark_opts = {
-    virt_lines = { { { opts.node.text, "WarningMsg" } } },
-    virt_lines_above = true,
-    right_gravity = false,
-  }
-  vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
-  -- An extmark above the first line is not visible by default, so let's scroll the window:
-  vim.cmd("normal! ")
-  -- TODO: Add virtual text (or winbar?) to show the diffed revision of the ORIGINAL.
+  add_window_header(note_node.text, note_buf)
 end
 
 return M

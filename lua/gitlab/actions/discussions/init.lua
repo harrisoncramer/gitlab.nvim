@@ -253,10 +253,7 @@ end
 -- Preview the suggestion(s) in the current discussion tree node
 M.preview_suggestion = function(tree)
   local suggestion = require("gitlab.actions.suggestion")
-  suggestion.show_preview({
-    node = tree:get_node(),
-    tree = tree,
-  })
+  suggestion.show_preview(tree)
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
