@@ -382,12 +382,13 @@ M.show_preview = function(opts)
   end
 
   -- Create the suggestion buffer and show a diff with the original version
+  local split_cmd = vim.o.columns > 240 and "vsplit" or "split"
   if M.imply_local then
-    vim.api.nvim_cmd({ cmd = "vsplit", args = { original_file_name } }, {})
+    vim.api.nvim_cmd({ cmd = split_cmd, args = { original_file_name } }, {})
   else
     local sug_file_name = get_temp_file_name("SUGGESTION", root_node._id, root_node.file_name)
     vim.fn.mkdir(vim.fn.fnamemodify(sug_file_name, ":h"), "p")
-    vim.api.nvim_cmd({ cmd = "vnew", args = { sug_file_name } }, {})
+    vim.api.nvim_cmd({ cmd = split_cmd, args = { sug_file_name } }, {})
     vim.bo.bufhidden = "wipe"
     vim.bo.buflisted = false
     vim.bo.buftype = "nofile"
@@ -401,7 +402,7 @@ M.show_preview = function(opts)
   local note_buf = vim.api.nvim_create_buf(false, false)
   local note_bufname = vim.fn.tempname()
   vim.api.nvim_buf_set_name(note_buf, note_bufname)
-  vim.api.nvim_cmd({ cmd = "vnew", args = { note_bufname } }, {})
+  vim.api.nvim_cmd({ cmd = "vnew", mods = { split = "botright" }, args = { note_bufname } }, {})
   vim.api.nvim_buf_set_lines(note_buf, 0, -1, false, note_lines)
   vim.bo.bufhidden = "wipe"
   vim.bo.buflisted = false
