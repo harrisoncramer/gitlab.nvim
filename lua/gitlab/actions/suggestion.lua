@@ -67,7 +67,13 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
   end, { buffer = note_buf, desc = "Update suggestion note on Gitlab" })
 end
 
-local replace_range = function(full_text, start_idx, end_idx, new_lines)
+---Replace a range of items in a list with items fromanother list
+---@param full_text string[] The full list of lines
+---@param start_idx integer The beginning of the range to be replaced
+---@param end_idx integer The end of the range to be replaced
+---@param new_lines string[] The lines of text that should replace the original range
+---@return string[] The new list of lines after replacing
+local replace_line_range = function(full_text, start_idx, end_idx, new_lines)
   -- Copy the original text
   local new_tbl = {}
   for _, val in ipairs(full_text) do
@@ -84,9 +90,11 @@ local replace_range = function(full_text, start_idx, end_idx, new_lines)
   return new_tbl
 end
 
+---Refresh the signs in the note buffer
+---@param suggestion Suggestion The data for an individual suggestion.
+---@param note_buf integer The number of the note buffer
 local refresh_signs = function(suggestion, note_buf)
   vim.fn.sign_unplace("gitlab.suggestion")
-
   vim.fn.sign_place(
     suggestion.note_start_linenr,
     "gitlab.suggestion",
@@ -103,23 +111,22 @@ local refresh_signs = function(suggestion, note_buf)
   )
 end
 
+---Create the name for a temporary file.
+---@param revision string The revision of the file for which the comment was made.
+---@param node_id any The id of the note node containing the suggestion.
+---@param file_name string The name of the commented file.
+---@return string buf_name The full name of the new buffer.
+---@return integer bufnr The number of the buffer associated with the new name (-1 if buffer doesn't exist).
 local get_temp_file_name = function(revision, node_id, file_name)
-  local buf_name = string.format("gitlab://%s/%s/%s", revision, node_id, file_name)
-  local existing_bufnr = vim.fn.bufnr(buf_name)
-  if existing_bufnr > -1 and vim.fn.bufexists(existing_bufnr) then
-    vim.cmd.bwipeout(existing_bufnr)
-  end
-  return buf_name
+  local buf_name = string.format("gitlab::%s/%s::%s", revision, node_id, file_name)
+  local bufnr = vim.fn.bufnr(buf_name)
+  return buf_name, bufnr
 end
 
----Check if buffer already exists and return the number of the tab it's open in
----@param bufname string The full name of the buffer to check.
----@return number|nil tabnr The tabpage number if buffer is already open or nil.
-local get_tabnr_for_buf = function(bufname)
-  local bufnr = vim.fn.bufnr(bufname)
-  if bufnr == -1 then
-    return nil
-  end
+---Check if buffer already exists and return the number of the tab it's open in.
+---@param bufnr integer The buffer number to check.
+---@return number|nil tabnr The tabpage number if buffer is already open, or nil.
+local get_tabnr_for_buf = function(bufnr)
   for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
     for _, winnr in ipairs(vim.api.nvim_tabpage_list_wins(tabnr)) do
       if vim.api.nvim_win_get_buf(winnr) == bufnr then
@@ -215,7 +222,7 @@ local add_full_text_to_suggestions = function(suggestions, end_line_number, orig
   for _, suggestion in ipairs(suggestions) do
     local start_line = end_line_number - suggestion.start_line_offset
     local end_line = end_line_number + suggestion.end_line_offset
-    suggestion.full_text = replace_range(original_lines, start_line, end_line, suggestion.lines)
+    suggestion.full_text = replace_line_range(original_lines, start_line, end_line, suggestion.lines)
   end
 end
 
@@ -287,16 +294,6 @@ M.show_preview = function(tree)
     return
   end
 
-  -- -- If preview is already open for given note, go to the tab with a warning.
-  -- -- TODO: fix checking that note is already being edited.
-  -- local note_bufname = string.format("gitlab://NOTE/%s", root_node._id)
-  -- local tabnr = get_tabnr_for_buf(note_bufname)
-  -- if tabnr ~= nil then
-  --   vim.api.nvim_set_current_tabpage(tabnr)
-  --   u.notify("Previously created preview can be outdated", vim.log.levels.WARN)
-  --   return
-  -- end
-
   -- Return early when there're no suggestions.
   local note_lines = common.get_note_lines(tree)
   local suggestions = get_suggestions(note_lines)
@@ -329,6 +326,15 @@ M.show_preview = function(tree)
     return
   end
 
+  -- If preview is already open for given note, go to the tab with a warning.
+  local original_buf_name, original_bufnr = get_temp_file_name("ORIGINAL", note_node.id, original_file_name)
+  local tabnr = get_tabnr_for_buf(original_bufnr)
+  if tabnr ~= nil then
+    vim.api.nvim_set_current_tabpage(tabnr)
+    u.notify("Previously created preview can be outdated", vim.log.levels.WARN)
+    return
+  end
+
   -- Get the text on which the suggestion was created
   local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
   -- If the original revision doesn't contain the file, the branch was possibly rebased, and the
@@ -350,11 +356,10 @@ M.show_preview = function(tree)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
-  local original_buf = vim.api.nvim_create_buf(false, true)
+  vim.fn.mkdir(vim.fn.fnamemodify(original_buf_name, ":h"), "p")
+  vim.api.nvim_cmd({ cmd = "tabnew", args = { original_buf_name } }, {})
+  local original_buf = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(original_buf, 0, -1, false, original_lines)
-  local buf_name = get_temp_file_name("ORIGINAL", root_node._id, root_node.file_name)
-  vim.api.nvim_buf_set_name(original_buf, buf_name)
-  vim.api.nvim_cmd({ cmd = "tabnew", args = { buf_name } }, {})
   vim.bo.bufhidden = "wipe"
   vim.bo.buflisted = false
   vim.bo.buftype = "nofile"
@@ -394,9 +399,9 @@ M.show_preview = function(tree)
   if M.imply_local then
     vim.api.nvim_cmd({ cmd = split_cmd, args = { original_file_name } }, {})
   else
-    local sug_file_name = get_temp_file_name("SUGGESTION", root_node._id, root_node.file_name)
-    vim.fn.mkdir(vim.fn.fnamemodify(sug_file_name, ":h"), "p")
-    vim.api.nvim_cmd({ cmd = split_cmd, args = { sug_file_name } }, {})
+    local sug_buf_name = get_temp_file_name("SUGGESTION", note_node.id, root_node.file_name)
+    vim.fn.mkdir(vim.fn.fnamemodify(sug_buf_name, ":h"), "p")
+    vim.api.nvim_cmd({ cmd = split_cmd, args = { sug_buf_name } }, {})
     vim.bo.bufhidden = "wipe"
     vim.bo.buflisted = false
     vim.bo.buftype = "nofile"
