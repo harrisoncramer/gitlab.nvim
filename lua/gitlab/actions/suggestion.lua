@@ -19,12 +19,13 @@ local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_no
 ---Reset the contents of the suggestion buffer.
 ---@param bufnr integer The number of the suggestion buffer.
 ---@param lines string[] Lines of text to put into the buffer.
-local set_buffer_lines = function(bufnr, lines)
+---@param imply_local boolean True if buffer is local file and should be written.
+local set_buffer_lines = function(bufnr, lines, imply_local)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-  if M.imply_local then
+  if imply_local then
     vim.api.nvim_buf_call(bufnr, function()
       vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
     end)
@@ -38,13 +39,14 @@ end
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file.
 ---@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment).
 ---@param note_node NuiTreeNode The first node of a comment or reply.
-local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
+---@param imply_local boolean True if suggestion buffer is local file and should be written.
+local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local)
   local keymaps = require("gitlab.state").settings.keymaps
 
   -- Reset suggestion buffer to original state and close preview tab
   for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
     vim.keymap.set("n", keymaps.popup.discard_changes, function()
-      set_buffer_lines(suggestion_buf, original_lines)
+      set_buffer_lines(suggestion_buf, original_lines, imply_local)
       if vim.api.nvim_buf_is_valid(note_buf) then
         vim.bo[note_buf].modified = false
       end
@@ -62,7 +64,7 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
         and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
       or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
     edit_action(u.get_buffer_text(note_buf))
-    set_buffer_lines(suggestion_buf, original_lines)
+    set_buffer_lines(suggestion_buf, original_lines, imply_local)
     vim.cmd.tabclose()
   end, { buffer = note_buf, desc = "Update suggestion note on Gitlab" })
 end
@@ -230,7 +232,8 @@ end
 ---@param suggestions Suggestion[] List of suggestion data.
 ---@param end_line_number integer The last number of the comment range.
 ---@param original_lines string[] Array of original lines.
-local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
+---@param imply_local boolean True if suggestion buffer is local file and should be written.
+local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
   -- Create autocommand for showing the active suggestion buffer in window 2
   local last_line = suggestions[1].note_start_linenr
   local last_suggestion = suggestions[1]
@@ -243,7 +246,7 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
           return current_line <= sug.note_end_linenr
         end)
         if suggestion and suggestion ~= last_suggestion then
-          set_buffer_lines(suggestion_buf, suggestion.full_text)
+          set_buffer_lines(suggestion_buf, suggestion.full_text, imply_local)
           last_line = current_line
           last_suggestion = suggestion
           refresh_signs(suggestion, note_buf)
@@ -370,7 +373,7 @@ M.show_preview = function(tree)
     old_file_name = root_node.old_file_name,
     file_name = root_node.file_name,
   })
-  M.imply_local = false
+  local imply_local = false
   if not is_new_sha then
     u.notify(
       string.format("Comment on unchanged text. Using target-branch version of `%s`", original_file_name),
@@ -387,12 +390,12 @@ M.show_preview = function(tree)
       vim.log.levels.WARNING
     )
   else
-    M.imply_local = true
+    imply_local = true
   end
 
   -- Create the suggestion buffer and show a diff with the original version
   local split_cmd = vim.o.columns > 240 and "vsplit" or "split"
-  if M.imply_local then
+  if imply_local then
     vim.api.nvim_cmd({ cmd = split_cmd, args = { original_file_name } }, {})
   else
     local sug_buf_name = get_temp_file_name("SUGGESTION", note_node.id, root_node.file_name)
@@ -404,7 +407,7 @@ M.show_preview = function(tree)
     vim.bo.filetype = buf_filetype
   end
   local suggestion_buf = vim.api.nvim_get_current_buf()
-  set_buffer_lines(suggestion_buf, suggestions[1].full_text)
+  set_buffer_lines(suggestion_buf, suggestions[1].full_text, imply_local)
   vim.cmd("1,2windo diffthis")
 
   -- Create the note window
@@ -419,8 +422,8 @@ M.show_preview = function(tree)
   vim.bo.modified = false
 
   -- Set up keymaps and autocommands
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
-  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local)
+  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
 
   -- Focus the note window on the first suggestion
   local note_winid = vim.fn.win_getid(3)
