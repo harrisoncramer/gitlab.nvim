@@ -16,9 +16,9 @@ vim.fn.sign_define("GitlabSuggestion", {
 
 local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note")
 
----Reset the contents of the suggestion buffer
----@param bufnr integer
----@param lines string[]
+---Reset the contents of the suggestion buffer.
+---@param bufnr integer The number of the suggestion buffer.
+---@param lines string[] Lines of text to put into the buffer.
 local set_buffer_lines = function(bufnr, lines)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return
@@ -31,13 +31,13 @@ local set_buffer_lines = function(bufnr, lines)
   end
 end
 
----Set keymaps for the suggestion tab buffers
----@param note_buf integer Number of the note buffer
----@param original_buf integer Number of the buffer with the original contents of the file
----@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch)
----@param original_lines string[] The list of lines in the original (commented on) version of the file
----@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment)
----@param note_node NuiTreeNode The first node of a comment or reply
+---Set keymaps for the suggestion tab buffers.
+---@param note_buf integer Number of the note buffer.
+---@param original_buf integer Number of the buffer with the original contents of the file.
+---@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch).
+---@param original_lines string[] The list of lines in the original (commented on) version of the file.
+---@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment).
+---@param note_node NuiTreeNode The first node of a comment or reply.
 local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
   local keymaps = require("gitlab.state").settings.keymaps
 
@@ -67,12 +67,12 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
   end, { buffer = note_buf, desc = "Update suggestion note on Gitlab" })
 end
 
----Replace a range of items in a list with items fromanother list
----@param full_text string[] The full list of lines
----@param start_idx integer The beginning of the range to be replaced
----@param end_idx integer The end of the range to be replaced
----@param new_lines string[] The lines of text that should replace the original range
----@return string[] The new list of lines after replacing
+---Replace a range of items in a list with items fromanother list.
+---@param full_text string[] The full list of lines.
+---@param start_idx integer The beginning of the range to be replaced.
+---@param end_idx integer The end of the range to be replaced.
+---@param new_lines string[] The lines of text that should replace the original range.
+---@return string[] new_tbl The new list of lines after replacing.
 local replace_line_range = function(full_text, start_idx, end_idx, new_lines)
   -- Copy the original text
   local new_tbl = {}
@@ -90,9 +90,9 @@ local replace_line_range = function(full_text, start_idx, end_idx, new_lines)
   return new_tbl
 end
 
----Refresh the signs in the note buffer
+---Refresh the signs in the note buffer.
 ---@param suggestion Suggestion The data for an individual suggestion.
----@param note_buf integer The number of the note buffer
+---@param note_buf integer The number of the note buffer.
 local refresh_signs = function(suggestion, note_buf)
   vim.fn.sign_unplace("gitlab.suggestion")
   vim.fn.sign_place(
@@ -145,8 +145,9 @@ end
 ---@field lines string[] The text of the suggesion
 ---@field full_text string[] The full text of the file with the suggesion applied
 
----Create the suggestion list from the note text
----@return Suggestion[]
+---Create the suggestion list from the note text.
+---@param note_lines string[] The content of the comment.
+---@return Suggestion[] suggestions List of suggestion data.
 local get_suggestions = function(note_lines)
   local suggestions = {}
   local in_suggestion = false
@@ -156,7 +157,6 @@ local get_suggestions = function(note_lines)
   for i, line in ipairs(note_lines) do
     local start_quote = string.match(line, "^%s*(`+)suggestion:%-%d+%+%d+")
     local end_quote = string.match(line, "^%s*(`+)%s*$")
-
     if start_quote ~= nil and not in_suggestion then
       quote = start_quote
       in_suggestion = true
@@ -172,11 +172,13 @@ local get_suggestions = function(note_lines)
       table.insert(suggestion.lines, line)
     end
   end
+
   return suggestions
 end
 
----Create diagnostics data from suggesions
----@param suggestions Suggestion[]
+---Create diagnostics data from suggesions.
+---@param suggestions Suggestion[] The list of suggestions data for the current note.
+---@return vim.Diagnostic[] diagnostics_data List of diagnostic data for vim.diagnostic.set.
 local create_diagnostics = function(suggestions)
   local diagnostics_data = {}
   for _, suggestion in ipairs(suggestions) do
@@ -193,7 +195,7 @@ local create_diagnostics = function(suggestions)
   return diagnostics_data
 end
 
----Show diagnostics for suggestions (enables using built-in navigation)
+---Show diagnostics for suggestions (enables using built-in navigation with `]d` and `[d`).
 ---@param suggestions Suggestion[] The list of suggestions for which diagnostics should be created.
 ---@param note_buf integer The number of the note buffer
 local refresh_diagnostics = function(suggestions, note_buf)
@@ -214,10 +216,10 @@ local is_modified = function(file_name)
   return false
 end
 
----Update suggestions with the changes applied to the original text
----@param suggestions Suggestion[]
----@param end_line_number integer The last number of the comment range
----@param original_lines string[] Array of original lines
+---Update suggestions with the changes applied to the original text.
+---@param suggestions Suggestion[] List of existing partial suggestion data.
+---@param end_line_number integer The last number of the comment range.
+---@param original_lines string[] Array of original lines.
 local add_full_text_to_suggestions = function(suggestions, end_line_number, original_lines)
   for _, suggestion in ipairs(suggestions) do
     local start_line = end_line_number - suggestion.start_line_offset
@@ -226,12 +228,12 @@ local add_full_text_to_suggestions = function(suggestions, end_line_number, orig
   end
 end
 
----Create autocommands for the note buffer
----@param note_buf integer Note buffer number
----@param suggestion_buf integer Suggestion buffer number
----@param suggestions Suggestion[]
----@param end_line_number integer The last number of the comment range
----@param original_lines string[] Array of original lines
+---Create autocommands for the note buffer.
+---@param note_buf integer Note buffer number.
+---@param suggestion_buf integer Suggestion buffer number.
+---@param suggestions Suggestion[] List of suggestion data.
+---@param end_line_number integer The last number of the comment range.
+---@param original_lines string[] Array of original lines.
 local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
   -- Create autocommand for showing the active suggestion buffer in window 2
   local last_line = suggestions[1].note_start_linenr
@@ -268,9 +270,9 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
   })
 end
 
----Show the note header as virtual text
----@param text string The text to show in the header
----@param note_buf integer The number of the note buffer
+---Show the note header as virtual text.
+---@param text string The text to show in the header.
+---@param note_buf integer The number of the note buffer.
 local add_window_header = function(text, note_buf)
   local mark_opts = {
     virt_lines = { { { text, "WarningMsg" } } },
@@ -280,11 +282,12 @@ local add_window_header = function(text, note_buf)
   vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
   -- An extmark above the first line is not visible by default, so let's scroll the window:
   vim.cmd("normal! ")
-  -- TODO: Add virtual text (or winbar?) to show the diffed revision of the ORIGINAL.
+  -- TODO: Add virtual text (or winbar?) to show the diffed revision of the ORIGINAL. This doesn't
+  -- work well because of the diff scrollbind makes the extmark above line 1 disappear.
 end
 
----Get suggestions from the current note and preview them in a new tab
----@param tree NuiTree The current discussion tree instance
+---Get suggestions from the current note and preview them in a new tab.
+---@param tree NuiTree The current discussion tree instance.
 M.show_preview = function(tree)
   local current_node = tree:get_node()
   local root_node = common.get_root_node(tree, current_node)
@@ -422,13 +425,15 @@ M.show_preview = function(tree)
   vim.bo.filetype = "markdown"
   vim.bo.modified = false
 
-  -- Focus the note window
+  -- Set up keymaps and autocommands
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
+  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
+
+  -- Focus the note window on the first suggestion
   local note_winid = vim.fn.win_getid(3)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node)
   refresh_diagnostics(suggestions, note_buf)
-  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines)
   add_window_header(note_node.text, note_buf)
 end
 
