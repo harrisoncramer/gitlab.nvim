@@ -147,8 +147,10 @@ end
 
 ---Create the suggestion list from the note text.
 ---@param note_lines string[] The content of the comment.
+---@param end_line_number integer The last number of the comment range.
+---@param original_lines string[] Array of original lines.
 ---@return Suggestion[] suggestions List of suggestion data.
-local get_suggestions = function(note_lines)
+local get_suggestions = function(note_lines, end_line_number, original_lines)
   local suggestions = {}
   local in_suggestion = false
   local suggestion = {}
@@ -165,6 +167,12 @@ local get_suggestions = function(note_lines)
       suggestion.lines = {}
     elseif end_quote and end_quote == quote then
       suggestion.note_end_linenr = i
+
+      -- Add the full text with the changes applied to the original text.
+      local start_line = end_line_number - suggestion.start_line_offset
+      local end_line = end_line_number + suggestion.end_line_offset
+      suggestion.full_text = replace_line_range(original_lines, start_line, end_line, suggestion.lines)
+
       table.insert(suggestions, suggestion)
       in_suggestion = false
       suggestion = {}
@@ -216,18 +224,6 @@ local is_modified = function(file_name)
   return false
 end
 
----Update suggestions with the changes applied to the original text.
----@param suggestions Suggestion[] List of existing partial suggestion data.
----@param end_line_number integer The last number of the comment range.
----@param original_lines string[] Array of original lines.
-local add_full_text_to_suggestions = function(suggestions, end_line_number, original_lines)
-  for _, suggestion in ipairs(suggestions) do
-    local start_line = end_line_number - suggestion.start_line_offset
-    local end_line = end_line_number + suggestion.end_line_offset
-    suggestion.full_text = replace_line_range(original_lines, start_line, end_line, suggestion.lines)
-  end
-end
-
 ---Create autocommands for the note buffer.
 ---@param note_buf integer Note buffer number.
 ---@param suggestion_buf integer Suggestion buffer number.
@@ -261,8 +257,7 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
     buffer = note_buf,
     callback = function()
       local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
-      suggestions = get_suggestions(updated_note_lines)
-      add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
+      suggestions = get_suggestions(updated_note_lines, end_line_number, original_lines)
       last_line = 0
       vim.api.nvim_exec_autocmds("CursorMoved", { buffer = note_buf })
       refresh_diagnostics(suggestions, note_buf)
@@ -294,14 +289,6 @@ M.show_preview = function(tree)
   local note_node = common.get_note_node(tree, current_node)
   if root_node == nil or note_node == nil then
     u.notify("Couldn't get root node or note node", vim.log.levels.ERROR)
-    return
-  end
-
-  -- Return early when there're no suggestions.
-  local note_lines = common.get_note_lines(tree)
-  local suggestions = get_suggestions(note_lines)
-  if #suggestions == 0 then
-    u.notify("Note doesn't contain any suggestion.", vim.log.levels.WARN)
     return
   end
 
@@ -355,7 +342,13 @@ M.show_preview = function(tree)
   end
   local original_lines = vim.fn.split(original_head_text, "\n", true)
 
-  add_full_text_to_suggestions(suggestions, end_line_number, original_lines)
+  -- Return early when there're no suggestions.
+  local note_lines = common.get_note_lines(tree)
+  local suggestions = get_suggestions(note_lines, end_line_number, original_lines)
+  if #suggestions == 0 then
+    u.notify("Note doesn't contain any suggestion.", vim.log.levels.WARN)
+    return
+  end
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
