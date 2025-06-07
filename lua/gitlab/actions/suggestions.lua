@@ -417,7 +417,6 @@ M.show_preview = function(tree)
     return
   end
 
-  -- Return early when there're no suggestions.
   local note_lines = common.get_note_lines(tree)
   local suggestions = get_suggestions(note_lines, end_line_number, original_lines)
 
