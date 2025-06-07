@@ -69,13 +69,18 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
   end, { buffer = note_buf, desc = "Update suggestion note on Gitlab" })
 end
 
----Replace a range of items in a list with items fromanother list.
+---Replace a range of items in a list with items from another list.
 ---@param full_text string[] The full list of lines.
 ---@param start_idx integer The beginning of the range to be replaced.
 ---@param end_idx integer The end of the range to be replaced.
 ---@param new_lines string[] The lines of text that should replace the original range.
+---@param note_start_linenr number The line number in the note text where the suggesion begins
 ---@return string[] new_tbl The new list of lines after replacing.
-local replace_line_range = function(full_text, start_idx, end_idx, new_lines)
+local replace_line_range = function(full_text, start_idx, end_idx, new_lines, note_start_linenr)
+  if start_idx < 1 then
+    u.notify(string.format("Can't apply suggestion at line %d, invalid start of range.", note_start_linenr), vim.log.levels.ERROR)
+    return full_text
+  end
   -- Copy the original text
   local new_tbl = {}
   for _, val in ipairs(full_text) do
@@ -199,7 +204,7 @@ local get_suggestions = function(note_lines, end_line_number, original_lines)
       -- Add the full text with the changes applied to the original text.
       local start_line = end_line_number - suggestion.start_line_offset
       local end_line = end_line_number + suggestion.end_line_offset
-      suggestion.full_text = replace_line_range(original_lines, start_line, end_line, suggestion.lines)
+      suggestion.full_text = replace_line_range(original_lines, start_line, end_line, suggestion.lines, suggestion.note_start_linenr)
 
       table.insert(suggestions, suggestion)
       in_suggestion = false
