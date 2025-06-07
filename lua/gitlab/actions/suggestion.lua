@@ -97,6 +97,9 @@ end
 ---@param note_buf integer The number of the note buffer.
 local refresh_signs = function(suggestion, note_buf)
   vim.fn.sign_unplace("gitlab.suggestion")
+  if suggestion.is_default then
+    return
+  end
   vim.fn.sign_place(
     suggestion.note_start_linenr,
     "gitlab.suggestion",
@@ -146,6 +149,7 @@ end
 ---@field note_end_linenr number The line number in the note text where the suggesion ends
 ---@field lines string[] The text of the suggesion
 ---@field full_text string[] The full text of the file with the suggesion applied
+---@field is_default boolean If true, the "suggestion" is a placeholder for comments without actual suggestions.
 
 ---Create the suggestion list from the note text.
 ---@param note_lines string[] The content of the comment.
@@ -183,6 +187,19 @@ local get_suggestions = function(note_lines, end_line_number, original_lines)
     end
   end
 
+  if #suggestions == 0 then
+    suggestions = {
+      {
+        start_line_offset = 0,
+        end_line_offset = 0,
+        note_start_linenr = 1,
+        note_end_linenr = 1,
+        lines = {},
+        full_text = original_lines,
+        is_default = true,
+      }
+    }
+  end
   return suggestions
 end
 
@@ -192,15 +209,17 @@ end
 local create_diagnostics = function(suggestions)
   local diagnostics_data = {}
   for _, suggestion in ipairs(suggestions) do
-    local diagnostic = {
-      message = table.concat(suggestion.lines, "\n") .. "\n",
-      col = 0,
-      severity = vim.diagnostic.severity.INFO,
-      source = "gitlab",
-      code = "gitlab.nvim",
-      lnum = suggestion.note_start_linenr - 1,
-    }
-    table.insert(diagnostics_data, diagnostic)
+    if not suggestion.is_default then
+      local diagnostic = {
+        message = table.concat(suggestion.lines, "\n") .. "\n",
+        col = 0,
+        severity = vim.diagnostic.severity.INFO,
+        source = "gitlab",
+        code = "gitlab.nvim",
+        lnum = suggestion.note_start_linenr - 1,
+      }
+      table.insert(diagnostics_data, diagnostic)
+    end
   end
   return diagnostics_data
 end
@@ -348,10 +367,6 @@ M.show_preview = function(tree)
   -- Return early when there're no suggestions.
   local note_lines = common.get_note_lines(tree)
   local suggestions = get_suggestions(note_lines, end_line_number, original_lines)
-  if #suggestions == 0 then
-    u.notify("Note doesn't contain any suggestion.", vim.log.levels.WARN)
-    return
-  end
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
