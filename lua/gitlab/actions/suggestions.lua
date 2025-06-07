@@ -396,8 +396,8 @@ local add_window_header = function(text, note_buf)
   vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
   -- An extmark above the first line is not visible by default, so let's scroll the window:
   vim.cmd("normal! ")
-  -- TODO: Add virtual text (or winbar?) to show the diffed revision of the ORIGINAL. This doesn't
-  -- work well because of the diff scrollbind makes the extmark above line 1 disappear.
+  -- TODO: Replace with winbar, possibly also show the diffed revision of the ORIGINAL.
+  -- Extmarks are not ideal for this because of scrolling issues.
 end
 
 ---Get suggestions from the current note and preview them in a new tab.
