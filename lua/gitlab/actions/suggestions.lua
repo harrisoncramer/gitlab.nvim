@@ -40,7 +40,8 @@ end
 ---@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment).
 ---@param note_node NuiTreeNode The first node of a comment or reply.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
-local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local)
+---@param default_suggestion_lines string[] The default suggestion lines with backticks.
+local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines)
   local keymaps = require("gitlab.state").settings.keymaps
 
   -- Reset suggestion buffer to original state and close preview tab
@@ -70,6 +71,12 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
       set_buffer_lines(suggestion_buf, original_lines, imply_local)
       vim.cmd.tabclose()
     end, { buffer = note_buf, desc = "Update suggestion note on Gitlab", nowait = keymaps.suggestion_preview.apply_changes_nowait  })
+  end
+
+  if keymaps.suggestion_preview.paste_default_suggestion then
+    vim.keymap.set("n", keymaps.suggestion_preview.paste_default_suggestion, function()
+      vim.api.nvim_put(default_suggestion_lines, "l", true, false)
+    end, { buffer = note_buf, desc = "Paste default suggestion", nowait = keymaps.suggestion_preview.paste_default_suggestion_nowait  })
   end
 end
 
@@ -159,6 +166,26 @@ local get_original_lines = function(original_file_name, revision)
   return vim.fn.split(original_head_text, "\n", true)
 end
 
+---Create the default suggestion lines for given comment range.
+---@param original_lines string[] The list of lines in the original (commented on) version of the file.
+---@param start_line_number integer The start line of the range of the comment (1-based indexing).
+---@param end_line_number integer The end line of the range of the comment.
+---@return string[] suggestion_lines
+local get_default_suggestion = function(original_lines, start_line_number, end_line_number)
+  local backticks = "```"
+  local selected_lines = {unpack(original_lines, start_line_number, end_line_number)}
+  for _, line in ipairs(selected_lines) do
+    local match = string.match(line, "^%s*(`+)%s*$")
+    if match and #match >= #backticks then
+      backticks = match .. "`"
+    end
+  end
+  local suggestion_lines = {backticks .. "suggestion:-" .. (end_line_number - start_line_number) .. "+0"}
+  vim.list_extend(suggestion_lines, selected_lines)
+  table.insert(suggestion_lines, backticks)
+  return suggestion_lines
+end
+
 ---Check if buffer already exists and return the number of the tab it's open in.
 ---@param bufnr integer The buffer number to check.
 ---@return number|nil tabnr The tabpage number if buffer is already open, or nil.
@@ -246,7 +273,7 @@ local is_modified = function(file_name)
   return false
 end
 
----Decide if local file should be used to show suggestion preview
+---Decide if local file should be used to show suggestion preview.
 ---@param revision string The revision of the file for which the comment was made.
 ---@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment).
 ---@param is_new_sha boolean True if line number refers to NEW SHA
@@ -386,7 +413,7 @@ M.show_preview = function(tree)
   end
 
   -- Decide which revision to use for the ORIGINAL text
-  local _, is_new_sha, end_line_number = common.get_line_number_from_node(root_node)
+  local start_line_number, is_new_sha, end_line_number = common.get_line_number_from_node(root_node)
   local revision, original_file_name
   if is_new_sha then
     revision = root_node.head_sha
@@ -464,7 +491,8 @@ M.show_preview = function(tree)
   vim.bo.modified = false
 
   -- Set up keymaps and autocommands
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local)
+  local default_suggestion_lines = get_default_suggestion(original_lines, start_line_number, end_line_number)
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines)
   create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
 
   -- Focus the note window on the first suggestion

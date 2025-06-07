@@ -130,6 +130,7 @@ M.settings = {
     suggestion_preview = {
       apply_changes = "ZZ",
       discard_changes = "ZQ",
+      paste_default_suggestion = "glS",
     },
     reviewer = {
       disable_all = false,

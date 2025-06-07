@@ -228,6 +228,7 @@ you call this function with no values the defaults will be used:
         suggestion_preview = {
           apply_changes = "ZZ", -- Post updated suggestion comment to Gitlab, close the suggestion preview tab and discard changes to local files
           discard_changes = "ZQ", -- Close the suggestion preview tab and discard changes to local files
+          paste_default_suggestion = "glS", -- Paste the default suggestion linewise after the cursor (this overrides the "Start review" keybinding only for the "Comment" buffer)
         },
         reviewer = {
           disable_all = false, -- Disable all default mappings for the reviewer windows
