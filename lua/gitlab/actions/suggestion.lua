@@ -171,7 +171,7 @@ local get_suggestions = function(note_lines, end_line_number, original_lines)
       suggestion.start_line_offset, suggestion.end_line_offset = string.match(line, "^%s*`+suggestion:%-(%d+)%+(%d+)")
       suggestion.note_start_linenr = i
       suggestion.lines = {}
-    elseif end_quote and end_quote == quote then
+    elseif in_suggestion and end_quote and end_quote == quote then
       suggestion.note_end_linenr = i
 
       -- Add the full text with the changes applied to the original text.
