@@ -344,36 +344,41 @@ end
 ---@param original_lines string[] Array of original lines.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
 local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
-  -- Create autocommand for showing the active suggestion buffer in window 2
-  local last_line = suggestions[1].note_start_linenr
-  local last_suggestion = suggestions[1]
-  vim.api.nvim_create_autocmd({ "CursorMoved" }, {
+  local last_line, last_suggestion = suggestions[1].note_start_linenr, suggestions[1]
+
+  ---Update the suggestion buffer if the selected suggestion changes in the Comment buffer.
+  local update_suggestion_buffer = function()
+    local current_line = vim.fn.line(".")
+    if current_line == last_line then
+      return
+    end
+    local suggestion = List.new(suggestions):find(function(sug)
+      return current_line <= sug.note_end_linenr
+    end)
+    if not suggestion or suggestion == last_suggestion then
+      return
+    end
+    set_buffer_lines(suggestion_buf, suggestion.full_text, imply_local)
+    last_line, last_suggestion = current_line, suggestion
+    refresh_signs(suggestion, note_buf)
+  end
+
+  -- Create autocommand to update the Suggestion buffer when the cursor moves in the Comment buffer.
+  vim.api.nvim_create_autocmd({"CursorMoved", "CursorMovedI"}, {
     buffer = note_buf,
     callback = function()
-      local current_line = vim.fn.line(".")
-      if current_line ~= last_line then
-        local suggestion = List.new(suggestions):find(function(sug)
-          return current_line <= sug.note_end_linenr
-        end)
-        if suggestion and suggestion ~= last_suggestion then
-          set_buffer_lines(suggestion_buf, suggestion.full_text, imply_local)
-          last_line = current_line
-          last_suggestion = suggestion
-          refresh_signs(suggestion, note_buf)
-        end
-      end
+      update_suggestion_buffer()
     end,
   })
 
   -- Create autocommand to update suggestions list based on the note buffer content.
-  -- vim.api.nvim_create_autocmd({ "BufWritePost", "CursorHold", "CursorHoldI"  }, {
-  vim.api.nvim_create_autocmd({ "BufWritePost", }, {
+  vim.api.nvim_create_autocmd({"TextChanged", "TextChangedI"}, {
     buffer = note_buf,
     callback = function()
       local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
       suggestions = get_suggestions(updated_note_lines, end_line_number, original_lines)
       last_line = 0
-      vim.api.nvim_exec_autocmds("CursorMoved", { buffer = note_buf })
+      update_suggestion_buffer()
       refresh_diagnostics(suggestions, note_buf)
     end,
   })
