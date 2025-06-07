@@ -203,6 +203,51 @@ local get_suggestions = function(note_lines, end_line_number, original_lines)
   return suggestions
 end
 
+---Return true if the file has uncommitted or unsaved changes.
+---@param file_name string Name of file to check.
+---@return boolean
+local is_modified = function(file_name)
+  local has_changes = git.has_changes(file_name)
+  local bufnr = vim.fn.bufnr(file_name, true)
+  if vim.bo[bufnr].modified or has_changes then
+    return true
+  end
+  return false
+end
+
+---Decide if local file should be used to show suggestion preview
+---@param revision string The revision of the file for which the comment was made.
+---@param root_node NuiTreeNode The first comment in the discussion thread (can be a draft comment).
+---@param is_new_sha boolean True if line number refers to NEW SHA
+---@param original_file_name string The name of the file on which the comment was made.
+local determine_imply_local = function(revision, root_node, is_new_sha, original_file_name)
+  local head_differs_from_original = git.file_differs_in_revisions({
+    original_revision = revision,
+    head_revision = "HEAD",
+    old_file_name = root_node.old_file_name,
+    file_name = root_node.file_name,
+  })
+  if not is_new_sha then
+    u.notify(
+      string.format("Comment on unchanged text. Using target-branch version of `%s`", original_file_name),
+      vim.log.levels.INFO
+    )
+  elseif head_differs_from_original then
+    u.notify(
+      string.format("File changed since comment created. Using feature-branch version of `%s`", original_file_name),
+      vim.log.levels.INFO
+    )
+  elseif is_modified(original_file_name) then
+    u.notify(
+      string.format("File has unsaved or uncommited changes. Using feature-branch version for `%s`", original_file_name),
+      vim.log.levels.WARN
+    )
+  else
+    return true
+  end
+  return false
+end
+
 ---Create diagnostics data from suggesions.
 ---@param suggestions Suggestion[] The list of suggestions data for the current note.
 ---@return vim.Diagnostic[] diagnostics_data List of diagnostic data for vim.diagnostic.set.
@@ -231,18 +276,6 @@ local refresh_diagnostics = function(suggestions, note_buf)
   local diagnostics_data = create_diagnostics(suggestions)
   vim.diagnostic.reset(suggestion_namespace, note_buf)
   vim.diagnostic.set(suggestion_namespace, note_buf, diagnostics_data, indicators_common.create_display_opts())
-end
-
----Return true if the file has uncommitted or unsaved changes.
----@param file_name string Name of file to check.
----@return boolean
-local is_modified = function(file_name)
-  local has_changes = git.has_changes(file_name)
-  local bufnr = vim.fn.bufnr(file_name, true)
-  if vim.bo[bufnr].modified or has_changes then
-    return true
-  end
-  return false
 end
 
 ---Create autocommands for the note buffer.
@@ -381,32 +414,7 @@ M.show_preview = function(tree)
   vim.cmd.filetype("detect")
   local buf_filetype = vim.api.nvim_get_option_value("filetype", { buf = 0 })
 
-  -- Decide if local file should be used to show suggestion preview
-  local head_differs_from_original = git.file_differs_in_revisions({
-    original_revision = revision,
-    head_revision = "HEAD",
-    old_file_name = root_node.old_file_name,
-    file_name = root_node.file_name,
-  })
-  local imply_local = false
-  if not is_new_sha then
-    u.notify(
-      string.format("Comment on unchanged text. Using target-branch version of `%s`", original_file_name),
-      vim.log.levels.WARNING
-    )
-  elseif head_differs_from_original then
-    u.notify(
-      string.format("File changed since comment created. Using feature-branch version of `%s`", original_file_name),
-      vim.log.levels.WARNING
-    )
-  elseif is_modified(original_file_name) then
-    u.notify(
-      string.format("File has unsaved or uncommited changes. Using feature-branch version for `%s`", original_file_name),
-      vim.log.levels.WARNING
-    )
-  else
-    imply_local = true
-  end
+  local imply_local = determine_imply_local(revision, root_node, is_new_sha, original_file_name)
 
   -- Create the suggestion buffer and show a diff with the original version
   local split_cmd = vim.o.columns > 240 and "vsplit" or "split"
