@@ -223,7 +223,7 @@ you call this function with no values the defaults will be used:
           toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
           refresh_data = "<C-R>", -- Refresh the data in the view by hitting Gitlab's APIs again
           print_node = "<leader>p", -- Print the current node (for debugging)
-          preview_suggestion = "sp", -- Show suggestion preview in a new tab
+          edit_suggestion = "se", -- Edit suggestion comment in a new tab
         },
         suggestion_preview = {
           quit = "q", -- Close the suggestion preview tab and discard changes to local files

@@ -251,9 +251,9 @@ M.reply = function(tree)
 end
 
 -- Preview the suggestion(s) in the current discussion tree node
-M.preview_suggestion = function(tree)
-  local suggestion = require("gitlab.actions.suggestion")
-  suggestion.show_preview(tree)
+M.edit_suggestion = function(tree)
+  local suggestions = require("gitlab.actions.suggestions")
+  suggestions.show_preview(tree)
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
@@ -595,12 +595,12 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
       })
     end
 
-    if keymaps.discussion_tree.preview_suggestion then
-      vim.keymap.set("n", keymaps.discussion_tree.preview_suggestion, function()
+    if keymaps.discussion_tree.edit_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.edit_suggestion, function()
         if M.is_current_node_note(tree) then
-          M.preview_suggestion(tree)
+          M.edit_suggestion(tree)
         end
-      end, { buffer = bufnr, desc = "Preview suggestion", nowait = keymaps.discussion_tree.preview_suggestion_nowait })
+      end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_nowait })
     end
 
   end

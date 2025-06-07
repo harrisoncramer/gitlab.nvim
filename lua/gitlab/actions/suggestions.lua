@@ -335,7 +335,8 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
   })
 
   -- Create autocommand to update suggestions list based on the note buffer content.
-  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+  -- vim.api.nvim_create_autocmd({ "BufWritePost", "CursorHold", "CursorHoldI"  }, {
+  vim.api.nvim_create_autocmd({ "BufWritePost", }, {
     buffer = note_buf,
     callback = function()
       local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
