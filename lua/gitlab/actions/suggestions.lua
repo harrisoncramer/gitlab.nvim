@@ -44,29 +44,33 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
   local keymaps = require("gitlab.state").settings.keymaps
 
   -- Reset suggestion buffer to original state and close preview tab
-  for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
-    vim.keymap.set("n", keymaps.popup.discard_changes, function()
-      set_buffer_lines(suggestion_buf, original_lines, imply_local)
-      if vim.api.nvim_buf_is_valid(note_buf) then
-        vim.bo[note_buf].modified = false
-      end
-      vim.cmd.tabclose()
-    end, { buffer = bufnr, desc = "Close preview tab discarding changes" })
+  if keymaps.suggestion_preview.discard_changes then
+    for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
+      vim.keymap.set("n", keymaps.suggestion_preview.discard_changes, function()
+        set_buffer_lines(suggestion_buf, original_lines, imply_local)
+        if vim.api.nvim_buf_is_valid(note_buf) then
+          vim.bo[note_buf].modified = false
+        end
+        vim.cmd.tabclose()
+      end, { buffer = bufnr, desc = "Close preview tab discarding changes", nowait = keymaps.suggestion_preview.discard_changes_nowait })
+    end
   end
 
   -- Post updated suggestion note buffer to the server.
-  vim.keymap.set("n", keymaps.popup.perform_action, function()
-    vim.api.nvim_buf_call(note_buf, function()
-      vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
-    end)
-    local note_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
-    local edit_action = root_node.is_draft
-        and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
-      or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
-    edit_action(u.get_buffer_text(note_buf))
-    set_buffer_lines(suggestion_buf, original_lines, imply_local)
-    vim.cmd.tabclose()
-  end, { buffer = note_buf, desc = "Update suggestion note on Gitlab" })
+  if keymaps.suggestion_preview.apply_changes then
+    vim.keymap.set("n", keymaps.suggestion_preview.apply_changes, function()
+      vim.api.nvim_buf_call(note_buf, function()
+        vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
+      end)
+      local note_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
+      local edit_action = root_node.is_draft
+          and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
+        or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
+      edit_action(u.get_buffer_text(note_buf))
+      set_buffer_lines(suggestion_buf, original_lines, imply_local)
+      vim.cmd.tabclose()
+    end, { buffer = note_buf, desc = "Update suggestion note on Gitlab", nowait = keymaps.suggestion_preview.apply_changes_nowait  })
+  end
 end
 
 ---Replace a range of items in a list with items from another list.

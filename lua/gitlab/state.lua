@@ -128,7 +128,8 @@ M.settings = {
       edit_suggestion = "se",
     },
     suggestion_preview = {
-      quit = "q",
+      apply_changes = "ZZ",
+      discard_changes = "ZQ",
     },
     reviewer = {
       disable_all = false,

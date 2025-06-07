@@ -226,7 +226,8 @@ you call this function with no values the defaults will be used:
           edit_suggestion = "se", -- Edit suggestion comment in a new tab
         },
         suggestion_preview = {
-          quit = "q", -- Close the suggestion preview tab and discard changes to local files
+          apply_changes = "ZZ", -- Post updated suggestion comment to Gitlab, close the suggestion preview tab and discard changes to local files
+          discard_changes = "ZQ", -- Close the suggestion preview tab and discard changes to local files
         },
         reviewer = {
           disable_all = false, -- Disable all default mappings for the reviewer windows
