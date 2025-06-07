@@ -128,6 +128,28 @@ local get_temp_file_name = function(revision, node_id, file_name)
   return buf_name, bufnr
 end
 
+---Get the text on which the suggestion was created.
+---@param original_file_name string The name of the file on which the comment was made.
+---@param revision string The revision of the file for which the comment was made.
+---@return string[]|nil original_lines The list of original lines.
+local get_original_lines = function(original_file_name, revision)
+  local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
+  -- If the original revision doesn't contain the file, the branch was possibly rebased, and the
+  -- original revision could not been found.
+  if original_head_text == nil then
+    u.notify(
+      string.format(
+        "File `%s` doesn't contain any text in revision `%s` for which comment was made",
+        original_file_name,
+        revision
+      ),
+      vim.log.levels.WARN
+    )
+    return
+  end
+  return vim.fn.split(original_head_text, "\n", true)
+end
+
 ---Check if buffer already exists and return the number of the tab it's open in.
 ---@param bufnr integer The buffer number to check.
 ---@return number|nil tabnr The tabpage number if buffer is already open, or nil.
@@ -380,22 +402,10 @@ M.show_preview = function(tree)
     return
   end
 
-  -- Get the text on which the suggestion was created
-  local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
-  -- If the original revision doesn't contain the file, the branch was possibly rebased, and the
-  -- original revision could not been found.
-  if original_head_text == nil then
-    u.notify(
-      string.format(
-        "File `%s` doesn't contain any text in revision `%s` for which comment was made",
-        original_file_name,
-        revision
-      ),
-      vim.log.levels.WARN
-    )
+  local original_lines = get_original_lines(original_file_name, revision)
+  if original_lines == nil then
     return
   end
-  local original_lines = vim.fn.split(original_head_text, "\n", true)
 
   -- Return early when there're no suggestions.
   local note_lines = common.get_note_lines(tree)
