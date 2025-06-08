@@ -78,6 +78,10 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
       vim.api.nvim_put(default_suggestion_lines, "l", true, false)
     end, { buffer = note_buf, desc = "Paste default suggestion", nowait = keymaps.suggestion_preview.paste_default_suggestion_nowait  })
   end
+
+  -- TODO: Keymap for applying changes to the Suggestion buffer.
+  -- TODO: Keymap for showing help on keymaps in the Comment buffer and Suggestion buffer.
+  -- TODO: Keymap for uploading files.
 end
 
 ---Replace a range of items in a list with items from another list.
@@ -285,11 +289,14 @@ local determine_imply_local = function(revision, root_node, is_new_sha, original
     old_file_name = root_node.old_file_name,
     file_name = root_node.file_name,
   })
+  -- TODO: Find out if this condition is not too restrictive.
   if not is_new_sha then
     u.notify(
       string.format("Comment on unchanged text. Using target-branch version of `%s`", original_file_name),
       vim.log.levels.INFO
     )
+  -- TODO: Find out if this condition is not too restrictive (maybe instead check if a later comment in the thread matches "^changed this line in [version %d+ of the diff]").
+  -- TODO: Rework to be able to switch between diffing against current head and original head.
   elseif head_differs_from_original then
     u.notify(
       string.format("File changed since comment created. Using feature-branch version of `%s`", original_file_name),
@@ -400,6 +407,8 @@ local add_window_header = function(text, note_buf)
   -- Extmarks are not ideal for this because of scrolling issues.
 end
 
+---TODO: Enable "reply_with_suggestion" from discussion tree.
+---TODO: Enable "create_comment_with_suggestion" from reviewe.r
 ---Get suggestions from the current note and preview them in a new tab.
 ---@param tree NuiTree The current discussion tree instance.
 M.show_preview = function(tree)

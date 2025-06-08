@@ -244,6 +244,7 @@ M.reply = function(tree)
     discussion_id = discussion_id,
     unlinked = unlinked,
     reply = true,
+    -- TODO: use discussion_node.old_file_name for comments on unchanged lines in renamed files
     file_name = discussion_node.file_name,
   })
 
