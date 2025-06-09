@@ -41,7 +41,8 @@ end
 ---@param note_node NuiTreeNode The first node of a comment or reply.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
 ---@param default_suggestion_lines string[] The default suggestion lines with backticks.
-local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines)
+---@param is_reply boolean True if the suggestion comment is a reply to a thread.
+local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines, is_reply)
   local keymaps = require("gitlab.state").settings.keymaps
 
   -- Reset suggestion buffer to original state and close preview tab
@@ -63,11 +64,18 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
       vim.api.nvim_buf_call(note_buf, function()
         vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
       end)
+
       local note_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
-      local edit_action = root_node.is_draft
-          and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
-        or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
-      edit_action(u.get_buffer_text(note_buf))
+      if root_node.is_draft then
+        require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)(u.get_buffer_text(note_buf))
+      elseif is_reply then
+        -- TODO: enable creating drafts (will have to modify lua/gitlab/actions/comment.lua 35 and
+        -- swtich from extmark to winbar for the window header).
+        require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false, root_node.id)
+      else
+        require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)(u.get_buffer_text(note_buf))
+      end
+
       set_buffer_lines(suggestion_buf, original_lines, imply_local)
       vim.cmd.tabclose()
     end, { buffer = note_buf, desc = "Update suggestion note on Gitlab", nowait = keymaps.suggestion_preview.apply_changes_nowait  })
@@ -394,9 +402,10 @@ end
 ---Show the note header as virtual text.
 ---@param text string The text to show in the header.
 ---@param note_buf integer The number of the note buffer.
-local add_window_header = function(text, note_buf)
+---@param is_reply boolean True if the suggestion comment is a reply to a thread.
+local add_window_header = function(text, note_buf, is_reply)
   local mark_opts = {
-    virt_lines = { { { text, "WarningMsg" } } },
+    virt_lines = { { { is_reply and "Reply to: " or "Edit: ", "Normal" }, { text, "WarningMsg" } } },
     virt_lines_above = true,
     right_gravity = false,
   }
@@ -411,7 +420,8 @@ end
 ---TODO: Enable "create_comment_with_suggestion" from reviewe.r
 ---Get suggestions from the current note and preview them in a new tab.
 ---@param tree NuiTree The current discussion tree instance.
-M.show_preview = function(tree)
+---@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
+M.show_preview = function(tree, is_reply)
   local current_node = tree:get_node()
   local root_node = common.get_root_node(tree, current_node)
   local note_node = common.get_note_node(tree, current_node)
@@ -458,7 +468,7 @@ M.show_preview = function(tree)
     return
   end
 
-  local note_lines = common.get_note_lines(tree)
+  local note_lines = is_reply and get_default_suggestion(original_lines, start_line_number, end_line_number) or common.get_note_lines(tree)
   local suggestions = get_suggestions(note_lines, end_line_number, original_lines)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
@@ -506,7 +516,7 @@ M.show_preview = function(tree)
 
   -- Set up keymaps and autocommands
   local default_suggestion_lines = get_default_suggestion(original_lines, start_line_number, end_line_number)
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines)
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines, is_reply)
   create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
 
   -- Focus the note window on the first suggestion
@@ -514,7 +524,7 @@ M.show_preview = function(tree)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
   refresh_diagnostics(suggestions, note_buf)
-  add_window_header(note_node.text, note_buf)
+  add_window_header(note_node.text, note_buf, is_reply)
 end
 
 return M

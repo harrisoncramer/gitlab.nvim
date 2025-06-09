@@ -26,7 +26,7 @@ local M = {
 ---@param text string comment text
 ---@param unlinked boolean if true, the comment is not linked to a line
 ---@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
-local confirm_create_comment = function(text, unlinked, discussion_id)
+M.confirm_create_comment = function(text, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
@@ -188,13 +188,13 @@ M.create_comment_layout = function(opts)
   ---Keybinding for focus on draft section
   popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
-    confirm_create_comment(text, unlinked, opts.discussion_id)
+    M.confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
   popup.set_popup_keymaps(M.comment_popup, function(text)
-    confirm_create_comment(text, unlinked, opts.discussion_id)
+    M.confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.attach_file, popup.editable_popup_opts)
 

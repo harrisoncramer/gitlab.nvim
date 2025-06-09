@@ -251,7 +251,17 @@ M.reply = function(tree)
   layout:mount()
 end
 
--- Preview the suggestion(s) in the current discussion tree node
+-- Reply to the current thread in a new tab with a default suggestion based on the original text.
+M.reply_with_suggestion = function(tree)
+  if M.is_draft_note(tree) then
+    u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
+    return
+  end
+  local suggestions = require("gitlab.actions.suggestions")
+  suggestions.show_preview(tree, true)
+end
+
+-- Edit the current comment in a new tab with a suggestion preview.
 M.edit_suggestion = function(tree)
   local suggestions = require("gitlab.actions.suggestions")
   suggestions.show_preview(tree)
@@ -602,6 +612,14 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
           M.edit_suggestion(tree)
         end
       end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_nowait })
+    end
+
+    if keymaps.discussion_tree.reply_with_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.reply_with_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.reply_with_suggestion(tree)
+        end
+      end, { buffer = bufnr, desc = "Reply with suggestion", nowait = keymaps.discussion_tree.reply_with_suggestion_nowait })
     end
 
   end

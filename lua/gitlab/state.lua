@@ -126,6 +126,7 @@ M.settings = {
       refresh_data = "<C-R>",
       print_node = "<leader>p",
       edit_suggestion = "se",
+      reply_with_suggestion = "sr",
     },
     suggestion_preview = {
       apply_changes = "ZZ",
