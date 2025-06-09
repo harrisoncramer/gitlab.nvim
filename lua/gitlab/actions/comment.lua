@@ -32,7 +32,7 @@ M.confirm_create_comment = function(text, unlinked, discussion_id)
     return
   end
 
-  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr)) or state.settings.discussion_tree.draft_mode
 
   -- Creating a normal reply to a discussion
   if discussion_id ~= nil and not is_draft then

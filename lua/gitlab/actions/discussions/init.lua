@@ -834,6 +834,10 @@ end
 ---Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
 M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = "GitlabDraftModeToggled",
+    data = { draft_mode = state.settings.discussion_tree.draft_mode }
+  })
 end
 
 ---Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the

@@ -15,6 +15,7 @@ vim.fn.sign_define("GitlabSuggestion", {
 })
 
 local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note")
+local note_header_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note_header")
 
 ---Reset the contents of the suggestion buffer.
 ---@param bufnr integer The number of the suggestion buffer.
@@ -69,8 +70,6 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
       if root_node.is_draft then
         require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)(u.get_buffer_text(note_buf))
       elseif is_reply then
-        -- TODO: enable creating drafts (will have to modify lua/gitlab/actions/comment.lua 35 and
-        -- swtich from extmark to winbar for the window header).
         require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false, root_node.id)
       else
         require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)(u.get_buffer_text(note_buf))
@@ -351,6 +350,35 @@ local refresh_diagnostics = function(suggestions, note_buf)
   vim.diagnostic.set(suggestion_namespace, note_buf, diagnostics_data, indicators_common.create_display_opts())
 end
 
+local get_mode = function(is_reply)
+  if not is_reply then
+    return
+  end
+  if require("gitlab.state").settings.discussion_tree.draft_mode then
+    return { " Draft", "GitlabDraftMode" }
+  else
+    return { " Live", "GitlabLiveMode" }
+  end
+end
+
+---Show the note header as virtual text.
+---@param text string The text to show in the header.
+---@param note_buf integer The number of the note buffer.
+---@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
+local add_window_header = function(text, note_buf, is_reply)
+  vim.api.nvim_buf_clear_namespace(note_buf, note_header_namespace, 0, -1)
+  local mark_opts = {
+    virt_lines = { { { is_reply and "Reply to: " or "Edit: ", "Normal" }, { text, "GitlabUserName" }, get_mode(is_reply) } },
+    virt_lines_above = true,
+    right_gravity = false,
+  }
+  vim.api.nvim_buf_set_extmark(note_buf, note_header_namespace, 0, 0, mark_opts)
+  -- An extmark above the first line is not visible by default, so let's scroll the window:
+  vim.cmd("normal! ")
+  -- TODO: Replace with winbar, possibly also show the diffed revision of the ORIGINAL.
+  -- Extmarks are not ideal for this because of scrolling issues.
+end
+
 ---Create autocommands for the note buffer.
 ---@param note_buf integer Note buffer number.
 ---@param suggestion_buf integer Suggestion buffer number.
@@ -358,7 +386,7 @@ end
 ---@param end_line_number integer The last number of the comment range.
 ---@param original_lines string[] Array of original lines.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
-local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
+local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local, note_header, is_reply)
   local last_line, last_suggestion = suggestions[1].note_start_linenr, suggestions[1]
 
   ---Update the suggestion buffer if the selected suggestion changes in the Comment buffer.
@@ -397,23 +425,24 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
       refresh_diagnostics(suggestions, note_buf)
     end,
   })
-end
 
----Show the note header as virtual text.
----@param text string The text to show in the header.
----@param note_buf integer The number of the note buffer.
----@param is_reply boolean True if the suggestion comment is a reply to a thread.
-local add_window_header = function(text, note_buf, is_reply)
-  local mark_opts = {
-    virt_lines = { { { is_reply and "Reply to: " or "Edit: ", "Normal" }, { text, "WarningMsg" } } },
-    virt_lines_above = true,
-    right_gravity = false,
-  }
-  vim.api.nvim_buf_set_extmark(note_buf, suggestion_namespace, 0, 0, mark_opts)
-  -- An extmark above the first line is not visible by default, so let's scroll the window:
-  vim.cmd("normal! ")
-  -- TODO: Replace with winbar, possibly also show the diffed revision of the ORIGINAL.
-  -- Extmarks are not ideal for this because of scrolling issues.
+  -- Update the note buffer header when draft mode is toggled.
+  local group = vim.api.nvim_create_augroup("GitlabDraftModeToggled" .. note_buf, { clear = true })
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = "GitlabDraftModeToggled",
+    callback = function()
+      add_window_header(note_header, note_buf, is_reply)
+    end,
+  })
+  -- Auto-delete the group when the buffer is unloaded.
+  vim.api.nvim_create_autocmd("BufUnload", {
+    buffer = note_buf,
+    group = group,
+    callback = function()
+      vim.api.nvim_del_augroup_by_id(group)
+    end,
+  })
 end
 
 ---TODO: Enable "reply_with_suggestion" from discussion tree.
@@ -517,7 +546,7 @@ M.show_preview = function(tree, is_reply)
   -- Set up keymaps and autocommands
   local default_suggestion_lines = get_default_suggestion(original_lines, start_line_number, end_line_number)
   set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines, is_reply)
-  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local)
+  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local, note_node.text, is_reply)
 
   -- Focus the note window on the first suggestion
   local note_winid = vim.fn.win_getid(3)
