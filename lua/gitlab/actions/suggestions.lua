@@ -67,7 +67,7 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
       end)
 
       local note_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
-      if root_node.is_draft then
+      if note_node.is_draft then
         require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)(u.get_buffer_text(note_buf))
       elseif is_reply then
         require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false, root_node.id)
