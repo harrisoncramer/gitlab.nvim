@@ -240,7 +240,7 @@ end
 ---@return string|nil
 M.get_current_file_oldpath = function()
   local file_data = M.get_current_file_data()
-  return file_data and file_data.oldpath
+  return file_data and file_data.oldpath or file_data.path
 end
 
 ---Tell whether current file is renamed or not
