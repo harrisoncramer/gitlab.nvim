@@ -46,11 +46,11 @@ jobs:
           neovim: true
           version: ${{ matrix.nvim_version }}
       - name: Install luajit
-        uses: leafo/gh-actions-lua@v10
+        uses: leafo/gh-actions-lua@v11
         with:
           luaVersion: "luajit-openresty"
       - name: Install luarocks
-        uses: leafo/gh-actions-luarocks@v4
+        uses: leafo/gh-actions-luarocks@v5
       - name: Run tests
         shell: bash
         run: |
