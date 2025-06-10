@@ -51,6 +51,8 @@ jobs:
           luaVersion: "luajit-openresty"
       - name: Install luarocks
         uses: leafo/gh-actions-luarocks@v5
+        with:
+          luarocksVersion: "3.8.0"
       - name: Run tests
         shell: bash
         run: |
