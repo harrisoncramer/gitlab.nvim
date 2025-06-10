@@ -235,6 +235,7 @@ you call this function with no values the defaults will be used:
           disable_all = false, -- Disable all default mappings for the reviewer windows
           create_comment = "c", -- Create a comment for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
           create_suggestion = "s", -- Create a suggestion for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
+          create_suggestion_with_preview = "s", -- In a new tab create a suggestion with a diff preview for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
           move_to_discussion_tree = "a", -- Jump to the comment in the discussion tree
         },
       },

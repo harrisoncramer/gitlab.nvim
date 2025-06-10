@@ -137,6 +137,7 @@ M.settings = {
       disable_all = false,
       create_comment = "c",
       create_suggestion = "s",
+      create_suggestion_with_preview = "S",
       move_to_discussion_tree = "a",
     },
   },

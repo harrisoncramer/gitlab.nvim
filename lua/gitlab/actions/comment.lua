@@ -21,6 +21,13 @@ local M = {
   comment_popup = nil,
 }
 
+---Decide if the comment is a draft based on the draft popup field.
+---@return boolean|nil is_draft True if the draft popup exists and the string it contains converts to `true`.
+local get_draft_value_from_popup = function()
+  local buf_is_valid = M.draft_popup and M.draft_popup.bufnr and vim.api.nvim_buf_is_valid(M.draft_popup.bufnr)
+  return buf_is_valid and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+end
+
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.keymaps.popup.perform_action keybinding
 ---@param text string comment text
@@ -32,7 +39,7 @@ M.confirm_create_comment = function(text, unlinked, discussion_id)
     return
   end
 
-  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr)) or state.settings.discussion_tree.draft_mode
+  local is_draft = get_draft_value_from_popup() or state.settings.discussion_tree.draft_mode
 
   -- Creating a normal reply to a discussion
   if discussion_id ~= nil and not is_draft then
@@ -293,6 +300,17 @@ M.create_comment_suggestion = function()
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
     end
   end)
+end
+
+--- This function will create a new tab with a suggestion preview for the changed/updated line in
+--- the current MR.
+M.create_comment_with_suggestion = function()
+  M.location = Location.new()
+  if not M.can_create_comment(true) then
+    u.press_escape()
+    return
+  end
+  require("gitlab.actions.suggestions").show_preview(nil, false, M.location)
 end
 
 ---Returns true if it's possible to create an Inline Comment
