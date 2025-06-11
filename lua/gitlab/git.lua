@@ -246,8 +246,8 @@ M.revision_exists = function(revision)
 end
 
 ---@class FileDiffersInRevisionsOpts
----@field original_revision string
----@field head_revision string
+---@field revision_1 string
+---@field revision_2 string
 ---@field old_file_name string
 ---@field file_name string
 
@@ -255,7 +255,7 @@ end
 ---@param opts FileDiffersInRevisionsOpts
 ---@return boolean
 M.file_differs_in_revisions = function(opts)
-  local result = run_system({ "git", "diff", "-M", opts.original_revision, opts.head_revision, "--", opts.old_file_name, opts.file_name })
+  local result = run_system({ "git", "diff", "-M", opts.revision_1, opts.revision_2, "--", opts.old_file_name, opts.file_name })
   return result ~= ""
 end
 

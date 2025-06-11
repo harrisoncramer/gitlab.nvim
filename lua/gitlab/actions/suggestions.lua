@@ -298,8 +298,8 @@ end
 ---@param new_file_name string The new name of the file on which the comment was made.
 local determine_imply_local = function(revision, is_new_sha, original_file_name, new_file_name)
   local head_differs_from_original = git.file_differs_in_revisions({
-    original_revision = revision,
-    head_revision = "HEAD",
+    revision_1 = revision,
+    revision_2 = "HEAD",
     old_file_name = original_file_name,
     file_name = new_file_name,
   })
@@ -312,8 +312,10 @@ local determine_imply_local = function(revision, is_new_sha, original_file_name,
   -- TODO: Find out if this condition is not too restrictive (maybe instead check if a later comment in the thread matches "^changed this line in [version %d+ of the diff]").
   -- TODO: Rework to be able to switch between diffing against current head and original head.
   elseif head_differs_from_original then
+    -- TODO: Fix the logic of determining what version is used to create the diff, whether the local
+    -- file used and when this log message is shown.
     u.notify(
-      string.format("File changed since comment created. Using feature-branch version of `%s`", original_file_name),
+      string.format("File changed since comment created. Using version of `%s` on which comment was made", original_file_name),
       vim.log.levels.INFO
     )
   elseif is_modified(original_file_name) then
