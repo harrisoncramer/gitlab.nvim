@@ -186,19 +186,19 @@ end
 
 ---Create the default suggestion lines for given comment range.
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file.
----@param start_line_number integer The start line of the range of the comment (1-based indexing).
----@param end_line_number integer The end line of the range of the comment.
+---@param start_line integer The start line number of the range of the comment (1-based indexing).
+---@param end_line integer The end line number of the range of the comment.
 ---@return string[] suggestion_lines
-local get_default_suggestion = function(original_lines, start_line_number, end_line_number)
+local get_default_suggestion = function(original_lines, start_line, end_line)
   local backticks = "```"
-  local selected_lines = {unpack(original_lines, start_line_number, end_line_number)}
+  local selected_lines = {unpack(original_lines, start_line, end_line)}
   for _, line in ipairs(selected_lines) do
     local match = string.match(line, "^%s*(`+)%s*$")
     if match and #match >= #backticks then
       backticks = match .. "`"
     end
   end
-  local suggestion_lines = {backticks .. "suggestion:-" .. (end_line_number - start_line_number) .. "+0"}
+  local suggestion_lines = {backticks .. "suggestion:-" .. (end_line - start_line) .. "+0"}
   vim.list_extend(suggestion_lines, selected_lines)
   table.insert(suggestion_lines, backticks)
   return suggestion_lines
@@ -229,10 +229,10 @@ end
 
 ---Create the suggestion list from the note text.
 ---@param note_lines string[] The content of the comment.
----@param end_line_number integer The last number of the comment range.
+---@param end_line integer The last line number of the comment range.
 ---@param original_lines string[] Array of original lines.
 ---@return Suggestion[] suggestions List of suggestion data.
-local get_suggestions = function(note_lines, end_line_number, original_lines)
+local get_suggestions = function(note_lines, end_line, original_lines)
   local suggestions = {}
   local in_suggestion = false
   local suggestion = {}
@@ -251,9 +251,9 @@ local get_suggestions = function(note_lines, end_line_number, original_lines)
       suggestion.note_end_linenr = i
 
       -- Add the full text with the changes applied to the original text.
-      local start_line = end_line_number - suggestion.start_line_offset
-      local end_line = end_line_number + suggestion.end_line_offset
-      suggestion.full_text = replace_line_range(original_lines, start_line, end_line, suggestion.lines, suggestion.note_start_linenr)
+      local start_line = end_line - suggestion.start_line_offset
+      local end_line_number = end_line + suggestion.end_line_offset
+      suggestion.full_text = replace_line_range(original_lines, start_line, end_line_number, suggestion.lines, suggestion.note_start_linenr)
 
       table.insert(suggestions, suggestion)
       in_suggestion = false
@@ -388,12 +388,12 @@ end
 ---@param note_buf integer Note buffer number.
 ---@param suggestion_buf integer Suggestion buffer number.
 ---@param suggestions Suggestion[] List of suggestion data.
----@param end_line_number integer The last number of the comment range.
+---@param end_line integer The last line number of the comment range.
 ---@param original_lines string[] Array of original lines.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
 ---@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
 ---@param is_new_comment boolean True if the suggestion is a new comment.
-local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local, note_header, is_reply, is_new_comment)
+local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line, original_lines, imply_local, note_header, is_reply, is_new_comment)
   local last_line, last_suggestion = suggestions[1].note_start_linenr, suggestions[1]
 
   ---Update the suggestion buffer if the selected suggestion changes in the Comment buffer.
@@ -460,7 +460,7 @@ end
 ---@param location Location|nil The location of the visual selection in the reviewer.
 M.show_preview = function(tree, is_reply, location)
 
-  local start_line_number, end_line_number, is_new_sha, revision
+  local start_line, end_line, is_new_sha, revision
   local root_node, note_node
   local note_buf_header_text, comment_id
   local original_file_name, new_file_name
@@ -484,7 +484,7 @@ M.show_preview = function(tree, is_reply, location)
     end
 
     -- Decide which revision to use for the ORIGINAL text
-    start_line_number, is_new_sha, end_line_number = common.get_line_number_from_node(root_node)
+    start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
     if is_new_sha then
       revision = root_node.head_sha
       original_file_name = root_node.file_name
@@ -498,8 +498,8 @@ M.show_preview = function(tree, is_reply, location)
   elseif location ~= nil then
     note_buf_header_text = "New comment"
     comment_id = "HEAD"
-    start_line_number = location.visual_range.start_line
-    end_line_number = location.visual_range.end_line
+    start_line = location.visual_range.start_line
+    end_line = location.visual_range.end_line
     is_new_sha = location.reviewer_data.new_sha_focused
     revision = is_new_sha and "HEAD" or require("gitlab.state").INFO.target_branch
     original_file_name = location.reviewer_data.file_name or location.reviewer_data.old_file_name
@@ -536,9 +536,9 @@ M.show_preview = function(tree, is_reply, location)
   if tree and not is_reply then
     note_lines = common.get_note_lines(tree)
   else
-    note_lines = get_default_suggestion(original_lines, start_line_number, end_line_number)
+    note_lines = get_default_suggestion(original_lines, start_line, end_line)
   end
-  local suggestions = get_suggestions(note_lines, end_line_number, original_lines)
+  local suggestions = get_suggestions(note_lines, end_line, original_lines)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
@@ -584,9 +584,9 @@ M.show_preview = function(tree, is_reply, location)
   vim.bo.modified = false
 
   -- Set up keymaps and autocommands
-  local default_suggestion_lines = get_default_suggestion(original_lines, start_line_number, end_line_number)
+  local default_suggestion_lines = get_default_suggestion(original_lines, start_line, end_line)
   set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines, is_reply, is_new_comment)
-  create_autocommands(note_buf, suggestion_buf, suggestions, end_line_number, original_lines, imply_local, note_buf_header_text, is_reply, is_new_comment)
+  create_autocommands(note_buf, suggestion_buf, suggestions, end_line, original_lines, imply_local, note_buf_header_text, is_reply, is_new_comment)
 
   -- Focus the note window on the first suggestion
   local note_winid = vim.fn.win_getid(3)
