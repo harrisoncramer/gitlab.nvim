@@ -99,11 +99,11 @@ func InitProjectSettings(c *Client, gitInfo git.GitData) (*ProjectInfo, error) {
 	project, _, err := c.GetProject(gitInfo.ProjectPath(), &opt)
 
 	if err != nil {
-		return nil, fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err)
+		return nil, fmt.Errorf("error getting project at %s: %w", gitInfo.RemoteUrl, err)
 	}
 
 	if project == nil {
-		return nil, fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err)
+		return nil, fmt.Errorf("could not find project at %s", gitInfo.RemoteUrl)
 	}
 
 	projectId := fmt.Sprint(project.ID)
