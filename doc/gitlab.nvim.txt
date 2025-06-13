@@ -161,6 +161,7 @@ you call this function with no values the defaults will be used:
         },
       },
       connection_settings = {
+        proxy = "", -- Configure a proxy URL to use when connecting to GitLab. Supports URL schemes: http, https, socks5
         insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
         remote = "origin", -- The default remote that your MRs target
       },

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 	"github.com/hashicorp/go-retryablehttp"
@@ -64,6 +65,14 @@ func NewClient() (*Client, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: pluginOptions.ConnectionSettings.Insecure,
 		},
+	}
+
+	if proxy := pluginOptions.ConnectionSettings.Proxy; proxy != "" {
+		u, err := url.Parse(proxy)
+		if err != nil {
+			return nil, fmt.Errorf("parse proxy url: %w", err)
+		}
+		tr.Proxy = http.ProxyURL(u)
 	}
 
 	retryClient := retryablehttp.NewClient()
