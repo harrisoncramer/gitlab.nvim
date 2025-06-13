@@ -67,14 +67,14 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
         vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
       end)
 
-      if note_node and root_node then
+      if root_node and is_reply then
+        require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false, root_node.id)
+      elseif note_node and root_node then
         local note_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
         local edit_action = note_node.is_draft
           and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
             or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
         edit_action(u.get_buffer_text(note_buf))
-      elseif root_node and is_reply then
-        require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false, root_node.id)
       elseif is_new_comment then
         require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false)
       else
