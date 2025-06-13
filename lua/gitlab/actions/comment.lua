@@ -310,7 +310,23 @@ M.create_comment_with_suggestion = function()
     u.press_escape()
     return
   end
-  require("gitlab.actions.suggestions").show_preview(nil, false, M.location)
+
+  local original_file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
+    or M.location.reviewer_data.file_name
+  local is_new_sha = M.location.reviewer_data.new_sha_focused
+
+  ---@type ShowPreviewOpts
+  local opts = {
+    original_file_name = original_file_name,
+    new_file_name = M.location.reviewer_data.file_name,
+    start_line = M.location.visual_range.start_line,
+    end_line = M.location.visual_range.end_line,
+    is_new_sha = is_new_sha,
+    revision = is_new_sha and "HEAD" or require("gitlab.state").INFO.target_branch,
+    note_header = "comment",
+    comment_type = "new",
+  }
+  require("gitlab.actions.suggestions").show_preview(opts)
 end
 
 ---Returns true if it's possible to create an Inline Comment

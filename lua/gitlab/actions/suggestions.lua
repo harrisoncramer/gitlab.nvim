@@ -1,7 +1,6 @@
 ---This module is responsible for previewing changes suggested in comments.
 ---The data required to make the API calls are drawn from the discussion nodes.
 
-local common = require("gitlab.actions.common")
 local git = require("gitlab.git")
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
@@ -38,13 +37,10 @@ end
 ---@param original_buf integer Number of the buffer with the original contents of the file.
 ---@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch).
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file.
----@param root_node NuiTreeNode|nil The first comment in the discussion thread (can be a draft comment), nil if a new comment is created.
----@param note_node NuiTreeNode|nil The first node of a comment or reply, nil if a new comment is created.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
 ---@param default_suggestion_lines string[] The default suggestion lines with backticks.
----@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
----@param is_new_comment boolean True if the suggestion is a new comment.
-local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines, is_reply, is_new_comment)
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_lines, imply_local, default_suggestion_lines, opts)
   local keymaps = require("gitlab.state").settings.keymaps
 
   -- Reset suggestion buffer to original state and close preview tab
@@ -67,16 +63,15 @@ local set_keymaps = function(note_buf, original_buf, suggestion_buf, original_li
         vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
       end)
 
-      if root_node and is_reply then
-        require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false, root_node.id)
-      elseif note_node and root_node then
-        local note_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
-        local edit_action = note_node.is_draft
-          and require("gitlab.actions.draft_notes").confirm_edit_draft_note(note_id, false)
-            or require("gitlab.actions.comment").confirm_edit_comment(root_node.id, note_id, false)
-        edit_action(u.get_buffer_text(note_buf))
-      elseif is_new_comment then
-        require("gitlab.actions.comment").confirm_create_comment(u.get_buffer_text(note_buf), false)
+      local buf_text = u.get_buffer_text(note_buf)
+      if opts.comment_type == "reply" then
+        require("gitlab.actions.comment").confirm_create_comment(buf_text, false, opts.root_node_id)
+      elseif opts.comment_type == "draft" then
+        require("gitlab.actions.draft_notes").confirm_edit_draft_note(opts.note_node_id, false)(buf_text)
+      elseif opts.comment_type == "edit" then
+        require("gitlab.actions.comment").confirm_edit_comment(opts.root_node_id, opts.note_node_id, false)(buf_text)
+      elseif opts.comment_type == "new" then
+        require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
       else
         -- This should not really happen.
         u.notify("Cannot create comment", vim.log.levels.ERROR)
@@ -152,30 +147,33 @@ end
 
 ---Create the name for a temporary file.
 ---@param revision string The revision of the file for which the comment was made.
----@param node_id any The id of the note node containing the suggestion.
+---@param node_id string|integer The id of the note node containing the suggestion.
 ---@param file_name string The name of the commented file.
 ---@return string buf_name The full name of the new buffer.
 ---@return integer bufnr The number of the buffer associated with the new name (-1 if buffer doesn't exist).
 local get_temp_file_name = function(revision, node_id, file_name)
+  -- TODO: Come up with a nicer naming convention.
   local buf_name = string.format("gitlab::%s/%s::%s", revision, node_id, file_name)
   local bufnr = vim.fn.bufnr(buf_name)
   return buf_name, bufnr
 end
 
 ---Get the text on which the suggestion was created.
----@param original_file_name string The name of the file on which the comment was made.
----@param revision string The revision of the file for which the comment was made.
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
 ---@return string[]|nil original_lines The list of original lines.
-local get_original_lines = function(original_file_name, revision)
-  local original_head_text = git.get_file_revision({ file_name = original_file_name, revision = revision })
+local get_original_lines = function(opts)
+  local original_head_text = git.get_file_revision({
+    file_name = opts.is_new_sha and opts.new_file_name or opts.original_file_name,
+    revision = opts.revision,
+  })
   -- If the original revision doesn't contain the file, the branch was possibly rebased, and the
   -- original revision could not been found.
   if original_head_text == nil then
     u.notify(
       string.format(
         "File `%s` doesn't contain any text in revision `%s` for which comment was made",
-        original_file_name,
-        revision
+        opts.original_file_name,
+        opts.revision
       ),
       vim.log.levels.WARN
     )
@@ -186,19 +184,18 @@ end
 
 ---Create the default suggestion lines for given comment range.
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file.
----@param start_line integer The start line number of the range of the comment (1-based indexing).
----@param end_line integer The end line number of the range of the comment.
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
 ---@return string[] suggestion_lines
-local get_default_suggestion = function(original_lines, start_line, end_line)
+local get_default_suggestion = function(original_lines, opts)
   local backticks = "```"
-  local selected_lines = {unpack(original_lines, start_line, end_line)}
+  local selected_lines = {unpack(original_lines, opts.start_line, opts.end_line)}
   for _, line in ipairs(selected_lines) do
     local match = string.match(line, "^%s*(`+)%s*$")
     if match and #match >= #backticks then
       backticks = match .. "`"
     end
   end
-  local suggestion_lines = {backticks .. "suggestion:-" .. (end_line - start_line) .. "+0"}
+  local suggestion_lines = {backticks .. "suggestion:-" .. (opts.end_line - opts.start_line) .. "+0"}
   vim.list_extend(suggestion_lines, selected_lines)
   table.insert(suggestion_lines, backticks)
   return suggestion_lines
@@ -292,27 +289,24 @@ local is_modified = function(file_name)
 end
 
 ---Decide if local file should be used to show suggestion preview.
----@param revision string The revision of the file for which the comment was made.
----@param is_new_sha boolean True if line number refers to NEW SHA
----@param original_file_name string The name of the file on which the comment was made.
----@param new_file_name string The new name of the file on which the comment was made.
-local determine_imply_local = function(revision, is_new_sha, original_file_name, new_file_name)
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+local determine_imply_local = function(opts)
   local head_differs_from_original = git.file_differs_in_revisions({
-    revision_1 = revision,
+    revision_1 = opts.revision,
     revision_2 = "HEAD",
-    old_file_name = original_file_name,
-    file_name = new_file_name,
+    old_file_name = opts.original_file_name,
+    file_name = opts.new_file_name,
   })
   -- TODO: Find out if this condition is not too restrictive.
-  if not is_new_sha then
-    u.notify("Comment on unchanged text. Using target-branch version", vim.log.levels.INFO)
+  if not opts.is_new_sha then
+    u.notify("Comment on old text. Using target-branch version", vim.log.levels.INFO)
   -- TODO: Find out if this condition is not too restrictive (maybe instead check if a later comment in the thread matches "^changed this line in [version %d+ of the diff]").
   -- TODO: Rework to be able to switch between diffing against current head and original head.
   elseif head_differs_from_original then
     -- TODO: Fix the logic of determining what version is used to create the diff, whether the local
     -- file used and when this log message is shown.
     u.notify("File changed since comment created. Using version on which comment was made", vim.log.levels.INFO)
-  elseif is_modified(original_file_name) then
+  elseif is_modified(opts.new_file_name) then
     u.notify("File has unsaved or uncommited changes. Using feature-branch version", vim.log.levels.WARN)
   else
     return true
@@ -351,11 +345,10 @@ local refresh_diagnostics = function(suggestions, note_buf)
 end
 
 ---Get the text for the draft mode
----@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
----@param is_new_comment boolean True if the suggestion is a new comment.
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
 ---@return string[]|nil
-local get_mode = function(is_reply, is_new_comment)
-  if not is_reply and not is_new_comment then
+local get_mode = function(opts)
+  if opts.comment_type == "draft" or opts.comment_type == "edit" then
     return
   end
   if require("gitlab.state").settings.discussion_tree.draft_mode then
@@ -366,14 +359,12 @@ local get_mode = function(is_reply, is_new_comment)
 end
 
 ---Show the note header as virtual text.
----@param text string The text to show in the header.
 ---@param note_buf integer The number of the note buffer.
----@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
----@param is_new_comment boolean True if the suggestion is a new comment.
-local add_window_header = function(text, note_buf, is_reply, is_new_comment)
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+local add_window_header = function(note_buf, opts)
   vim.api.nvim_buf_clear_namespace(note_buf, note_header_namespace, 0, -1)
   local mark_opts = {
-    virt_lines = { { { is_reply and "Reply to: " or is_new_comment and "Create: " or "Edit: ", "Normal" }, { text, "GitlabUserName" }, get_mode(is_reply, is_new_comment) } },
+    virt_lines = { { { opts.comment_type .. ": ", "Normal" }, { opts.note_header, "GitlabUserName" }, get_mode(opts) } },
     virt_lines_above = true,
     right_gravity = false,
   }
@@ -388,12 +379,10 @@ end
 ---@param note_buf integer Note buffer number.
 ---@param suggestion_buf integer Suggestion buffer number.
 ---@param suggestions Suggestion[] List of suggestion data.
----@param end_line integer The last line number of the comment range.
 ---@param original_lines string[] Array of original lines.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
----@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
----@param is_new_comment boolean True if the suggestion is a new comment.
-local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_line, original_lines, imply_local, note_header, is_reply, is_new_comment)
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+local create_autocommands = function(note_buf, suggestion_buf, suggestions, original_lines, imply_local, opts)
   local last_line, last_suggestion = suggestions[1].note_start_linenr, suggestions[1]
 
   ---Update the suggestion buffer if the selected suggestion changes in the Comment buffer.
@@ -426,7 +415,7 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
     buffer = note_buf,
     callback = function()
       local updated_note_lines = vim.api.nvim_buf_get_lines(note_buf, 0, -1, false)
-      suggestions = get_suggestions(updated_note_lines, end_line_number, original_lines)
+      suggestions = get_suggestions(updated_note_lines, opts.end_line, original_lines)
       last_line = 0
       update_suggestion_buffer()
       refresh_diagnostics(suggestions, note_buf)
@@ -439,7 +428,7 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
     group = group,
     pattern = "GitlabDraftModeToggled",
     callback = function()
-      add_window_header(note_header, note_buf, is_reply, is_new_comment)
+      add_window_header(note_buf, opts)
     end,
   })
   -- Auto-delete the group when the buffer is unloaded.
@@ -452,74 +441,34 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, end_
   })
 end
 
----TODO: Enable "reply_with_suggestion" from discussion tree.
----TODO: Enable "create_comment_with_suggestion" from reviewe.r
+---@class ShowPreviewOpts The options passed to the M.show_preview function.
+---@field original_file_name string
+---@field new_file_name string
+---@field start_line integer
+---@field end_line integer
+---@field is_new_sha boolean
+---@field revision string
+---@field note_header string
+---@field comment_type "reply"|"draft"|"edit"|"new" The type of comment ("reply", "draft" and "edit" come from the discussion tree, "new" from the reviewer)
+---@field note_lines string[]|nil
+---@field root_node_id string
+---@field note_node_id integer
+
 ---Get suggestions from the current note and preview them in a new tab.
----@param tree NuiTree|nil The current discussion tree instance.
----@param is_reply boolean|nil True if the suggestion comment is a reply to a thread.
----@param location Location|nil The location of the visual selection in the reviewer.
-M.show_preview = function(tree, is_reply, location)
-
-  local start_line, end_line, is_new_sha, revision
-  local root_node, note_node
-  local note_buf_header_text, comment_id
-  local original_file_name, new_file_name
-  local is_new_comment = false
-  -- Populate necessary variables from the discussion tree
-  if tree ~= nil then
-    local current_node = tree:get_node()
-    root_node = common.get_root_node(tree, current_node)
-    note_node = common.get_note_node(tree, current_node)
-    note_buf_header_text = note_node.text
-    comment_id = note_node.id
-    if root_node == nil or note_node == nil then
-      u.notify("Couldn't get root node or note node", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Hack: draft notes don't have head_sha and base_sha yet
-    if root_node.is_draft then
-      root_node.head_sha = "HEAD"
-      root_node.base_sha = require("gitlab.state").INFO.target_branch
-    end
-
-    -- Decide which revision to use for the ORIGINAL text
-    start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
-    if is_new_sha then
-      revision = root_node.head_sha
-      original_file_name = root_node.file_name
-    else
-      revision = root_node.base_sha
-      original_file_name = root_node.old_file_name
-    end
-    new_file_name = root_node.file_name
-
-  -- Populate necessary variables from the reviewer location data
-  elseif location ~= nil then
-    note_buf_header_text = "New comment"
-    comment_id = "HEAD"
-    start_line = location.visual_range.start_line
-    end_line = location.visual_range.end_line
-    is_new_sha = location.reviewer_data.new_sha_focused
-    revision = is_new_sha and "HEAD" or require("gitlab.state").INFO.target_branch
-    original_file_name = location.reviewer_data.file_name or location.reviewer_data.old_file_name
-    new_file_name = location.reviewer_data.file_name
-    is_new_comment = true
-  else
-    u.notify("Cannot create comment", vim.log.levels.ERROR)
-    return
-  end
-
-  if not git.revision_exists(revision) then
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+M.show_preview = function(opts)
+  if not git.revision_exists(opts.revision) then
     u.notify(
-      string.format("Revision `%s` for which the comment was made does not exist", revision),
-      vim.log.levels.WARN
+      string.format("Revision `%s` for which the comment was made does not exist", opts.revision),
+      vim.log.levels.ERROR
     )
     return
   end
 
+  local commented_file_name = opts.is_new_sha and opts.new_file_name or opts.original_file_name
+  local original_buf_name, original_bufnr = get_temp_file_name("ORIGINAL", opts.note_node_id or "NEW_COMMENT", commented_file_name)
+
   -- If preview is already open for given note, go to the tab with a warning.
-  local original_buf_name, original_bufnr = get_temp_file_name("ORIGINAL", comment_id, original_file_name)
   local tabnr = get_tabnr_for_buf(original_bufnr)
   if tabnr ~= nil then
     vim.api.nvim_set_current_tabpage(tabnr)
@@ -527,18 +476,13 @@ M.show_preview = function(tree, is_reply, location)
     return
   end
 
-  local original_lines = get_original_lines(original_file_name, revision)
+  local original_lines = get_original_lines(opts)
   if original_lines == nil then
     return
   end
 
-  local note_lines
-  if tree and not is_reply then
-    note_lines = common.get_note_lines(tree)
-  else
-    note_lines = get_default_suggestion(original_lines, start_line, end_line)
-  end
-  local suggestions = get_suggestions(note_lines, end_line, original_lines)
+  local note_lines = opts.note_lines or get_default_suggestion(original_lines, opts)
+  local suggestions = get_suggestions(note_lines, opts.end_line, original_lines)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
@@ -553,14 +497,14 @@ M.show_preview = function(tree, is_reply, location)
   vim.cmd.filetype("detect")
   local buf_filetype = vim.api.nvim_get_option_value("filetype", { buf = 0 })
 
-  local imply_local = determine_imply_local(revision, is_new_sha, original_file_name, new_file_name)
+  local imply_local = determine_imply_local(opts)
 
   -- Create the suggestion buffer and show a diff with the original version
   local split_cmd = vim.o.columns > 240 and "vsplit" or "split"
   if imply_local then
-    vim.api.nvim_cmd({ cmd = split_cmd, args = { original_file_name } }, {})
+    vim.api.nvim_cmd({ cmd = split_cmd, args = { opts.new_file_name } }, {})
   else
-    local sug_buf_name = get_temp_file_name("SUGGESTION", comment_id, new_file_name)
+    local sug_buf_name = get_temp_file_name("SUGGESTION", opts.note_node_id or "NEW_COMMENT", commented_file_name)
     vim.fn.mkdir(vim.fn.fnamemodify(sug_buf_name, ":h"), "p")
     vim.api.nvim_cmd({ cmd = split_cmd, args = { sug_buf_name } }, {})
     vim.bo.bufhidden = "wipe"
@@ -584,16 +528,16 @@ M.show_preview = function(tree, is_reply, location)
   vim.bo.modified = false
 
   -- Set up keymaps and autocommands
-  local default_suggestion_lines = get_default_suggestion(original_lines, start_line, end_line)
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, root_node, note_node, imply_local, default_suggestion_lines, is_reply, is_new_comment)
-  create_autocommands(note_buf, suggestion_buf, suggestions, end_line, original_lines, imply_local, note_buf_header_text, is_reply, is_new_comment)
+  local default_suggestion_lines = get_default_suggestion(original_lines, opts)
+  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, imply_local, default_suggestion_lines, opts)
+  create_autocommands(note_buf, suggestion_buf, suggestions, original_lines, imply_local, opts)
 
   -- Focus the note window on the first suggestion
   local note_winid = vim.fn.win_getid(3)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
   refresh_diagnostics(suggestions, note_buf)
-  add_window_header(note_buf_header_text, note_buf, is_reply, is_new_comment)
+  add_window_header(note_buf, opts)
 end
 
 return M

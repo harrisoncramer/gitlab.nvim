@@ -251,20 +251,59 @@ M.reply = function(tree)
   layout:mount()
 end
 
--- Reply to the current thread in a new tab with a default suggestion based on the original text.
-M.reply_with_suggestion = function(tree)
-  if M.is_draft_note(tree) then
+---Open a new tab with a suggestion preview.
+---@param tree NuiTree The current discussion tree instance.
+---@param action "reply"|"edit" Reply to the current thread or edit the current comment.
+M.suggestion_preview = function(tree, action)
+  local is_draft = M.is_draft_note(tree)
+  if action == "reply" and is_draft then
     u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
     return
   end
-  local suggestions = require("gitlab.actions.suggestions")
-  suggestions.show_preview(tree, true)
-end
 
--- Edit the current comment in a new tab with a suggestion preview.
-M.edit_suggestion = function(tree)
-  local suggestions = require("gitlab.actions.suggestions")
-  suggestions.show_preview(tree)
+  local current_node = tree:get_node()
+  local root_node = common.get_root_node(tree, current_node)
+  local note_node = common.get_note_node(tree, current_node)
+
+  if root_node == nil or note_node == nil then
+    u.notify("Couldn't get root node or note node", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Hack: draft notes don't have head_sha and base_sha yet
+  if root_node.is_draft then
+    root_node.head_sha = "HEAD"
+    root_node.base_sha = require("gitlab.state").INFO.target_branch
+  end
+
+  local start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
+
+  if start_line == nil or end_line == nil then
+    u.notify("Couldn't get comment range. Can't build suggestion preview", vim.log.levels.ERROR)
+    return
+  end
+
+  local note_node_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
+  if note_node_id == nil then
+    u.notify("Couldn't get comment id", vim.log.levels.ERROR)
+    return
+  end
+
+  ---@type ShowPreviewOpts
+  local opts = {
+    original_file_name = is_new_sha and root_node.file_name or root_node.old_file_name,
+    new_file_name = root_node.file_name,
+    start_line = start_line,
+    end_line = end_line,
+    is_new_sha = is_new_sha,
+    revision = is_new_sha and "HEAD" or require("gitlab.state").INFO.target_branch,
+    note_header = note_node.text,
+    comment_type = action == "reply" and action or is_draft and "draft" or "edit",
+    note_lines = action ~= "reply" and common.get_note_lines(tree) or nil,
+    root_node_id = root_node.id,
+    note_node_id = note_node_id,
+  }
+  require("gitlab.actions.suggestions").show_preview(opts)
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
@@ -609,7 +648,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     if keymaps.discussion_tree.edit_suggestion then
       vim.keymap.set("n", keymaps.discussion_tree.edit_suggestion, function()
         if M.is_current_node_note(tree) then
-          M.edit_suggestion(tree)
+          M.suggestion_preview(tree, "edit")
         end
       end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_nowait })
     end
@@ -617,7 +656,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     if keymaps.discussion_tree.reply_with_suggestion then
       vim.keymap.set("n", keymaps.discussion_tree.reply_with_suggestion, function()
         if M.is_current_node_note(tree) then
-          M.reply_with_suggestion(tree)
+          M.suggestion_preview(tree, "reply")
         end
       end, { buffer = bufnr, desc = "Reply with suggestion", nowait = keymaps.discussion_tree.reply_with_suggestion_nowait })
     end
