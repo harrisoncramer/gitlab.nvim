@@ -254,7 +254,8 @@ end
 ---Open a new tab with a suggestion preview.
 ---@param tree NuiTree The current discussion tree instance.
 ---@param action "reply"|"edit" Reply to the current thread or edit the current comment.
-M.suggestion_preview = function(tree, action)
+---@param use_head_sha boolean|nil Use the head_sha of the root_node as revision or the current HEAD by default.
+M.suggestion_preview = function(tree, action, use_head_sha)
   local is_draft = M.is_draft_note(tree)
   if action == "reply" and is_draft then
     u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
@@ -277,6 +278,7 @@ M.suggestion_preview = function(tree, action)
   end
 
   local start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
+  local head_ref = use_head_sha and root_node.head_sha or "HEAD"
 
   if start_line == nil or end_line == nil then
     u.notify("Couldn't get comment range. Can't build suggestion preview", vim.log.levels.ERROR)
@@ -296,7 +298,7 @@ M.suggestion_preview = function(tree, action)
     start_line = start_line,
     end_line = end_line,
     is_new_sha = is_new_sha,
-    revision = is_new_sha and "HEAD" or require("gitlab.state").INFO.target_branch,
+    revision = is_new_sha and head_ref or require("gitlab.state").INFO.target_branch,
     note_header = note_node.text,
     comment_type = action == "reply" and action or is_draft and "draft" or "edit",
     note_lines = action ~= "reply" and common.get_note_lines(tree) or nil,
@@ -651,6 +653,14 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
           M.suggestion_preview(tree, "edit")
         end
       end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_nowait })
+    end
+
+    if keymaps.discussion_tree.edit_suggestion_at_comment_revision then
+      vim.keymap.set("n", keymaps.discussion_tree.edit_suggestion_at_comment_revision, function()
+        if M.is_current_node_note(tree) then
+          M.suggestion_preview(tree, "edit", true)
+        end
+      end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_at_comment_revision_nowait })
     end
 
     if keymaps.discussion_tree.reply_with_suggestion then

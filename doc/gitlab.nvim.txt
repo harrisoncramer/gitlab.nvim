@@ -224,6 +224,7 @@ you call this function with no values the defaults will be used:
           refresh_data = "<C-R>", -- Refresh the data in the view by hitting Gitlab's APIs again
           print_node = "<leader>p", -- Print the current node (for debugging)
           edit_suggestion = "se", -- Edit suggestion comment in a new tab
+          edit_suggestion_at_comment_revision = "sE", -- Edit suggestion comment in a new tab, use the revision of the file for which the comment was made (useful when commented line was changed later).
           reply_with_suggestion = "sr", -- Reply to comment with a suggestion in a new tab
         },
         suggestion_preview = {
