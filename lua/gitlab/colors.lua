@@ -18,7 +18,7 @@ local function get_colors_for_group(group)
   local normal_bg = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(group)), "bg")
   return { fg = normal_fg, bg = normal_bg }
 end
-vim.api.nvim_create_autocmd("VimEnter", {
+vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
   callback = function()
     vim.api.nvim_set_hl(0, "GitlabUsername", get_colors_for_group(discussion.username))
     vim.api.nvim_set_hl(0, "GitlabMention", get_colors_for_group(discussion.mention))
