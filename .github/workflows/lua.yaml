@@ -54,7 +54,6 @@ jobs:
       - name: build
         run: |
           luarocks install busted
-          luarocks make
       - name: Run tests
         shell: bash
         run: |
