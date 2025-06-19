@@ -19,6 +19,7 @@ M.run_job = function(endpoint, method, body, callback, on_error_callback)
   -- success message or error message and details from the Go server and run the on_error_callback
   -- (if supplied for the job).
   local stderr = {}
+
   Job:new({
     command = "curl",
     args = args,
