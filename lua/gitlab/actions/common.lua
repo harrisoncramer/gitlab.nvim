@@ -15,7 +15,9 @@ M.build_note_header = function(note)
   if note.note then
     return "@" .. state.USER.username .. " " .. state.settings.discussion_tree.draft
   end
-  return "@" .. note.author.username .. " " .. u.time_since(note.created_at)
+  local time = state.settings.discussion_tree.relative_date and u.time_since(note.created_at)
+    or u.format_to_local(note.created_at, vim.fn.strftime("%z"))
+  return "@" .. note.author.username .. " " .. time
 end
 
 M.switch_can_edit_bufs = function(bool, ...)

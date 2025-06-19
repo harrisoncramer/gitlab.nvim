@@ -649,6 +649,16 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     })
   end
 
+  if keymaps.discussion_tree.toggle_date_format then
+    vim.keymap.set("n", keymaps.discussion_tree.toggle_date_format, function()
+      M.toggle_date_format()
+    end, {
+      buffer = bufnr,
+      desc = "Toggle date format",
+      nowait = keymaps.discussion_tree.toggle_date_format_nowait,
+    })
+  end
+
   if keymaps.discussion_tree.toggle_resolved then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_resolved, function()
       if M.is_current_node_note(tree) and not M.is_draft_note(tree) then
@@ -807,6 +817,13 @@ M.toggle_sort_method = function()
   end
   winbar.update_winbar()
   M.rebuild_view(false, true)
+end
+
+---Toggle between displaying relative time (e.g., "5 days ago") and absolute time (e.g., "04/10/2025 at 22:49")
+M.toggle_date_format = function()
+  state.settings.discussion_tree.relative_date = not state.settings.discussion_tree.relative_date
+  M.rebuild_unlinked_discussion_tree()
+  M.rebuild_discussion_tree()
 end
 
 ---Indicates whether the node under the cursor is a draft note or not
