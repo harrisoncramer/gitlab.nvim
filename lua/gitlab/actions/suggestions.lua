@@ -14,7 +14,6 @@ vim.fn.sign_define("GitlabSuggestion", {
 })
 
 local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note")
-local note_header_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note_header")
 
 ---Reset the contents of the suggestion buffer.
 ---@param bufnr integer The number of the suggestion buffer.
@@ -344,35 +343,36 @@ local refresh_diagnostics = function(suggestions, note_buf)
   vim.diagnostic.set(suggestion_namespace, note_buf, diagnostics_data, indicators_common.create_display_opts())
 end
 
----Get the text for the draft mode
+---Get the highlighted text for the draft mode.
 ---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
----@return string[]|nil
+---@return string
 local get_mode = function(opts)
   if opts.comment_type == "draft" or opts.comment_type == "edit" then
-    return
+    return ""
   end
   if require("gitlab.state").settings.discussion_tree.draft_mode then
-    return { " Draft", "GitlabDraftMode" }
+    return  "%#GitlabDraftMode#Draft"
   else
-    return { " Live", "GitlabLiveMode" }
+    return  "%#GitlabLiveMode#Live"
   end
 end
 
----Show the note header as virtual text.
+---Update the winbar on top of the suggestion preview windows.
 ---@param note_buf integer The number of the note buffer.
 ---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
-local add_window_header = function(note_buf, opts)
-  vim.api.nvim_buf_clear_namespace(note_buf, note_header_namespace, 0, -1)
-  local mark_opts = {
-    virt_lines = { { { opts.comment_type .. ": ", "Normal" }, { opts.note_header, "GitlabUserName" }, get_mode(opts) } },
-    virt_lines_above = true,
-    right_gravity = false,
-  }
-  vim.api.nvim_buf_set_extmark(note_buf, note_header_namespace, 0, 0, mark_opts)
-  -- An extmark above the first line is not visible by default, so let's scroll the window:
-  vim.cmd("normal! ")
-  -- TODO: Replace with winbar, possibly also show the diffed revision of the ORIGINAL.
-  -- Extmarks are not ideal for this because of scrolling issues.
+local update_winbar = function(note_buf, opts)
+  local win_id = vim.fn.bufwinid(note_buf)
+  if win_id == -1 then
+    return -- Buffer not displayed in any window
+  end
+
+  local note_content = string.format(
+    " %s: %s %s ",
+    "%#Normal#" .. opts.comment_type,
+    "%#GitlabUserName#" .. opts.note_header,
+    get_mode(opts)
+  )
+  vim.api.nvim_set_option_value("winbar", note_content, { scope = "local", win = win_id })
 end
 
 ---Create autocommands for the note buffer.
@@ -428,7 +428,7 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, orig
     group = group,
     pattern = "GitlabDraftModeToggled",
     callback = function()
-      add_window_header(note_buf, opts)
+      update_winbar(note_buf, opts)
     end,
   })
   -- Auto-delete the group when the buffer is unloaded.
@@ -537,7 +537,7 @@ M.show_preview = function(opts)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
   refresh_diagnostics(suggestions, note_buf)
-  add_window_header(note_buf, opts)
+  update_winbar(note_buf, opts)
 end
 
 return M
