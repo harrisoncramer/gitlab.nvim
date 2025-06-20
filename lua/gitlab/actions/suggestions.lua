@@ -358,31 +358,42 @@ local get_mode = function(opts)
 end
 
 ---Update the winbar on top of the suggestion preview windows.
----@param note_buf integer The number of the note buffer.
+---@param note_winid integer Note window number.
+---@param suggestion_winid integer Suggestion window number in the preview tab.
 ---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
-local update_winbar = function(note_buf, opts)
-  local win_id = vim.fn.bufwinid(note_buf)
-  if win_id == -1 then
-    return -- Buffer not displayed in any window
+local update_winbar = function(note_winid, suggestion_winid, opts)
+  print('DEBUGPRINT[474]: suggestions.lua:364: opts=' .. vim.inspect(opts))
+
+  if note_winid ~= -1 then
+    local note_content = string.format(
+      " %s: %s %s ",
+      "%#Normal#" .. opts.comment_type,
+      "%#GitlabUserName#" .. opts.note_header,
+      get_mode(opts)
+    )
+    vim.api.nvim_set_option_value("winbar", note_content, { scope = "local", win = note_winid })
   end
 
-  local note_content = string.format(
-    " %s: %s %s ",
-    "%#Normal#" .. opts.comment_type,
-    "%#GitlabUserName#" .. opts.note_header,
-    get_mode(opts)
-  )
-  vim.api.nvim_set_option_value("winbar", note_content, { scope = "local", win = win_id })
+  if suggestion_winid ~= -1 then
+    local note_content = string.format(
+      " %s: %s ",
+      "%#Normal#revision",
+      "%#GitlabUserName#" .. opts.revision
+    )
+    vim.api.nvim_set_option_value("winbar", note_content, { scope = "local", win = suggestion_winid })
+  end
 end
 
 ---Create autocommands for the note buffer.
 ---@param note_buf integer Note buffer number.
+---@param note_winid integer Note window number.
 ---@param suggestion_buf integer Suggestion buffer number.
+---@param suggestion_winid integer Suggestion window number in the preview tab.
 ---@param suggestions Suggestion[] List of suggestion data.
 ---@param original_lines string[] Array of original lines.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
 ---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
-local create_autocommands = function(note_buf, suggestion_buf, suggestions, original_lines, imply_local, opts)
+local create_autocommands = function(note_buf, note_winid, suggestion_buf, suggestion_winid, suggestions, original_lines, imply_local, opts)
   local last_line, last_suggestion = suggestions[1].note_start_linenr, suggestions[1]
 
   ---Update the suggestion buffer if the selected suggestion changes in the Comment buffer.
@@ -428,7 +439,7 @@ local create_autocommands = function(note_buf, suggestion_buf, suggestions, orig
     group = group,
     pattern = "GitlabDraftModeToggled",
     callback = function()
-      update_winbar(note_buf, opts)
+      update_winbar(note_winid, suggestion_winid, opts)
     end,
   })
   -- Auto-delete the group when the buffer is unloaded.
@@ -513,11 +524,13 @@ M.show_preview = function(opts)
     vim.bo.filetype = buf_filetype
   end
   local suggestion_buf = vim.api.nvim_get_current_buf()
+  local suggestion_winid = vim.api.nvim_get_current_win()
   set_buffer_lines(suggestion_buf, suggestions[1].full_text, imply_local)
   vim.cmd("1,2windo diffthis")
 
   -- Create the note window
   local note_buf = vim.api.nvim_create_buf(false, false)
+  local note_winid = vim.fn.win_getid(3)
   local note_bufname = vim.fn.tempname()
   vim.api.nvim_buf_set_name(note_buf, note_bufname)
   vim.api.nvim_cmd({ cmd = "vnew", mods = { split = "botright" }, args = { note_bufname } }, {})
@@ -530,14 +543,13 @@ M.show_preview = function(opts)
   -- Set up keymaps and autocommands
   local default_suggestion_lines = get_default_suggestion(original_lines, opts)
   set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, imply_local, default_suggestion_lines, opts)
-  create_autocommands(note_buf, suggestion_buf, suggestions, original_lines, imply_local, opts)
+  create_autocommands(note_buf, note_winid, suggestion_buf, suggestion_winid, suggestions, original_lines, imply_local, opts)
 
   -- Focus the note window on the first suggestion
-  local note_winid = vim.fn.win_getid(3)
   vim.api.nvim_win_set_cursor(note_winid, { suggestions[1].note_start_linenr, 0 })
   refresh_signs(suggestions[1], note_buf)
   refresh_diagnostics(suggestions, note_buf)
-  update_winbar(note_buf, opts)
+  update_winbar(note_winid, suggestion_winid, opts)
 end
 
 return M
