@@ -654,17 +654,29 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
         if M.is_current_node_note(tree) then
           M.suggestion_preview(tree, "edit", true)
         end
-      end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_at_comment_revision_nowait })
+      end, {
+        buffer = bufnr,
+        desc = "Edit suggestion",
+        nowait = keymaps.discussion_tree.edit_suggestion_at_comment_revision_nowait,
+      })
     end
 
     if keymaps.discussion_tree.reply_with_suggestion then
-      vim.keymap.set("n", keymaps.discussion_tree.reply_with_suggestion, function()
-        if M.is_current_node_note(tree) then
-          M.suggestion_preview(tree, "reply")
-        end
-      end, { buffer = bufnr, desc = "Reply with suggestion", nowait = keymaps.discussion_tree.reply_with_suggestion_nowait })
+      vim.keymap.set(
+        "n",
+        keymaps.discussion_tree.reply_with_suggestion,
+        function()
+          if M.is_current_node_note(tree) then
+            M.suggestion_preview(tree, "reply")
+          end
+        end,
+        {
+          buffer = bufnr,
+          desc = "Reply with suggestion",
+          nowait = keymaps.discussion_tree.reply_with_suggestion_nowait,
+        }
+      )
     end
-
   end
 
   if keymaps.discussion_tree.refresh_data then
@@ -879,7 +891,7 @@ M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
   vim.api.nvim_exec_autocmds("User", {
     pattern = "GitlabDraftModeToggled",
-    data = { draft_mode = state.settings.discussion_tree.draft_mode }
+    data = { draft_mode = state.settings.discussion_tree.draft_mode },
   })
 end
 

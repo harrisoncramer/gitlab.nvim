@@ -133,9 +133,19 @@ M.place_diagnostics = function(bufnr)
     local new_diagnostics, old_diagnostics = List.new(file_discussions):partition(indicators_common.is_new_sha)
 
     if bufnr == view.cur_layout.a.file.bufnr then
-      set_diagnostics(diagnostics_namespace, bufnr, M.parse_diagnostics(old_diagnostics), indicators_common.create_display_opts())
+      set_diagnostics(
+        diagnostics_namespace,
+        bufnr,
+        M.parse_diagnostics(old_diagnostics),
+        indicators_common.create_display_opts()
+      )
     elseif bufnr == view.cur_layout.b.file.bufnr then
-      set_diagnostics(diagnostics_namespace, bufnr, M.parse_diagnostics(new_diagnostics), indicators_common.create_display_opts())
+      set_diagnostics(
+        diagnostics_namespace,
+        bufnr,
+        M.parse_diagnostics(new_diagnostics),
+        indicators_common.create_display_opts()
+      )
     end
   end)
 
