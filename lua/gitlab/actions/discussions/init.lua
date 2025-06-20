@@ -271,12 +271,6 @@ M.suggestion_preview = function(tree, action, use_head_sha)
     return
   end
 
-  -- Hack: draft notes don't have head_sha and base_sha yet
-  if root_node.is_draft then
-    root_node.head_sha = "HEAD"
-    root_node.base_sha = require("gitlab.state").INFO.target_branch
-  end
-
   local start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
   local head_ref = use_head_sha and root_node.head_sha or "HEAD"
 

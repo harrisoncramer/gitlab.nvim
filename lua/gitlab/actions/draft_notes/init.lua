@@ -158,6 +158,7 @@ M.build_root_draft_note = function(note)
     old_file_name = (type(note.position) == "table" and note.position.old_path or nil),
     new_line = (type(note.position) == "table" and note.position.new_line or nil),
     old_line = (type(note.position) == "table" and note.position.old_line or nil),
+    head_sha = (type(note.position) == "table" and note.position.head_sha or nil),
     resolvable = false,
     resolved = false,
     url = state.INFO.web_url .. "#note_" .. note.id,
