@@ -62,6 +62,7 @@ M.settings = {
     },
   },
   connection_settings = {
+    proxy = "",
     insecure = false,
     remote = "origin",
   },
@@ -115,6 +116,7 @@ M.settings = {
       switch_view = "c",
       toggle_tree_type = "i",
       publish_draft = "P",
+      toggle_date_format = "dt",
       toggle_draft_mode = "D",
       toggle_sort_method = "st",
       toggle_node = "t",
@@ -169,6 +171,7 @@ M.settings = {
     draft = "✎",
     tree_type = "simple",
     draft_mode = false,
+    relative_date = true,
   },
   emojis = {
     formatter = nil,

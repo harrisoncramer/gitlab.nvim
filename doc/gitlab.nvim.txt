@@ -161,6 +161,7 @@ you call this function with no values the defaults will be used:
         },
       },
       connection_settings = {
+        proxy = "", -- Configure a proxy URL to use when connecting to GitLab. Supports URL schemes: http, https, socks5
         insecure = false, -- Like curl's --insecure option, ignore bad x509 certificates on connection
         remote = "origin", -- The default remote that your MRs target
       },
@@ -213,6 +214,7 @@ you call this function with no values the defaults will be used:
           switch_view = "c", -- Toggle between the notes and discussions views
           toggle_tree_type = "i", -- Toggle type of discussion tree - "simple", or "by_file_name"
           publish_draft = "P", -- Publish the currently focused note/comment
+          toggle_date_format = "dt", -- Toggle between date formats: relative (e.g., "5 days ago", "just now", "October 13, 2024" for dates more than a month ago) and absolute (e.g., "03/01/2024 at 11:43")
           toggle_draft_mode = "D", -- Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
           toggle_sort_method = "st", -- Toggle whether discussions are sorted by the "latest_reply", or by "original_comment", see `:h gitlab.nvim.toggle_sort_method`
           toggle_node = "t", -- Open or close the discussion
@@ -267,6 +269,7 @@ you call this function with no values the defaults will be used:
         draft = "✎", -- Symbol to show next to draft comments/notes
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
+        relative_date = true, -- Whether to show relative time like "5 days ago" or absolute time like "03/01/2025 at 01:43"
         winbar = nil, -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
