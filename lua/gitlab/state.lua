@@ -62,6 +62,7 @@ M.settings = {
     },
   },
   connection_settings = {
+    proxy = "",
     insecure = false,
     remote = "origin",
   },

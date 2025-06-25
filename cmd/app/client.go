@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 	"github.com/hashicorp/go-retryablehttp"
@@ -66,6 +67,14 @@ func NewClient() (*Client, error) {
 		},
 	}
 
+	if proxy := pluginOptions.ConnectionSettings.Proxy; proxy != "" {
+		u, err := url.Parse(proxy)
+		if err != nil {
+			return nil, fmt.Errorf("parse proxy url: %w", err)
+		}
+		tr.Proxy = http.ProxyURL(u)
+	}
+
 	retryClient := retryablehttp.NewClient()
 	retryClient.HTTPClient.Transport = tr
 	gitlabOptions = append(gitlabOptions, gitlab.WithHTTPClient(retryClient.HTTPClient))
@@ -99,11 +108,11 @@ func InitProjectSettings(c *Client, gitInfo git.GitData) (*ProjectInfo, error) {
 	project, _, err := c.GetProject(gitInfo.ProjectPath(), &opt)
 
 	if err != nil {
-		return nil, fmt.Errorf(fmt.Sprintf("Error getting project at %s", gitInfo.RemoteUrl), err)
+		return nil, fmt.Errorf("error getting project at %s: %w", gitInfo.RemoteUrl, err)
 	}
 
 	if project == nil {
-		return nil, fmt.Errorf(fmt.Sprintf("Could not find project at %s", gitInfo.RemoteUrl), err)
+		return nil, fmt.Errorf("could not find project at %s", gitInfo.RemoteUrl)
 	}
 
 	projectId := fmt.Sprint(project.ID)

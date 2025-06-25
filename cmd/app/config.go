@@ -13,6 +13,7 @@ type PluginOptions struct {
 	} `json:"debug"`
 	ChosenMrIID        int `json:"chosen_mr_iid"`
 	ConnectionSettings struct {
+		Proxy    string `json:"proxy"`
 		Insecure bool   `json:"insecure"`
 		Remote   string `json:"remote"`
 	} `json:"connection_settings"`
