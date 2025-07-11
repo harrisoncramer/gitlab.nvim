@@ -107,7 +107,7 @@ local set_keymaps = function(
           require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
         else
           -- This should not really happen.
-          u.notify("Cannot create comment", vim.log.levels.ERROR)
+          u.notify(string.format("Cannot create comment with unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
         end
 
         set_buffer_lines(suggestion_buf, original_lines, imply_local)
