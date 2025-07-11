@@ -20,9 +20,9 @@ local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_no
 ---@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch).
 local refresh_lsp_diagnostics = function(suggestion_buf)
   for _, client in ipairs(vim.lsp.get_clients({ bufnr = suggestion_buf })) do
-    if client:supports_method('textDocument/diagnostic', suggestion_buf) then
-      vim.lsp.buf_request(suggestion_buf, 'textDocument/diagnostic', {
-        textDocument = vim.lsp.util.make_text_document_params(suggestion_buf)
+    if client:supports_method("textDocument/diagnostic", suggestion_buf) then
+      vim.lsp.buf_request(suggestion_buf, "textDocument/diagnostic", {
+        textDocument = vim.lsp.util.make_text_document_params(suggestion_buf),
       })
     end
   end
