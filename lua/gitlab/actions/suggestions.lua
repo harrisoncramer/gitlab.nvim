@@ -73,6 +73,7 @@ local set_keymaps = function(
         function()
           set_buffer_lines(suggestion_buf, original_lines, imply_local)
           if vim.api.nvim_buf_is_valid(note_buf) then
+            -- Set nomodified to enable safely closing the buffer
             vim.bo[note_buf].modified = false
           end
           vim.cmd.tabclose()
