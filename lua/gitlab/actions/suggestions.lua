@@ -36,12 +36,34 @@ local set_buffer_lines = function(bufnr, lines, imply_local)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
+  vim.bo[bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   if imply_local then
     vim.api.nvim_buf_call(bufnr, function()
       vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
     end)
     refresh_lsp_diagnostics(bufnr)
+  end
+end
+
+---Reset suggestion buffer options and keymaps before closing the preview.
+---@param imply_local boolean True if suggestion buffer is local file and should be written.
+---@param suggestion_buf integer Suggestion buffer number.
+---@param original_lines string[] The list of lines in the original (commented on) version of the file.
+---@param original_suggestion_winbar string The original suggestion buffer/window 'winbar'.
+---@param suggestion_winid integer Suggestion window number in the preview tab.
+local reset_suggestion_buf = function(
+  imply_local,
+  suggestion_buf,
+  original_lines,
+  original_suggestion_winbar,
+  suggestion_winid
+)
+  local keymaps = require("gitlab.state").settings.keymaps
+  set_buffer_lines(suggestion_buf, original_lines, imply_local)
+  if imply_local then
+    pcall(vim.api.nvim_buf_del_keymap, suggestion_buf, "n", keymaps.suggestion_preview.discard_changes)
+    vim.api.nvim_set_option_value("winbar", original_suggestion_winbar, { scope = "local", win = suggestion_winid })
   end
 end
 
@@ -52,6 +74,8 @@ end
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file.
 ---@param imply_local boolean True if suggestion buffer is local file and should be written.
 ---@param default_suggestion_lines string[] The default suggestion lines with backticks.
+---@param original_suggestion_winbar string The original suggestion buffer/window 'winbar'.
+---@param suggestion_winid integer Suggestion window number in the preview tab.
 ---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
 local set_keymaps = function(
   note_buf,
@@ -60,6 +84,8 @@ local set_keymaps = function(
   original_lines,
   imply_local,
   default_suggestion_lines,
+  original_suggestion_winbar,
+  suggestion_winid,
   opts
 )
   local keymaps = require("gitlab.state").settings.keymaps
@@ -67,74 +93,61 @@ local set_keymaps = function(
   -- Reset suggestion buffer to original state and close preview tab
   if keymaps.suggestion_preview.discard_changes then
     for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
-      vim.keymap.set(
-        "n",
-        keymaps.suggestion_preview.discard_changes,
-        function()
-          set_buffer_lines(suggestion_buf, original_lines, imply_local)
-          if vim.api.nvim_buf_is_valid(note_buf) then
-            -- Set nomodified to enable safely closing the buffer
-            vim.bo[note_buf].modified = false
-          end
-          vim.cmd.tabclose()
-        end,
-        {
-          buffer = bufnr,
-          desc = "Close preview tab discarding changes",
-          nowait = keymaps.suggestion_preview.discard_changes_nowait,
-        }
-      )
+      vim.keymap.set("n", keymaps.suggestion_preview.discard_changes, function()
+        if vim.api.nvim_buf_is_valid(note_buf) then
+          vim.bo[note_buf].modified = false
+        end
+        reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
+        vim.cmd.tabclose()
+      end, {
+        buffer = bufnr,
+        desc = "Close preview tab discarding changes",
+        nowait = keymaps.suggestion_preview.discard_changes_nowait,
+      })
     end
   end
 
   -- Post updated suggestion note buffer to the server.
   if keymaps.suggestion_preview.apply_changes then
-    vim.keymap.set(
-      "n",
-      keymaps.suggestion_preview.apply_changes,
-      function()
-        vim.api.nvim_buf_call(note_buf, function()
-          vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
-        end)
+    vim.keymap.set("n", keymaps.suggestion_preview.apply_changes, function()
+      vim.api.nvim_buf_call(note_buf, function()
+        vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
+      end)
 
-        local buf_text = u.get_buffer_text(note_buf)
-        if opts.comment_type == "reply" then
-          require("gitlab.actions.comment").confirm_create_comment(buf_text, false, opts.root_node_id)
-        elseif opts.comment_type == "draft" then
-          require("gitlab.actions.draft_notes").confirm_edit_draft_note(opts.note_node_id, false)(buf_text)
-        elseif opts.comment_type == "edit" then
-          require("gitlab.actions.comment").confirm_edit_comment(opts.root_node_id, opts.note_node_id, false)(buf_text)
-        elseif opts.comment_type == "new" then
-          require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
-        else
-          -- This should not really happen.
-          u.notify(string.format("Cannot create comment with unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
-        end
+      local buf_text = u.get_buffer_text(note_buf)
+      if opts.comment_type == "reply" then
+        require("gitlab.actions.comment").confirm_create_comment(buf_text, false, opts.root_node_id)
+      elseif opts.comment_type == "draft" then
+        require("gitlab.actions.draft_notes").confirm_edit_draft_note(opts.note_node_id, false)(buf_text)
+      elseif opts.comment_type == "edit" then
+        require("gitlab.actions.comment").confirm_edit_comment(opts.root_node_id, opts.note_node_id, false)(buf_text)
+      elseif opts.comment_type == "new" then
+        require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
+      else
+        -- This should not really happen.
+        u.notify(
+          string.format("Cannot create comment with unsupported action `%s`", opts.comment_type),
+          vim.log.levels.ERROR
+        )
+      end
 
-        set_buffer_lines(suggestion_buf, original_lines, imply_local)
-        vim.cmd.tabclose()
-      end,
-      {
-        buffer = note_buf,
-        desc = "Post suggestion comment to Gitlab",
-        nowait = keymaps.suggestion_preview.apply_changes_nowait,
-      }
-    )
+      reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
+      vim.cmd.tabclose()
+    end, {
+      buffer = note_buf,
+      desc = "Post suggestion comment to Gitlab",
+      nowait = keymaps.suggestion_preview.apply_changes_nowait,
+    })
   end
 
   if keymaps.suggestion_preview.paste_default_suggestion then
-    vim.keymap.set(
-      "n",
-      keymaps.suggestion_preview.paste_default_suggestion,
-      function()
-        vim.api.nvim_put(default_suggestion_lines, "l", true, false)
-      end,
-      {
-        buffer = note_buf,
-        desc = "Paste default suggestion",
-        nowait = keymaps.suggestion_preview.paste_default_suggestion_nowait,
-      }
-    )
+    vim.keymap.set("n", keymaps.suggestion_preview.paste_default_suggestion, function()
+      vim.api.nvim_put(default_suggestion_lines, "l", true, false)
+    end, {
+      buffer = note_buf,
+      desc = "Paste default suggestion",
+      nowait = keymaps.suggestion_preview.paste_default_suggestion_nowait,
+    })
   end
 
   -- TODO: Keymap for applying changes to the Suggestion buffer.
@@ -607,6 +620,11 @@ M.show_preview = function(opts)
   set_buffer_lines(suggestion_buf, suggestions[1].full_text, imply_local)
   vim.cmd("1,2windo diffthis")
 
+  -- Backup the suggestion buffer winbar to reset it when suggestion preview is closed. Despite the
+  -- option being "window-local", it's carried over to the buffer even after closing the preview.
+  -- See https://github.com/neovim/neovim/issues/11525
+  local suggestion_winbar = vim.api.nvim_get_option_value("winbar", { scope = "local", win = suggestion_winid })
+
   -- Create the note window
   local note_buf = vim.api.nvim_create_buf(false, false)
   local note_winid = vim.fn.win_getid(3)
@@ -621,7 +639,17 @@ M.show_preview = function(opts)
 
   -- Set up keymaps and autocommands
   local default_suggestion_lines = get_default_suggestion(original_lines, opts)
-  set_keymaps(note_buf, original_buf, suggestion_buf, original_lines, imply_local, default_suggestion_lines, opts)
+  set_keymaps(
+    note_buf,
+    original_buf,
+    suggestion_buf,
+    original_lines,
+    imply_local,
+    default_suggestion_lines,
+    suggestion_winbar,
+    suggestion_winid,
+    opts
+  )
   create_autocommands(
     note_buf,
     note_winid,
