@@ -15,6 +15,19 @@ vim.fn.sign_define("GitlabSuggestion", {
 
 local suggestion_namespace = vim.api.nvim_create_namespace("gitlab_suggestion_note")
 
+---Refresh the diagnostics from LSP in the suggestions buffer if there are any clients that support
+---diagnostics.
+---@param suggestion_buf integer Number of the buffer with applied suggestions (can be local or scratch).
+local refresh_lsp_diagnostics = function(suggestion_buf)
+  for _, client in ipairs(vim.lsp.get_clients({ bufnr = suggestion_buf })) do
+    if client:supports_method('textDocument/diagnostic', suggestion_buf) then
+      vim.lsp.buf_request(suggestion_buf, 'textDocument/diagnostic', {
+        textDocument = vim.lsp.util.make_text_document_params(suggestion_buf)
+      })
+    end
+  end
+end
+
 ---Reset the contents of the suggestion buffer.
 ---@param bufnr integer The number of the suggestion buffer.
 ---@param lines string[] Lines of text to put into the buffer.
@@ -28,6 +41,7 @@ local set_buffer_lines = function(bufnr, lines, imply_local)
     vim.api.nvim_buf_call(bufnr, function()
       vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
     end)
+    refresh_lsp_diagnostics(bufnr)
   end
 end
 
