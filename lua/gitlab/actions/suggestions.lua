@@ -38,6 +38,13 @@ local set_buffer_lines = function(bufnr, lines, imply_local)
   end
   vim.bo[bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+  -- Recompute and re-apply folds (Otherwise folds are messed up when TextChangedI is triggered).
+  -- TODO: Find out if it's a (Neo)vim bug.
+  vim.api.nvim_buf_call(bufnr, function()
+    vim.cmd("normal! zX")
+  end)
+
   if imply_local then
     vim.api.nvim_buf_call(bufnr, function()
       vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
