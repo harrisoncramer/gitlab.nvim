@@ -97,7 +97,16 @@ local set_keymaps = function(
         if vim.api.nvim_buf_is_valid(note_buf) then
           vim.bo[note_buf].modified = false
         end
-        reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
+        -- Resetting can cause invalid-buffer errors for temporary (non-local) suggestion buffer
+        if imply_local then
+          reset_suggestion_buf(
+            imply_local,
+            suggestion_buf,
+            original_lines,
+            original_suggestion_winbar,
+            suggestion_winid
+          )
+        end
         vim.cmd.tabclose()
       end, {
         buffer = bufnr,
