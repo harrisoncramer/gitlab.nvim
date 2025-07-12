@@ -42,6 +42,7 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_head_sha = nil
     local root_base_sha = nil
     local root_url
+    local system = false
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
@@ -58,6 +59,7 @@ M.add_discussions_to_table = function(items, unlinked)
         resolved = note.resolved
         root_url = state.INFO.web_url .. "#note_" .. note.id
         range = (type(note.position) == "table" and note.position.line_range or nil)
+        system = note.system
       else -- Otherwise insert it as a child node...
         local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
@@ -93,6 +95,7 @@ M.add_discussions_to_table = function(items, unlinked)
       base_sha = root_base_sha,
       resolvable = resolvable,
       resolved = resolved,
+      system = system,
       url = root_url,
     }, body)
 
@@ -319,6 +322,7 @@ M.build_note = function(note, resolve_info)
     head_sha = (type(note.position) == "table" and note.position.head_sha),
     base_sha = (type(note.position) == "table" and note.position.base_sha),
     url = state.INFO.web_url .. "#note_" .. note.id,
+    system = note.system,
     type = "note",
   }, text_nodes)
 

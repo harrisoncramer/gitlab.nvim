@@ -342,4 +342,31 @@ M.jump_to_file = function(tree)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
 end
 
+---Determine whether commented line has changed since making the comment.
+---@param tree NuiTree The current discussion tree instance.
+---@param note_node NuiTree.Node The main node of the note containing the note author etc.
+---@return boolean line_changed True if any of the notes in the thread is a system note starting with "changed this line".
+M.commented_line_has_changed = function(tree, note_node)
+  local line_changed = List.new(note_node:get_child_ids()):includes(function(child_id)
+    local child_node = tree:get_node(child_id)
+    if child_node == nil then
+      return false
+    end
+
+    -- Inspect note bodies or recourse to child notes.
+    if child_node.type == "note_body" then
+      local line = tree:get_node(child_id).text
+      if string.match(line, "^changed this line") and note_node.system then
+        return true
+      end
+    elseif child_node.type == "note" and M.commented_line_has_changed(tree, child_node) then
+      return true
+    end
+
+    return false
+  end)
+
+  return line_changed
+end
+
 return M
