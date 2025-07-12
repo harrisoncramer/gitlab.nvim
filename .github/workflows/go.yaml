@@ -8,6 +8,11 @@ on:
       - 'cmd/**' # Ignore changes to the Lua code
       - 'go.sum'
       - 'go.mod'
+
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   go_lint:
     name: Lint Go 💅 
