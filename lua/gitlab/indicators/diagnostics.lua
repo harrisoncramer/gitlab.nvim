@@ -115,9 +115,6 @@ M.place_diagnostics = function(bufnr)
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
-  if vim.api.nvim_buf_get_name(bufnr) == "diffview://null" then
-    return
-  end
 
   local ok, err = pcall(function()
     local file_discussions = List.new(M.placeable_discussions):filter(function(discussion_or_note)
