@@ -141,10 +141,7 @@ local set_keymaps = function(
         require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
       else
         -- This should not really happen.
-        u.notify(
-          string.format("Cannot create comment with unsupported action `%s`", opts.comment_type),
-          vim.log.levels.ERROR
-        )
+        u.notify(string.format("Cannot perform unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
       end
 
       reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
@@ -379,17 +376,15 @@ local determine_imply_local = function(opts)
     old_file_name = opts.original_file_name,
     file_name = opts.new_file_name,
   })
-  -- TODO: Find out if this condition is not too restrictive.
+  -- TODO: Find out if this condition is not too restrictive (comment on unchanged lines could be
+  -- shown in local file just fine). Ideally, change logic of showing comments on unchanged lines
+  -- from OLD to NEW version (to enable more local-file diffing).
   if not opts.is_new_sha then
     u.notify("Comment on old text. Using target-branch version", vim.log.levels.INFO)
-  -- TODO: Find out if this condition is not too restrictive (maybe instead check if a later comment in the thread matches "^changed this line in [version %d+ of the diff]").
-  -- TODO: Rework to be able to switch between diffing against current head and original head.
   elseif head_differs_from_original then
-    -- TODO: Fix the logic of determining what version is used to create the diff, whether the local
-    -- file used and when this log message is shown.
-    u.notify("File changed since comment created. Using version on which comment was made", vim.log.levels.INFO)
+    u.notify("Line changed. Using version for which comment was made", vim.log.levels.INFO)
   elseif is_modified(opts.new_file_name) then
-    u.notify("File has unsaved or uncommited changes. Using feature-branch version", vim.log.levels.WARN)
+    u.notify("File has unsaved or uncommited changes", vim.log.levels.WARN)
   else
     return true
   end

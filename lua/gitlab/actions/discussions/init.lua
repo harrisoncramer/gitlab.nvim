@@ -658,20 +658,15 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
     end
 
     if keymaps.discussion_tree.reply_with_suggestion then
-      vim.keymap.set(
-        "n",
-        keymaps.discussion_tree.reply_with_suggestion,
-        function()
-          if M.is_current_node_note(tree) then
-            M.suggestion_preview(tree, "reply")
-          end
-        end,
-        {
-          buffer = bufnr,
-          desc = "Reply with suggestion",
-          nowait = keymaps.discussion_tree.reply_with_suggestion_nowait,
-        }
-      )
+      vim.keymap.set("n", keymaps.discussion_tree.reply_with_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.suggestion_preview(tree, "reply")
+        end
+      end, {
+        buffer = bufnr,
+        desc = "Reply with suggestion",
+        nowait = keymaps.discussion_tree.reply_with_suggestion_nowait,
+      })
     end
   end
 
