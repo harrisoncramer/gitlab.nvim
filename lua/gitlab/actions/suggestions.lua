@@ -241,7 +241,7 @@ end
 ---@return string[]|nil original_lines The list of original lines.
 local get_original_lines = function(opts)
   local original_head_text = git.get_file_revision({
-    file_name = opts.is_new_sha and opts.new_file_name or opts.original_file_name,
+    file_name = opts.is_new_sha and opts.new_file_name or opts.old_file_name,
     revision = opts.revision,
   })
   -- If the original revision doesn't contain the file, the branch was possibly rebased, and the
@@ -250,7 +250,7 @@ local get_original_lines = function(opts)
     u.notify(
       string.format(
         "File `%s` doesn't contain any text in revision `%s` for which comment was made",
-        opts.original_file_name,
+        opts.old_file_name,
         opts.revision
       ),
       vim.log.levels.WARN
@@ -373,7 +373,7 @@ local determine_imply_local = function(opts)
   local head_differs_from_original = git.file_differs_in_revisions({
     revision_1 = opts.revision,
     revision_2 = "HEAD",
-    old_file_name = opts.original_file_name,
+    old_file_name = opts.old_file_name,
     file_name = opts.new_file_name,
   })
   -- TODO: Find out if this condition is not too restrictive (comment on unchanged lines could be
@@ -554,7 +554,7 @@ local create_autocommands = function(
 end
 
 ---@class ShowPreviewOpts The options passed to the M.show_preview function.
----@field original_file_name string
+---@field old_file_name string
 ---@field new_file_name string
 ---@field start_line integer
 ---@field end_line integer
@@ -577,7 +577,7 @@ M.show_preview = function(opts)
     return
   end
 
-  local commented_file_name = opts.is_new_sha and opts.new_file_name or opts.original_file_name
+  local commented_file_name = opts.is_new_sha and opts.new_file_name or opts.old_file_name
   local original_buf_name, original_bufnr =
     get_temp_file_name("ORIGINAL", opts.note_node_id or "NEW_COMMENT", commented_file_name)
 

@@ -311,13 +311,13 @@ M.create_comment_with_suggestion = function()
     return
   end
 
-  local original_file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
+  local old_file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
     or M.location.reviewer_data.file_name
   local is_new_sha = M.location.reviewer_data.new_sha_focused
 
   ---@type ShowPreviewOpts
   local opts = {
-    original_file_name = original_file_name,
+    old_file_name = old_file_name,
     new_file_name = M.location.reviewer_data.file_name,
     start_line = M.location.visual_range.start_line,
     end_line = M.location.visual_range.end_line,

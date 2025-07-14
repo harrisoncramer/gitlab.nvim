@@ -284,18 +284,16 @@ M.suggestion_preview = function(tree, action)
   end
 
   -- Get values for preview depending on whether comment is on OLD or NEW version
-  local original_file_name, revision
+  local revision
   if is_new_sha then
-    original_file_name = root_node.file_name
     revision = common.commented_line_has_changed(tree, root_node) and root_node.head_sha or "HEAD"
   else
-    original_file_name = root_node.old_file_name
     revision = root_node.base_sha
   end
 
   ---@type ShowPreviewOpts
   local opts = {
-    original_file_name = original_file_name,
+    old_file_name = root_node.old_file_name,
     new_file_name = root_node.file_name,
     start_line = start_line,
     end_line = end_line,
