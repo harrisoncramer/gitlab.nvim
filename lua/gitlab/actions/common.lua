@@ -198,7 +198,7 @@ end
 ---the line is not in the new SHA, returns nil
 ---@param node NuiTree.Node
 ---@return number|nil
-local function get_new_line(node)
+M.get_new_line = function(node)
   ---@type GitlabLineRange|nil
   local range = node.range
   if range == nil then
@@ -326,7 +326,7 @@ M.jump_to_file = function(tree)
     return
   end
   vim.cmd.tabnew()
-  local line_number = get_new_line(root_node) or get_old_line(root_node)
+  local line_number = M.get_new_line(root_node) or get_old_line(root_node)
   if line_number == nil or line_number == 0 then
     line_number = 1
   end

@@ -253,7 +253,7 @@ end
 
 ---Open a new tab with a suggestion preview.
 ---@param tree NuiTree The current discussion tree instance.
----@param action "reply"|"edit" Reply to the current thread or edit the current comment.
+---@param action "reply"|"edit"|"apply" Reply to the current thread, edit the current comment or apply the suggestion to local file.
 M.suggestion_preview = function(tree, action)
   local is_draft = M.is_draft_note(tree)
   if action == "reply" and is_draft then
@@ -279,8 +279,22 @@ M.suggestion_preview = function(tree, action)
   -- Return early if comment position is missing
   local start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
   if start_line == nil or end_line == nil then
-    u.notify("Couldn't get comment range. Can't build suggestion preview", vim.log.levels.ERROR)
+    u.notify("Couldn't get comment range. Can't create suggestion preview", vim.log.levels.ERROR)
     return
+  end
+
+  -- Override reviewer values when local-applying a suggestion that was made on the OLD version
+  if action == "apply" and not is_new_sha then
+    local range = end_line - start_line
+    start_line = common.get_new_line(root_node)
+
+    if start_line == nil then
+      u.notify("Couldn't get position in new version. Can't create suggestion preview", vim.log.levels.ERROR)
+      return
+    end
+
+    end_line = start_line + range
+    is_new_sha = true
   end
 
   -- Get values for preview depending on whether comment is on OLD or NEW version
@@ -653,6 +667,14 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
           M.suggestion_preview(tree, "edit")
         end
       end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_nowait })
+    end
+
+    if keymaps.discussion_tree.apply_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.apply_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.suggestion_preview(tree, "apply")
+        end
+      end, { buffer = bufnr, desc = "Apply suggestion", nowait = keymaps.discussion_tree.apply_suggestion_nowait })
     end
 
     if keymaps.discussion_tree.reply_with_suggestion then

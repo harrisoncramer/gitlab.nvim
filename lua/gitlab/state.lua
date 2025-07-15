@@ -127,6 +127,7 @@ M.settings = {
       print_node = "<leader>p",
       edit_suggestion = "se",
       reply_with_suggestion = "sr",
+      apply_suggestion = "sa",
     },
     suggestion_preview = {
       apply_changes = "ZZ",

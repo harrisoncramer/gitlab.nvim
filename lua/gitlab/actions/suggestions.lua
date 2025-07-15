@@ -139,6 +139,13 @@ local set_keymaps = function(
         require("gitlab.actions.comment").confirm_edit_comment(opts.root_node_id, opts.note_node_id, false)(buf_text)
       elseif opts.comment_type == "new" then
         require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
+      elseif opts.comment_type == "apply" then
+        if imply_local then
+          -- Override original with current buffer contents
+          original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
+        else
+          u.notify("Cannot apply temp-file preview to local file.", vim.log.levels.ERROR)
+        end
       else
         -- This should not really happen.
         u.notify(string.format("Cannot perform unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
@@ -163,7 +170,6 @@ local set_keymaps = function(
     })
   end
 
-  -- TODO: Keymap for applying changes to the Suggestion buffer.
   -- TODO: Keymap for showing help on keymaps in the Comment buffer and Suggestion buffer.
   -- TODO: Keymap for uploading files.
 end
@@ -380,9 +386,9 @@ local determine_imply_local = function(opts)
   -- shown in local file just fine). Ideally, change logic of showing comments on unchanged lines
   -- from OLD to NEW version (to enable more local-file diffing).
   if not opts.is_new_sha then
-    u.notify("Comment on old text. Using target-branch version", vim.log.levels.INFO)
+    u.notify("Comment on old text. Using target-branch version", vim.log.levels.WARN)
   elseif head_differs_from_original then
-    u.notify("Line changed. Using version for which comment was made", vim.log.levels.INFO)
+    u.notify("Line changed. Using version for which comment was made", vim.log.levels.WARN)
   elseif is_modified(opts.new_file_name) then
     u.notify("File has unsaved or uncommited changes", vim.log.levels.WARN)
   else
@@ -561,7 +567,7 @@ end
 ---@field is_new_sha boolean
 ---@field revision string
 ---@field note_header string
----@field comment_type "reply"|"draft"|"edit"|"new" The type of comment ("reply", "draft" and "edit" come from the discussion tree, "new" from the reviewer)
+---@field comment_type "apply"|"reply"|"draft"|"edit"|"new" The type of comment ("apply", "reply", "draft" and "edit" come from the discussion tree, "new" from the reviewer)
 ---@field note_lines string[]|nil
 ---@field root_node_id string
 ---@field note_node_id integer
