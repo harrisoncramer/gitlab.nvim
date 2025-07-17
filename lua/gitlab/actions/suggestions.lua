@@ -70,6 +70,7 @@ local reset_suggestion_buf = function(
   set_buffer_lines(suggestion_buf, original_lines, imply_local)
   if imply_local then
     pcall(vim.api.nvim_buf_del_keymap, suggestion_buf, "n", keymaps.suggestion_preview.discard_changes)
+    pcall(vim.api.nvim_buf_del_keymap, suggestion_buf, "n", keymaps.suggestion_preview.apply_changes)
     vim.api.nvim_set_option_value("winbar", original_suggestion_winbar, { scope = "local", win = suggestion_winid })
   end
 end
@@ -122,49 +123,49 @@ local set_keymaps = function(
       })
     end
 
+    -- Post updated suggestion note buffer to the server.
+    if keymaps.suggestion_preview.apply_changes then
+      vim.keymap.set("n", keymaps.suggestion_preview.apply_changes, function()
+        vim.api.nvim_buf_call(note_buf, function()
+          vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
+        end)
+
+        local buf_text = u.get_buffer_text(note_buf)
+        if opts.comment_type == "reply" then
+          require("gitlab.actions.comment").confirm_create_comment(buf_text, false, opts.root_node_id)
+        elseif opts.comment_type == "draft" then
+          require("gitlab.actions.draft_notes").confirm_edit_draft_note(opts.note_node_id, false)(buf_text)
+        elseif opts.comment_type == "edit" then
+          require("gitlab.actions.comment").confirm_edit_comment(opts.root_node_id, opts.note_node_id, false)(buf_text)
+        elseif opts.comment_type == "new" then
+          require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
+        elseif opts.comment_type == "apply" then
+          if imply_local then
+            -- Override original with current buffer contents
+            original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
+          else
+            u.notify("Cannot apply temp-file preview to local file.", vim.log.levels.ERROR)
+          end
+        else
+          -- This should not really happen.
+          u.notify(string.format("Cannot perform unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
+        end
+
+        reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
+        vim.cmd.tabclose()
+      end, {
+        buffer = bufnr,
+        desc = opts.comment_type == "apply" and "Write changes to local file" or "Post suggestion comment to Gitlab",
+        nowait = keymaps.suggestion_preview.apply_changes_nowait,
+      })
+    end
+
     if keymaps.help then
       vim.keymap.set("n", keymaps.help, function()
         local help = require("gitlab.actions.help")
         help.open()
       end, { buffer = bufnr, desc = "Open help", nowait = keymaps.help_nowait })
     end
-  end
-
-  -- Post updated suggestion note buffer to the server.
-  if keymaps.suggestion_preview.apply_changes then
-    vim.keymap.set("n", keymaps.suggestion_preview.apply_changes, function()
-      vim.api.nvim_buf_call(note_buf, function()
-        vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
-      end)
-
-      local buf_text = u.get_buffer_text(note_buf)
-      if opts.comment_type == "reply" then
-        require("gitlab.actions.comment").confirm_create_comment(buf_text, false, opts.root_node_id)
-      elseif opts.comment_type == "draft" then
-        require("gitlab.actions.draft_notes").confirm_edit_draft_note(opts.note_node_id, false)(buf_text)
-      elseif opts.comment_type == "edit" then
-        require("gitlab.actions.comment").confirm_edit_comment(opts.root_node_id, opts.note_node_id, false)(buf_text)
-      elseif opts.comment_type == "new" then
-        require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
-      elseif opts.comment_type == "apply" then
-        if imply_local then
-          -- Override original with current buffer contents
-          original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
-        else
-          u.notify("Cannot apply temp-file preview to local file.", vim.log.levels.ERROR)
-        end
-      else
-        -- This should not really happen.
-        u.notify(string.format("Cannot perform unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
-      end
-
-      reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
-      vim.cmd.tabclose()
-    end, {
-      buffer = note_buf,
-      desc = opts.comment_type == "apply" and "Write changes to local file" or "Post suggestion comment to Gitlab",
-      nowait = keymaps.suggestion_preview.apply_changes_nowait,
-    })
   end
 
   if keymaps.suggestion_preview.paste_default_suggestion then
