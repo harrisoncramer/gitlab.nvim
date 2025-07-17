@@ -178,7 +178,15 @@ local set_keymaps = function(
     })
   end
 
-  -- TODO: Keymap for uploading files.
+  if keymaps.suggestion_preview.attach_file and opts.comment_type ~= "apply" then
+    vim.keymap.set("n", keymaps.suggestion_preview.attach_file, function()
+      require("gitlab.actions.miscellaneous").attach_file()
+    end, {
+      buffer = note_buf,
+      desc = "Attach file",
+      nowait = keymaps.suggestion_preview.attach_file_nowait,
+    })
+  end
 end
 
 ---Replace a range of items in a list with items from another list.

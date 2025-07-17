@@ -132,6 +132,7 @@ M.settings = {
     suggestion_preview = {
       apply_changes = "ZZ",
       discard_changes = "ZQ",
+      attach_file = "ZA",
       paste_default_suggestion = "glS",
     },
     reviewer = {

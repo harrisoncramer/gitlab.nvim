@@ -554,9 +554,11 @@ emojis that you have responded with.
 UPLOADING FILES                                  *gitlab.nvim.uploading-files*
 
 To attach a file to an MR description, reply, comment, and so forth use the
-`keymaps.popup.perform_linewise_action` keybinding when the popup is open.
-This will open a picker that will look for files in the directory you specify
-in the `settings.attachment_dir` folder (this must be an absolute path).
+`keymaps.popup.perform_linewise_action` keybinding when the popup is open (or
+the `keymaps.suggestion_preview.attach_file` in the comment buffer of the
+suggestion preview). This will open a picker that will look for files in the
+directory you specify in the `settings.attachment_dir` folder (this must be an
+absolute path).
 
 When you have picked the file, it will be added to the current buffer at the
 current line.
