@@ -620,7 +620,6 @@ M.show_preview = function(opts)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
   -- made.
-  vim.fn.mkdir(vim.fn.fnamemodify(original_buf_name, ":h"), "p")
   vim.api.nvim_cmd({ cmd = "tabnew", args = { original_buf_name } }, {})
   local original_buf = vim.api.nvim_get_current_buf()
   local original_winid = vim.api.nvim_get_current_win()
@@ -640,7 +639,6 @@ M.show_preview = function(opts)
     vim.api.nvim_cmd({ cmd = split_cmd, args = { opts.new_file_name } }, {})
   else
     local sug_buf_name = get_temp_file_name("SUGGESTION", opts.note_node_id or "NEW_COMMENT", commented_file_name)
-    vim.fn.mkdir(vim.fn.fnamemodify(sug_buf_name, ":h"), "p")
     vim.api.nvim_cmd({ cmd = split_cmd, args = { sug_buf_name } }, {})
     vim.bo.bufhidden = "wipe"
     vim.bo.buflisted = false
