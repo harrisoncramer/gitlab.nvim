@@ -155,7 +155,7 @@ local set_keymaps = function(
       vim.cmd.tabclose()
     end, {
       buffer = note_buf,
-      desc = "Post suggestion comment to Gitlab",
+      desc = opts.comment_type == "apply" and "Write changes to local file" or "Post suggestion comment to Gitlab",
       nowait = keymaps.suggestion_preview.apply_changes_nowait,
     })
   end
