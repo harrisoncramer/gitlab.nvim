@@ -97,9 +97,9 @@ local set_keymaps = function(
 )
   local keymaps = require("gitlab.state").settings.keymaps
 
-  -- Reset suggestion buffer to original state and close preview tab
-  if keymaps.suggestion_preview.discard_changes then
-    for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
+  for _, bufnr in ipairs({ note_buf, original_buf, suggestion_buf }) do
+    -- Reset suggestion buffer to original state and close preview tab
+    if keymaps.suggestion_preview.discard_changes then
       vim.keymap.set("n", keymaps.suggestion_preview.discard_changes, function()
         if vim.api.nvim_buf_is_valid(note_buf) then
           vim.bo[note_buf].modified = false
@@ -120,6 +120,13 @@ local set_keymaps = function(
         desc = "Close preview tab discarding changes",
         nowait = keymaps.suggestion_preview.discard_changes_nowait,
       })
+    end
+
+    if keymaps.help then
+      vim.keymap.set("n", keymaps.help, function()
+        local help = require("gitlab.actions.help")
+        help.open()
+      end, { buffer = bufnr, desc = "Open help", nowait = keymaps.help_nowait })
     end
   end
 
@@ -170,7 +177,6 @@ local set_keymaps = function(
     })
   end
 
-  -- TODO: Keymap for showing help on keymaps in the Comment buffer and Suggestion buffer.
   -- TODO: Keymap for uploading files.
 end
 
