@@ -230,6 +230,7 @@ you call this function with no values the defaults will be used:
         suggestion_preview = {
           apply_changes = "ZZ", -- Close suggestion preview tab, and post suggestion comment to Gitlab (and discard changes to local file) or "apply" changes to local file
           discard_changes = "ZQ", -- Close suggestion preview tab and discard changes to local file
+          attach_file = "ZA", -- Attach a file from the `settings.attachment_dir`
           paste_default_suggestion = "glS", -- Paste the default suggestion below the cursor (overrides default "glS" (start review) keybinding for the "Note" buffer)
         },
         reviewer = {
