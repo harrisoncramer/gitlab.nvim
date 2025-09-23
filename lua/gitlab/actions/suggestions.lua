@@ -516,7 +516,7 @@ local create_autocommands = function(
   imply_local,
   opts
 )
-  local last_line, last_suggestion = suggestions[1].note_start_linenr, suggestions[1]
+  local last_line = suggestions[1].note_start_linenr
 
   ---Update the suggestion buffer if the selected suggestion changes in the Comment buffer.
   local update_suggestion_buffer = function()
@@ -527,16 +527,11 @@ local create_autocommands = function(
     local suggestion = List.new(suggestions):find(function(sug)
       return current_line <= sug.note_end_linenr
     end)
-    local old_buffer_text = u.get_buffer_text(suggestion_buf)
-    if
-      not suggestion
-      or suggestion == last_suggestion
-      or old_buffer_text == table.concat(suggestion.full_text, "\n")
-    then
+    if not suggestion or u.get_buffer_text(suggestion_buf) == table.concat(suggestion.full_text, "\n") then
       return
     end
     set_buffer_lines(suggestion_buf, suggestion.full_text, imply_local)
-    last_line, last_suggestion = current_line, suggestion
+    last_line = current_line
     refresh_signs(suggestion, note_buf)
   end
 
