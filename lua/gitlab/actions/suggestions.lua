@@ -527,7 +527,12 @@ local create_autocommands = function(
     local suggestion = List.new(suggestions):find(function(sug)
       return current_line <= sug.note_end_linenr
     end)
-    if not suggestion or suggestion == last_suggestion then
+    local old_buffer_text = u.get_buffer_text(suggestion_buf)
+    if
+      not suggestion
+      or suggestion == last_suggestion
+      or old_buffer_text == table.concat(suggestion.full_text, "\n")
+    then
       return
     end
     set_buffer_lines(suggestion_buf, suggestion.full_text, imply_local)
