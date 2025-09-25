@@ -262,7 +262,7 @@ you call this function with no values the defaults will be used:
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         position = "bottom", -- "top", "right", "bottom" or "left"
         size = "20%", -- Size of split
-        relative = "editor", -- Position of tree split relative to "editor" or "window"
+        relative = "editor", -- Position of tree split relative to "editor" or "win" (window)
         resolved = '✓', -- Symbol to show next to resolved discussions
         unresolved = '-', -- Symbol to show next to unresolved discussions
         unlinked = "󰌸", -- Symbol to show next to unliked comments (i.e., not threads)
