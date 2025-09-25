@@ -1078,4 +1078,25 @@ execute and passed the data as an argument.
           with each resource as a key-value pair, with the key being it's
           type.
 
+                                                                *gitlab.nvim.data*
+gitlab.refresh_data() ~
+
+Fetches discussion tree data from Gitlab and refreshes the tree views. It can
+be used in an autocommand to refresh the data every time you enter the
+discussion tree. This exmaple shows how to easily limit the refresh rate to at
+least 10 seconds:
+>lua
+  local last_updated = os.time()
+  local gitlab = vim.api.nvim_create_augroup("Gitlab", {})
+  vim.api.nvim_create_autocmd("BufEnter", {
+    group = gitlab,
+    callback = function()
+      if vim.bo.filetype == "gitlab" and os.time() - last_updated > 10 then
+        require("gitlab").refresh_data()
+        last_updated = os.time()
+      end
+    end
+  })
+<
+
 vim:tw=78:ts=4:sw=4:expandtab:ft=help:norl:
