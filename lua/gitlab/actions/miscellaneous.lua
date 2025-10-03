@@ -27,7 +27,7 @@ M.attach_file = function()
     local body = { file_path = full_path, file_name = choice }
     job.run_job("/attachment", "POST", body, function(data)
       local markdown = data.markdown
-      vim.api.nvim_put({markdown}, "l", true, false)
+      vim.api.nvim_put({ markdown }, "l", true, false)
     end)
   end)
 end
