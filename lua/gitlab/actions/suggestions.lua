@@ -123,7 +123,7 @@ local set_keymaps = function(
       })
     end
 
-    -- Post updated suggestion note buffer to the server.
+    -- Post suggestion note to the server.
     if keymaps.suggestion_preview.apply_changes then
       vim.keymap.set("n", keymaps.suggestion_preview.apply_changes, function()
         vim.api.nvim_buf_call(note_buf, function()
@@ -141,10 +141,18 @@ local set_keymaps = function(
           require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
         elseif opts.comment_type == "apply" then
           if imply_local then
-            -- Override original with current buffer contents
             original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
+            if
+              not git.add({ filename = vim.fn.bufname(suggestion_buf) })
+              or not git.commit({ commit_message = "Apply 1 suggestion to 1 file" })
+              or not git.push()
+            then
+              return
+            end
+            require("gitlab.actions.discussions").toggle_discussion_resolved(opts.tree, true)
           else
             u.notify("Cannot apply temp-file preview to local file.", vim.log.levels.ERROR)
+            return
           end
         else
           -- This should not really happen.
@@ -155,8 +163,29 @@ local set_keymaps = function(
         vim.cmd.tabclose()
       end, {
         buffer = bufnr,
-        desc = opts.comment_type == "apply" and "Write changes to local file" or "Post suggestion comment to Gitlab",
+        desc = opts.comment_type == "apply" and "Apply suggestion and resolve thread"
+          or "Post suggestion comment to Gitlab",
         nowait = keymaps.suggestion_preview.apply_changes_nowait,
+      })
+    end
+
+    if opts.comment_type == "apply" and keymaps.suggestion_preview.apply_changes_locally then
+      vim.keymap.set("n", keymaps.suggestion_preview.apply_changes_locally, function()
+        vim.api.nvim_buf_call(note_buf, function()
+          vim.api.nvim_cmd({ cmd = "write", mods = { silent = true } }, {})
+        end)
+        if imply_local then
+          original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
+        else
+          u.notify("Cannot apply temp-file preview to local file.", vim.log.levels.ERROR)
+          return
+        end
+        reset_suggestion_buf(imply_local, suggestion_buf, original_lines, original_suggestion_winbar, suggestion_winid)
+        vim.cmd.tabclose()
+      end, {
+        buffer = bufnr,
+        desc = "Write changes to local file",
+        nowait = keymaps.suggestion_preview.apply_changes_locally_nowait,
       })
     end
 
@@ -586,6 +615,7 @@ end
 ---@field note_lines string[]|nil
 ---@field root_node_id string
 ---@field note_node_id integer
+---@field tree NuiTree
 
 ---Get suggestions from the current note and preview them in a new tab.
 ---@param opts ShowPreviewOpts The options passed to the M.show_preview function.

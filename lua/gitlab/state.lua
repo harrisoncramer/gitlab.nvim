@@ -133,6 +133,7 @@ M.settings = {
       apply_changes = "ZZ",
       discard_changes = "ZQ",
       attach_file = "ZA",
+      apply_changes_locally = "Zz",
       paste_default_suggestion = "glS",
     },
     reviewer = {

@@ -228,9 +228,10 @@ you call this function with no values the defaults will be used:
           apply_suggestion = "sa", -- Apply the suggestion to the local file with a preview in a new tab
         },
         suggestion_preview = {
-          apply_changes = "ZZ", -- Close suggestion preview tab, and post suggestion comment to Gitlab (and discard changes to local file) or "apply" changes to local file
+          apply_changes = "ZZ", -- Close suggestion preview tab, and post comment to Gitlab (discarding changes to local file). In "apply mode", accept suggestion, commit changes, then push to remote and resolve thread
           discard_changes = "ZQ", -- Close suggestion preview tab and discard changes to local file
           attach_file = "ZA", -- Attach a file from the `settings.attachment_dir`
+          apply_changes_locally = "Zz", -- Only in "apply mode", write suggestion buffer to local file
           paste_default_suggestion = "glS", -- Paste the default suggestion below the cursor (overrides default "glS" (start review) keybinding for the "Note" buffer)
         },
         reviewer = {

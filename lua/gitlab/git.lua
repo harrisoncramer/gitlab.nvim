@@ -260,4 +260,36 @@ M.file_differs_in_revisions = function(opts)
   return result ~= ""
 end
 
+M.add = function(opts)
+  local _, add_err = run_system({ "git", "add", opts.filename })
+  if add_err ~= nil then
+    require("gitlab.utils").notify("Adding changes failed: " .. add_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
+M.commit = function(opts)
+  local _, commit_err = run_system({ "git", "commit", "-m", opts.commit_message, "-q" })
+  if commit_err ~= nil then
+    require("gitlab.utils").notify("Committing changes failed: " .. commit_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
+M.push = function()
+  local remote_branch = M.get_remote_branch()
+  if remote_branch == nil then
+    return false
+  end
+  local remote, branch = string.match(remote_branch, "([^/]+)/(.*)")
+  local _, push_err = run_system({ "git", "push", remote, branch })
+  if push_err ~= nil then
+    require("gitlab.utils").notify("Pushing remote-tracking branch failed: " .. push_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
 return M

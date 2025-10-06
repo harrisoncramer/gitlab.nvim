@@ -318,6 +318,7 @@ M.suggestion_preview = function(tree, action)
     note_lines = action ~= "reply" and common.get_note_lines(tree) or nil,
     root_node_id = root_node.id,
     note_node_id = note_node_id,
+    tree = tree,
   }
   require("gitlab.actions.suggestions").show_preview(opts)
 end
@@ -390,7 +391,9 @@ M.edit_comment = function(tree, unlinked)
 end
 
 -- This function (settings.keymaps.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
-M.toggle_discussion_resolved = function(tree)
+---@param tree NuiTree
+---@param override boolean|nil If not nil, set resolved to `override` value instead of toggling.
+M.toggle_discussion_resolved = function(tree, override)
   local note = tree:get_node()
   if note == nil then
     return
@@ -404,9 +407,16 @@ M.toggle_discussion_resolved = function(tree)
     return
   end
 
+  local resolved
+  if override ~= nil then
+    resolved = override
+  else
+    resolved = not note.resolved
+  end
+
   local body = {
     discussion_id = note.id,
-    resolved = not note.resolved,
+    resolved = resolved,
   }
 
   job.run_job("/mr/discussions/resolve", "PUT", body, function(data)
