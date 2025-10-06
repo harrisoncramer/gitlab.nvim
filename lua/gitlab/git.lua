@@ -260,6 +260,12 @@ M.file_differs_in_revisions = function(opts)
   return result ~= ""
 end
 
+---@class AddOpts
+---@field filename string The file to stage
+
+---Returns true if staging succeeds, false otherwise
+---@param opts AddOpts
+---@return boolean
 M.add = function(opts)
   local _, add_err = run_system({ "git", "add", opts.filename })
   if add_err ~= nil then
@@ -269,6 +275,12 @@ M.add = function(opts)
   return true
 end
 
+---@class CommitOpts
+---@field commit_message string The commit message to include in the commit
+
+---Returns true if the commit succeeds, false otherwise
+---@param opts CommitOpts
+---@return boolean
 M.commit = function(opts)
   local _, commit_err = run_system({ "git", "commit", "-m", opts.commit_message, "-q" })
   if commit_err ~= nil then
@@ -278,6 +290,15 @@ M.commit = function(opts)
   return true
 end
 
+---Returns true if there are staged changes
+---@return boolean
+M.has_staged_changes = function()
+  local result = run_system({ "git", "diff", "--staged" })
+  return result ~= ""
+end
+
+---Returns true if the push succeeds, false otherwise
+---@return boolean
 M.push = function()
   local remote_branch = M.get_remote_branch()
   if remote_branch == nil then

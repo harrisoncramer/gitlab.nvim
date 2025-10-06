@@ -140,20 +140,23 @@ local set_keymaps = function(
         elseif opts.comment_type == "new" then
           require("gitlab.actions.comment").confirm_create_comment(buf_text, false)
         elseif opts.comment_type == "apply" then
-          if imply_local then
-            original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
-            if
-              not git.add({ filename = vim.fn.bufname(suggestion_buf) })
-              or not git.commit({ commit_message = "Apply 1 suggestion to 1 file" })
-              or not git.push()
-            then
-              return
-            end
-            require("gitlab.actions.discussions").toggle_discussion_resolved(opts.tree, true)
-          else
+          if not imply_local then
             u.notify("Cannot apply temp-file preview to local file.", vim.log.levels.ERROR)
             return
           end
+          if git.has_staged_changes() then
+            u.notify("Cannot commit suggestion when there are staged changes", vim.log.levels.ERROR)
+            return
+          end
+          if
+            not git.add({ filename = vim.fn.bufname(suggestion_buf) })
+            or not git.commit({ commit_message = "Apply 1 suggestion to 1 file" })
+            or not git.push()
+          then
+            return
+          end
+          require("gitlab.actions.discussions").toggle_discussion_resolved(opts.tree, true)
+          original_lines = vim.api.nvim_buf_get_lines(suggestion_buf, 0, -1, false)
         else
           -- This should not really happen.
           u.notify(string.format("Cannot perform unsupported action `%s`", opts.comment_type), vim.log.levels.ERROR)
