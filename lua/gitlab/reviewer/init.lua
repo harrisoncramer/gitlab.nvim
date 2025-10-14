@@ -78,6 +78,7 @@ M.open = function()
   local on_diffview_closed = function(view)
     if view.tabpage == M.tabnr then
       M.tabnr = nil
+      require("gitlab.actions.discussions.winbar").cleanup_timer()
     end
   end
   require("diffview.config").user_emitter:on("view_closed", function(_, args)

@@ -271,8 +271,21 @@ M.switch_view_type = function(override)
   M.update_winbar()
 end
 
--- Set up a timer to update the winbar periodically
-local timer = vim.uv.new_timer()
-timer:start(0, 100, vim.schedule_wrap(M.update_winbar))
+---Set up a timer to update the winbar periodically
+M.start_timer = function()
+  M.cleanup_timer()
+  ---@type nil|uv_timer_t
+  M.timer = vim.uv.new_timer()
+  M.timer:start(0, 100, vim.schedule_wrap(M.update_winbar))
+end
+
+--Stop and close the timer
+M.cleanup_timer = function()
+  if M.timer ~= nil then
+    M.timer:stop()
+    M.timer:close()
+    M.timer = nil
+  end
+end
 
 return M

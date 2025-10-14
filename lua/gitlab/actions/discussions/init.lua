@@ -124,6 +124,7 @@ M.open = function(callback, view_type)
   split:mount()
 
   -- Initialize winbar module with data from buffers
+  winbar.start_timer()
   winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr)
   winbar.switch_view_type(view_type)
 
@@ -156,6 +157,7 @@ M.close = function()
   end
   M.split_visible = false
   M.discussion_tree = nil
+  winbar.cleanup_timer()
 end
 
 ---Move to the discussion tree at the discussion from diagnostic on current line.
