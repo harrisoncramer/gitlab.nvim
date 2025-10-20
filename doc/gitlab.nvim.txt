@@ -270,6 +270,12 @@ you call this function with no values the defaults will be used:
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
         relative_date = true, -- Whether to show relative time like "5 days ago" or absolute time like "03/01/2025 at 01:43"
+        winopts = { -- Window-local options for the discussion tree split
+          number = false,
+          relativenumber = false,
+          breakindent = true, -- Every wrapped line will continue visually indented
+          showbreak = "+ ", -- String to put at the start of lines that have been wrapped
+        }
         winbar = nil, -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },

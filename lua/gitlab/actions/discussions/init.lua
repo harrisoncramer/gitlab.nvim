@@ -115,6 +115,13 @@ M.open = function(callback, view_type)
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
 
+  for opt, val in pairs(state.settings.discussion_tree.winopts) do
+    vim.api.nvim_set_option_value(opt, val, { win = M.split.winid })
+  end
+
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
+  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
+
   M.split = split
   M.split_visible = true
   split:mount()
@@ -451,8 +458,6 @@ M.rebuild_discussion_tree = function()
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
   state.discussion_tree.resolved_expanded = false
   state.discussion_tree.unresolved_expanded = false
 end
