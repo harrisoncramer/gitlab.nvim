@@ -25,7 +25,6 @@ M.switch_can_edit_bufs = function(bool, ...)
   ---@param v integer
   for _, v in ipairs(bufnrs) do
     u.switch_can_edit_buf(v, bool)
-    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = v })
   end
 end
 

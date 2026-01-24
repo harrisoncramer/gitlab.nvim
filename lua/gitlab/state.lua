@@ -172,6 +172,12 @@ M.settings = {
     tree_type = "simple",
     draft_mode = false,
     relative_date = true,
+    winopts = {
+      number = false,
+      relativenumber = false,
+      breakindent = true,
+      showbreak = "+ ",
+    },
   },
   emojis = {
     formatter = nil,

@@ -122,3 +122,84 @@ For a list of all these settings please run `:h gitlab.nvim.configuring-the-plug
 The plugin sets up a number of useful keybindings in the special buffers it creates, and some global keybindings as well. Refer to the relevant section of the manual `:h gitlab.nvim.keybindings` for more details.
 
 For more information about each of these commands, and about the APIs in general, run `:h gitlab.nvim.api`
+
+`gitlab.nvim` comes with a set of default `keymaps` for different contexts. You can override any of these in your configuration.
+
+### Global Keymaps
+
+These keymaps are available globally (i.e., in any buffer).
+
+```
+g?	Open a help popup for local keymaps
+glaa	Add assignee
+glad	Delete assignee
+glla	Add label
+glld	Delete label
+glra	Add reviewer
+glrd	Delete reviewer
+glA	Approve MR
+glR	Revoke MR approval
+glM	Merge the feature branch to the target branch and close MR
+glC	Create a new MR for currently checked-out feature branch
+glc	Chose MR for review
+glS	Start review for the currently checked-out branch
+gls	Show the editable summary of the MR
+glu	Copy the URL of the MR to the system clipboard
+glo	Open the URL of the MR in the default Internet browser
+gln	Create a note (comment not linked to a specific line)
+glp	Show the pipeline status
+gld	Toggle the discussions window
+glD	Toggle between draft mode and live mode
+glP	Publish all draft comments/notes
+```
+
+#### Popup Keymaps
+
+These `keymaps` are active in the popup windows (e.g., for creating comments, editing the summary, etc.).
+
+```
+<Tab>	Cycle to the next field
+<S-Tab>	Cycle to the previous field
+ZZ	Perform action (e.g., save comment)
+ZA	Perform linewise action
+ZQ	Discard changes and quit the popup
+```
+
+#### Discussion Tree Keymaps
+
+These `keymaps` are active in the discussion tree window.
+
+```
+Ea	Add an emoji to the note/comment
+Ed	Remove an emoji from a note/comment
+dd	Delete comment
+e	Edit comment
+r	Reply to comment
+-	Toggle the resolved status of the whole discussion
+o	Jump to comment location in file
+a	Jump to the comment location in the reviewer window
+b	Jump to the URL of the current note/discussion
+u	Copy the URL of the current node to clipboard
+c	Toggle between the notes and discussions views
+i	Toggle type of discussion tree
+P	Publish the currently focused note/comment
+dt	Toggle between date formats
+D	Toggle between draft mode and live mode
+st	Toggle whether discussions are sorted by the "latest_reply", or by "original_comment"
+t	Open or close the discussion
+T	Open or close separately both resolved and unresolved discussions
+R	Open or close all resolved discussions
+U	Open or close all unresolved discussions
+<C-R>	Refresh the data in the view
+<leader>p	Print the current node (for debugging)
+```
+
+#### Reviewer Keymaps
+
+These `keymaps` are active in the reviewer window (the diff view).
+
+```
+c	Create a comment for the lines that the following {motion} moves over
+s	Create a suggestion for the lines that the following {motion} moves over
+a	Jump to the comment in the discussion tree
+```

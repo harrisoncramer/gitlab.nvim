@@ -262,7 +262,7 @@ you call this function with no values the defaults will be used:
         keep_current_open = false, -- If true, current discussion stays open even if it should otherwise be closed when toggling
         position = "bottom", -- "top", "right", "bottom" or "left"
         size = "20%", -- Size of split
-        relative = "editor", -- Position of tree split relative to "editor" or "window"
+        relative = "editor", -- Position of tree split relative to "editor" or "win" (window)
         resolved = '✓', -- Symbol to show next to resolved discussions
         unresolved = '-', -- Symbol to show next to unresolved discussions
         unlinked = "󰌸", -- Symbol to show next to unliked comments (i.e., not threads)
@@ -270,6 +270,12 @@ you call this function with no values the defaults will be used:
         tree_type = "simple", -- Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
         draft_mode = false, -- Whether comments are posted as drafts as part of a review
         relative_date = true, -- Whether to show relative time like "5 days ago" or absolute time like "03/01/2025 at 01:43"
+        winopts = { -- Window-local options for the discussion tree split
+          number = false,
+          relativenumber = false,
+          breakindent = true, -- Every wrapped line will continue visually indented
+          showbreak = "+ ", -- String to put at the start of lines that have been wrapped
+        }
         winbar = nil, -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                      -- If using lualine, please add "gitlab" to disabled file types, otherwise you will not see the winbar.
       },
@@ -1077,5 +1083,26 @@ execute and passed the data as an argument.
           resources have been fetched. Will be passed a table with the data,
           with each resource as a key-value pair, with the key being it's
           type.
+
+                                                                *gitlab.nvim.data*
+gitlab.refresh_data() ~
+
+Fetches discussion tree data from Gitlab and refreshes the tree views. It can
+be used in an autocommand to refresh the data every time you enter the
+discussion tree. This exmaple shows how to easily limit the refresh rate to at
+least 10 seconds:
+>lua
+  local last_updated = os.time()
+  local gitlab = vim.api.nvim_create_augroup("Gitlab", {})
+  vim.api.nvim_create_autocmd("BufEnter", {
+    group = gitlab,
+    callback = function()
+      if vim.bo.filetype == "gitlab" and os.time() - last_updated > 10 then
+        require("gitlab").refresh_data()
+        last_updated = os.time()
+      end
+    end
+  })
+<
 
 vim:tw=78:ts=4:sw=4:expandtab:ft=help:norl:
