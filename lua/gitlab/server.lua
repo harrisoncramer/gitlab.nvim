@@ -84,9 +84,14 @@ end
 M.build = function(override)
   local file_path = u.current_file_path()
   local parent_dir = vim.fn.fnamemodify(file_path, ":h:h:h:h")
+  state.settings.root_path = parent_dir
+
+  if state.settings.bin ~= nil then
+    u.notify(string.format("Skipping server installation, using: %s", state.settings.bin), vim.log.levels.INFO)
+    return true
+  end
 
   local bin_name = u.is_windows() and "bin.exe" or "bin"
-  state.settings.root_path = parent_dir
   state.settings.bin = parent_dir .. u.path_separator .. "cmd" .. u.path_separator .. bin_name
 
   if not override then
