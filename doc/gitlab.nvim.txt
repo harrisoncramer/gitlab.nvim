@@ -1084,7 +1084,7 @@ execute and passed the data as an argument.
           with each resource as a key-value pair, with the key being it's
           type.
 
-                                                                *gitlab.nvim.data*
+                                                        *gitlab.nvim.refresh_data*
 gitlab.refresh_data() ~
 
 Fetches discussion tree data from Gitlab and refreshes the tree views. It can

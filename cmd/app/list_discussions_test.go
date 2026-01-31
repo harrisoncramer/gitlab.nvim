@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeDiscussionsLister struct {
@@ -16,7 +16,7 @@ type fakeDiscussionsLister struct {
 	badEmojiResponse bool
 }
 
-func (f fakeDiscussionsLister) ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
+func (f fakeDiscussionsLister) ListMergeRequestDiscussions(pid interface{}, mergeRequest int64, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -30,34 +30,24 @@ func (f fakeDiscussionsLister) ListMergeRequestDiscussions(pid interface{}, merg
 		*timePointers[i] = timePointers[i-1].Add(time.Second * 100)
 	}
 
-	type Author struct {
-		ID        int    `json:"id"`
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		Name      string `json:"name"`
-		State     string `json:"state"`
-		AvatarURL string `json:"avatar_url"`
-		WebURL    string `json:"web_url"`
-	}
-
 	testListDiscussionsResponse := []*gitlab.Discussion{
 		{Notes: []*gitlab.Note{
-			{CreatedAt: timePointers[0], Type: "DiffNote", Author: Author{Username: "hcramer0"}},
-			{CreatedAt: timePointers[4], Type: "DiffNote", Author: Author{Username: "hcramer1"}},
+			{CreatedAt: timePointers[0], Type: "DiffNote", Author: gitlab.NoteAuthor{Username: "hcramer0"}},
+			{CreatedAt: timePointers[4], Type: "DiffNote", Author: gitlab.NoteAuthor{Username: "hcramer1"}},
 		}},
 		{Notes: []*gitlab.Note{
-			{CreatedAt: timePointers[2], Type: "DiffNote", Author: Author{Username: "hcramer2"}},
-			{CreatedAt: timePointers[3], Type: "DiffNote", Author: Author{Username: "hcramer3"}},
+			{CreatedAt: timePointers[2], Type: "DiffNote", Author: gitlab.NoteAuthor{Username: "hcramer2"}},
+			{CreatedAt: timePointers[3], Type: "DiffNote", Author: gitlab.NoteAuthor{Username: "hcramer3"}},
 		}},
 		{Notes: []*gitlab.Note{
-			{CreatedAt: timePointers[1], Type: "DiffNote", Author: Author{Username: "hcramer4"}},
-			{CreatedAt: timePointers[5], Type: "DiffNote", Author: Author{Username: "hcramer5"}},
+			{CreatedAt: timePointers[1], Type: "DiffNote", Author: gitlab.NoteAuthor{Username: "hcramer4"}},
+			{CreatedAt: timePointers[5], Type: "DiffNote", Author: gitlab.NoteAuthor{Username: "hcramer5"}},
 		}},
 	}
 	return testListDiscussionsResponse, resp, err
 }
 
-func (f fakeDiscussionsLister) ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
+func (f fakeDiscussionsLister) ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int64, noteID int64, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err

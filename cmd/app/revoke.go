@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type MergeRequestRevoker interface {
-	UnapproveMergeRequest(interface{}, int, ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	UnapproveMergeRequest(interface{}, int64, ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 }
 
 type mergeRequestRevokerService struct {

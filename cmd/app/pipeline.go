@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type RetriggerPipelineResponse struct {
@@ -30,9 +30,9 @@ type GetPipelineAndJobsResponse struct {
 
 type PipelineManager interface {
 	ListProjectPipelines(pid interface{}, opt *gitlab.ListProjectPipelinesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.PipelineInfo, *gitlab.Response, error)
-	ListPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
-	ListPipelineBridges(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Bridge, *gitlab.Response, error)
-	RetryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
+	ListPipelineJobs(pid interface{}, pipelineID int64, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error)
+	ListPipelineBridges(pid interface{}, pipelineID int64, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Bridge, *gitlab.Response, error)
+	RetryPipelineBuild(pid interface{}, pipeline int64, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error)
 }
 
 type pipelineService struct {
@@ -171,7 +171,7 @@ func (a pipelineService) RetriggerPipeline(w http.ResponseWriter, r *http.Reques
 
 	id := strings.TrimPrefix(r.URL.Path, "/pipeline/trigger/")
 
-	idInt, err := strconv.Atoi(id)
+	idInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		handleError(w, err, "Could not convert pipeline ID to integer", http.StatusBadRequest)
 		return

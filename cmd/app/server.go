@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 /*
@@ -89,7 +89,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 			if os.Getenv("DEBUG") != "" {
 				// TODO: We have some JSON files (emojis.json) we import relative to the binary in production and
 				// expect to break during debugging, do not throw when that occurs.
-				fmt.Fprintf(os.Stdout, "Issue occured setting up router: %s\n", err)
+				_, _ = fmt.Fprintf(os.Stdout, "Issue occured setting up router: %s\n", err)
 			} else {
 				panic(err)
 			}
@@ -241,7 +241,22 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 
 	m.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "pong")
+		_, _ = fmt.Fprintln(w, "pong")
+	})
+
+	m.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintf(w, `{"version":"%s"}`, version)
+	})
+
+	// Default 404 handler
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			handleError(w, fmt.Errorf("endpoint %s does not exist", r.URL.Path), "Not found", http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	})
 
 	return LoggingServer{handler: m}

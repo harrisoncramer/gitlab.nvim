@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type MergeRequestListerByUsername interface {
-	ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error)
+	ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error)
 }
 
 type mergeRequestListerByUsernameService struct {
@@ -53,7 +53,7 @@ func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r 
 	}
 
 	type apiResponse struct {
-		mrs []*gitlab.MergeRequest
+		mrs []*gitlab.BasicMergeRequest
 		err error
 	}
 
@@ -73,8 +73,8 @@ func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r 
 		}(payload)
 	}
 
-	var mergeRequests []*gitlab.MergeRequest
-	existingIds := make(map[int]bool)
+	var mergeRequests []*gitlab.BasicMergeRequest
+	existingIds := make(map[int64]bool)
 	var errs []error
 	for res := range mrChan {
 		if res.err != nil {
@@ -115,14 +115,14 @@ func (a mergeRequestListerByUsernameService) ServeHTTP(w http.ResponseWriter, r 
 	}
 }
 
-func (a mergeRequestListerByUsernameService) getMrs(payload *gitlab.ListProjectMergeRequestsOptions) ([]*gitlab.MergeRequest, error) {
+func (a mergeRequestListerByUsernameService) getMrs(payload *gitlab.ListProjectMergeRequestsOptions) ([]*gitlab.BasicMergeRequest, error) {
 	mrs, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, payload)
 	if err != nil {
-		return []*gitlab.MergeRequest{}, err
+		return []*gitlab.BasicMergeRequest{}, err
 	}
 
 	if res.StatusCode >= 300 {
-		return []*gitlab.MergeRequest{}, GenericError{endpoint: "/merge_requests_by_username"}
+		return []*gitlab.BasicMergeRequest{}, GenericError{endpoint: "/merge_requests_by_username"}
 	}
 
 	defer res.Body.Close()

@@ -10,6 +10,7 @@ import (
 )
 
 var pluginOptions app.PluginOptions
+var Version = "unknown" // Set via ldflags
 
 func main() {
 	log.SetFlags(0)
@@ -20,6 +21,7 @@ func main() {
 
 	err := json.Unmarshal([]byte(os.Args[1]), &pluginOptions)
 	app.SetPluginOptions(pluginOptions)
+	app.SetVersion(Version)
 
 	if err != nil {
 		log.Fatalf("Failure parsing plugin settings: %v", err)

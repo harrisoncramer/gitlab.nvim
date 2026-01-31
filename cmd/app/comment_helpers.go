@@ -4,14 +4,14 @@ import (
 	"crypto/sha1"
 	"fmt"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 /* LinePosition represents a position in a line range. Unlike the Gitlab struct, this does not contain LineCode with a sha1 of the filename */
 type LinePosition struct {
 	Type    string `json:"type"`
-	OldLine int    `json:"old_line"`
-	NewLine int    `json:"new_line"`
+	OldLine int64  `json:"old_line"`
+	NewLine int64  `json:"new_line"`
 }
 
 /* LineRange represents the range of a note. */
@@ -24,8 +24,8 @@ type LineRange struct {
 type PositionData struct {
 	FileName       string     `json:"file_name"`
 	OldFileName    string     `json:"old_file_name"`
-	NewLine        *int       `json:"new_line,omitempty"`
-	OldLine        *int       `json:"old_line,omitempty"`
+	NewLine        *int64     `json:"new_line,omitempty"`
+	OldLine        *int64     `json:"old_line,omitempty"`
 	HeadCommitSHA  string     `json:"head_commit_sha"`
 	BaseCommitSHA  string     `json:"base_commit_sha"`
 	StartCommitSHA string     `json:"start_commit_sha"`

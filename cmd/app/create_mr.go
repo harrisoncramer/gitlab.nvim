@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type CreateMrRequest struct {
 	Title           string `json:"title" validate:"required"`
 	TargetBranch    string `json:"target_branch" validate:"required"`
 	Description     string `json:"description"`
-	TargetProjectID int    `json:"forked_project_id,omitempty"`
+	TargetProjectID int64  `json:"forked_project_id,omitempty"`
 	DeleteBranch    bool   `json:"delete_branch"`
 	Squash          bool   `json:"squash"`
 }

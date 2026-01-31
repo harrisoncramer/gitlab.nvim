@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type mw func(http.Handler) http.Handler
@@ -108,7 +108,7 @@ func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 			}
 
 			if pluginOptions.ChosenMrIID != 0 {
-				options.IIDs = gitlab.Ptr([]int{pluginOptions.ChosenMrIID})
+				options.IIDs = gitlab.Ptr([]int64{pluginOptions.ChosenMrIID})
 			}
 
 			mergeRequests, _, err := m.client.ListProjectMergeRequests(m.data.projectInfo.ProjectId, &options)

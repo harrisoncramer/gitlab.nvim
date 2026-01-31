@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakePipelineManager struct {
@@ -19,7 +19,7 @@ func (f fakePipelineManager) ListProjectPipelines(pid interface{}, opt *gitlab.L
 	return []*gitlab.PipelineInfo{{ID: 1234}}, resp, err
 }
 
-func (f fakePipelineManager) ListPipelineJobs(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error) {
+func (f fakePipelineManager) ListPipelineJobs(pid interface{}, pipelineID int64, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Job, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -27,7 +27,7 @@ func (f fakePipelineManager) ListPipelineJobs(pid interface{}, pipelineID int, o
 	return []*gitlab.Job{}, resp, err
 }
 
-func (f fakePipelineManager) ListPipelineBridges(pid interface{}, pipelineID int, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Bridge, *gitlab.Response, error) {
+func (f fakePipelineManager) ListPipelineBridges(pid interface{}, pipelineID int64, opts *gitlab.ListJobsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Bridge, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -35,7 +35,7 @@ func (f fakePipelineManager) ListPipelineBridges(pid interface{}, pipelineID int
 	return []*gitlab.Bridge{}, resp, err
 }
 
-func (f fakePipelineManager) RetryPipelineBuild(pid interface{}, pipeline int, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
+func (f fakePipelineManager) RetryPipelineBuild(pid interface{}, pipeline int64, options ...gitlab.RequestOptionFunc) (*gitlab.Pipeline, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 /* The data coming from the client when creating a draft note is the same
@@ -29,10 +29,10 @@ func (draftNote DraftNoteWithPosition) GetPositionData() PositionData {
 }
 
 type DraftNoteManager interface {
-	ListDraftNotes(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error)
-	CreateDraftNote(pid interface{}, mergeRequest int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
-	DeleteDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
-	UpdateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
+	ListDraftNotes(pid interface{}, mergeRequest int64, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error)
+	CreateDraftNote(pid interface{}, mergeRequest int64, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
+	DeleteDraftNote(pid interface{}, mergeRequest int64, note int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	UpdateDraftNote(pid interface{}, mergeRequest int64, note int64, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error)
 }
 
 type draftNoteService struct {
@@ -139,7 +139,7 @@ func (a draftNoteService) postDraftNote(w http.ResponseWriter, r *http.Request) 
 /* deleteDraftNote deletes a draft note */
 func (a draftNoteService) deleteDraftNote(w http.ResponseWriter, r *http.Request) {
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
-	id, err := strconv.Atoi(suffix)
+	id, err := strconv.ParseInt(suffix, 10, 64)
 	if err != nil {
 		handleError(w, err, "Could not parse draft note ID", http.StatusBadRequest)
 		return
@@ -174,7 +174,7 @@ type UpdateDraftNoteRequest struct {
 /* updateDraftNote edits the text of a draft comment */
 func (a draftNoteService) updateDraftNote(w http.ResponseWriter, r *http.Request) {
 	suffix := strings.TrimPrefix(r.URL.Path, "/mr/draft_notes/")
-	id, err := strconv.Atoi(suffix)
+	id, err := strconv.ParseInt(suffix, 10, 64)
 	if err != nil {
 		handleError(w, err, "Could not parse draft note ID", http.StatusBadRequest)
 		return

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type FileReader interface {
@@ -48,7 +48,7 @@ func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
 }
 
 type FileUploader interface {
-	UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error)
+	UploadProjectMarkdown(pid any, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectMarkdownUploadedFile, *gitlab.Response, error)
 }
 
 type attachmentService struct {
@@ -67,7 +67,7 @@ func (a attachmentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectFile, res, err := a.client.UploadFile(a.projectInfo.ProjectId, file, payload.FileName)
+	projectFile, res, err := a.client.UploadProjectMarkdown(a.projectInfo.ProjectId, file, payload.FileName)
 	if err != nil {
 		handleError(w, err, fmt.Sprintf("Could not upload %s to Gitlab", payload.FileName), http.StatusInternalServerError)
 		return

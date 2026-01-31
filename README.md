@@ -18,7 +18,7 @@ To view these help docs and to get more detailed help information, please run `:
 
 ## Requirements
 
-- <a href="https://go.dev/">Go</a> >= v1.19
+- <a href="https://go.dev/">Go</a> >= v1.25.1
 
 ## Quick Start
 
