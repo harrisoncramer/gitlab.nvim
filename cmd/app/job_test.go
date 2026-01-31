@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeTraceFileGetter struct {
@@ -26,7 +26,7 @@ func getTraceFileData(t *testing.T, svc http.Handler, request *http.Request) Job
 	return data
 }
 
-func (f fakeTraceFileGetter) GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error) {
+func (f fakeTraceFileGetter) GetTraceFile(pid interface{}, jobID int64, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err

@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeAssigneeClient struct {
 	testBase
 }
 
-func (f fakeAssigneeClient) UpdateMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
+func (f fakeAssigneeClient) UpdateMergeRequest(pid interface{}, mergeRequest int64, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -20,7 +20,7 @@ func (f fakeAssigneeClient) UpdateMergeRequest(pid interface{}, mergeRequest int
 }
 
 func TestAssigneeHandler(t *testing.T) {
-	var updatePayload = AssigneeUpdateRequest{Ids: []int{1, 2}}
+	var updatePayload = AssigneeUpdateRequest{Ids: []int64{1, 2}}
 
 	t.Run("Updates assignees", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPut, "/mr/assignee", updatePayload)

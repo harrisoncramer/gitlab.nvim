@@ -4,7 +4,7 @@ local Job = require("plenary.job")
 local u = require("gitlab.utils")
 local M = {}
 
-M.run_job = function(endpoint, method, body, callback, on_error_callback)
+M.run_job = function(endpoint, method, body, callback)
   local state = require("gitlab.state")
   local args = { "-s", "-X", (method or "POST"), string.format("localhost:%s", state.settings.port) .. endpoint }
 
@@ -16,10 +16,8 @@ M.run_job = function(endpoint, method, body, callback, on_error_callback)
 
   -- This handler will handle all responses from the Go server. Anything with a successful
   -- status will call the callback (if it is supplied for the job). Otherwise, it will print out the
-  -- success message or error message and details from the Go server and run the on_error_callback
-  -- (if supplied for the job).
+  -- success message or error message and details from the Go server.
   local stderr = {}
-
   Job:new({
     command = "curl",
     args = args,
@@ -55,9 +53,6 @@ M.run_job = function(endpoint, method, body, callback, on_error_callback)
           -- Handle error case
           local message = string.format("%s: %s", data.message, data.details)
           u.notify(message, vim.log.levels.ERROR)
-          if on_error_callback then
-            on_error_callback(data)
-          end
         end
       end, 0)
     end,

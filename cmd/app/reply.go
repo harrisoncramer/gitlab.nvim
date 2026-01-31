@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type ReplyRequest struct {
@@ -20,7 +20,7 @@ type ReplyResponse struct {
 }
 
 type ReplyManager interface {
-	AddMergeRequestDiscussionNote(interface{}, int, string, *gitlab.AddMergeRequestDiscussionNoteOptions, ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
+	AddMergeRequestDiscussionNote(interface{}, int64, string, *gitlab.AddMergeRequestDiscussionNoteOptions, ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
 }
 
 type replyService struct {

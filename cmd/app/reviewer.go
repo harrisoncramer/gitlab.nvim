@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type ReviewerUpdateRequest struct {
-	Ids []int `json:"ids" validate:"required"`
+	Ids []int64 `json:"ids" validate:"required"`
 }
 
 type ReviewerUpdateResponse struct {
@@ -22,7 +22,7 @@ type ReviewersRequestResponse struct {
 }
 
 type MergeRequestUpdater interface {
-	UpdateMergeRequest(pid interface{}, mergeRequest int, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	UpdateMergeRequest(pid interface{}, mergeRequest int64, opt *gitlab.UpdateMergeRequestOptions, options ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 }
 
 type reviewerService struct {

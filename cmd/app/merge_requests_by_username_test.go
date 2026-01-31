@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeMergeRequestListerByUsername struct {
@@ -13,17 +13,17 @@ type fakeMergeRequestListerByUsername struct {
 	emptyResponse bool
 }
 
-func (f fakeMergeRequestListerByUsername) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
+func (f fakeMergeRequestListerByUsername) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if f.emptyResponse {
-		return []*gitlab.MergeRequest{}, resp, err
+		return []*gitlab.BasicMergeRequest{}, resp, err
 	}
 
-	return []*gitlab.MergeRequest{{IID: 10}}, resp, err
+	return []*gitlab.BasicMergeRequest{{IID: 10}}, resp, err
 }
 
 func TestListMergeRequestByUsername(t *testing.T) {

@@ -11,7 +11,7 @@ type PluginOptions struct {
 		GitlabRequest  bool `json:"gitlab_request"`
 		GitlabResponse bool `json:"gitlab_response"`
 	} `json:"debug"`
-	ChosenMrIID        int `json:"chosen_mr_iid"`
+	ChosenMrIID        int64 `json:"chosen_mr_iid"`
 	ConnectionSettings struct {
 		Proxy    string `json:"proxy"`
 		Insecure bool   `json:"insecure"`
@@ -20,7 +20,12 @@ type PluginOptions struct {
 }
 
 var pluginOptions PluginOptions
+var version string
 
 func SetPluginOptions(p PluginOptions) {
 	pluginOptions = p
+}
+
+func SetVersion(v string) {
+	version = v
 }

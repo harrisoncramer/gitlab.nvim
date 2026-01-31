@@ -6,20 +6,20 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeFileUploaderClient struct {
 	testBase
 }
 
-func (f fakeFileUploaderClient) UploadFile(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectFile, *gitlab.Response, error) {
+func (f fakeFileUploaderClient) UploadProjectMarkdown(pid interface{}, content io.Reader, filename string, options ...gitlab.RequestOptionFunc) (*gitlab.ProjectMarkdownUploadedFile, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &gitlab.ProjectFile{}, resp, nil
+	return &gitlab.ProjectMarkdownUploadedFile{}, resp, nil
 }
 
 type fakeFileReader struct{}

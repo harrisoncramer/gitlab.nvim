@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeReplyManager struct {
 	testBase
 }
 
-func (f fakeReplyManager) AddMergeRequestDiscussionNote(interface{}, int, string, *gitlab.AddMergeRequestDiscussionNoteOptions, ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
+func (f fakeReplyManager) AddMergeRequestDiscussionNote(interface{}, int64, string, *gitlab.AddMergeRequestDiscussionNoteOptions, ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err

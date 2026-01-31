@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeCommentClient struct {
 	testBase
 }
 
-func (f fakeCommentClient) CreateMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
+func (f fakeCommentClient) CreateMergeRequestDiscussion(pid interface{}, mergeRequest int64, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -19,7 +19,7 @@ func (f fakeCommentClient) CreateMergeRequestDiscussion(pid interface{}, mergeRe
 
 	return &gitlab.Discussion{Notes: []*gitlab.Note{{}}}, resp, err
 }
-func (f fakeCommentClient) UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
+func (f fakeCommentClient) UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int64, discussion string, note int64, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -28,7 +28,7 @@ func (f fakeCommentClient) UpdateMergeRequestDiscussionNote(pid interface{}, mer
 	return &gitlab.Note{}, resp, err
 }
 
-func (f fakeCommentClient) DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+func (f fakeCommentClient) DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int64, discussion string, note int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, err

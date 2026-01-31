@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type AssigneeUpdateRequest struct {
-	Ids []int `json:"ids" validate:"required"`
+	Ids []int64 `json:"ids" validate:"required"`
 }
 
 type AssigneeUpdateResponse struct {
