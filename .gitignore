@@ -8,3 +8,5 @@ tests/plugins
 !tests/plugins/.placeholder
 luacov.*
 tags
+.claude
+cmd/cmd

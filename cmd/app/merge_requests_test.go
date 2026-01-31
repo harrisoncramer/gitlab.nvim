@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeMergeRequestLister struct {
@@ -13,21 +13,21 @@ type fakeMergeRequestLister struct {
 	multipleMrs   bool
 }
 
-func (f fakeMergeRequestLister) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
+func (f fakeMergeRequestLister) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if f.emptyResponse {
-		return []*gitlab.MergeRequest{}, resp, err
+		return []*gitlab.BasicMergeRequest{}, resp, err
 	}
 
 	if f.multipleMrs {
-		return []*gitlab.MergeRequest{{IID: 10}, {IID: 11}}, resp, err
+		return []*gitlab.BasicMergeRequest{{IID: 10}, {IID: 11}}, resp, err
 	}
 
-	return []*gitlab.MergeRequest{{IID: 10}}, resp, err
+	return []*gitlab.BasicMergeRequest{{IID: 10}}, resp, err
 }
 
 func TestMergeRequestHandler(t *testing.T) {

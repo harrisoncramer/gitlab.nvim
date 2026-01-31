@@ -8,7 +8,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func Contains[T comparable](elems []T, v T) bool {
@@ -34,9 +34,9 @@ type DiscussionsRequest struct {
 
 type DiscussionsResponse struct {
 	SuccessResponse
-	Discussions         []*gitlab.Discussion         `json:"discussions"`
-	UnlinkedDiscussions []*gitlab.Discussion         `json:"unlinked_discussions"`
-	Emojis              map[int][]*gitlab.AwardEmoji `json:"emojis"`
+	Discussions         []*gitlab.Discussion           `json:"discussions"`
+	UnlinkedDiscussions []*gitlab.Discussion           `json:"unlinked_discussions"`
+	Emojis              map[int64][]*gitlab.AwardEmoji `json:"emojis"`
 }
 
 type SortableDiscussions struct {
@@ -66,8 +66,8 @@ func (d SortableDiscussions) Swap(i, j int) {
 }
 
 type DiscussionsLister interface {
-	ListMergeRequestDiscussions(pid interface{}, mergeRequest int, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error)
-	ListMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
+	ListMergeRequestDiscussions(pid interface{}, mergeRequest int64, opt *gitlab.ListMergeRequestDiscussionsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.Discussion, *gitlab.Response, error)
+	ListMergeRequestAwardEmojiOnNote(pid any, mergeRequestIID int64, noteID int64, opt *gitlab.ListAwardEmojiOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.AwardEmoji, *gitlab.Response, error)
 }
 
 type discussionsListerService struct {
@@ -84,8 +84,10 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	request := r.Context().Value(payload(payload("payload"))).(*DiscussionsRequest)
 
 	mergeRequestDiscussionOptions := gitlab.ListMergeRequestDiscussionsOptions{
-		Page:    1,
-		PerPage: 250,
+		ListOptions: gitlab.ListOptions{
+			Page:    1,
+			PerPage: 250,
+		},
 	}
 
 	discussions, res, err := a.client.ListMergeRequestDiscussions(a.projectInfo.ProjectId, a.projectInfo.MergeId, &mergeRequestDiscussionOptions)
@@ -121,7 +123,7 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 
 	/* Collect IDs in order to fetch emojis */
-	var noteIds []int
+	var noteIds []int64
 	for _, discussion := range discussions {
 		for _, note := range discussion.Notes {
 			noteIds = append(noteIds, note.ID)
@@ -164,20 +166,20 @@ func (a discussionsListerService) ServeHTTP(w http.ResponseWriter, r *http.Reque
 Fetches emojis for a set of notes and comments in parallel and returns a map of note IDs to their emojis.
 Gitlab's API does not allow for fetching notes for an entire discussion thread so we have to do it per-note.
 */
-func (a discussionsListerService) fetchEmojisForNotesAndComments(noteIDs []int) (map[int][]*gitlab.AwardEmoji, error) {
+func (a discussionsListerService) fetchEmojisForNotesAndComments(noteIDs []int64) (map[int64][]*gitlab.AwardEmoji, error) {
 	var wg sync.WaitGroup
 
-	emojis := make(map[int][]*gitlab.AwardEmoji)
+	emojis := make(map[int64][]*gitlab.AwardEmoji)
 	mu := &sync.Mutex{}
 	errs := make(chan error, len(noteIDs))
 	emojiChan := make(chan struct {
-		noteID int
+		noteID int64
 		emojis []*gitlab.AwardEmoji
 	}, len(noteIDs))
 
 	for _, noteID := range noteIDs {
 		wg.Add(1)
-		go func(noteID int) {
+		go func(noteID int64) {
 			defer wg.Done()
 			emojis, _, err := a.client.ListMergeRequestAwardEmojiOnNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, noteID, &gitlab.ListAwardEmojiOptions{})
 			if err != nil {
@@ -185,7 +187,7 @@ func (a discussionsListerService) fetchEmojisForNotesAndComments(noteIDs []int) 
 				return
 			}
 			emojiChan <- struct {
-				noteID int
+				noteID int64
 				emojis []*gitlab.AwardEmoji
 			}{noteID, emojis}
 		}(noteID)

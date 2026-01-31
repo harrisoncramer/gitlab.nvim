@@ -1,21 +1,8 @@
 local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
+local version = require("gitlab.version")
 local u = require("gitlab.utils")
 local M = {}
-
-local function check_go_version()
-  local go_version = io.popen("go version"):read("*a")
-  if go_version then
-    local major, minor, _ = go_version:match("(%d+)%.(%d+)%.(%d+)")
-    if major and tonumber(major) >= 1 and tonumber(minor) >= 19 then
-      return
-    else
-      return "Go is installed, but version is older than 1.19."
-    end
-  else
-    return "Go is not installed."
-  end
-end
 
 ---Checks the health of the plugin
 ---@param return_results boolean
@@ -60,7 +47,7 @@ M.check = function(return_results)
     },
   }
 
-  local go_version_problem = check_go_version()
+  local go_version_problem = version.check_go_version()
   if go_version_problem ~= nil then
     table.insert(warnings, go_version_problem)
   end

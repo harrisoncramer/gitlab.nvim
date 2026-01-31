@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type CommentResponse struct {
@@ -14,9 +14,9 @@ type CommentResponse struct {
 }
 
 type CommentManager interface {
-	CreateMergeRequestDiscussion(pid interface{}, mergeRequest int, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
-	UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
-	DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int, discussion string, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	CreateMergeRequestDiscussion(pid interface{}, mergeRequest int64, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error)
+	UpdateMergeRequestDiscussionNote(pid interface{}, mergeRequest int64, discussion string, note int64, opt *gitlab.UpdateMergeRequestDiscussionNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Note, *gitlab.Response, error)
+	DeleteMergeRequestDiscussionNote(pid interface{}, mergeRequest int64, discussion string, note int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 }
 
 type commentService struct {
@@ -38,7 +38,7 @@ func (a commentService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type DeleteCommentRequest struct {
-	NoteId       int    `json:"note_id" validate:"required"`
+	NoteId       int64  `json:"note_id" validate:"required"`
 	DiscussionId string `json:"discussion_id" validate:"required"`
 }
 
@@ -124,7 +124,7 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 
 type EditCommentRequest struct {
 	Comment      string `json:"comment" validate:"required"`
-	NoteId       int    `json:"note_id" validate:"required"`
+	NoteId       int64  `json:"note_id" validate:"required"`
 	DiscussionId string `json:"discussion_id" validate:"required"`
 	Resolved     bool   `json:"resolved"`
 }

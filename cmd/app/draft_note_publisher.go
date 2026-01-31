@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type DraftNotePublisher interface {
-	PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
-	PublishDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	PublishAllDraftNotes(pid interface{}, mergeRequest int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	PublishDraftNote(pid interface{}, mergeRequest int64, note int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
 }
 
 type draftNotePublisherService struct {
@@ -18,7 +18,7 @@ type draftNotePublisherService struct {
 }
 
 type DraftNotePublishRequest struct {
-	Note int `json:"note,omitempty"`
+	Note int64 `json:"note,omitempty"`
 }
 
 func (a draftNotePublisherService) ServeHTTP(w http.ResponseWriter, r *http.Request) {

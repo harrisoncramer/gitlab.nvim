@@ -6,11 +6,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type JobTraceRequest struct {
-	JobId int `json:"job_id" validate:"required"`
+	JobId int64 `json:"job_id" validate:"required"`
 }
 
 type JobTraceResponse struct {
@@ -19,7 +19,7 @@ type JobTraceResponse struct {
 }
 
 type TraceFileGetter interface {
-	GetTraceFile(pid interface{}, jobID int, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
+	GetTraceFile(pid interface{}, jobID int64, options ...gitlab.RequestOptionFunc) (*bytes.Reader, *gitlab.Response, error)
 }
 
 type traceFileService struct {

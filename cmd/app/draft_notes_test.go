@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeDraftNoteManager struct {
 	testBase
 }
 
-func (f fakeDraftNoteManager) ListDraftNotes(pid interface{}, mergeRequest int, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error) {
+func (f fakeDraftNoteManager) ListDraftNotes(pid interface{}, mergeRequest int64, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -19,7 +19,7 @@ func (f fakeDraftNoteManager) ListDraftNotes(pid interface{}, mergeRequest int, 
 	return []*gitlab.DraftNote{}, resp, err
 }
 
-func (f fakeDraftNoteManager) CreateDraftNote(pid interface{}, mergeRequest int, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+func (f fakeDraftNoteManager) CreateDraftNote(pid interface{}, mergeRequest int64, opt *gitlab.CreateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
@@ -27,11 +27,11 @@ func (f fakeDraftNoteManager) CreateDraftNote(pid interface{}, mergeRequest int,
 	return &gitlab.DraftNote{}, resp, err
 }
 
-func (f fakeDraftNoteManager) DeleteDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+func (f fakeDraftNoteManager) DeleteDraftNote(pid interface{}, mergeRequest int64, note int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.handleGitlabError()
 }
 
-func (f fakeDraftNoteManager) UpdateDraftNote(pid interface{}, mergeRequest int, note int, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
+func (f fakeDraftNoteManager) UpdateDraftNote(pid interface{}, mergeRequest int64, note int64, opt *gitlab.UpdateDraftNoteOptions, options ...gitlab.RequestOptionFunc) (*gitlab.DraftNote, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err

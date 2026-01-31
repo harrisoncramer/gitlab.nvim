@@ -5,16 +5,16 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type ListMergeRequestResponse struct {
 	SuccessResponse
-	MergeRequests []*gitlab.MergeRequest `json:"merge_requests"`
+	MergeRequests []*gitlab.BasicMergeRequest `json:"merge_requests"`
 }
 
 type MergeRequestLister interface {
-	ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.MergeRequest, *gitlab.Response, error)
+	ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error)
 }
 
 type mergeRequestListerService struct {

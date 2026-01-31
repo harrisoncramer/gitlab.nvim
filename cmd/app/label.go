@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type LabelUpdateRequest struct {
@@ -28,7 +28,7 @@ type LabelsRequestResponse struct {
 }
 
 type LabelManager interface {
-	UpdateMergeRequest(interface{}, int, *gitlab.UpdateMergeRequestOptions, ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
+	UpdateMergeRequest(interface{}, int64, *gitlab.UpdateMergeRequestOptions, ...gitlab.RequestOptionFunc) (*gitlab.MergeRequest, *gitlab.Response, error)
 	ListLabels(interface{}, *gitlab.ListLabelsOptions, ...gitlab.RequestOptionFunc) ([]*gitlab.Label, *gitlab.Response, error)
 }
 

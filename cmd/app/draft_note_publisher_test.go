@@ -4,17 +4,17 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type fakeDraftNotePublisher struct {
 	testBase
 }
 
-func (f fakeDraftNotePublisher) PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+func (f fakeDraftNotePublisher) PublishAllDraftNotes(pid interface{}, mergeRequest int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.handleGitlabError()
 }
-func (f fakeDraftNotePublisher) PublishDraftNote(pid interface{}, mergeRequest int, note int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
+func (f fakeDraftNotePublisher) PublishDraftNote(pid interface{}, mergeRequest int64, note int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error) {
 	return f.handleGitlabError()
 }
 

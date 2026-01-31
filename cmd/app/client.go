@@ -10,27 +10,28 @@ import (
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type ProjectInfo struct {
 	ProjectId string
-	MergeId   int
+	MergeId   int64
 }
 
 /* The Client struct embeds all the methods from Gitlab for the different services */
 type Client struct {
-	*gitlab.MergeRequestsService
-	*gitlab.MergeRequestApprovalsService
-	*gitlab.DiscussionsService
-	*gitlab.ProjectsService
-	*gitlab.ProjectMembersService
-	*gitlab.JobsService
-	*gitlab.PipelinesService
-	*gitlab.LabelsService
-	*gitlab.AwardEmojiService
-	*gitlab.UsersService
-	*gitlab.DraftNotesService
+	gitlab.MergeRequestsServiceInterface
+	gitlab.MergeRequestApprovalsServiceInterface
+	gitlab.DiscussionsServiceInterface
+	gitlab.ProjectsServiceInterface
+	gitlab.ProjectMembersServiceInterface
+	gitlab.JobsServiceInterface
+	gitlab.PipelinesServiceInterface
+	gitlab.LabelsServiceInterface
+	gitlab.AwardEmojiServiceInterface
+	gitlab.UsersServiceInterface
+	gitlab.DraftNotesServiceInterface
+	gitlab.ProjectMarkdownUploadsServiceInterface
 }
 
 /* NewClient parses and validates the project settings and initializes the Gitlab client. */
@@ -87,17 +88,18 @@ func NewClient() (*Client, error) {
 	}
 
 	return &Client{
-		MergeRequestsService:         client.MergeRequests,
-		MergeRequestApprovalsService: client.MergeRequestApprovals,
-		DiscussionsService:           client.Discussions,
-		ProjectsService:              client.Projects,
-		ProjectMembersService:        client.ProjectMembers,
-		JobsService:                  client.Jobs,
-		PipelinesService:             client.Pipelines,
-		LabelsService:                client.Labels,
-		AwardEmojiService:            client.AwardEmoji,
-		UsersService:                 client.Users,
-		DraftNotesService:            client.DraftNotes,
+		client.MergeRequests,
+		client.MergeRequestApprovals,
+		client.Discussions,
+		client.Projects,
+		client.ProjectMembers,
+		client.Jobs,
+		client.Pipelines,
+		client.Labels,
+		client.AwardEmoji,
+		client.Users,
+		client.DraftNotes,
+		client.ProjectMarkdownUploads,
 	}, nil
 }
 

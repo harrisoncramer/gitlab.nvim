@@ -63,8 +63,7 @@ M.sequence = function(dependencies, cb)
     end
 
     -- Otherwise, start the go server and start fetching the values
-    server.start(function()
-      state.go_server_running = true
+    server.build_and_start(function()
       handler:fetch(dependencies, 1, argTable)
     end)
   end

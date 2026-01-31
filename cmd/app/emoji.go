@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type Emoji struct {
@@ -30,7 +30,7 @@ type EmojiMap map[string]Emoji
 
 type CreateNoteEmojiPost struct {
 	Emoji  string `json:"emoji"`
-	NoteId int    `json:"note_id"`
+	NoteId int64  `json:"note_id"`
 }
 
 type CreateEmojiResponse struct {
@@ -39,8 +39,8 @@ type CreateEmojiResponse struct {
 }
 
 type EmojiManager interface {
-	DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, awardID int, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
-	CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int, noteID int, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error)
+	DeleteMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int64, noteID int64, awardID int64, options ...gitlab.RequestOptionFunc) (*gitlab.Response, error)
+	CreateMergeRequestAwardEmojiOnNote(pid interface{}, mergeRequestIID int64, noteID int64, opt *gitlab.CreateAwardEmojiOptions, options ...gitlab.RequestOptionFunc) (*gitlab.AwardEmoji, *gitlab.Response, error)
 }
 
 type emojiService struct {
@@ -69,13 +69,13 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	noteId, err := strconv.Atoi(ids[0])
+	noteId, err := strconv.ParseInt(ids[0], 10, 64)
 	if err != nil {
 		handleError(w, err, "Could not convert note ID to integer", http.StatusBadRequest)
 		return
 	}
 
-	awardableId, err := strconv.Atoi(ids[1])
+	awardableId, err := strconv.ParseInt(ids[1], 10, 64)
 	if err != nil {
 		handleError(w, err, "Could not convert awardable ID to integer", http.StatusBadRequest)
 		return

@@ -12,6 +12,7 @@ local summary = require("gitlab.actions.summary")
 local data = require("gitlab.actions.data")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
+local version = require("gitlab.version")
 local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
@@ -36,6 +37,13 @@ local function setup(args)
   if args == nil then
     args = {}
   end
+
+  local version_issue = version.check_go_version()
+  if version_issue ~= nil then
+    u.notify(version_issue, vim.log.levels.ERROR)
+    return
+  end
+
   server.build() -- Builds the Go binary if it doesn't exist
   state.merge_settings(args) -- Merges user settings with default settings
   state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
