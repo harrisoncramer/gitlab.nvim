@@ -11,7 +11,6 @@ local popup = require("gitlab.popup")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local common = require("gitlab.actions.common")
-local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
 local discussions_tree = require("gitlab.actions.discussions.tree")
 local draft_notes = require("gitlab.actions.draft_notes")
@@ -245,10 +244,83 @@ M.reply = function(tree)
     discussion_id = discussion_id,
     unlinked = unlinked,
     reply = true,
+    -- TODO: use discussion_node.old_file_name for comments on unchanged lines in renamed files
     file_name = discussion_node.file_name,
   })
 
   layout:mount()
+end
+
+---Open a new tab with a suggestion preview.
+---@param tree NuiTree The current discussion tree instance.
+---@param action "reply"|"edit"|"apply" Reply to the current thread, edit the current comment or apply the suggestion to local file.
+M.suggestion_preview = function(tree, action)
+  local is_draft = M.is_draft_note(tree)
+  if action == "reply" and is_draft then
+    u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
+    return
+  end
+
+  local current_node = tree:get_node()
+  local root_node = common.get_root_node(tree, current_node)
+  local note_node = common.get_note_node(tree, current_node)
+
+  -- Return early if note info is missing
+  if root_node == nil or note_node == nil then
+    u.notify("Couldn't get root node or note node", vim.log.levels.ERROR)
+    return
+  end
+  local note_node_id = tonumber(note_node.is_root and note_node.root_note_id or note_node.id)
+  if note_node_id == nil then
+    u.notify("Couldn't get comment id", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Return early if comment position is missing
+  local start_line, is_new_sha, end_line = common.get_line_number_from_node(root_node)
+  if start_line == nil or end_line == nil then
+    u.notify("Couldn't get comment range. Can't create suggestion preview", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Override reviewer values when local-applying a suggestion that was made on the OLD version
+  if action == "apply" and not is_new_sha then
+    local range = end_line - start_line
+    start_line = common.get_new_line(root_node)
+
+    if start_line == nil then
+      u.notify("Couldn't get position in new version. Can't create suggestion preview", vim.log.levels.ERROR)
+      return
+    end
+
+    end_line = start_line + range
+    is_new_sha = true
+  end
+
+  -- Get values for preview depending on whether comment is on OLD or NEW version
+  local revision
+  if is_new_sha then
+    revision = common.commented_line_has_changed(tree, root_node) and root_node.head_sha or "HEAD"
+  else
+    revision = root_node.base_sha
+  end
+
+  ---@type ShowPreviewOpts
+  local opts = {
+    old_file_name = root_node.old_file_name,
+    new_file_name = root_node.file_name,
+    start_line = start_line,
+    end_line = end_line,
+    is_new_sha = is_new_sha,
+    revision = revision,
+    note_header = note_node.text,
+    comment_type = is_draft and "draft" or action,
+    note_lines = action ~= "reply" and common.get_note_lines(tree) or nil,
+    root_node_id = root_node.id,
+    note_node_id = note_node_id,
+    tree = tree,
+  }
+  require("gitlab.actions.suggestions").show_preview(opts)
 end
 
 -- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
@@ -294,15 +366,7 @@ M.edit_comment = function(tree, unlinked)
 
   edit_popup:mount()
 
-  -- Gather all lines from immediate children that aren't note nodes
-  local lines = List.new(note_node:get_child_ids()):reduce(function(agg, child_id)
-    local child_node = tree:get_node(child_id)
-    if not child_node:has_children() then
-      local line = tree:get_node(child_id).text
-      table.insert(agg, line)
-    end
-    return agg
-  end, {})
+  local lines = common.get_note_lines(tree)
 
   local currentBuffer = vim.api.nvim_get_current_buf()
   vim.api.nvim_buf_set_lines(currentBuffer, 0, -1, false, lines)
@@ -327,7 +391,9 @@ M.edit_comment = function(tree, unlinked)
 end
 
 -- This function (settings.keymaps.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
-M.toggle_discussion_resolved = function(tree)
+---@param tree NuiTree
+---@param override boolean|nil If not nil, set resolved to `override` value instead of toggling.
+M.toggle_discussion_resolved = function(tree, override)
   local note = tree:get_node()
   if note == nil then
     return
@@ -341,9 +407,16 @@ M.toggle_discussion_resolved = function(tree)
     return
   end
 
+  local resolved
+  if override ~= nil then
+    resolved = override
+  else
+    resolved = not note.resolved
+  end
+
   local body = {
     discussion_id = note.id,
-    resolved = not note.resolved,
+    resolved = resolved,
   }
 
   job.run_job("/mr/discussions/resolve", "PUT", body, function(data)
@@ -597,6 +670,34 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
         nowait = keymaps.discussion_tree.toggle_tree_type_nowait,
       })
     end
+
+    if keymaps.discussion_tree.edit_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.edit_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.suggestion_preview(tree, "edit")
+        end
+      end, { buffer = bufnr, desc = "Edit suggestion", nowait = keymaps.discussion_tree.edit_suggestion_nowait })
+    end
+
+    if keymaps.discussion_tree.apply_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.apply_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.suggestion_preview(tree, "apply")
+        end
+      end, { buffer = bufnr, desc = "Apply suggestion", nowait = keymaps.discussion_tree.apply_suggestion_nowait })
+    end
+
+    if keymaps.discussion_tree.reply_with_suggestion then
+      vim.keymap.set("n", keymaps.discussion_tree.reply_with_suggestion, function()
+        if M.is_current_node_note(tree) then
+          M.suggestion_preview(tree, "reply")
+        end
+      end, {
+        buffer = bufnr,
+        desc = "Reply with suggestion",
+        nowait = keymaps.discussion_tree.reply_with_suggestion_nowait,
+      })
+    end
   end
 
   if keymaps.discussion_tree.refresh_data then
@@ -809,6 +910,10 @@ end
 ---Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
 M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
+  vim.api.nvim_exec_autocmds("User", {
+    pattern = "GitlabDraftModeToggled",
+    data = { draft_mode = state.settings.discussion_tree.draft_mode },
+  })
 end
 
 ---Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the

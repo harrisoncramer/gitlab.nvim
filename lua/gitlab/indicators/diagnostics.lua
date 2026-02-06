@@ -14,16 +14,6 @@ M.clear_diagnostics = function()
   vim.diagnostic.reset(diagnostics_namespace)
 end
 
--- Display options for the diagnostic
-local create_display_opts = function()
-  return {
-    virtual_text = state.settings.discussion_signs.virtual_text,
-    severity_sort = true,
-    underline = false,
-    signs = state.settings.discussion_signs.use_diagnostic_signs,
-  }
-end
-
 ---Takes some range information and data about a discussion
 ---and creates a diagnostic to be placed in the reviewer
 ---@param range_info table
@@ -114,15 +104,15 @@ end
 ---Filter and place the diagnostics for the given buffer.
 ---@param bufnr number The number of the buffer for placing diagnostics.
 M.place_diagnostics = function(bufnr)
+  if bufnr and vim.api.nvim_buf_get_name(bufnr) == "diffview://null" then
+    return
+  end
   if not state.settings.discussion_signs.enabled then
     return
   end
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
-    return
-  end
-  if vim.api.nvim_buf_get_name(bufnr) == "diffview://null" then
     return
   end
 
@@ -140,9 +130,19 @@ M.place_diagnostics = function(bufnr)
     local new_diagnostics, old_diagnostics = List.new(file_discussions):partition(indicators_common.is_new_sha)
 
     if bufnr == view.cur_layout.a.file.bufnr then
-      set_diagnostics(diagnostics_namespace, bufnr, M.parse_diagnostics(old_diagnostics), create_display_opts())
+      set_diagnostics(
+        diagnostics_namespace,
+        bufnr,
+        M.parse_diagnostics(old_diagnostics),
+        indicators_common.create_display_opts()
+      )
     elseif bufnr == view.cur_layout.b.file.bufnr then
-      set_diagnostics(diagnostics_namespace, bufnr, M.parse_diagnostics(new_diagnostics), create_display_opts())
+      set_diagnostics(
+        diagnostics_namespace,
+        bufnr,
+        M.parse_diagnostics(new_diagnostics),
+        indicators_common.create_display_opts()
+      )
     end
   end)
 

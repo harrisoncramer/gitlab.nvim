@@ -223,11 +223,22 @@ you call this function with no values the defaults will be used:
           toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
           refresh_data = "<C-R>", -- Refresh the data in the view by hitting Gitlab's APIs again
           print_node = "<leader>p", -- Print the current node (for debugging)
+          edit_suggestion = "se", -- Edit comment with suggestion preview in a new tab
+          reply_with_suggestion = "sr", -- Reply to comment with a suggestion preview in a new tab
+          apply_suggestion = "sa", -- Apply the suggestion to the local file with a preview in a new tab
+        },
+        suggestion_preview = {
+          apply_changes = "ZZ", -- Close suggestion preview tab, and post comment to Gitlab (discarding changes to local file). In "apply mode", accept suggestion, commit changes, then push to remote and resolve thread
+          discard_changes = "ZQ", -- Close suggestion preview tab and discard changes in local file
+          attach_file = "ZA", -- Attach a file from the `settings.attachment_dir`
+          apply_changes_locally = "Zz", -- Only in "apply mode", close suggestion preview tab and write suggestion buffer to local file (no changes posted to Gitlab)
+          paste_default_suggestion = "glS", -- Paste the default suggestion below the cursor (overrides default "glS" (start review) keybinding for the "Note" buffer)
         },
         reviewer = {
           disable_all = false, -- Disable all default mappings for the reviewer windows
           create_comment = "c", -- Create a comment for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
           create_suggestion = "s", -- Create a suggestion for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
+          create_suggestion_with_preview = "S", -- In a new tab create a suggestion with a diff preview for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
           move_to_discussion_tree = "a", -- Jump to the comment in the discussion tree
         },
       },
@@ -545,9 +556,11 @@ emojis that you have responded with.
 UPLOADING FILES                                  *gitlab.nvim.uploading-files*
 
 To attach a file to an MR description, reply, comment, and so forth use the
-`keymaps.popup.perform_linewise_action` keybinding when the popup is open.
-This will open a picker that will look for files in the directory you specify
-in the `settings.attachment_dir` folder (this must be an absolute path).
+`keymaps.popup.perform_linewise_action` keybinding when the popup is open (or
+the `keymaps.suggestion_preview.attach_file` in the comment buffer of the
+suggestion preview). This will open a picker that will look for files in the
+directory you specify in the `settings.attachment_dir` folder (this must be an
+absolute path).
 
 When you have picked the file, it will be added to the current buffer at the
 current line.

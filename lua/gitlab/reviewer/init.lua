@@ -431,6 +431,39 @@ M.set_keymaps = function(bufnr)
     })
   end
 
+  -- Set mappings for creating suggestions with a preview in a new tab
+  if keymaps.reviewer.create_suggestion_with_preview ~= false then
+    -- Set keymap for repeated operator keybinding
+    vim.keymap.set("o", keymaps.reviewer.create_suggestion_with_preview, function()
+      -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
+      vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
+    end, {
+      buffer = bufnr,
+      desc = "Create suggestion with preview for [count] lines",
+      nowait = keymaps.reviewer.create_suggestion_with_preview_nowait,
+    })
+
+    -- Set operator keybinding
+    vim.keymap.set("n", keymaps.reviewer.create_suggestion_with_preview, function()
+      M.operator_count = vim.v.count
+      M.operator = keymaps.reviewer.create_suggestion_with_preview
+      execute_operatorfunc("create_comment_with_suggestion")
+    end, {
+      buffer = bufnr,
+      desc = "Create suggestion with preview for range of motion",
+      nowait = keymaps.reviewer.create_suggestion_with_preview_nowait,
+    })
+
+    -- Set visual mode keybinding
+    vim.keymap.set("v", keymaps.reviewer.create_suggestion_with_preview, function()
+      require("gitlab").create_comment_with_suggestion()
+    end, {
+      buffer = bufnr,
+      desc = "Create suggestion with preview for selected text",
+      nowait = keymaps.reviewer.create_suggestion_with_preview_nowait,
+    })
+  end
+
   -- Set mapping for moving to discussion tree
   if keymaps.reviewer.move_to_discussion_tree ~= false then
     vim.keymap.set("n", keymaps.reviewer.move_to_discussion_tree, function()

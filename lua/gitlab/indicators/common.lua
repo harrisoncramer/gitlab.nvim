@@ -10,6 +10,16 @@ local M = {}
 ---@field resolved boolean|nil
 ---@field created_at string|nil
 
+-- Display options for the diagnostic
+M.create_display_opts = function()
+  return {
+    virtual_text = state.settings.discussion_signs.virtual_text,
+    severity_sort = true,
+    underline = false,
+    signs = state.settings.discussion_signs.use_diagnostic_signs,
+  }
+end
+
 ---Return true if discussion has a placeable diagnostic, false otherwise.
 ---@param note NoteWithValues
 ---@return boolean

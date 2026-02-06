@@ -6,9 +6,12 @@ local M = {}
 ---@param command table
 ---@return string|nil, string|nil
 local run_system = function(command)
-  local result = vim.fn.trim(vim.fn.system(command))
+  -- Preserve trailing newlines when getting contents of file revisions
+  local result = vim.fn.join(vim.fn.systemlist(command), "\n")
   if vim.v.shell_error ~= 0 then
-    require("gitlab.utils").notify(result, vim.log.levels.ERROR)
+    if result ~= "" then
+      require("gitlab.utils").notify(result, vim.log.levels.ERROR)
+    end
     return nil, result
   end
   return result, nil
@@ -212,6 +215,102 @@ M.check_mr_in_good_condition = function()
   if state.INFO.state == "merged" then
     u.notify(string.format("This MR was merged %s", u.time_since(state.INFO.merged_at)), vim.log.levels.WARN)
   end
+end
+
+---@class GetFileRevisionOpts
+---@field revision string The SHA of the revision to get
+---@field file_name string The name of the file to get
+
+---Returns the contents of the file in a given revision
+---@param args GetFileRevisionOpts extra arguments for `git show`
+---@return string|nil, string|nil
+M.get_file_revision = function(args)
+  if args.revision == nil or args.file_name == nil then
+    return
+  end
+  local object = string.format("%s:%s", args.revision, args.file_name)
+  return run_system({ "git", "show", object })
+end
+
+---Returns true if the given revision exists, false otherwise
+---@param revision string The revision to check
+---@return boolean
+M.revision_exists = function(revision)
+  if revision == nil then
+    require("gitlab.utils").notify("Invalid nil revision", vim.log.levels.ERROR)
+    return false
+  end
+  local object = string.format("%s", revision)
+  local result = run_system({ "git", "rev-parse", "--verify", "--quiet", "--end-of-options", object })
+  return result ~= nil
+end
+
+---@class FileDiffersInRevisionsOpts
+---@field revision_1 string
+---@field revision_2 string
+---@field old_file_name string
+---@field file_name string
+
+---Returns true if the file differs in two revisions (handles renames)
+---@param opts FileDiffersInRevisionsOpts
+---@return boolean
+M.file_differs_in_revisions = function(opts)
+  local result =
+    run_system({ "git", "diff", "-M", opts.revision_1, opts.revision_2, "--", opts.old_file_name, opts.file_name })
+  return result ~= ""
+end
+
+---@class AddOpts
+---@field filename string The file to stage
+
+---Returns true if staging succeeds, false otherwise
+---@param opts AddOpts
+---@return boolean
+M.add = function(opts)
+  local _, add_err = run_system({ "git", "add", opts.filename })
+  if add_err ~= nil then
+    require("gitlab.utils").notify("Adding changes failed: " .. add_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
+---@class CommitOpts
+---@field commit_message string The commit message to include in the commit
+
+---Returns true if the commit succeeds, false otherwise
+---@param opts CommitOpts
+---@return boolean
+M.commit = function(opts)
+  local _, commit_err = run_system({ "git", "commit", "-m", opts.commit_message, "-q" })
+  if commit_err ~= nil then
+    require("gitlab.utils").notify("Committing changes failed: " .. commit_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
+---Returns true if there are staged changes
+---@return boolean
+M.has_staged_changes = function()
+  local result = run_system({ "git", "diff", "--staged" })
+  return result ~= ""
+end
+
+---Returns true if the push succeeds, false otherwise
+---@return boolean
+M.push = function()
+  local remote_branch = M.get_remote_branch()
+  if remote_branch == nil then
+    return false
+  end
+  local remote, branch = string.match(remote_branch, "([^/]+)/(.*)")
+  local _, push_err = run_system({ "git", "push", remote, branch })
+  if push_err ~= nil then
+    require("gitlab.utils").notify("Pushing remote-tracking branch failed: " .. push_err, vim.log.levels.ERROR)
+    return false
+  end
+  return true
 end
 
 return M

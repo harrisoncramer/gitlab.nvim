@@ -21,18 +21,25 @@ local M = {
   comment_popup = nil,
 }
 
+---Decide if the comment is a draft based on the draft popup field.
+---@return boolean|nil is_draft True if the draft popup exists and the string it contains converts to `true`.
+local get_draft_value_from_popup = function()
+  local buf_is_valid = M.draft_popup and M.draft_popup.bufnr and vim.api.nvim_buf_is_valid(M.draft_popup.bufnr)
+  return buf_is_valid and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+end
+
 ---Fires the API that sends the comment data to the Go server, called when you "confirm" creation
 ---via the M.settings.keymaps.popup.perform_action keybinding
 ---@param text string comment text
 ---@param unlinked boolean if true, the comment is not linked to a line
 ---@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
-local confirm_create_comment = function(text, unlinked, discussion_id)
+M.confirm_create_comment = function(text, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
   end
 
-  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+  local is_draft = get_draft_value_from_popup() or state.settings.discussion_tree.draft_mode
 
   -- Creating a normal reply to a discussion
   if discussion_id ~= nil and not is_draft then
@@ -188,13 +195,13 @@ M.create_comment_layout = function(opts)
   ---Keybinding for focus on draft section
   popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
-    confirm_create_comment(text, unlinked, opts.discussion_id)
+    M.confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
   popup.set_popup_keymaps(M.comment_popup, function(text)
-    confirm_create_comment(text, unlinked, opts.discussion_id)
+    M.confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.attach_file, popup.editable_popup_opts)
 
@@ -293,6 +300,33 @@ M.create_comment_suggestion = function()
       vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
     end
   end)
+end
+
+--- This function will create a new tab with a suggestion preview for the changed/updated line in
+--- the current MR.
+M.create_comment_with_suggestion = function()
+  M.location = Location.new()
+  if not M.can_create_comment(true) then
+    u.press_escape()
+    return
+  end
+
+  local old_file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
+    or M.location.reviewer_data.file_name
+  local is_new_sha = M.location.reviewer_data.new_sha_focused
+
+  ---@type ShowPreviewOpts
+  local opts = {
+    old_file_name = old_file_name,
+    new_file_name = M.location.reviewer_data.file_name,
+    start_line = M.location.visual_range.start_line,
+    end_line = M.location.visual_range.end_line,
+    is_new_sha = is_new_sha,
+    revision = is_new_sha and "HEAD" or require("gitlab.state").INFO.target_branch,
+    note_header = "comment",
+    comment_type = "new",
+  }
+  require("gitlab.actions.suggestions").show_preview(opts)
 end
 
 ---Returns true if it's possible to create an Inline Comment

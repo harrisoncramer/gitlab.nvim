@@ -173,11 +173,32 @@ M.get_note_node = function(tree, node)
   end
 end
 
+---Gather all lines from immediate children that aren't note nodes
+---@param tree NuiTree
+---@return string[] List of individual note lines
+M.get_note_lines = function(tree)
+  local current_node = tree:get_node()
+  local note_node = M.get_note_node(tree, current_node)
+  if note_node == nil then
+    u.notify("Could not get note node", vim.log.levels.ERROR)
+    return {}
+  end
+  local lines = List.new(note_node:get_child_ids()):reduce(function(agg, child_id)
+    local child_node = tree:get_node(child_id)
+    if child_node ~= nil and not child_node:has_children() then
+      local line = tree:get_node(child_id).text
+      table.insert(agg, line)
+    end
+    return agg
+  end, {})
+  return lines
+end
+
 ---Takes a node and returns the line where the note is positioned in the new SHA. If
 ---the line is not in the new SHA, returns nil
 ---@param node NuiTree.Node
 ---@return number|nil
-local function get_new_line(node)
+M.get_new_line = function(node)
   ---@type GitlabLineRange|nil
   local range = node.range
   if range == nil then
@@ -253,17 +274,19 @@ end
 ---@param root_node NuiTree.Node
 ---@return integer|nil line_number
 ---@return boolean is_new_sha True if line number refers to NEW SHA
+---@return integer|nil end_line
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local line_number, _, is_new_sha = M.get_line_numbers_for_range(
+    local line_number, end_line, is_new_sha = M.get_line_numbers_for_range(
       root_node.old_line,
       root_node.new_line,
       root_node.range.start.line_code,
       root_node.range["end"].line_code
     )
-    return line_number, is_new_sha
+    return line_number, is_new_sha, end_line
   else
-    return M.get_line_number(root_node.id)
+    local start_line, is_new_sha = M.get_line_number(root_node.id)
+    return start_line, is_new_sha, start_line
   end
 end
 
@@ -303,7 +326,7 @@ M.jump_to_file = function(tree)
     return
   end
   vim.cmd.tabnew()
-  local line_number = get_new_line(root_node) or get_old_line(root_node)
+  local line_number = M.get_new_line(root_node) or get_old_line(root_node)
   if line_number == nil or line_number == 0 then
     line_number = 1
   end
@@ -317,6 +340,33 @@ M.jump_to_file = function(tree)
   -- If buffer is not already open, open it
   vim.cmd("edit " .. root_node.file_name)
   vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+end
+
+---Determine whether commented line has changed since making the comment.
+---@param tree NuiTree The current discussion tree instance.
+---@param note_node NuiTree.Node The main node of the note containing the note author etc.
+---@return boolean line_changed True if any of the notes in the thread is a system note starting with "changed this line".
+M.commented_line_has_changed = function(tree, note_node)
+  local line_changed = List.new(note_node:get_child_ids()):includes(function(child_id)
+    local child_node = tree:get_node(child_id)
+    if child_node == nil then
+      return false
+    end
+
+    -- Inspect note bodies or recourse to child notes.
+    if child_node.type == "note_body" then
+      local line = tree:get_node(child_id).text
+      if string.match(line, "^changed this line") and note_node.system then
+        return true
+      end
+    elseif child_node.type == "note" and M.commented_line_has_changed(tree, child_node) then
+      return true
+    end
+
+    return false
+  end)
+
+  return line_changed
 end
 
 return M

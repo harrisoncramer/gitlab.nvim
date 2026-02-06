@@ -75,6 +75,7 @@ return {
   create_comment = async.sequence({ info, revisions }, comment.create_comment),
   create_multiline_comment = async.sequence({ info, revisions }, comment.create_multiline_comment),
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
+  create_comment_with_suggestion = async.sequence({ info, revisions }, comment.create_comment_with_suggestion),
   move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),
   create_mr = async.sequence({}, create_mr.start),
