@@ -11,6 +11,8 @@ local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
 
+local branch_not_in_sync_comment = " (even if local branch not in sync with remote)"
+
 local M = {}
 
 ---Re-fetches all draft notes (and non-draft notes) and re-renders the relevant views
@@ -64,8 +66,10 @@ end
 
 -- This function will trigger a popup prompting you to publish the current draft comment
 M.publish_draft = function(tree)
+  local branch_in_sync = git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR)
+  local sync_comment = branch_in_sync and "" or branch_not_in_sync_comment
   vim.ui.select({ "Confirm", "Cancel" }, {
-    prompt = "Publish current draft comment?",
+    prompt = string.format("Publish current draft comment%s?", sync_comment),
   }, function(choice)
     if choice == "Confirm" then
       M.confirm_publish_draft(tree)
@@ -75,8 +79,10 @@ end
 
 -- This function will trigger a popup prompting you to publish all draft notes
 M.publish_all_drafts = function()
+  local branch_in_sync = git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR)
+  local sync_comment = branch_in_sync and "" or branch_not_in_sync_comment
   vim.ui.select({ "Confirm", "Cancel" }, {
-    prompt = "Publish all drafts?",
+    prompt = string.format("Publish all drafts%s?", sync_comment),
   }, function(choice)
     if choice == "Confirm" then
       M.confirm_publish_all_drafts()
@@ -86,9 +92,6 @@ end
 
 ---Publishes all draft notes and comments. Re-renders all discussion views.
 M.confirm_publish_all_drafts = function()
-  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
-    return
-  end
   local body = { publish_all = true }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
@@ -108,9 +111,6 @@ end
 ---and re-render it.
 ---@param tree NuiTree
 M.confirm_publish_draft = function(tree)
-  if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
-    return
-  end
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
