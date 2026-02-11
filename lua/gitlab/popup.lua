@@ -166,7 +166,9 @@ M.set_up_autocommands = function(popup, layout, previous_window, opts)
   if previous_window ~= nil then
     popup:on("BufHidden", function()
       vim.schedule(function()
-        vim.api.nvim_set_current_win(previous_window)
+        if vim.api.nvim_win_is_valid(previous_window) then
+          vim.api.nvim_set_current_win(previous_window)
+        end
       end)
     end)
   end
