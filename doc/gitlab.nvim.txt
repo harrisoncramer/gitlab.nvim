@@ -144,7 +144,10 @@ Here is the default setup function. All of these values are optional, and if
 you call this function with no values the defaults will be used:
 >lua
     require("gitlab").setup({
-      port = nil, -- The port of the Go server, which runs in the background, if omitted or `nil` the port will be chosen automatically
+      server = {
+        binary = nil, -- The path to the server binary. If omitted or nil, the server will be built
+        port = nil, -- The port of the Go server, which runs in the background. If omitted or `nil` the port will be chosen automatically
+      },
       log_path = vim.fn.stdpath("cache") .. "/gitlab.nvim.log", -- Log path for the Go server
       config_path = nil, -- Custom path for `.gitlab.nvim` file, please read the "Connecting to Gitlab" section
       debug = {
@@ -678,7 +681,7 @@ by a |motion|.
 Either the operator or the motion can be preceded by a count, so that `3sj` is
 equivalent to `s3j`, and they both create a comment for the current line and
 three more lines downwards. Similarly, both `2s`|ap| and `s2`|ap| create a suggestion
-for two "outer" paragraphs. 
+for two "outer" paragraphs.
 
 The operators force |linewise| visual selection, so they work correctly even
 if the motion itself works |characterwise| (e.g., |i(| for selecting the inner
