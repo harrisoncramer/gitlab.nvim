@@ -41,4 +41,4 @@ done
 
 # Run tests
 echo "Running tests with Neovim..."
-nvim -u NONE -U NONE -N -i NONE -l tests/init.lua "$@"
+LC_TIME=en_US.UTF-8 nvim -u NONE -U NONE -N -i NONE -l tests/init.lua "$@"
