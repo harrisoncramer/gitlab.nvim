@@ -2,7 +2,7 @@
 
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within the editor. This means you can do things like:
 
-- Create, approve, and merge MRs for the current branch
+- Create, approve, rebase, and merge MRs for the current branch
 - Read and edit an MR description
 - Add or remove reviewers and assignees
 - Resolve, reply to, and unresolve discussion threads
@@ -144,9 +144,13 @@ glA	Approve MR
 glR	Revoke MR approval
 glM	Merge the feature branch to the target branch and close MR
 glm	Set MR to merge automatically when the pipeline succeeds
+glrr	Rebase the feature branch of the MR on the server (if not already rebased) and pull the new state
+glrs	Same as `glrr`, but skip the CI pipeline
+glrf	Same as `glrr`, but rebase even if MR already is rebased
 glC	Create a new MR for currently checked-out feature branch
 glc	Chose MR for review
 glS	Start review for the currently checked-out branch
+gl<C-R>	Load new MR state from Gitlab and apply new diff refs to the diff view
 gls	Show the editable summary of the MR
 glu	Copy the URL of the MR to the system clipboard
 glo	Open the URL of the MR in the default Internet browser

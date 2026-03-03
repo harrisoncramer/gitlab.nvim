@@ -6,15 +6,13 @@
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
-local git = require("gitlab.git")
 local hunks = require("gitlab.hunks")
 local async = require("diffview.async")
-local diffview_lib = require("diffview.lib")
 
 local M = {
   is_open = false,
   bufnr = nil,
-  tabnr = nil,
+  tabid = nil,
   stored_win = nil,
   buf_winids = {},
 }
@@ -29,7 +27,7 @@ M.init = function()
   end
 end
 
--- Opens the reviewer window.
+-- Opens the reviewer windows.
 M.open = function()
   local diff_refs = state.INFO.diff_refs
   if diff_refs == nil then
@@ -42,6 +40,9 @@ M.open = function()
     return
   end
 
+  require("gitlab.git_async").check_current_branch_up_to_date_on_remote()
+  local git = require("gitlab.git")
+
   local diffview_open_command = "DiffviewOpen"
 
   if state.settings.reviewer_settings.diffview.imply_local then
@@ -52,10 +53,7 @@ M.open = function()
     if has_clean_tree then
       diffview_open_command = diffview_open_command .. " --imply-local"
     else
-      u.notify(
-        "Your working tree has changes, cannot use 'imply_local' setting for gitlab reviews.\n Stash or commit all changes to use.",
-        vim.log.levels.WARN
-      )
+      u.notify("Working tree unclean. Stash or commit all changes to use 'imply_local'.", vim.log.levels.WARN)
       state.settings.reviewer_settings.diffview.imply_local = false
     end
   end
@@ -63,9 +61,13 @@ M.open = function()
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
 
   M.is_open = true
-  local cur_view = diffview_lib.get_current_view()
-  M.diffview_layout = cur_view.cur_layout
-  M.tabnr = vim.api.nvim_get_current_tabpage()
+  M.diffview = require("diffview.lib").get_current_view()
+  if M.diffview == nil then
+    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    return
+  end
+  M.diffview_layout = M.diffview.cur_layout
+  M.tabid = vim.api.nvim_get_current_tabpage()
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
     u.notify(
@@ -76,13 +78,13 @@ M.open = function()
 
   -- Register Diffview hook for close event to set tab page # to nil
   local on_diffview_closed = function(view)
-    if view.tabpage == M.tabnr then
-      M.tabnr = nil
+    if view.tabpage == M.tabid then
+      M.tabid = nil
       require("gitlab.actions.discussions.winbar").cleanup_timer()
     end
   end
   require("diffview.config").user_emitter:on("view_closed", function(_, args)
-    if M.tabnr == args.tabpage then
+    if M.tabid == args.tabpage then
       M.is_open = false
       on_diffview_closed(args)
     end
@@ -94,15 +96,35 @@ M.open = function()
     require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
 
-  git.check_current_branch_up_to_date_on_remote(vim.log.levels.WARN)
   git.check_mr_in_good_condition()
 end
 
 -- Closes the reviewer and cleans up
 M.close = function()
-  vim.cmd("DiffviewClose")
+  if M.tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.tabid) then
+    vim.cmd.tabclose(vim.api.nvim_tabpage_get_number(M.tabid))
+  end
   local discussions = require("gitlab.actions.discussions")
   discussions.close()
+end
+
+---Loads new INFO state from Gitlab, then if diffview.api is available applies the new diff refs to
+---the existing diffview, otherwise closes and re-opens the reviewer.
+M.reload = function()
+  state.load_new_state("info", function()
+    state.load_new_state("revisions", function()
+      local has_api, api = pcall(require, "diffview.api")
+      if has_api then
+        api.set_revs(
+          string.format("%s..%s", state.INFO.diff_refs.base_sha, state.INFO.diff_refs.head_sha),
+          { view = M.diffview }
+        )
+      else
+        M.close()
+        M.open()
+      end
+    end)
+  end)
 end
 
 --- Jumps to the location provided in the reviewer window
@@ -114,18 +136,18 @@ M.jump = function(file_name, old_file_name, line_number, new_buffer)
   -- Draft comments don't have `old_file_name` set
   old_file_name = old_file_name or file_name
 
-  if M.tabnr == nil then
+  if M.tabid == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
   end
-  vim.api.nvim_set_current_tabpage(M.tabnr)
-  local view = diffview_lib.get_current_view()
-  if view == nil then
+  vim.api.nvim_set_current_tabpage(M.tabid)
+
+  if M.diffview == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
 
-  local files = view.panel:ordered_file_list()
+  local files = M.diffview.panel:ordered_file_list()
   local file = List.new(files):find(function(f)
     local oldpath = f.oldpath ~= nil and f.oldpath or f.path
     return new_buffer and f.path == file_name or oldpath == old_file_name
@@ -137,9 +159,9 @@ M.jump = function(file_name, old_file_name, line_number, new_buffer)
     )
     return
   end
-  async.await(view:set_file(file))
+  async.await(M.diffview:set_file(file))
 
-  local layout = view.cur_layout
+  local layout = M.diffview.cur_layout
   local number_of_lines
   if new_buffer then
     layout.b:focus()
@@ -162,11 +184,10 @@ end
 ---@param current_win integer The ID of the currently focused window
 ---@return DiffviewInfo | nil
 M.get_reviewer_data = function(current_win)
-  local view = diffview_lib.get_current_view()
-  if view == nil then
+  if M.diffview == nil then
     return
   end
-  local layout = view.cur_layout
+  local layout = M.diffview.cur_layout
   local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
 
@@ -216,8 +237,7 @@ end
 ---@param current_win integer The ID of the currently focused window
 ---@return boolean
 M.is_new_sha_focused = function(current_win)
-  local view = diffview_lib.get_current_view()
-  local layout = view.cur_layout
+  local layout = M.diffview.cur_layout
   local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
   local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   if a_win ~= current_win and b_win ~= current_win then
@@ -229,8 +249,7 @@ end
 
 ---Get currently shown file data
 M.get_current_file_data = function()
-  local view = diffview_lib.get_current_view()
-  return view and view.panel and view.panel.cur_file
+  return M.diffview and M.diffview.panel and M.diffview.panel.cur_file
 end
 
 ---Get currently shown file path
@@ -269,7 +288,7 @@ M.set_callback_for_file_changed = function(callback)
     pattern = { "DiffviewDiffBufWinEnter" },
     group = group,
     callback = function(...)
-      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+      if M.tabid == vim.api.nvim_get_current_tabpage() then
         callback(...)
       end
     end,
@@ -284,7 +303,7 @@ M.set_callback_for_buf_read = function(callback)
     pattern = { "DiffviewDiffBufRead" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+      if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,
@@ -299,7 +318,7 @@ M.set_callback_for_reviewer_leave = function(callback)
     pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+      if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,
@@ -315,7 +334,7 @@ M.set_callback_for_reviewer_enter = function(callback)
     pattern = { "DiffviewViewEnter", "DiffviewViewOpened" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+      if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,

@@ -23,7 +23,7 @@ M.branches = function(args)
   return run_system(u.combine({ "git", "branch" }, args or {}))
 end
 
----Returns true if the working tree hasn't got any changes that haven't been commited
+---Returns true if the working tree hasn't got any changes that haven't been committed
 ---@return boolean, string|nil
 M.has_clean_tree = function()
   local changes, err = run_system({ "git", "status", "--short", "--untracked-files=no" })
@@ -63,9 +63,13 @@ end
 
 ---Fetch the remote branch
 ---@param remote_branch string The name of the repo and branch to fetch (e.g., "origin/some_branch")
----@return boolean fetch_successfull False if an error occurred while fetching, true otherwise.
+---@return boolean fetch_successful False if an error occurred while fetching, true otherwise.
 M.fetch_remote_branch = function(remote_branch)
-  local remote, branch = string.match(remote_branch, "([^/]+)/(.*)")
+  local remote, branch = string.match(remote_branch, "([^/]+)/(.+)")
+  if not remote or not branch then
+    require("gitlab.utils").notify("Invalid remote branch format: " .. remote_branch, vim.log.levels.ERROR)
+    return false
+  end
   local _, fetch_err = run_system({ "git", "fetch", remote, branch })
   if fetch_err ~= nil then
     require("gitlab.utils").notify("Error fetching remote-tracking branch: " .. fetch_err, vim.log.levels.ERROR)
@@ -163,13 +167,13 @@ M.contains_branch = function(current_branch)
   return run_system({ "git", "branch", "-r", "--contains", current_branch })
 end
 
----Returns true if `branch` is up-to-date on remote, otherwise false and warns user
----@param log_level integer
+--- Returns true if `branch` is up-to-date on remote, otherwise false and warns user
+---@param ahead integer|nil The number of commits the current branch is ahead of remote
+---@param behind integer|nil The number of commits the current branch is behind remote
+---@param remote_branch string|nil The remote branch, e.g., origin/feature-branch
+---@param log_level number
 ---@return boolean
-M.check_current_branch_up_to_date_on_remote = function(log_level)
-  local current_branch = M.get_current_branch()
-  local remote_branch = M.get_remote_branch()
-  local ahead, behind = M.get_ahead_behind(current_branch, remote_branch)
+M.evaluate_ahead_behind = function(ahead, behind, remote_branch, log_level)
   if ahead == nil or behind == nil then
     return false
   end
@@ -197,6 +201,19 @@ M.check_current_branch_up_to_date_on_remote = function(log_level)
   end
 
   return true -- Checks passed, branch is up-to-date
+end
+
+--- Returns true if `branch` is up-to-date on remote, otherwise false and notifies user.
+--- This is a blocking function. For a non-blocking version use
+--- gitlab.git_async.check_current_branch_up_to_date_on_remote.
+---@param log_level number The log level with which user will be notified
+---@return boolean
+M.check_current_branch_up_to_date_on_remote = function(log_level)
+  local current_branch = M.get_current_branch()
+  local remote_branch = M.get_remote_branch()
+  local ahead, behind = M.get_ahead_behind(current_branch, remote_branch)
+  require("gitlab.state").ahead_behind = { ahead, behind }
+  return M.evaluate_ahead_behind(ahead, behind, remote_branch, log_level)
 end
 
 ---Warns user if the current MR is in a bad state (closed, has conflicts, merged)

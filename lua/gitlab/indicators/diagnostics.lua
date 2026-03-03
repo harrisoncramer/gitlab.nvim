@@ -1,5 +1,4 @@
 local u = require("gitlab.utils")
-local diffview_lib = require("diffview.lib")
 local indicators_common = require("gitlab.indicators.common")
 local actions_common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
@@ -102,7 +101,7 @@ M.refresh_diagnostics = function()
   M.clear_diagnostics()
   M.placeable_discussions = indicators_common.filter_placeable_discussions()
 
-  local view = diffview_lib.get_current_view()
+  local view = require("gitlab.reviewer").diffview
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
@@ -117,7 +116,7 @@ M.place_diagnostics = function(bufnr)
   if not state.settings.discussion_signs.enabled then
     return
   end
-  local view = diffview_lib.get_current_view()
+  local view = require("gitlab.reviewer").diffview
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return

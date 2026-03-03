@@ -117,6 +117,12 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[AcceptMergeRequestRequest]}),
 		withMethodCheck(http.MethodPost),
 	))
+	m.HandleFunc("/mr/rebase", middleware(
+		mergeRequestRebaserService{d, gitlabClient},
+		withMr(d, gitlabClient),
+		withPayloadValidation(methodToPayload{http.MethodPost: newPayload[RebaseMrRequest]}),
+		withMethodCheck(http.MethodPost),
+	))
 	m.HandleFunc("/mr/discussions/list", middleware(
 		discussionsListerService{d, gitlabClient},
 		withMr(d, gitlabClient),

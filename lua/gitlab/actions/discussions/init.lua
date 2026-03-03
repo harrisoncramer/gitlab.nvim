@@ -56,8 +56,13 @@ end
 ---@param callback function|nil
 M.load_discussions = function(callback)
   local git = require("gitlab.git")
-  local ahead, behind = git.get_ahead_behind(git.get_current_branch(), git.get_remote_branch())
-  state.ahead_behind = { ahead, behind }
+  require("gitlab.git_async").get_ahead_behind(
+    git.get_current_branch(),
+    git.get_remote_branch(),
+    function(ahead, behind)
+      state.ahead_behind = { ahead, behind }
+    end
+  )
   state.discussion_tree.last_updated = nil
   state.load_new_state("discussion_data", function(data)
     if not state.DISCUSSION_DATA then

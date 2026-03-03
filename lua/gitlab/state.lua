@@ -86,9 +86,13 @@ M.settings = {
       revoke = "glR",
       merge = "glM",
       set_auto_merge = "glm",
+      rebase = "glrr",
+      rebase_skip_ci = "glrs",
+      rebase_force = "glrf",
       create_mr = "glC",
       choose_merge_request = "glc",
       start_review = "glS",
+      reload_review = "gl<C-R>",
       summary = "gls",
       copy_mr_url = "glu",
       open_in_browser = "glo",
@@ -200,6 +204,10 @@ M.settings = {
       width = 40,
       border = "rounded",
     },
+  },
+  rebase_mr = {
+    skip_ci = false,
+    force = false,
   },
   choose_merge_request = {
     open_reviewer = true,
@@ -329,6 +337,12 @@ M.set_global_keymaps = function()
     end, { desc = "Start Gitlab review", nowait = keymaps.global.start_review_nowait })
   end
 
+  if keymaps.global.reload_review then
+    vim.keymap.set("n", keymaps.global.reload_review, function()
+      require("gitlab").reload_review()
+    end, { desc = "Reload Gitlab review", nowait = keymaps.global.reload_review_nowait })
+  end
+
   if keymaps.global.choose_merge_request then
     vim.keymap.set("n", keymaps.global.choose_merge_request, function()
       require("gitlab").choose_merge_request()
@@ -429,6 +443,24 @@ M.set_global_keymaps = function()
     vim.keymap.set("n", keymaps.global.set_auto_merge, function()
       require("gitlab").merge({ auto_merge = true })
     end, { desc = "Set MR to auto-merge", nowait = keymaps.global.set_auto_merge_nowait })
+  end
+
+  if keymaps.global.rebase then
+    vim.keymap.set("n", keymaps.global.rebase, function()
+      require("gitlab").rebase()
+    end, { desc = "Rebase MR", nowait = keymaps.global.rebase_nowait })
+  end
+
+  if keymaps.global.rebase_skip_ci then
+    vim.keymap.set("n", keymaps.global.rebase_skip_ci, function()
+      require("gitlab").rebase({ skip_ci = true })
+    end, { desc = "Rebase MR and skip CI", nowait = keymaps.global.rebase_skip_ci_nowait })
+  end
+
+  if keymaps.global.rebase_force then
+    vim.keymap.set("n", keymaps.global.rebase_force, function()
+      require("gitlab").rebase({ force = true })
+    end, { desc = "Force rebase MR", nowait = keymaps.global.rebase_force_nowait })
   end
 
   if keymaps.global.copy_mr_url then

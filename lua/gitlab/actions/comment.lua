@@ -300,14 +300,14 @@ end
 ---@return boolean
 M.can_create_comment = function(must_be_visual)
   -- Check that diffview is initialized
-  if reviewer.tabnr == nil then
+  if reviewer.tabid == nil then
     u.notify("Reviewer must be initialized first", vim.log.levels.ERROR)
     return false
   end
 
   -- Check that we are in the Diffview tab
-  local tabnr = vim.api.nvim_get_current_tabpage()
-  if tabnr ~= reviewer.tabnr then
+  local tabid = vim.api.nvim_get_current_tabpage()
+  if tabid ~= reviewer.tabid then
     u.notify("Comments can only be left in the reviewer pane", vim.log.levels.ERROR)
     return false
   end

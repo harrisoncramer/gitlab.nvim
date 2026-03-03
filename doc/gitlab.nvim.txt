@@ -33,7 +33,7 @@ OVERVIEW                                                *gitlab.nvim.overview*
 This Neovim plugin is designed to make it easy to review Gitlab MRs from within
 the editor. This means you can do things like:
 
-- Create, approve, and merge MRs for the current branch
+- Create, approve, rebase, and merge MRs for the current branch
 - Read and edit an MR description
 - Add or remove reviewers and assignees
 - Resolve, reply to, and unresolve discussion threads
@@ -183,9 +183,13 @@ you call this function with no values the defaults will be used:
           revoke = "glR", -- Revoke MR approval
           merge = "glM", -- Merge the feature branch to the target branch and close MR
           set_auto_merge = "glm", -- Set MR to merge automatically when the pipeline succeeds
+          rebase = "glrr", -- Rebase the feature branch of the MR on the server and pull the new state
+          rebase_skip_ci = "glrs", -- Same as `rebase`, but skip the CI pipeline
+          rebase_force = "glrf", -- Same as `rebase`, but rebase even if MR already is rebased
           create_mr = "glC", -- Create a new MR for currently checked-out feature branch
           choose_merge_request = "glc", -- Chose MR for review (if necessary check out the feature branch)
           start_review = "glS", -- Start review for the currently checked-out branch
+          reload_review = "gl<C-R>", -- Load new MR state from Gitlab and apply new diff refs to the diff view
           summary = "gls", -- Show the editable summary of the MR
           copy_mr_url = "glu", -- Copy the URL of the MR to the system clipboard
           open_in_browser = "glo", -- Openthe URL of the MR in the default Internet browser
@@ -390,6 +394,10 @@ you call this function with no values the defaults will be used:
           width = 40,
           border = "rounded",
         },
+      },
+      rebase_mr = {
+        skip_ci = false, -- If true, a CI pipeline is not created. Can be overridden in gitlab.rebase call.
+        force = false, --  If true, MR is rebased even if MR already is rebased. Can be overridden in gitlab.rebase call.
       },
       colors = {
         discussion_tree = {
@@ -612,6 +620,19 @@ this command to work.
     require("gitlab").merge({ squash = false, delete_branch = false })
 <
 See |gitlab.nvim.merge| for more help on this function.
+
+
+REBASING AN MR                                      *gitlab.nvim.rebasing-an-mr*
+
+The `rebase` action will rebase an MR on the server, wait for the rebase to
+take effect and then update the local reviewer state. The MR must be in a
+"rebasable" state for this command to work, i.e., the worktree must be clean
+and there must be no conflicts with the target branch.
+>lua
+    require("gitlab").rebase()
+    require("gitlab").rebase({ skip_ci = true, force = true })
+<
+See |gitlab.nvim.rebase| for more help on this function.
 
 
 CREATING AN MR                                    *gitlab.nvim.creating-an-mr*
@@ -838,6 +859,25 @@ Opens the reviewer pane. Can be used from anywhere within Neovim after the
 plugin is loaded. If run twice, will open a second reviewer pane.
 >lua
   require("gitlab").review()
+<
+                                                                *gitlab.nvim.reload_review*
+gitlab.reload_review() ~
+
+Loads new MR state from Gitlab. Then if diffview.api is available (with the
+https://github.com/dlyongemallo/diffview.nvim fork) applies the new diff refs
+to the existing diffview, otherwise (with
+https://github.com/sindrets/diffview.nvim) closes and re-opens the reviewer.
+
+>lua
+  require("gitlab").reload_review()
+<
+                                                                *gitlab.nvim.close_review*
+gitlab.close_review() ~
+
+Closes the reviewer tab and discussion tree and cleans up (e.g., removes
+winbar timer).
+>lua
+  require("gitlab").close_review()
 <
                                                                 *gitlab.nvim.summary*
 gitlab.summary() ~
@@ -1090,6 +1130,25 @@ request" page). You can see the current settings in the Summary view, see
               message. To use the default message, leave the popup empty.
               Use the `keymaps.popup.perform_action` to merge the MR
               with your message.
+
+                                                                *gitlab.nvim.rebase*
+gitlab.rebase({opts}) ~
+
+Rebases the feature branch of the MR on the server, pulls the new state, and
+updates the reviewer.
+>lua
+  require("gitlab").rebase()
+  require("gitlab").rebase({ skip_ci = true, force = true })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments that can be used to override
+          default behavior.
+            • {skip_ci}: (`bool?`, default: `false`) If true, a CI pipeline is
+              not created (this may lead to a failed Mergeability Check
+              CI_MUST_PASS).
+            • {force}: (`bool?`, default: `false`) If true, MR is rebased even
+              if MR already is rebased (this may run an unnecessary CI
+              pipeline).
 
                                                                 *gitlab.nvim.data*
 gitlab.data({resources}, {cb}) ~
