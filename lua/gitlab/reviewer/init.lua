@@ -329,12 +329,14 @@ end
 ---@param cb string Name of the gitlab.nvim API function to call
 M.execute_callback = function(cb)
   return function()
+    local opts = M.callback_opts
+    M.callback_opts = nil
     vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { "'[V']" } }, {})
-    local _, err = pcall(
-      vim.api.nvim_cmd,
-      { cmd = "lua", args = { ("require'gitlab'.%s()"):format(cb) }, mods = { lockmarks = true } },
-      {}
-    )
+    local _, err = pcall(vim.api.nvim_cmd, {
+      cmd = "lua",
+      args = { ("require'gitlab'.%s(%s)"):format(cb, vim.inspect(opts or {})) },
+      mods = { lockmarks = true },
+    }, {})
     vim.api.nvim_win_set_cursor(M.old_winnr, M.old_cursor_position)
     vim.opt.operatorfunc = M.old_opfunc
     if err ~= "" then
@@ -346,10 +348,12 @@ end
 ---Set the operatorfunc that will work on the lines defined by the motion that follows
 ---after the operator mapping, and enter the operator-pending mode.
 ---@param cb string Name of the gitlab.nvim API function to call, e.g., "create_comment".
-local function execute_operatorfunc(cb)
+---@param opts table? Optional arguments for the callback.
+local function execute_operatorfunc(cb, opts)
   M.old_opfunc = vim.opt.operatorfunc
   M.old_winnr = vim.api.nvim_get_current_win()
   M.old_cursor_position = vim.api.nvim_win_get_cursor(M.old_winnr)
+  M.callback_opts = opts
   vim.opt.operatorfunc = ("v:lua.require'gitlab.reviewer'.execute_callback'%s'"):format(cb)
   -- Use the operator count before motion to allow, e.g., 2cc == c2c
   local count = M.operator_count > 0 and tostring(M.operator_count) or ""
@@ -418,8 +422,7 @@ M.set_keymaps = function(bufnr)
     -- Set operator keybinding
     vim.keymap.set("n", keymaps.reviewer.create_suggestion, function()
       M.operator_count = vim.v.count
-      M.operator = keymaps.reviewer.create_suggestion
-      execute_operatorfunc("create_comment_suggestion")
+      execute_operatorfunc("create_comment", { with_suggestion = true })
     end, {
       buffer = bufnr,
       desc = "Create suggestion for range of motion",
@@ -428,7 +431,7 @@ M.set_keymaps = function(bufnr)
 
     -- Set visual mode keybinding
     vim.keymap.set("v", keymaps.reviewer.create_suggestion, function()
-      require("gitlab").create_comment_suggestion()
+      require("gitlab").create_comment({ with_suggestion = true })
     end, {
       buffer = bufnr,
       desc = "Create suggestion for selected text",

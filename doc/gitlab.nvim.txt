@@ -529,20 +529,19 @@ configuration for more information.
 
 REVIEWING AN MR                                  *gitlab.nvim.reviewing-an-mr*
 
-The `review` action will open a diff of the changes. You can leave comments
-using the `create_comment` action, and add suggestions for changes with the
-`create_comment_suggestion` command:
+The `review` action opens a diff of the changes (see |gitlab.nvim.review|).
+Alternatively, use `choose_merge_request` for more flexibility in choosing the
+MR (see |gitlab.nvim.choose_merge_request|).
 >lua
   require("gitlab").review()
-  require("gitlab").create_comment()
-  require("gitlab").create_comment_suggestion()
+  require("gitlab").choose_merge_request({ labels = {"include_mrs_with_label"} })
 <
-For suggesting changes you can use `create_comment_suggestion` in visual mode
-which prefills the comment window with Gitlab’s suggest changes
-<https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html>
-code block with prefilled code from the visual selection. Just like the
-summary, all the different kinds of comments are saved via the
-`keymaps.popup.perform_action` keybinding.
+You can leave comments in the reviewer windows using the `keymaps.reviewer`
+keybindings which in normal mode work as operators and in visual mode they
+create comments on the selected lines. Alternatively, you can use the
+`create_comment` API in your custom mappings (see
+|gitlab.nvim.create_comment|). See `settings.keymaps.popup` for the
+keybindings available in the popup windows.
 
 
 DRAFT NOTES                                       *gitlab.nvim.draft-comments*
@@ -985,27 +984,26 @@ gitlab.create_comment() ~
 Opens a popup to create a comment on the selected line(s) in the current
 buffer. Must be called when focused on the reviewer pane (see the
 |gitlab.nvim.review| command). In normal mode comments on the current line. In
-visual mode comments on the selected lines.
+visual mode comments on the selected lines:
 >lua
   require("gitlab").create_comment()
+  require("gitlab").create_comment({ with_suggestion = true })
 <
-You can use the `keymaps.popup.perform_linewise_action` keybinding (default:
-`ZA`) to attach a file to the comment. After the comment is typed, submit it to
-Gitlab via the `keymaps.popup.perform_action` keybinding (default: `ZZ`).
-Discard the comment with `keymaps.popup.discard_changes` (default: `ZQ`),
-otherwise if you close the popup with something like `<c-w>q`, the comment
-contents are saved to the temporary register(s) (|gitlab.nvim.temp-registers|).
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments that can be used to include
+          a suggestion in the comment.
+            • {with_suggestion} (boolean) When true, pastes into the comment
+              buffer Gitlab’s suggestion code block prefilled with the
+              original text from the visual selection. See
+              https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html.
 
-                                       *gitlab.nvim.create_comment_suggestion*
-gitlab.create_comment_suggestion() ~
-
-Opens a popup to create a comment suggestion, i.e., a comment that contains a
-committable change suggestion to the currently selected lines.
->lua
-  require("gitlab").create_comment_suggestion()
-<
-After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding (default: `ZA`).
+In the popup, you can use the `keymaps.popup.perform_linewise_action`
+keybinding (default: `ZA`) to attach a file to the comment. After the comment
+is typed, submit it to Gitlab via the `keymaps.popup.perform_action`
+keybinding, (default: `ZZ`). Discard the comment with
+`keymaps.popup.discard_changes` (default: `ZQ`). Otherwise, if you close the
+popup with something like `<c-w>q`, the comment contents are saved to the
+temporary register(s) (|gitlab.nvim.temp-registers|).
 
                                                        *gitlab.nvim.create_mr*
 gitlab.create_mr({opts}) ~
@@ -1065,7 +1063,7 @@ tied to specific changes in an MR.
   require("gitlab").create_note()
 
 After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_action` keybinding, by default `ZZ`.
+`keymaps.popup.perform_action` keybinding (default: `ZZ`).
 
                                               *gitlab.nvim.toggle_discussions*
 gitlab.toggle_discussions() ~

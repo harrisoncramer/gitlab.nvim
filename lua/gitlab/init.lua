@@ -68,7 +68,13 @@ return {
     u.notify("create_multiline_comment() is deprecated, use create_comment()", vim.log.levels.WARN)
     comment.create_comment()
   end),
-  create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
+  create_comment_suggestion = async.sequence({ info, revisions }, function()
+    u.notify(
+      "create_comment_suggestion() is deprecated, use create_comment({with_suggestion=true})",
+      vim.log.levels.WARN
+    )
+    comment.create_comment({ with_suggestion = true })
+  end),
   create_comment_with_suggestion = async.sequence({ info, revisions }, comment.create_comment_with_suggestion),
   move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),
   create_note = async.sequence({ info }, comment.create_note),

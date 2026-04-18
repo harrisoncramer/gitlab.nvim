@@ -232,17 +232,36 @@ M.create_comment_layout = function(opts)
   return layout
 end
 
----Open a popup to create a comment on the currenty selected line(s) in the reviwer.
+---@class CreateCommentsOpts Options for the create_comment function.
+---@field with_suggestion boolean When true, paste the default suggestion into the comment buffer.
+
+---Open a popup to create a comment on the currently selected line(s) in the reviwer.
 ---In normal mode comments on the current line.
 ---In visual mode comments on the whole selection.
-M.create_comment = function()
+---@param opts CreateCommentsOpts?
+M.create_comment = function(opts)
+  opts = opts or {}
   M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(false) then
     return
   end
 
+  local suggestion_lines = require("gitlab.actions.suggestions").build_suggestion(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    M.location.reviewer_data.start_line,
+    M.location.reviewer_data.end_line
+  )
+
   local layout = M.create_comment_layout({ unlinked = false })
   layout:mount()
+
+  if opts.with_suggestion then
+    vim.schedule(function()
+      if suggestion_lines then
+        vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
+      end
+    end)
+  end
 end
 
 ---Open a popup to create a "note" (e.g. unlinked comment) for the current MR.
@@ -251,63 +270,7 @@ M.create_note = function()
   layout:mount()
 end
 
----Given the current visually selected area of text, builds text to fill in the
----comment popup with a suggested change
----@return string[]?
-local build_suggestion = function()
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local range_length = M.location.reviewer_data.end_line - M.location.reviewer_data.start_line
-  local backticks = "```"
-  local selected_lines = u.get_lines(M.location.reviewer_data.start_line, M.location.reviewer_data.end_line)
-
-  for _, line in ipairs(selected_lines) do
-    if string.match(line, "^```%S*$") then
-      backticks = "````"
-      break
-    end
-  end
-
-  local suggestion_start
-  if M.location.reviewer_data.start_line == current_line then
-    suggestion_start = backticks .. "suggestion:-0+" .. range_length
-  elseif M.location.reviewer_data.end_line == current_line then
-    suggestion_start = backticks .. "suggestion:-" .. range_length .. "+0"
-  else
-    --- This should never happen afaik
-    u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
-    return nil
-  end
-  suggestion_start = suggestion_start
-  local suggestion_lines = {}
-  table.insert(suggestion_lines, suggestion_start)
-  vim.list_extend(suggestion_lines, selected_lines)
-  table.insert(suggestion_lines, backticks)
-
-  return suggestion_lines
-end
-
----Open a popup to create a suggestion comment on the changed/updated line in the current MR
----See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
-M.create_comment_suggestion = function()
-  M.location = M.new_location_from_reviewer()
-  if not M.can_create_comment(true) then
-    u.press_escape()
-    return
-  end
-
-  local suggestion_lines = build_suggestion()
-
-  local layout = M.create_comment_layout({ unlinked = false })
-  layout:mount()
-
-  vim.schedule(function()
-    if suggestion_lines then
-      vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
-    end
-  end)
-end
-
----Open new tab with a suggestion preview for the line selected in the reviewer.
+---Open new tab with a suggestion preview for the line(s) selected in the reviewer.
 M.create_comment_with_suggestion = function()
   M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(true) then
