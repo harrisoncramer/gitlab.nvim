@@ -64,7 +64,10 @@ return {
   add_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.add_assignee),
   delete_assignee = async.sequence({ info, project_members }, assignees_and_reviewers.delete_assignee),
   create_comment = async.sequence({ info, revisions }, comment.create_comment),
-  create_multiline_comment = async.sequence({ info, revisions }, comment.create_multiline_comment),
+  create_multiline_comment = async.sequence({ info, revisions }, function()
+    u.notify("create_multiline_comment() is deprecated, use create_comment()", vim.log.levels.WARN)
+    comment.create_comment()
+  end),
   create_comment_suggestion = async.sequence({ info, revisions }, comment.create_comment_suggestion),
   create_comment_with_suggestion = async.sequence({ info, revisions }, comment.create_comment_with_suggestion),
   move_to_discussion_tree_from_diagnostic = async.sequence({}, discussions.move_to_discussion_tree),

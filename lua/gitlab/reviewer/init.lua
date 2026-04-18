@@ -345,7 +345,7 @@ end
 
 ---Set the operatorfunc that will work on the lines defined by the motion that follows
 ---after the operator mapping, and enter the operator-pending mode.
----@param cb string Name of the gitlab.nvim API function to call, e.g., "create_multiline_comment"
+---@param cb string Name of the gitlab.nvim API function to call, e.g., "create_comment".
 local function execute_operatorfunc(cb)
   M.old_opfunc = vim.opt.operatorfunc
   M.old_winnr = vim.api.nvim_get_current_win()
@@ -389,12 +389,12 @@ M.set_keymaps = function(bufnr)
       keymaps.reviewer.create_comment,
       function()
         M.operator_count = vim.v.count
-        execute_operatorfunc("create_multiline_comment")
+        execute_operatorfunc("create_comment")
       end,
       { buffer = bufnr, desc = "Create comment for range of motion", nowait = keymaps.reviewer.create_comment_nowait }
     )
     vim.keymap.set("v", keymaps.reviewer.create_comment, function()
-      require("gitlab").create_multiline_comment()
+      require("gitlab").create_comment()
     end, {
       buffer = bufnr,
       desc = "Create comment for selected text",

@@ -42,7 +42,7 @@ type DeleteCommentRequest struct {
 	DiscussionId string `json:"discussion_id" validate:"required"`
 }
 
-/* deleteComment deletes a note, multiline comment, or comment, which are all considered discussion notes. */
+/* deleteComment deletes a note or comment, which are all considered discussion notes. */
 func (a commentService) deleteComment(w http.ResponseWriter, r *http.Request) {
 	payload := r.Context().Value(payload("payload")).(*DeleteCommentRequest)
 
@@ -81,7 +81,7 @@ func (comment CommentWithPosition) GetPositionData() PositionData {
 	return comment.PositionData
 }
 
-/* postComment creates a note, multiline comment, or comment. */
+/* postComment creates a note or comment. */
 func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 	payload := r.Context().Value(payload("payload")).(*PostCommentRequest)
 

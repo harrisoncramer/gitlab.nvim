@@ -530,18 +530,15 @@ configuration for more information.
 REVIEWING AN MR                                  *gitlab.nvim.reviewing-an-mr*
 
 The `review` action will open a diff of the changes. You can leave comments
-using the `create_comment` action. In visual mode, add multiline comments with
-the `create_multiline_comment` command, and add suggested changes with the
+using the `create_comment` action, and add suggestions for changes with the
 `create_comment_suggestion` command:
 >lua
   require("gitlab").review()
   require("gitlab").create_comment()
-  require("gitlab").create_multiline_comment()
   require("gitlab").create_comment_suggestion()
 <
 For suggesting changes you can use `create_comment_suggestion` in visual mode
-which works similar to `create_multiline_comment` but prefills the comment
-window with Gitlab’s suggest changes
+which prefills the comment window with Gitlab’s suggest changes
 <https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html>
 code block with prefilled code from the visual selection. Just like the
 summary, all the different kinds of comments are saved via the
@@ -985,35 +982,30 @@ have permission or has not previously approved the MR.
                                                   *gitlab.nvim.create_comment*
 gitlab.create_comment() ~
 
-Opens a popup to create a comment on the current line. Must be called when focused on the
-reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
+Opens a popup to create a comment on the selected line(s) in the current
+buffer. Must be called when focused on the reviewer pane (see the
+|gitlab.nvim.review| command). In normal mode comments on the current line. In
+visual mode comments on the selected lines.
 >lua
   require("gitlab").create_comment()
-
-After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_action` keybinding, by default `ZZ`.
-
-                                        *gitlab.nvim.create_multiline_comment*
-gitlab.create_multiline_comment() ~
-
-Opens a popup to create a multi-line comment. May only be called in visual
-mode, and will use the currently selected lines.
->lua
-  require("gitlab").create_multiline_comment()
-
-After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
+<
+You can use the `keymaps.popup.perform_linewise_action` keybinding (default:
+`ZA`) to attach a file to the comment. After the comment is typed, submit it to
+Gitlab via the `keymaps.popup.perform_action` keybinding (default: `ZZ`).
+Discard the comment with `keymaps.popup.discard_changes` (default: `ZQ`),
+otherwise if you close the popup with something like `<c-w>q`, the comment
+contents are saved to the temporary register(s) (|gitlab.nvim.temp-registers|).
 
                                        *gitlab.nvim.create_comment_suggestion*
 gitlab.create_comment_suggestion() ~
 
-Opens a popup to create a comment suggestion (aka a comment that makes a committable
-change suggestion to the currently selected lines).
+Opens a popup to create a comment suggestion, i.e., a comment that contains a
+committable change suggestion to the currently selected lines.
 >lua
-  require("gitlab").create_multiline_comment()
-
+  require("gitlab").create_comment_suggestion()
+<
 After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
+`keymaps.popup.perform_linewise_action` keybinding (default: `ZA`).
 
                                                        *gitlab.nvim.create_mr*
 gitlab.create_mr({opts}) ~

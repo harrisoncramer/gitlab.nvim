@@ -232,8 +232,9 @@ M.create_comment_layout = function(opts)
   return layout
 end
 
----Open a comment popup in order to create a comment on the changed/updated line in the
----current MR.
+---Open a popup to create a comment on the currenty selected line(s) in the reviwer.
+---In normal mode comments on the current line.
+---In visual mode comments on the whole selection.
 M.create_comment = function()
   M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(false) then
@@ -244,21 +245,7 @@ M.create_comment = function()
   layout:mount()
 end
 
----Open a multi-line comment popup in order to create a multi-line comment on the
----changed/updated line in the current MR.
-M.create_multiline_comment = function()
-  M.location = M.new_location_from_reviewer()
-  if not M.can_create_comment(true) then
-    u.press_escape()
-    return
-  end
-
-  local layout = M.create_comment_layout({ unlinked = false })
-  layout:mount()
-end
-
----Open a popup to create a "note" (e.g. unlinked comment) on the changed/updated line
----in the current MR.
+---Open a popup to create a "note" (e.g. unlinked comment) for the current MR.
 M.create_note = function()
   local layout = M.create_comment_layout({ unlinked = true })
   layout:mount()
@@ -404,7 +391,7 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
-  -- Check we're in visual mode for code suggestions and multiline comments
+  -- Check we're in visual mode for code suggestions
   if must_be_visual and not u.check_visual_mode() then
     return false
   end
