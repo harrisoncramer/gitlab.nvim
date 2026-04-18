@@ -629,7 +629,7 @@ M.show_preview = function(opts)
     return
   end
 
-  local note_lines = opts.note_lines or M.build_suggestion(original_lines, opts)
+  local note_lines = opts.note_lines or M.build_suggestion(original_lines, opts.start_line, opts.end_line)
   local suggestions = get_suggestions(note_lines, opts.end_line, original_lines)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
@@ -682,7 +682,7 @@ M.show_preview = function(opts)
   vim.bo.modified = false
 
   -- Set up keymaps and autocommands
-  local default_suggestion_lines = M.build_suggestion(original_lines, opts)
+  local default_suggestion_lines = M.build_suggestion(original_lines, opts.start_line, opts.end_line)
   set_keymaps(
     note_buf,
     original_buf,
@@ -715,18 +715,19 @@ end
 
 ---Create the default suggestion lines for given comment range.
 ---@param original_lines string[] The list of lines in the original (commented on) version of the file.
----@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+---@param start_line integer The start line number of the commented on selection.
+---@param end_line integer The end line number of the commented on selection.
 ---@return string[] suggestion_lines
-M.build_suggestion = function(original_lines, opts)
+M.build_suggestion = function(original_lines, start_line, end_line)
   local backticks = "```"
-  local selected_lines = { unpack(original_lines, opts.start_line, opts.end_line) }
+  local selected_lines = { unpack(original_lines, start_line, end_line) }
   for _, line in ipairs(selected_lines) do
     local match = string.match(line, "^%s*(`+)%s*$")
     if match and #match >= #backticks then
       backticks = match .. "`"
     end
   end
-  local suggestion_lines = { backticks .. "suggestion:-" .. (opts.end_line - opts.start_line) .. "+0" }
+  local suggestion_lines = { backticks .. "suggestion:-" .. (end_line - start_line) .. "+0" }
   vim.list_extend(suggestion_lines, selected_lines)
   table.insert(suggestion_lines, backticks)
   return suggestion_lines
