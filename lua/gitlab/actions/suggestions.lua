@@ -313,25 +313,6 @@ local get_original_lines = function(opts)
   return vim.fn.split(original_head_text, "\n", true)
 end
 
----Create the default suggestion lines for given comment range.
----@param original_lines string[] The list of lines in the original (commented on) version of the file.
----@param opts ShowPreviewOpts The options passed to the M.show_preview function.
----@return string[] suggestion_lines
-local get_default_suggestion = function(original_lines, opts)
-  local backticks = "```"
-  local selected_lines = { unpack(original_lines, opts.start_line, opts.end_line) }
-  for _, line in ipairs(selected_lines) do
-    local match = string.match(line, "^%s*(`+)%s*$")
-    if match and #match >= #backticks then
-      backticks = match .. "`"
-    end
-  end
-  local suggestion_lines = { backticks .. "suggestion:-" .. (opts.end_line - opts.start_line) .. "+0" }
-  vim.list_extend(suggestion_lines, selected_lines)
-  table.insert(suggestion_lines, backticks)
-  return suggestion_lines
-end
-
 ---Check if buffer already exists and return the number of the tab it's open in.
 ---@param bufnr integer The buffer number to check.
 ---@return number|nil tabnr The tabpage number if buffer is already open, or nil.
@@ -648,7 +629,7 @@ M.show_preview = function(opts)
     return
   end
 
-  local note_lines = opts.note_lines or get_default_suggestion(original_lines, opts)
+  local note_lines = opts.note_lines or M.build_suggestion(original_lines, opts)
   local suggestions = get_suggestions(note_lines, opts.end_line, original_lines)
 
   -- Create new tab with a temp buffer showing the original version on which the comment was
@@ -701,7 +682,7 @@ M.show_preview = function(opts)
   vim.bo.modified = false
 
   -- Set up keymaps and autocommands
-  local default_suggestion_lines = get_default_suggestion(original_lines, opts)
+  local default_suggestion_lines = M.build_suggestion(original_lines, opts)
   set_keymaps(
     note_buf,
     original_buf,
@@ -730,6 +711,25 @@ M.show_preview = function(opts)
   refresh_signs(suggestions[1], note_buf)
   refresh_diagnostics(suggestions, note_buf)
   update_winbar(note_winid, suggestion_winid, original_winid, imply_local, opts)
+end
+
+---Create the default suggestion lines for given comment range.
+---@param original_lines string[] The list of lines in the original (commented on) version of the file.
+---@param opts ShowPreviewOpts The options passed to the M.show_preview function.
+---@return string[] suggestion_lines
+M.build_suggestion = function(original_lines, opts)
+  local backticks = "```"
+  local selected_lines = { unpack(original_lines, opts.start_line, opts.end_line) }
+  for _, line in ipairs(selected_lines) do
+    local match = string.match(line, "^%s*(`+)%s*$")
+    if match and #match >= #backticks then
+      backticks = match .. "`"
+    end
+  end
+  local suggestion_lines = { backticks .. "suggestion:-" .. (opts.end_line - opts.start_line) .. "+0" }
+  vim.list_extend(suggestion_lines, selected_lines)
+  table.insert(suggestion_lines, backticks)
+  return suggestion_lines
 end
 
 return M
