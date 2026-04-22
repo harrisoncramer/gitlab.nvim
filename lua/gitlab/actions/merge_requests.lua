@@ -4,6 +4,54 @@ local git = require("gitlab.git")
 local u = require("gitlab.utils")
 local M = {}
 
+---Sets the chosen MR and restarts the server, optionally opening the reviewer.
+---@param choice table
+---@param opts ChooseMergeRequestOptions
+local activate_mr = function(choice, opts)
+  vim.schedule(function()
+    state.chosen_mr_iid = choice.iid
+    require("gitlab.server").restart(function()
+      if opts.open_reviewer then
+        require("gitlab").review()
+      end
+    end)
+  end)
+end
+
+---Selects a fork MR by restarting the server without switching branches.
+---@param choice table
+---@param opts ChooseMergeRequestOptions
+local select_fork_mr = function(choice, opts)
+  activate_mr(choice, opts)
+end
+
+---Selects a local MR by switching to its source branch and restarting the server.
+---@param choice table
+---@param opts ChooseMergeRequestOptions
+local select_local_mr = function(choice, opts)
+  if choice.source_branch ~= git.get_current_branch() then
+    local has_clean_tree, clean_tree_err = git.has_clean_tree()
+    if clean_tree_err ~= nil then
+      return
+    elseif not has_clean_tree then
+      u.notify(
+        "Cannot switch branch when working tree has changes, please stash or commit and push",
+        vim.log.levels.ERROR
+      )
+      return
+    end
+  end
+
+  vim.schedule(function()
+    local _, branch_switch_err = git.switch_branch(choice.source_branch)
+    if branch_switch_err ~= nil then
+      return
+    end
+
+    activate_mr(choice, opts)
+  end)
+end
+
 ---@class ChooseMergeRequestOptions
 ---@field open_reviewer? boolean
 ---@field label? string[]
@@ -30,34 +78,13 @@ M.choose_merge_request = function(opts)
       reviewer.close()
     end
 
-    if choice.source_branch ~= git.get_current_branch() then
-      local has_clean_tree, clean_tree_err = git.has_clean_tree()
-      if clean_tree_err ~= nil then
-        return
-      elseif not has_clean_tree then
-        u.notify(
-          "Cannot switch branch when working tree has changes, please stash or commit and push",
-          vim.log.levels.ERROR
-        )
-        return
-      end
+    local is_fork_mr = choice.source_project_id ~= choice.target_project_id
+
+    if is_fork_mr then
+      select_fork_mr(choice, opts)
+    else
+      select_local_mr(choice, opts)
     end
-
-    vim.schedule(function()
-      local _, branch_switch_err = git.switch_branch(choice.source_branch)
-      if branch_switch_err ~= nil then
-        return
-      end
-
-      vim.schedule(function()
-        state.chosen_mr_iid = choice.iid
-        require("gitlab.server").restart(function()
-          if opts.open_reviewer then
-            require("gitlab").review()
-          end
-        end)
-      end)
-    end)
   end)
 end
 

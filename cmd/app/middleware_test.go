@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/harrisoncramer/gitlab.nvim/cmd/app/git"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type FakePayload struct {
@@ -13,6 +14,17 @@ type FakePayload struct {
 }
 
 type fakeHandler struct{}
+
+// capturingMergeRequestLister records the options passed to ListProjectMergeRequests
+// so tests can verify the filter logic in the withMr middleware.
+type capturingMergeRequestLister struct {
+	capturedOpts *gitlab.ListProjectMergeRequestsOptions
+}
+
+func (f *capturingMergeRequestLister) ListProjectMergeRequests(pid interface{}, opt *gitlab.ListProjectMergeRequestsOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
+	f.capturedOpts = opt
+	return []*gitlab.BasicMergeRequest{{IID: 10}}, makeResponse(http.StatusOK), nil
+}
 
 func (f fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -89,6 +101,39 @@ func TestWithMrMiddleware(t *testing.T) {
 		assert(t, status, http.StatusBadRequest)
 		assert(t, data.Message, "Multiple MRs found")
 		assert(t, data.Details, "please call gitlab.choose_merge_request()")
+	})
+	t.Run("Filters by IIDs when ChosenMrIID is set", func(t *testing.T) {
+		pluginOptions.ChosenMrIID = 42
+		defer func() { pluginOptions.ChosenMrIID = 0 }()
+
+		request := makeRequest(t, http.MethodGet, "/foo", nil)
+		lister := &capturingMergeRequestLister{}
+		d := data{
+			projectInfo: &ProjectInfo{},
+			gitInfo:     &git.GitData{BranchName: "foo"},
+		}
+		mw := withMr(d, lister)
+		handler := middleware(fakeHandler{}, mw)
+		getSuccessData(t, handler, request)
+
+		assert(t, (*lister.capturedOpts.IIDs)[0], int64(42))
+		assert(t, lister.capturedOpts.SourceBranch == nil, true)
+	})
+	t.Run("Filters by SourceBranch when ChosenMrIID is not set", func(t *testing.T) {
+		pluginOptions.ChosenMrIID = 0
+
+		request := makeRequest(t, http.MethodGet, "/foo", nil)
+		lister := &capturingMergeRequestLister{}
+		d := data{
+			projectInfo: &ProjectInfo{},
+			gitInfo:     &git.GitData{BranchName: "foo"},
+		}
+		mw := withMr(d, lister)
+		handler := middleware(fakeHandler{}, mw)
+		getSuccessData(t, handler, request)
+
+		assert(t, *lister.capturedOpts.SourceBranch, "foo")
+		assert(t, lister.capturedOpts.IIDs == nil, true)
 	})
 }
 

@@ -103,12 +103,16 @@ func (m withMrMiddleware) handle(next http.Handler) http.Handler {
 		// If the merge request is already attached, skip the middleware logic
 		if m.data.projectInfo.MergeId == 0 {
 			options := gitlab.ListProjectMergeRequestsOptions{
-				Scope:        gitlab.Ptr("all"),
-				SourceBranch: &m.data.gitInfo.BranchName,
+				Scope: gitlab.Ptr("all"),
 			}
 
 			if pluginOptions.ChosenMrIID != 0 {
+				// When an MR was explicitly chosen by IID (e.g. via choose_merge_request),
+				// only filter by IID. Skipping SourceBranch allows fork MRs to be found,
+				// since their source branch doesn't exist in the local repository.
 				options.IIDs = gitlab.Ptr([]int64{pluginOptions.ChosenMrIID})
+			} else {
+				options.SourceBranch = &m.data.gitInfo.BranchName
 			}
 
 			mergeRequests, _, err := m.client.ListProjectMergeRequests(m.data.projectInfo.ProjectId, &options)
