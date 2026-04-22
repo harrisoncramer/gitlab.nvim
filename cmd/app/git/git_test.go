@@ -24,6 +24,14 @@ func (f FakeGitManager) GetLatestCommitOnRemote(remote string, branchName string
 	return "", nil
 }
 
+func (f FakeGitManager) GetMRHeadCommit(mrIID int64) (string, error) {
+	return "", nil
+}
+
+func (f FakeGitManager) FetchMRHead(remote string, mrIID int64) error {
+	return nil
+}
+
 func (f FakeGitManager) GetProjectUrlFromNativeGitCmd(string) (url string, err error) {
 	return f.RemoteUrl, nil
 }
@@ -285,4 +293,50 @@ func TestExtractGitInfo_FailToGetCurrentBranchName(t *testing.T) {
 			t.Errorf("\nExpected: %s\nActual:   %s", tC.expectedErr, err.Error())
 		}
 	})
+}
+
+type fetchTrackingManager struct {
+	fetchCalled bool
+	fetchErr    error
+	FakeGitManager
+}
+
+func (f *fetchTrackingManager) FetchMRHead(remote string, mrIID int64) error {
+	f.fetchCalled = true
+	return f.fetchErr
+}
+
+func TestFetchMrHead_SkipsWhenMrIIDIsZero(t *testing.T) {
+	g := &fetchTrackingManager{}
+	err := FetchMrHead(g, "origin", 0)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if g.fetchCalled {
+		t.Error("Expected FetchMRHead not to be called when mrIID is 0")
+	}
+}
+
+func TestFetchMrHead_FetchesWhenMrIIDIsNonZero(t *testing.T) {
+	g := &fetchTrackingManager{}
+	err := FetchMrHead(g, "origin", 42)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if !g.fetchCalled {
+		t.Error("Expected FetchMRHead to be called when mrIID is non-zero")
+	}
+}
+
+func TestFetchMrHead_ReturnsErrorOnFetchFailure(t *testing.T) {
+	g := &fetchTrackingManager{
+		fetchErr: errors.New("fetch failed"),
+	}
+	err := FetchMrHead(g, "origin", 42)
+	if err == nil {
+		t.Error("Expected an error, got nil")
+	}
+	if err.Error() != "fetch failed" {
+		t.Errorf("Expected 'fetch failed', got '%s'", err.Error())
+	}
 }

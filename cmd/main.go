@@ -34,6 +34,11 @@ func main() {
 		log.Fatalf("Failure initializing plugin: %v", err)
 	}
 
+	// Fetch MR head ref when a specific MR is chosen, so fork MR commits are available locally for diffview
+	if fetchErr := git.FetchMrHead(gitManager, pluginOptions.ConnectionSettings.Remote, pluginOptions.ChosenMrIID); fetchErr != nil {
+		log.Printf("Warning: could not fetch MR head ref: %v", fetchErr)
+	}
+
 	client, err := app.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to initialize Gitlab client: %v", err)
