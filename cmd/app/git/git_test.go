@@ -2,6 +2,9 @@ package git
 
 import (
 	"errors"
+	"os"
+	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -338,5 +341,69 @@ func TestFetchMrHead_ReturnsErrorOnFetchFailure(t *testing.T) {
 	}
 	if err.Error() != "fetch failed" {
 		t.Errorf("Expected 'fetch failed', got '%s'", err.Error())
+	}
+}
+
+// setupTempGitRepo creates a temp git repo with a commit and an MR head ref,
+// changes the working directory to it, and returns the expected commit SHA.
+// The caller's working directory is restored via t.Cleanup.
+func setupTempGitRepo(t *testing.T, mrIID string) string {
+	t.Helper()
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chdir(origDir) })
+
+	cmds := [][]string{
+		{"git", "init"},
+		{"git", "config", "user.email", "test@test.com"},
+		{"git", "config", "user.name", "Test"},
+		{"git", "commit", "--allow-empty", "-m", "init"},
+		{"git", "update-ref", "refs/merge-requests/" + mrIID + "/head", "HEAD"},
+	}
+	for _, args := range cmds {
+		cmd := exec.Command(args[0], args[1:]...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("command %v failed: %v\n%s", args, err, out)
+		}
+	}
+
+	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func TestGetMRHeadCommit_Success(t *testing.T) {
+	expectedSHA := setupTempGitRepo(t, "42")
+
+	g := Git{}
+	sha, err := g.GetMRHeadCommit(42)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+	if sha != expectedSHA {
+		t.Errorf("Expected SHA %s, got %s", expectedSHA, sha)
+	}
+}
+
+func TestGetMRHeadCommit_NonExistentRef(t *testing.T) {
+	setupTempGitRepo(t, "42")
+
+	g := Git{}
+	_, err := g.GetMRHeadCommit(9999)
+	if err == nil {
+		t.Fatal("Expected an error for non-existent ref, got nil")
+	}
+	if !strings.Contains(err.Error(), "failed to resolve MR head ref") {
+		t.Errorf("Expected error about resolving MR head ref, got: %s", err.Error())
 	}
 }
