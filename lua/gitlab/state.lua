@@ -203,6 +203,7 @@ M.settings = {
   },
   choose_merge_request = {
     open_reviewer = true,
+    per_page = 100,
   },
   info = {
     enabled = true,
@@ -562,7 +563,11 @@ M.dependencies = {
         opts["not[label]"] = opts.notlabel
         opts.notlabel = nil
       end
-      return opts or vim.empty_dict()
+      local body = opts or vim.empty_dict()
+      if body.per_page == nil then
+        body.per_page = M.settings.choose_merge_request.per_page
+      end
+      return body
     end,
   },
   merge_requests_by_username = {
