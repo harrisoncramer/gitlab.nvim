@@ -256,6 +256,7 @@
 
 ---@class ChooseMergeRequestSettings
 ---@field open_reviewer? boolean -- Open the reviewer window automatically after switching merge requests
+---@field per_page? integer -- Number of merge requests to fetch (default: 100)
 
 ---@class InfoSettings
 ---@field horizontal? boolean -- Display metadata to the left of the summary rather than underneath
