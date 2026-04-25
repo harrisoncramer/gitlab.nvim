@@ -203,7 +203,6 @@ M.settings = {
   },
   choose_merge_request = {
     open_reviewer = true,
-    per_page = 100,
   },
   info = {
     enabled = true,
@@ -560,11 +559,7 @@ M.dependencies = {
         opts["not[label]"] = opts.notlabel
         opts.notlabel = nil
       end
-      local body = opts or {}
-      if body.per_page == nil then
-        body.per_page = M.settings.choose_merge_request.per_page
-      end
-      return body
+      return opts or {}
     end,
   },
   merge_requests_by_username = {

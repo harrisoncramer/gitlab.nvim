@@ -35,16 +35,23 @@ func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		payload.Scope = gitlab.Ptr("all")
 	}
 
-	mergeRequests, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, payload)
+	payload.PerPage = 100
+	var mergeRequests []*gitlab.BasicMergeRequest
+	for nextPage := int64(1); nextPage != 0; {
+		payload.Page = nextPage
+		mrs, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, payload)
+		if err != nil {
+			handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
+			return
+		}
 
-	if err != nil {
-		handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
-		return
-	}
+		if res.StatusCode >= 300 {
+			handleError(w, GenericError{r.URL.Path}, "Failed to list merge requests", res.StatusCode)
+			return
+		}
 
-	if res.StatusCode >= 300 {
-		handleError(w, GenericError{r.URL.Path}, "Failed to list merge requests", res.StatusCode)
-		return
+		mergeRequests = append(mergeRequests, mrs...)
+		nextPage = res.NextPage
 	}
 
 	if len(mergeRequests) == 0 {
@@ -58,7 +65,7 @@ func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		MergeRequests:   mergeRequests,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		handleError(w, err, "could not encode response", http.StatusInternalServerError)
 	}
