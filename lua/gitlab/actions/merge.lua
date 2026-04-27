@@ -46,7 +46,7 @@ M.merge = function(opts)
 end
 
 ---@param merge_body MergeOpts
----@param squash_message string?
+---@param squash_message? string
 M.confirm_merge = function(merge_body, squash_message)
   if squash_message ~= nil then
     merge_body.squash_message = squash_message

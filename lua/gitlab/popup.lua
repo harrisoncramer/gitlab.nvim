@@ -5,9 +5,9 @@ local M = {}
 ---Get the popup view_opts
 ---@param title string The string to appear on top of the popup
 ---@param user_settings table|nil User-defined popup settings
----@param width number? Override default width
----@param height number? Override default height
----@param zindex number? Override default zindex
+---@param width? number Override default width
+---@param height? number Override default height
+---@param zindex? number Override default zindex
 ---@return table
 M.create_popup_state = function(title, user_settings, width, height, zindex)
   local settings = u.merge(require("gitlab.state").settings.popup, user_settings or {})

@@ -663,7 +663,7 @@ M.get_web_url = function()
   M.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
 end
 
----@param url string?
+---@param url? string
 M.open_in_browser = function(url)
   if vim.fn.has("mac") == 1 then
     vim.fn.jobstart({ "open", url })

@@ -11,7 +11,7 @@ local M = {}
 
 ---Create nodes for NuiTree from discussions
 ---@param items Discussion[]
----@param unlinked boolean? False or nil means that discussions are linked to code lines
+---@param unlinked? boolean False or nil means that discussions are linked to code lines
 ---@return NuiTree.Node[]
 M.add_discussions_to_table = function(items, unlinked)
   local t = {}
@@ -102,7 +102,7 @@ end
 ---Create path node
 ---@param relative_path string
 ---@param full_path string
----@param child_nodes NuiTree.Node[]?
+---@param child_nodes? NuiTree.Node[]
 ---@return NuiTree.Node
 local function create_path_node(relative_path, full_path, child_nodes)
   return NuiTree.Node({
@@ -154,7 +154,7 @@ end
 ---Create file name node
 ---@param file_name string
 ---@param full_file_path string
----@param child_nodes NuiTree.Node[]?
+---@param child_nodes? NuiTree.Node[]
 ---@return NuiTree.Node
 local function create_file_name_node(file_name, full_file_path, child_nodes)
   local icon, icon_hl = u.get_icon(file_name)
@@ -262,7 +262,7 @@ end
 
 ---Build note node body
 ---@param note Note|DraftNote
----@param resolve_info table?
+---@param resolve_info? table
 ---@return string
 ---@return NuiTree.Node[]
 local function build_note_body(note, resolve_info)
@@ -297,7 +297,7 @@ end
 
 ---Build note node
 ---@param note Note|DraftNote
----@param resolve_info table?
+---@param resolve_info? table
 ---@return NuiTree.Node
 ---@return string
 ---@return NuiTree.Node[]

@@ -89,7 +89,7 @@ end
 ---@param namespace number namespace for diagnostics
 ---@param bufnr number the bufnr for placing the diagnostics
 ---@param diagnostics table see :h vim.diagnostic.set
----@param opts table? see :h vim.diagnostic.set
+---@param opts? table see :h vim.diagnostic.set
 local set_diagnostics = function(namespace, bufnr, diagnostics, opts)
   vim.diagnostic.set(namespace, bufnr, diagnostics, opts)
   require("gitlab.indicators.signs").set_signs(diagnostics, bufnr)

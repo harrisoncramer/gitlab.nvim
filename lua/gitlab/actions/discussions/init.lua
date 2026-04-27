@@ -104,7 +104,7 @@ end
 
 ---Opens the discussion tree, sets the keybindings. It also
 ---creates the tree for notes (which are not linked to specific lines of code)
----@param callback function?
+---@param callback? function
 ---@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed).
 M.open = function(callback, view_type)
   view_type = view_type and view_type or state.settings.discussion_tree.default_view

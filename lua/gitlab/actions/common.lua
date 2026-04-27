@@ -127,7 +127,7 @@ M.print_node = function(tree)
 end
 
 ---Check if type of node is note or note body
----@param node NuiTree.Node?
+---@param node? NuiTree.Node
 ---@return boolean
 M.is_node_note = function(node)
   if node and (node.type == "note_body" or node.type == "note") then
@@ -139,7 +139,7 @@ end
 
 ---Get root node
 ---@param tree NuiTree
----@param node NuiTree.Node?
+---@param node? NuiTree.Node
 ---@return NuiTree.Node?
 M.get_root_node = function(tree, node)
   if not node then
@@ -155,7 +155,7 @@ end
 
 ---Get note node
 ---@param tree NuiTree
----@param node NuiTree.Node?
+---@param node? NuiTree.Node
 ---@return NuiTree.Node?
 M.get_note_node = function(tree, node)
   if not node then
