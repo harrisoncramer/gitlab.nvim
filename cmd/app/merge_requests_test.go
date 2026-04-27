@@ -56,13 +56,13 @@ func TestMergeRequestHandler(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)
 		svc := middleware(
-			mergeRequestListerService{testProjectData, fakeMergeRequestLister{testBase: testBase{status: http.StatusSeeOther}}},
+			mergeRequestListerService{testProjectData, fakeMergeRequestLister{testBase: testBase{errFromGitlab: true}}},
 			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[gitlab.ListProjectMergeRequestsOptions]}),
 			withMethodCheck(http.MethodPost),
 		)
 		data, status := getFailData(t, svc, request)
-		checkNon200(t, data, "Failed to list merge requests", "/merge_requests")
-		assert(t, status, http.StatusSeeOther)
+		checkErrorFromGitlab(t, data, "Failed to list merge requests")
+		assert(t, status, http.StatusInternalServerError)
 	})
 	t.Run("Should handle not having any merge requests with 404", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/merge_requests", testListMergeRequestsRequest)

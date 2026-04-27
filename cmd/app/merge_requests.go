@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
@@ -35,23 +36,18 @@ func (a mergeRequestListerService) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		payload.Scope = gitlab.Ptr("all")
 	}
 
-	payload.PerPage = 100
-	var mergeRequests []*gitlab.BasicMergeRequest
-	for nextPage := int64(1); nextPage != 0; {
-		payload.Page = nextPage
-		mrs, res, err := a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, payload)
-		if err != nil {
-			handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
-			return
-		}
+	payload.ListOptions = gitlab.ListOptions{
+		PerPage: 100,
+	}
 
-		if res.StatusCode >= 300 {
-			handleError(w, GenericError{r.URL.Path}, "Failed to list merge requests", res.StatusCode)
-			return
-		}
+	it, hasErr := gitlab.Scan(func(p gitlab.PaginationOptionFunc) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
+		return a.client.ListProjectMergeRequests(a.projectInfo.ProjectId, payload, p)
+	})
+	mergeRequests := slices.Collect(it)
 
-		mergeRequests = append(mergeRequests, mrs...)
-		nextPage = res.NextPage
+	if err := hasErr(); err != nil {
+		handleError(w, err, "Failed to list merge requests", http.StatusInternalServerError)
+		return
 	}
 
 	if len(mergeRequests) == 0 {
