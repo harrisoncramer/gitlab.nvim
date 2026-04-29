@@ -359,7 +359,7 @@ func setupTempGitRepo(t *testing.T, mrIID string) string {
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Chdir(origDir) })
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
 	cmds := [][]string{
 		{"git", "init"},

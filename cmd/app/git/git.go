@@ -70,7 +70,7 @@ func NewGitData(remote string, gitlabUrl string, g GitManager) (GitData, error) 
 	// remove part of the hostname from the parsed namespace
 	url_re := regexp.MustCompile(`[^\/]\/([^\/].*)$`)
 	url_matches := url_re.FindStringSubmatch(gitlabUrl)
-	var namespace string = matches[1]
+	namespace := matches[1]
 	if len(url_matches) == 2 {
 		namespace = strings.TrimLeft(strings.TrimPrefix(namespace, url_matches[1]), "/")
 	}

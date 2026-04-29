@@ -117,6 +117,9 @@ M.place_diagnostics = function(bufnr)
   if not state.settings.discussion_signs.enabled then
     return
   end
+  if bufnr == nil or bufnr == 0 then
+    return
+  end
   local view = diffview_lib.get_current_view()
   if view == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)

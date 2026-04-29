@@ -111,7 +111,7 @@ func TestListDiscussions(t *testing.T) {
 			withMethodCheck(http.MethodPost),
 		)
 		data := getDiscussionsList(t, svc, request)
-		assert(t, data.SuccessResponse.Message, "Discussions retrieved")
+		assert(t, data.Message, "Discussions retrieved")
 		assert(t, len(data.Discussions), 2)
 		assert(t, data.Discussions[0].Notes[0].Author.Username, "hcramer4")
 		assert(t, data.Discussions[1].Notes[0].Author.Username, "hcramer2")

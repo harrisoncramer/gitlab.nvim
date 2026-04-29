@@ -104,13 +104,12 @@ func (a emojiService) deleteEmojiFromNote(w http.ResponseWriter, r *http.Request
 
 /* postEmojiOnNote adds an emojis to a note based on the note's ID */
 func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
+	defer func() { _ = r.Body.Close() }()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		handleError(w, err, "Could not read request body", http.StatusBadRequest)
 		return
 	}
-
-	defer r.Body.Close()
 
 	var emojiPost CreateNoteEmojiPost
 	err = json.Unmarshal(body, &emojiPost)

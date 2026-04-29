@@ -179,9 +179,9 @@ func formatValidationErrors(errs validator.ValidationErrors) error {
 		}
 		switch e.Tag() {
 		case "required":
-			s.WriteString(fmt.Sprintf("%s is required", e.Field()))
+			fmt.Fprintf(&s, "%s is required", e.Field())
 		default:
-			s.WriteString(fmt.Sprintf("The field '%s' failed on validation on the '%s' tag", e.Field(), e.Tag()))
+			fmt.Fprintf(&s, "The field '%s' failed on validation on the '%s' tag", e.Field(), e.Tag())
 		}
 	}
 
