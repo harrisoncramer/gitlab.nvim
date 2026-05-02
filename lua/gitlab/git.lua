@@ -104,12 +104,16 @@ M.get_ahead_behind = function(current_branch, remote_branch)
   return tonumber(ahead), tonumber(behind)
 end
 
----Return the name of the current branch or nil if it can't be retrieved
+---Return the name of the current branch, or nil (detached HEAD or git failure).
 ---@return string|nil
 M.get_current_branch = function()
   local current_branch, err = run_system({ "git", "branch", "--show-current" })
-  if err or current_branch == "" then
+  if err then
     require("gitlab.utils").notify("Could not get current branch: " .. err, vim.log.levels.ERROR)
+    return nil
+  end
+  if current_branch == "" then
+    -- detached HEAD: `git branch --show-current` returns empty + exit 0
     return nil
   end
   return current_branch
