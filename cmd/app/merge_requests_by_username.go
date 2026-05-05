@@ -125,7 +125,7 @@ func (a mergeRequestListerByUsernameService) getMrs(payload *gitlab.ListProjectM
 		return []*gitlab.BasicMergeRequest{}, GenericError{endpoint: "/merge_requests_by_username"}
 	}
 
-	defer res.Body.Close()
+	_ = res.Body.Close()
 
 	return mrs, err
 }

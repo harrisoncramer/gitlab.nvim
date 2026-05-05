@@ -133,6 +133,14 @@ func (f FakeGitManager) GetLatestCommitOnRemote(remote string, branchName string
 	return "", nil
 }
 
+func (f FakeGitManager) GetMRHeadCommit(mrIID int64) (string, error) {
+	return "", nil
+}
+
+func (f FakeGitManager) FetchMRHead(remote string, mrIID int64) error {
+	return nil
+}
+
 func (f FakeGitManager) GetProjectUrlFromNativeGitCmd(string) (url string, err error) {
 	return f.RemoteUrl, nil
 }

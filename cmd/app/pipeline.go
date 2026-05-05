@@ -84,7 +84,10 @@ func (a pipelineService) GetPipelineAndJobs(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 
 	commit, err := a.gitService.GetLatestCommitOnRemote(pluginOptions.ConnectionSettings.Remote, a.gitInfo.BranchName)
-
+	if err != nil && pluginOptions.ChosenMrIID != 0 {
+		// Fall back to the MR head ref for fork MRs where the branch doesn't exist on origin
+		commit, err = a.gitService.GetMRHeadCommit(pluginOptions.ChosenMrIID)
+	}
 	if err != nil {
 		handleError(w, err, "Error getting commit on remote branch", http.StatusInternalServerError)
 		return

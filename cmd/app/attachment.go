@@ -36,15 +36,15 @@ func (ar attachmentReader) ReadFile(path string) (io.Reader, error) {
 	}
 
 	data, err := io.ReadAll(file)
+	closeErr := file.Close()
 	if err != nil {
 		return nil, err
 	}
+	if closeErr != nil {
+		return nil, closeErr
+	}
 
-	defer file.Close()
-
-	reader := bytes.NewReader(data)
-
-	return reader, nil
+	return bytes.NewReader(data), nil
 }
 
 type FileUploader interface {

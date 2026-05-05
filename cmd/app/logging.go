@@ -53,7 +53,7 @@ func (l LoggingServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func logRequest(prefix string, r *http.Request) {
 	file := openLogFile()
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	token := r.Header.Get("Private-Token")
 	r.Header.Set("Private-Token", "REDACTED")
 	res, err := httputil.DumpRequest(r, true)
@@ -67,7 +67,7 @@ func logRequest(prefix string, r *http.Request) {
 
 func logResponse(prefix string, r *http.Response) {
 	file := openLogFile()
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	res, err := httputil.DumpResponse(r, true)
 	if err != nil {

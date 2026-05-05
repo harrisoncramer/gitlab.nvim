@@ -12,6 +12,8 @@ type GitManager interface {
 	GetProjectUrlFromNativeGitCmd(remote string) (url string, err error)
 	GetCurrentBranchNameFromNativeGitCmd() (string, error)
 	GetLatestCommitOnRemote(remote string, branchName string) (string, error)
+	GetMRHeadCommit(mrIID int64) (string, error)
+	FetchMRHead(remote string, mrIID int64) error
 }
 
 type GitData struct {
@@ -68,7 +70,7 @@ func NewGitData(remote string, gitlabUrl string, g GitManager) (GitData, error) 
 	// remove part of the hostname from the parsed namespace
 	url_re := regexp.MustCompile(`[^\/]\/([^\/].*)$`)
 	url_matches := url_re.FindStringSubmatch(gitlabUrl)
-	var namespace string = matches[1]
+	namespace := matches[1]
 	if len(url_matches) == 2 {
 		namespace = strings.TrimLeft(strings.TrimPrefix(namespace, url_matches[1]), "/")
 	}
@@ -123,6 +125,39 @@ func (g Git) RefreshProjectInfo(remote string) error {
 	}
 
 	return nil
+}
+
+/* Fetches the head ref of a merge request so that fork MR commits are available locally */
+func (g Git) FetchMRHead(remote string, mrIID int64) error {
+	ref := fmt.Sprintf("refs/merge-requests/%d/head", mrIID)
+	cmd := exec.Command("git", "fetch", remote, fmt.Sprintf("%s:%s", ref, ref))
+	_, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to fetch MR head ref: %v", err)
+	}
+	return nil
+}
+
+/*
+FetchMrHead fetches the MR head ref when a specific MR is chosen (mrIID != 0).
+Returns an error only if the fetch was attempted and failed; returns nil if skipped or succeeded.
+*/
+func FetchMrHead(g GitManager, remote string, mrIID int64) error {
+	if mrIID == 0 {
+		return nil
+	}
+	return g.FetchMRHead(remote, mrIID)
+}
+
+/* Resolves the commit SHA from a locally stored MR head ref */
+func (g Git) GetMRHeadCommit(mrIID int64) (string, error) {
+	ref := fmt.Sprintf("refs/merge-requests/%d/head", mrIID)
+	cmd := exec.Command("git", "rev-parse", ref)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve MR head ref: %v", err)
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 func (g Git) GetLatestCommitOnRemote(remote string, branchName string) (string, error) {

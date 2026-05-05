@@ -91,8 +91,9 @@ end
 
 ---Parse git diff hunks.
 ---@param base_sha string Git base SHA of merge request.
+---@param head_sha string Git head SHA of merge request.
 ---@return HunksAndDiff
-local parse_hunks_and_diff = function(base_sha)
+local parse_hunks_and_diff = function(base_sha, head_sha)
   local hunks = {}
   local all_diff_output = {}
 
@@ -104,6 +105,7 @@ local parse_hunks_and_diff = function(base_sha)
     "--no-color",
     "--no-ext-diff",
     base_sha,
+    head_sha,
     "--",
     reviewer.get_current_file_oldpath(),
     reviewer.get_current_file_path(),
@@ -234,7 +236,7 @@ end
 ---@param new_sha_focused boolean
 ---@return string|nil
 function M.get_modification_type(old_line, new_line, new_sha_focused)
-  local hunk_and_diff_data = parse_hunks_and_diff(state.INFO.diff_refs.base_sha)
+  local hunk_and_diff_data = parse_hunks_and_diff(state.INFO.diff_refs.base_sha, state.INFO.diff_refs.head_sha)
   if hunk_and_diff_data.hunks == nil then
     return
   end
