@@ -62,13 +62,8 @@ M.start = function(callback)
   state.chosen_mr_iid = 0 -- Do not let this interfere with subsequent reviewer.open() calls
 
   local settings = vim.json.encode(go_server_settings)
-  if vim.fn.has("win32") then
-    settings = settings:gsub('"', '\\"')
-  end
 
-  local command = string.format('"%s" "%s"', state.settings.server.binary, settings)
-
-  local job_id = vim.fn.jobstart(command, {
+  local job_id = vim.fn.jobstart({ state.settings.server.binary, settings }, {
     on_stdout = function(_, data)
       -- if port was not provided then we need to parse it from output of server
       if parsed_port == nil then
