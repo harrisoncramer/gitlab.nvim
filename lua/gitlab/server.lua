@@ -1,7 +1,6 @@
 -- This module contains the logic responsible for building and starting
 -- the Golang server. The Go server is responsible for making API calls
 -- to Gitlab and returning the data
-local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
@@ -63,52 +62,48 @@ M.start = function(callback)
 
   local settings = vim.json.encode(go_server_settings)
 
-  local job_id = vim.fn.jobstart({ state.settings.server.binary, settings }, {
-    on_stdout = function(_, data)
-      -- if port was not provided then we need to parse it from output of server
-      if parsed_port == nil then
-        for _, line in ipairs(data) do
-          port = line:match("Server started on port:%s+(%d+)")
-          if port ~= nil then
-            parsed_port = port
-            state.settings.server.port = port
-            break
-          end
+  local ok, err = pcall(vim.system, { state.settings.server.binary, settings }, {
+    stdout = function(_, data)
+      if data == nil or parsed_port ~= nil then
+        return
+      end
+      for line in data:gmatch("[^\r\n]+") do
+        local matched = line:match("Server started on port:%s+(%d+)")
+        if matched ~= nil then
+          parsed_port = matched
+          vim.schedule(function()
+            state.settings.server.port = matched
+            state.go_server_running = true
+            if not callback_called then
+              callback_called = true
+              callback()
+            end
+          end)
+          break
         end
       end
-
-      -- This assumes that first output of server will be parsable and port will be correctly set.
-      -- Make sure that this actually check if port was correctly parsed based on server output
-      -- because server outputs port only if it started successfully.
-      if parsed_port ~= nil and not callback_called then
-        state.go_server_running = true
-        callback()
-        callback_called = true
-      end
     end,
-    on_stderr = function(_, errors)
-      local err_msg = List.new(errors):reduce(function(agg, err)
-        if err ~= "" and err ~= nil then
-          agg = agg .. err .. "\n"
-        end
-        return agg
-      end, "")
-
-      if err_msg ~= "" then
-        u.notify(err_msg, vim.log.levels.ERROR)
+    stderr = function(_, data)
+      if data == nil or data == "" then
+        return
       end
+      vim.schedule(function()
+        u.notify(data, vim.log.levels.ERROR)
+      end)
     end,
-    on_exit = function(job_id, exit_code)
-      if exit_code ~= 0 then
+  }, function(out)
+    if out.code ~= 0 then
+      vim.schedule(function()
         u.notify(
-          "Golang gitlab server exited: job_id: " .. job_id .. ", exit_code: " .. exit_code,
+          "Golang gitlab server exited: code: " .. out.code .. ", signal: " .. (out.signal or 0),
           vim.log.levels.ERROR
         )
-      end
-    end,
-  })
-  if job_id <= 0 then
-    u.notify("Could not start gitlab.nvim binary", vim.log.levels.ERROR)
+      end)
+    end
+  end)
+
+  if not ok then
+    u.notify("Could not start gitlab.nvim binary: " .. tostring(err), vim.log.levels.ERROR)
   end
 end
 
