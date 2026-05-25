@@ -62,6 +62,8 @@ M.start = function(callback)
 
   local settings = vim.json.encode(go_server_settings)
 
+  local stderr_buf = ""
+
   local ok, err = pcall(vim.system, { state.settings.server.binary, settings }, {
     stdout = function(_, data)
       if data == nil or parsed_port ~= nil then
@@ -87,17 +89,16 @@ M.start = function(callback)
       if data == nil or data == "" then
         return
       end
-      vim.schedule(function()
-        u.notify(data, vim.log.levels.ERROR)
-      end)
+      stderr_buf = stderr_buf .. data
     end,
   }, function(out)
     if out.code ~= 0 then
       vim.schedule(function()
-        u.notify(
-          "Golang gitlab server exited: code: " .. out.code .. ", signal: " .. (out.signal or 0),
-          vim.log.levels.ERROR
-        )
+        local msg = "Golang gitlab server exited: code: " .. out.code .. ", signal: " .. (out.signal or 0)
+        if stderr_buf ~= "" then
+          msg = msg .. ", msg: " .. stderr_buf
+        end
+        u.notify(msg, vim.log.levels.ERROR)
       end)
     end
   end)
