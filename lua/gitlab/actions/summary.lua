@@ -292,6 +292,19 @@ M.get_outer_layout_config = function()
   }
 end
 
+---Return the highlight definition map. Use a light background color (the foreground color of Normal
+---highlight) when vim.o.background and the `color` are dark.
+---@param color string
+---@return vim.api.keyset.highlight
+local function label_hl(color)
+  local r, g, b = color:match("%#(%x%x)(%x%x)(%x%x)")
+  local luminance = (0.299 * tonumber(r, 16) + 0.587 * tonumber(g, 16) + 0.114 * tonumber(b, 16)) / 255
+  local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+  local normal_fg = normal.fg and string.format("#%06x", normal.fg) or "#ffffff"
+  local bg = (vim.o.background == "dark" and luminance < 0.5) and normal_fg or nil
+  return { fg = color, bg = bg }
+end
+
 M.color_details = function(bufnr)
   local details_namespace = vim.api.nvim_create_namespace("Details")
   for i, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
@@ -299,8 +312,7 @@ M.color_details = function(bufnr)
       for j, label in ipairs(state.LABELS) do
         local start_idx, end_idx = line:find(label.Name, 1, true)
         if start_idx ~= nil and end_idx ~= nil then
-          vim.cmd("highlight " .. "label" .. j .. " guifg=white")
-          vim.api.nvim_set_hl(0, ("label" .. j), { fg = label.Color })
+          vim.api.nvim_set_hl(0, ("label" .. j), label_hl(label.Color))
           vim.hl.range(bufnr, details_namespace, ("label" .. j), { i - 1, start_idx - 1 }, { i - 1, end_idx })
         end
       end
