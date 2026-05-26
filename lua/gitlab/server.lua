@@ -96,7 +96,7 @@ M.start = function(callback)
       vim.schedule(function()
         local msg = "Golang gitlab server exited: code: " .. out.code .. ", signal: " .. (out.signal or 0)
         if stderr_buf ~= "" then
-          msg = msg .. ", msg: " .. stderr_buf
+          msg = msg .. ", msg: " .. vim.trim(stderr_buf)
         end
         u.notify(msg, vim.log.levels.ERROR)
       end)
