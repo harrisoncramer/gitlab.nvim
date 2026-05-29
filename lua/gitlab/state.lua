@@ -167,6 +167,7 @@ M.settings = {
     },
     spinner_chars = { "-", "\\", "|", "/" },
     auto_open = true,
+    focus_on_open = true,
     default_view = "discussions",
     blacklist = {},
     sort_by = "latest_reply",

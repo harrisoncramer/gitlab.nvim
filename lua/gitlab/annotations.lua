@@ -300,6 +300,7 @@
 ---@class DiscussionSettings: table
 ---@field expanders? ExpanderOpts -- Customize the expander icons in the discussion tree
 ---@field auto_open? boolean -- Automatically open when the reviewer is opened
+---@field focus_on_open? boolean -- Automatically focus the discussion tree when it is opened
 ---@field default_view? string - Show "discussions" or "notes" by default
 ---@field blacklist? table<string> -- List of usernames to remove from tree (bots, CI, etc)
 ---@field keep_current_open? boolean -- If true, current discussion stays open even if it should otherwise be closed when toggling

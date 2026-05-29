@@ -89,7 +89,7 @@ M.initialize_discussions = function()
     M.refresh_diagnostics()
   end)
   reviewer.set_callback_for_buf_read(function(args)
-    vim.api.nvim_buf_set_option(args.buf, "modifiable", false)
+    vim.api.nvim_set_option_value("modifiable", false, { buf = args.buf })
     reviewer.set_keymaps(args.buf)
     reviewer.set_reviewer_autocommands(args.buf)
   end)
@@ -112,17 +112,23 @@ end
 ---@param callback? function
 ---@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed).
 M.open = function(callback, view_type)
-  view_type = view_type and view_type or state.settings.discussion_tree.default_view
+  local original_window = vim.api.nvim_get_current_win() -- The window from which ther user called M.open
+
+  M.current_view_type = view_type and view_type or state.settings.discussion_tree.default_view
+  state.DISCUSSION_DATA = u.ensure_table(state.DISCUSSION_DATA)
   state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
   state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
   state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
 
-  -- Make buffers, get and set buffer numbers, set filetypes
+  -- Make discussion split window and buffers, store buffer numbers
   local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
   M.split = split
   M.linked_bufnr = linked_bufnr
   M.unlinked_bufnr = unlinked_bufnr
+  M.split_visible = true
+  split:mount()
 
+  -- Set window and buffer local options to discussion tree split after mounting the split
   for opt, val in pairs(state.settings.discussion_tree.winopts) do
     vim.api.nvim_set_option_value(opt, val, { win = M.split.winid })
   end
@@ -130,28 +136,43 @@ M.open = function(callback, view_type)
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
 
-  M.split = split
-  M.split_visible = true
-  split:mount()
+  -- Set autocmds to clean up state when discussions buffers are deleted manually
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    buffer = M.linked_bufnr,
+    callback = function()
+      M.linked_bufnr = nil
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    buffer = M.unlinked_bufnr,
+    callback = function()
+      M.unlinked_bufnr = nil
+    end,
+  })
 
-  -- Initialize winbar module with data from buffers
+  -- Set autocmd to clean up state when discussions split is closed manually
+  vim.api.nvim_create_autocmd("WinClosed", {
+    pattern = tostring(M.split.winid),
+    callback = M.close,
+  })
+
+  -- Initialize winbar
   winbar.start_timer()
-  winbar.set_buffers(M.linked_bufnr, M.unlinked_bufnr)
-  winbar.switch_view_type(view_type)
 
-  local current_window = vim.api.nvim_get_current_win() -- Save user's current window in case they switched while content was loading
-  vim.api.nvim_set_current_win(M.split.winid)
-
-  common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
-  M.rebuild_discussion_tree()
+  -- Rebuild trees in order to set keymaps and make buffers protected
+  M.switch_view_type(M.current_view_type)
   M.rebuild_unlinked_discussion_tree()
+  M.rebuild_discussion_tree()
 
-  -- Set default buffer
-  local default_buffer = winbar.bufnr_map[view_type]
-  vim.api.nvim_set_current_buf(default_buffer)
-  common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
+  -- Focus the correct window
+  local win_to_enter = not state.settings.discussion_tree.focus_on_open and original_window or M.split.winid
+  if vim.api.nvim_win_is_valid(win_to_enter) then
+    vim.api.nvim_set_current_win(win_to_enter)
+  end
 
-  vim.api.nvim_set_current_win(current_window)
+  -- Relooad data
+  draft_notes.rebuild_view(false, true)
+
   if type(callback) == "function" then
     callback()
   end
@@ -195,7 +216,7 @@ M.move_to_discussion_tree = function()
       end
       M.discussion_tree:render()
       vim.api.nvim_set_current_win(M.split.winid)
-      winbar.switch_view_type("discussions")
+      M.switch_view_type("discussions")
       vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
     end
 
@@ -441,6 +462,7 @@ M.rebuild_discussion_tree = function()
   end
 
   local current_node = discussions_tree.get_node_at_cursor(M.discussion_tree, M.last_node_at_cursor)
+  local current_cursor_column = vim.api.nvim_win_get_cursor(0)[2]
 
   local expanded_node_ids = M.gather_expanded_node_ids(M.discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
@@ -463,7 +485,7 @@ M.rebuild_discussion_tree = function()
     tree_utils.open_node_by_id(discussion_tree, id)
   end
   discussion_tree:render()
-  discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_node)
+  discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_cursor_column, current_node, nil)
 
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -479,6 +501,7 @@ M.rebuild_unlinked_discussion_tree = function()
   end
 
   local current_node = discussions_tree.get_node_at_cursor(M.unlinked_discussion_tree, M.last_node_at_cursor)
+  local current_cursor_column = vim.api.nvim_win_get_cursor(0)[2]
 
   local expanded_node_ids = M.gather_expanded_node_ids(M.unlinked_discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
@@ -501,7 +524,7 @@ M.rebuild_unlinked_discussion_tree = function()
     tree_utils.open_node_by_id(unlinked_discussion_tree, id)
   end
   unlinked_discussion_tree:render()
-  discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_node)
+  discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_cursor_column, current_node)
 
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
@@ -681,7 +704,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.toggle_node then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_node, function()
-      tree_utils.toggle_node(tree)
+      tree_utils.toggle_node(M.split.winid, tree)
     end, { buffer = bufnr, desc = "Toggle node", nowait = keymaps.discussion_tree.toggle_node_nowait })
   end
 
@@ -737,7 +760,7 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.switch_view then
     vim.keymap.set("n", keymaps.discussion_tree.switch_view, function()
-      winbar.switch_view_type()
+      M.switch_view_type()
     end, {
       buffer = bufnr,
       desc = "Change view type between discussions and notes",
@@ -802,6 +825,21 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   end
 
   emoji.init_popup(tree, bufnr)
+end
+
+---Toggles the current view type (or sets it to `override`) and then updates the view.
+---@param override? "discussions"|"notes" The view type to select.
+M.switch_view_type = function(override)
+  vim.api.nvim_set_option_value("winfixbuf", false, { win = M.split.winid })
+  if override == "discussions" or M.current_view_type == "notes" then
+    M.current_view_type = "discussions"
+    vim.api.nvim_set_current_buf(M.linked_bufnr)
+  elseif override == "notes" or M.current_view_type == "discussions" then
+    M.current_view_type = "notes"
+    vim.api.nvim_set_current_buf(M.unlinked_bufnr)
+  end
+  vim.api.nvim_set_option_value("winfixbuf", true, { win = M.split.winid })
+  winbar.update_winbar()
 end
 
 ---Toggle comments tree type between "simple" and "by_file_name"

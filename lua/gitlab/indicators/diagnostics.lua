@@ -113,6 +113,9 @@ end
 ---Filter and place the diagnostics for the given buffer.
 ---@param bufnr number The number of the buffer for placing diagnostics.
 M.place_diagnostics = function(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
   if not state.settings.discussion_signs.enabled then
     return
   end

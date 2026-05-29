@@ -256,10 +256,6 @@ M.create_node_list_by_file_name = function(node_list)
   return discussion_by_file_name
 end
 
-local attach_uuid = function(str)
-  return { text = str, id = u.uuid() }
-end
-
 ---Build note node body
 ---@param note Note|DraftNote
 ---@param resolve_info? table
@@ -267,18 +263,19 @@ end
 ---@return NuiTree.Node[]
 local function build_note_body(note, resolve_info)
   local text_nodes = {}
-  for bodyLine in u.split_by_new_lines(note.body or note.note) do
-    local line = attach_uuid(bodyLine)
+  local i = 0
+  for body_line in u.split_by_new_lines(note.body or note.note) do
     table.insert(
       text_nodes,
       NuiTree.Node({
         new_line = (type(note.position) == "table" and note.position.new_line),
         old_line = (type(note.position) == "table" and note.position.old_line),
-        text = line.text,
-        id = line.id,
+        text = body_line,
+        id = string.format("%d:%d", note.id, i),
         type = "note_body",
       }, {})
     )
+    i = i + 1
   end
 
   local symbol = ""
@@ -377,8 +374,8 @@ end
 ---@field keep_current_open boolean Whether to keep the current discussion open even if it should otherwise be closed.
 
 ---This function expands/collapses all nodes and their children according to the opts.
----@param tree NuiTree
 ---@param winid integer
+---@param tree NuiTree
 ---@param unlinked boolean
 ---@param opts ToggleNodesOptions
 M.toggle_nodes = function(winid, tree, unlinked, opts)
@@ -387,6 +384,7 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
     return
   end
   local root_node = common.get_root_node(tree, current_node)
+  local current_cursor_column = vim.api.nvim_win_get_cursor(winid)[2]
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
@@ -426,7 +424,7 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
     end
   end
   tree:render()
-  M.restore_cursor_position(winid, tree, current_node, root_node)
+  M.restore_cursor_position(winid, tree, current_cursor_column, current_node, root_node)
 end
 
 -- Get current node for restoring cursor position
@@ -446,9 +444,10 @@ end
 ---Restore cursor position to the original node if possible
 ---@param winid integer Window number of the discussions split
 ---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
+---@param cursor_column integer The original column of the cursor
 ---@param original_node NuiTree.Node|nil The last node with the cursor
 ---@param root_node NuiTree.Node|nil The root node of the last node with the cursor
-M.restore_cursor_position = function(winid, tree, original_node, root_node)
+M.restore_cursor_position = function(winid, tree, cursor_column, original_node, root_node)
   if original_node == nil or tree == nil then
     return
   end
@@ -460,10 +459,9 @@ M.restore_cursor_position = function(winid, tree, original_node, root_node)
       _, line_number = tree:get_node("-" .. tostring(root_node.id))
     end
   end
-  if line_number ~= nil then
-    if vim.api.nvim_win_is_valid(winid) then
-      vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
-    end
+  if line_number ~= nil and winid and vim.api.nvim_win_is_valid(winid) then
+    local last_line = vim.fn.line("$")
+    vim.api.nvim_win_set_cursor(winid, { math.min(line_number, last_line), cursor_column or 0 })
   end
 end
 
@@ -518,14 +516,14 @@ M.open_node_by_id = function(tree, id)
 end
 
 -- This function (settings.keymaps.discussion_tree.toggle_node) expands/collapses the current node and its children
-M.toggle_node = function(tree)
+---@param winid integer The id if the tree split.
+---@param tree NuiTree The current discussion tree.
+M.toggle_node = function(winid, tree)
   local node = tree:get_node()
-  if node == nil then
-    return
-  end
+  local current_cursor_column = vim.api.nvim_win_get_cursor(winid)[2]
 
   -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
-  if node.type == "note_body" then
+  if node ~= nil and node.type == "note_body" then
     node = tree:get_node(node:get_parent_id())
   end
   if node == nil then
@@ -533,9 +531,7 @@ M.toggle_node = function(tree)
   end
 
   local children = node:get_child_ids()
-  if node == nil then
-    return
-  end
+
   if node:is_expanded() then
     node:collapse()
     if common.is_node_note(node) then
@@ -553,6 +549,7 @@ M.toggle_node = function(tree)
   end
 
   tree:render()
+  M.restore_cursor_position(winid, tree, current_cursor_column, node, common.get_root_node(tree, node))
 end
 
 return M

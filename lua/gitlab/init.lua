@@ -30,8 +30,6 @@ local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
 local merge_requests_dep = state.dependencies.merge_requests
 local merge_requests_by_username_dep = state.dependencies.merge_requests_by_username
-local draft_notes_dep = state.dependencies.draft_notes
-local discussion_data = state.dependencies.discussion_data
 
 ---@param args Settings | {} | nil
 ---@return nil
@@ -101,8 +99,6 @@ return {
       async.sequence({
         info,
         user,
-        u.merge(draft_notes_dep, { refresh = true }),
-        u.merge(discussion_data, { refresh = true }),
       }, discussions.open)()
     end
   end,

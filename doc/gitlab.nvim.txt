@@ -264,6 +264,7 @@ you call this function with no values the defaults will be used:
         },
         spinner_chars = { "/", "|", "\\", "-" }, -- Characters for the refresh animation
         auto_open = true, -- Automatically open when the reviewer is opened
+        focus_on_open = true, -- Automatically focus the discussion tree when it is opened
         default_view = "discussions", -- Show "discussions" or "notes" by default
         blacklist = {}, -- List of usernames to remove from tree (bots, CI, etc)
         sort_by = "latest_reply", -- Sort discussion tree by the "latest_reply", or by "original_comment", see `:h gitlab.nvim.toggle_sort_method`

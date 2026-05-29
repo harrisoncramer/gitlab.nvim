@@ -2,20 +2,7 @@ local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 
-local M = {
-  bufnr_map = {
-    discussions = nil,
-    notes = nil,
-  },
-  current_view_type = state.settings.discussion_tree.default_view,
-}
-
-M.set_buffers = function(linked_bufnr, unlinked_bufnr)
-  M.bufnr_map = {
-    discussions = linked_bufnr,
-    notes = unlinked_bufnr,
-  }
-end
+local M = {}
 
 ---@param nodes Discussion[]|UnlinkedDiscussion[]|nil
 ---@return number, number, number
@@ -158,7 +145,7 @@ end
 
 ---@param t WinbarTable
 M.make_winbar = function(t)
-  local discussions_focused = M.current_view_type == "discussions"
+  local discussions_focused = require("gitlab.actions.discussions").current_view_type == "discussions"
   local discussion_text = add_drafts_and_resolvable(
     "Comments:",
     t.resolvable_discussions,
@@ -267,23 +254,6 @@ M.get_ahead_behind = function(ahead, behind)
   a = ((a == "?" or a == "0") and "%#Comment#" or "%#WarningMsg#") .. a
   b = ((b == "?" or b == "0") and "%#Comment#" or "%#WarningMsg#") .. b
   return a .. "↑ " .. b .. "↓"
-end
-
----Toggles the current view type (or sets it to `override`) and then updates the view.
----@param override "discussions"|"notes" Defines the view type to select.
-M.switch_view_type = function(override)
-  if override then
-    M.current_view_type = override
-  else
-    if M.current_view_type == "discussions" then
-      M.current_view_type = "notes"
-    elseif M.current_view_type == "notes" then
-      M.current_view_type = "discussions"
-    end
-  end
-
-  vim.api.nvim_set_current_buf(M.bufnr_map[M.current_view_type])
-  M.update_winbar()
 end
 
 ---Set up a timer to update the winbar periodically

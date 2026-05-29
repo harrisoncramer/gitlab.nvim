@@ -510,15 +510,6 @@ M.get_root_path = function()
   return vim.fn.fnamemodify(path, ":p:h:h:h:h")
 end
 
-local random = math.random
-M.uuid = function()
-  local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-  return string.gsub(template, "[xy]", function(c)
-    local v = (c == "x") and random(0, 0xf) or random(8, 0xb)
-    return string.format("%x", v)
-  end)
-end
-
 M.remove_last_chunk = function(sentence)
   local words = {}
   for word in sentence:gmatch("%S+") do
@@ -536,6 +527,9 @@ M.get_line_content = function(bufnr, start)
 end
 
 M.switch_can_edit_buf = function(buf, bool)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
   vim.api.nvim_set_option_value("modifiable", bool, { buf = buf })
   vim.api.nvim_set_option_value("readonly", not bool, { buf = buf })
 end
