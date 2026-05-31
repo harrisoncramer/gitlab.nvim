@@ -22,14 +22,12 @@ func StartServer(client *Client, projectInfo *ProjectInfo, GitInfo git.GitData) 
 		sigCh: make(chan os.Signal, 1),
 	}
 
-	fr := attachmentReader{}
 	r := CreateRouter(
 		client,
 		projectInfo,
 		&s,
 		func(a *data) error { a.projectInfo = projectInfo; return nil },
 		func(a *data) error { a.gitInfo = &GitInfo; return nil },
-		func(a *data) error { err := attachEmojis(a, fr); return err },
 	)
 	l := createListener()
 
@@ -69,7 +67,6 @@ file reader functionality
 type data struct {
 	projectInfo *ProjectInfo
 	gitInfo     *git.GitData
-	emojiMap    EmojiMap
 }
 
 type optFunc func(a *data) error
@@ -86,13 +83,7 @@ func CreateRouter(gitlabClient *Client, projectInfo *ProjectInfo, s *shutdownSer
 	for _, optFunc := range optFuncs {
 		err := optFunc(&d)
 		if err != nil {
-			if os.Getenv("DEBUG") != "" {
-				// TODO: We have some JSON files (emojis.json) we import relative to the binary in production and
-				// expect to break during debugging, do not throw when that occurs.
-				_, _ = fmt.Fprintf(os.Stdout, "Issue occured setting up router: %s\n", err)
-			} else {
-				panic(err)
-			}
+			panic(err)
 		}
 	}
 
