@@ -22,7 +22,6 @@
           modules = ./gomod2nix.toml;
           subPackages = [ "cmd" ];
           postInstall = ''
-            cp -r ${./cmd/config} $out/bin/config
             mv $out/bin/cmd $out/bin/gitlab.nvim
           '';
         };

@@ -174,11 +174,6 @@ M.build = function(override)
     return false
   end
 
-  local Path = require("plenary.path")
-  local src = Path:new(state.settings.root_path .. u.path_separator .. "cmd" .. u.path_separator .. "config")
-  local dest = Path:new(bin_folder .. u.path_separator .. "config")
-  src:copy({ destination = dest, recursive = true, override = true })
-
   u.notify("Installed successfully!", vim.log.levels.INFO)
   return true
 end

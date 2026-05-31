@@ -6,7 +6,6 @@
 local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
 local M = {
-  emoji_map = nil,
   ahead_behind = { nil, nil },
 }
 

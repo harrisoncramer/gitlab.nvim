@@ -72,13 +72,8 @@
 ---@class EmojiMap: table<string, Emoji>
 ---@class Emoji
 ---@field	unicode           string
----@field	unicodeAlternates string[]
 ---@field	name              string
 ---@field	shortname         string
----@field	category          string
----@field	aliases           string[]
----@field	aliasesASCII      string[]
----@field	keywords          string[]
 ---@field	moji              string
 
 ---@class WinbarTable
