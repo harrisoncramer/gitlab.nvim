@@ -45,6 +45,7 @@ local function setup(args)
   end
 
   state.merge_settings(args) -- Merges user settings with default settings
+  state.set_plugin_configuration() -- Sets auth_token and gitlab_url into the settings module
   server.build() -- Builds the Go binary if it doesn't exist
   state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
   require("gitlab.colors") -- Sets colors
