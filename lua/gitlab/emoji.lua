@@ -1,38 +1,46 @@
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
-local state = require("gitlab.state")
+
+-- Basic emoji aliases that are missing in Gitlab's list.
+local thumbsup = { name = "+1", shortname = ":+1:", moji = "👍", category = "People & Body" }
+local thumbsdown = { name = "-1", shortname = ":-1:", moji = "👎", category = "People & Body" }
 
 local M = {
-  ---@type EmojiMap|nil
-  emoji_map = {},
+  ---@type EmojiMap
+  emoji_map = { ["+1"] = thumbsup, ["-1"] = thumbsdown },
   ---@type Emoji[]
-  emoji_list = {},
+  emoji_list = { thumbsup, thumbsdown },
 }
 
+-- Fetch emojis from Gitlab and make them available in the plugin.
 M.init = function()
-  local root_path = state.settings.root_path
-  local emoji_path = root_path
-    .. state.settings.file_separator
-    .. "cmd"
-    .. state.settings.file_separator
-    .. "config"
-    .. state.settings.file_separator
-    .. "emojis.json"
-  local emojis = u.read_file(emoji_path)
-  if emojis == nil then
-    u.notify("Could not read emoji file at " .. emoji_path, vim.log.levels.WARN)
-  end
-
-  local data_ok, data = pcall(vim.json.decode, emojis)
-  if not data_ok then
-    u.notify("Could not parse emoji file at " .. emoji_path, vim.log.levels.WARN)
-  end
-
-  M.emoji_map = data
-  M.emoji_list = {}
-  for _, v in pairs(M.emoji_map) do
-    table.insert(M.emoji_list, v)
-  end
+  local settings = require("gitlab.state").settings
+  local version = type(settings.emojis.version) == "function" and settings.emojis.version(settings.gitlab_url)
+    or settings.emojis.version
+  local emojis_url = settings.gitlab_url .. "/-/emojis/" .. version .. "/emojis.json"
+  local command = { "curl", emojis_url }
+  vim.system(command, { text = true }, function(result)
+    vim.schedule(function()
+      if result.code ~= 0 then
+        require("gitlab.utils").notify(result.stderr, vim.log.levels.ERROR)
+      else
+        local data_ok, data = pcall(vim.json.decode, result.stdout)
+        if not data_ok then
+          local message = "Could not get emojis from "
+            .. emojis_url
+            .. (data ~= nil and string.format(". JSON.decode error: %s", data) or "")
+          u.notify(message, vim.log.levels.ERROR)
+          u.notify(result.stdout, vim.log.levels.DEBUG)
+          return
+        end
+        for _, v in ipairs(data or {}) do
+          local emoji = { name = v.d, shortname = string.format(":%s:", v.n), moji = v.e, category = v.c }
+          M.emoji_map[v.n] = emoji
+          table.insert(M.emoji_list, emoji)
+        end
+      end
+    end)
+  end)
 end
 
 -- Define the popup window options
@@ -80,7 +88,7 @@ M.init_popup = function(tree, bufnr)
       local note_node = common.get_note_node(tree, node)
       local root_node = common.get_root_node(tree, node)
       local note_id_str = tostring(note_node.is_root and root_node.root_note_id or note_node.id)
-      local emojis = state.DISCUSSION_DATA.emojis
+      local emojis = require("gitlab.state").DISCUSSION_DATA.emojis
 
       local note_emojis = emojis[note_id_str]
       if note_emojis == nil then
@@ -131,11 +139,12 @@ M.get_users_who_reacted_with_emoji = function(name, note_emojis)
 end
 
 M.pick_emoji = function(options, cb)
+  local settings = require("gitlab.state").settings
   vim.ui.select(options, {
     prompt = "Choose emoji",
     format_item = function(val)
-      if type(state.settings.emojis.formatter) == "function" then
-        return state.settings.emojis.formatter(val)
+      if type(settings.emojis.formatter) == "function" then
+        return settings.emojis.formatter(val)
       end
       return string.format("%s %s", val.moji, val.name)
     end,

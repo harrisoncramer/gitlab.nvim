@@ -297,13 +297,18 @@ you call this function with no values the defaults will be used:
       emojis = {
         -- Function for modifying how emojis are displayed in the picker. This does not affect the actual selected emoji.
         -- The function is passed an emoji object as a paramter, e.g.,
-        -- {"unicode": "1F44D","name": "thumbs up sign", "shortname": ":thumbsup:", "moji": "👍"}
+        -- {"name": "thumbs up", "shortname": ":thumbsup:", "moji": "👍", "category": "People & Body"}
         -- This is useful if your editor/terminal/font/tmux does not render some emojis properly,
-        -- e.g., you can remove skin tones and additionally show the shortname with
+        -- e.g., you can remove skin tones and additionally show the shortname and category with
         -- formatter = function(val)
-        --   return string.format("%s %s %s", val.moji:gsub("[\240][\159][\143][\187-\191]", ""), val.shortname, val.name)
+        --   return string.format("%s %s %s (%s)", val.moji:gsub("[\240][\159][\143][\187-\191]", ""), val.shortname, val.name, val.category)
         -- end
         formatter = nil,
+        -- The emoji version used by the Gitlab instance: https://{GITLAB_URL}/-/emojis/{VERSION}/emojis.json. Can be a function that receives the gitlab_url as an argument and returns the version string, e.g.:
+        -- version = function(gitlab_url)
+        --   return gitlab_url == "https://gitlab.com" and "4" or "3"
+        -- end
+        version = "4",
       },
       choose_merge_request = {
         open_reviewer = true, -- Open the reviewer window automatically after switching merge requests
@@ -594,6 +599,14 @@ You can add or remove emojis from a note or comment in the discussion tree.
 To see who has reacted with an emoji, hover over the emoji. A popup will
 appear with anyone who has responded with that emoji. You can only delete
 emojis that you have responded with.
+
+The emoji data are pulled from the Gitlab server. This makes sure the data is
+complete, as compared to storing a limited list of emojis in the plugin repo.
+However, this also means that your Gitlab instance can use a different emoji
+version than the default expected by this plugin. Use
+`settings.emojis.version` to adjust to the emojis version of your particular
+Gitlab instance. You need to find the right `{VERSION}` for
+https://{GITLAB_URL}/-/emojis/{VERSION}/emojis.json.
 
 
 UPLOADING FILES                                  *gitlab.nvim.uploading-files*

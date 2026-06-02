@@ -71,10 +71,10 @@
 
 ---@class EmojiMap: table<string, Emoji>
 ---@class Emoji
----@field	unicode           string
----@field	name              string
----@field	shortname         string
----@field	moji              string
+---@field name string
+---@field shortname string
+---@field moji string
+---@field category string
 
 ---@class WinbarTable
 ---@field view_type string
@@ -154,6 +154,7 @@
 ---@field keymaps? Keymaps -- Keymaps for the plugin
 ---@field popup? PopupSettings -- Settings for the popup windows
 ---@field discussion_tree? DiscussionSettings -- Settings for the popup windows
+---@field emojis? EmojisSettings -- Settings for emojis
 ---@field choose_merge_request? ChooseMergeRequestSettings -- Default settings when choosing a merge request
 ---@field info? InfoSettings -- Settings for the "info" or "summary" view
 ---@field mergeability_checks? MergeabilityChecksSettings -- Settings for the mergeability checks in the "summary" view
@@ -308,7 +309,11 @@
 ---@field draft_mode? boolean -- Whether comments are posted as drafts as part of a review
 ---@field winbar? function -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
 
----@class ExpanderOpts: table<string string>
+---@class EmojisSettings: table
+---@field formatter? function -- Custom function to modify how emojis are displayed in the picker.
+---@field version? string|fun(gitlab_url: string):string -- The (function that returns the) emoji version used by the Gitlab instance: https://{GITLAB_URL}/-/emojis/{VERSION}/emojis.json.
+
+---@class ExpanderOpts: table<string, string>
 ---@field expanded? string -- Icon for expanded discussion thread
 ---@field collapsed? string -- Icon for collapsed discussion thread
 ---@field indentation? string -- Indentation Icon

@@ -190,6 +190,7 @@ M.settings = {
   },
   emojis = {
     formatter = nil,
+    version = "4",
   },
   create_mr = {
     target = nil,
@@ -501,7 +502,7 @@ end
 -- then attemps to read a `.gitlab.nvim` configuration file.
 -- If after doing this, any variables are missing, alerts the user.
 -- The `.gitlab.nvim` configuration file takes precedence.
-M.setPluginConfiguration = function()
+M.set_plugin_configuration = function()
   if M.initialized then
     return true
   end

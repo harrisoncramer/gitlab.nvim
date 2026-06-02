@@ -51,7 +51,7 @@ M.sequence = function(dependencies, cb)
 
     -- Sets configuration for plugin, if not already set
     if not state.initialized then
-      if not state.setPluginConfiguration() then
+      if not state.set_plugin_configuration() then
         return
       end
     end
