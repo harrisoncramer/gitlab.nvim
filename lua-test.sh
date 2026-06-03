@@ -10,7 +10,7 @@ PLUGINS_FOLDER="tests/plugins"
 PLUGINS=(
   "https://github.com/MunifTanjim/nui.nvim"
   "https://github.com/nvim-lua/plenary.nvim"
-  "https://github.com/dlyongemallo/diffview.nvim"
+  "https://github.com/dlyongemallo/diffview-plus.nvim"
 )
 
 if ! command -v luarocks >/dev/null 2>&1; then
