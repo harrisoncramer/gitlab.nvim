@@ -41,7 +41,7 @@ With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
   dependencies = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
-    "dlyongemallo/diffview.nvim", -- Maintained fork of "sindrets/diffview.nvim".
+    "dlyongemallo/diffview-plus.nvim", -- Maintained fork of "sindrets/diffview.nvim".
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
   },
@@ -60,7 +60,7 @@ And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
   requires = {
     "MunifTanjim/nui.nvim",
     "nvim-lua/plenary.nvim",
-    "dlyongemallo/diffview.nvim", -- Maintained fork of "sindrets/diffview.nvim".
+    "dlyongemallo/diffview-plus.nvim", -- Maintained fork of "sindrets/diffview.nvim".
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
   },
@@ -74,7 +74,7 @@ And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
 
 Add `branch = "develop",` to your configuration if you want to use the (possibly unstable) development version of `gitlab.nvim`.
 
-`gitlab.nvim` uses the `diffview.nvim` plugin for showing the diffs in a MR. We recommend using [dlyongemallo's](https://github.com/dlyongemallo/diffview.nvim) fork which is the de-facto maintained version of the plugin with many fixes and improvements (e.g., marking files as viewed).
+`gitlab.nvim` uses the `diffview.nvim` plugin for showing the diffs in a MR. We recommend using `dlyongemallo`'s [diffview+](https://github.com/dlyongemallo/diffview-plus.nvim) fork which is the de-facto maintained version of the plugin with many fixes and improvements (e.g., marking files as viewed). The original [sindrets/diffview.nvim](https://github.com/sindrets/diffview.nvim) plugin will be supported as long as the maintenance remains feasible.
 
 ## Contributing
 

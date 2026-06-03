@@ -31,7 +31,7 @@ M.check = function(return_results)
       package = "plenary",
     },
     {
-      name = "dlyongemallo/diffview.nvim",
+      name = "dlyongemallo/diffview-plus.nvim",
       package = "diffview",
     },
   }
@@ -44,6 +44,10 @@ M.check = function(return_results)
     {
       name = "nvim-tree/nvim-web-devicons",
       package = "nvim-web-devicons",
+    },
+    {
+      name = "dlyongemallo/diffview-plus.nvim",
+      package = "diffview.api",
     },
   }
 

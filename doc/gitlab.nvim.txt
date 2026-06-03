@@ -64,7 +64,7 @@ With Lazy:
       dependencies = {
         "MunifTanjim/nui.nvim",
         "nvim-lua/plenary.nvim",
-        "dlyongemallo/diffview.nvim", -- Maintained fork of "sindrets/diffview.nvim".
+        "dlyongemallo/diffview-plus.nvim", -- Maintained fork of "sindrets/diffview.nvim".
         "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
         "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
       },
@@ -81,7 +81,7 @@ And with pckr.nvim:
       requires = {
         "MunifTanjim/nui.nvim",
         "nvim-lua/plenary.nvim",
-        "dlyongemallo/diffview.nvim", -- Maintained fork of "sindrets/diffview.nvim".
+        "dlyongemallo/diffview-plus.nvim", -- Maintained fork of "sindrets/diffview.nvim".
         "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
         "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
       },
@@ -864,9 +864,9 @@ plugin is loaded. If run twice, will open a second reviewer pane.
                                                                 *gitlab.nvim.reload_review*
 gitlab.reload_review() ~
 
-Loads new MR state from Gitlab. Then if diffview.api is available (with the
-https://github.com/dlyongemallo/diffview.nvim fork) applies the new diff refs
-to the existing diffview, otherwise (with
+Loads new MR state from Gitlab. Then if `diffview.api` is available (with the
+https://github.com/dlyongemallo/diffview-plus.nvim fork) applies the new diff
+refs to the existing diffview, otherwise (with
 https://github.com/sindrets/diffview.nvim) closes and re-opens the reviewer.
 
 >lua
