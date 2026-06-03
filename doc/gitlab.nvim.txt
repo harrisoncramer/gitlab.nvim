@@ -44,16 +44,22 @@ the editor. This means you can do things like:
 
 REQUIREMENTS                                        *gitlab.nvim.requirements*
 
-- Go >= v1.19
+- Neovim >= v0.10
+- Go >= v1.25.1
+- Git
+- Curl
+- Cat (for displaying pipeline logs)
 
 
 QUICK START                                          *gitlab.nvim.quick-start*
 
-1. Install Go
-2. Add configuration (see Installation section)
-5. Run `:lua require("gitlab").choose_merge_request()`
+1. Install the required dependencies
+2. Add configuration (see |gitlab.nvim.installation| section)
+3. Open Neovim
+4. Run `:lua require("gitlab").choose_merge_request()` or
+   `:lua require("gitlab").review()` if already in review branch/worktree.
 
-This will checkout the branch locally, and up the plugin's reviewer pane.
+This will checkout the branch locally, and open the plugin's reviewer pane.
 
 INSTALLATION                                        *gitlab.nvim.installation*
 

@@ -18,14 +18,18 @@ To view these help docs and to get more detailed help information, please run `:
 
 ## Requirements
 
-- <a href="https://neovim.io/">Neovim</a> >= v0.10
-- <a href="https://go.dev/">Go</a> >= v1.25.1
+- <a href="https://neovim.io">Neovim</a> >= v0.10
+- <a href="https://go.dev">Go</a> >= v1.25.1
+- <a href="https://git-scm.com">Git</a>
+- <a href="https://curl.se">Curl</a>
+- <a href="https://man.cat-v.org/unix-1st/1/cat">Cat</a> (for displaying pipeline logs)
 
 ## Quick Start
 
-1. Install Go
-2. Add configuration (see Installation section)
-3. Run `:lua require("gitlab").choose_merge_request()` or `:lua require("gitlab").review()` if already in review branch/worktree.
+1. Install the required dependencies
+2. Add configuration (see [Installation](#installation) section)
+3. Open Neovim
+4. Run `:lua require("gitlab").choose_merge_request()` or `:lua require("gitlab").review()` if already in review branch/worktree.
 
 This will checkout the branch locally, and open the plugin's reviewer pane.
 
