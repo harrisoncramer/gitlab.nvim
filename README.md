@@ -44,7 +44,6 @@ With <a href="https://github.com/folke/lazy.nvim">Lazy</a>:
   "harrisoncramer/gitlab.nvim",
   dependencies = {
     "MunifTanjim/nui.nvim",
-    "nvim-lua/plenary.nvim",
     "dlyongemallo/diffview-plus.nvim", -- Maintained fork of "sindrets/diffview.nvim".
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.
@@ -63,7 +62,6 @@ And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
   "harrisoncramer/gitlab.nvim",
   requires = {
     "MunifTanjim/nui.nvim",
-    "nvim-lua/plenary.nvim",
     "dlyongemallo/diffview-plus.nvim", -- Maintained fork of "sindrets/diffview.nvim".
     "stevearc/dressing.nvim", -- Recommended but not required. Better UI for pickers.
     "nvim-tree/nvim-web-devicons", -- Recommended but not required. Icons in discussion tree.

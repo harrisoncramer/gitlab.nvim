@@ -27,10 +27,6 @@ M.check = function(return_results)
       package = "nui.popup",
     },
     {
-      name = "nvim-lua/plenary.nvim",
-      package = "plenary",
-    },
-    {
       name = "dlyongemallo/diffview-plus.nvim",
       package = "diffview",
     },

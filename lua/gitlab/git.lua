@@ -234,4 +234,25 @@ M.check_mr_in_good_condition = function()
   end
 end
 
+---Returns the full diff between the local working tree relative to the named `base_sha`, for the
+---given file(s).
+---@param base_sha string Base sha to diff against
+---@param old_path string? Old file name
+---@param new_path string? New file name - relevant for renamed files, ignored if same as old_path
+---@return string|nil diff, string|nil err
+M.diff_files = function(base_sha, old_path, new_path)
+  return run_system({
+    "git",
+    "diff",
+    "--minimal",
+    "--unified=0",
+    "--no-color",
+    "--no-ext-diff",
+    base_sha,
+    "--",
+    old_path,
+    new_path,
+  })
+end
+
 return M
