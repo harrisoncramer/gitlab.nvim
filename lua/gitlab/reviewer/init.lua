@@ -29,6 +29,7 @@ end
 
 -- Opens the reviewer windows.
 M.open = function()
+  require("gitlab.emoji").init() -- Read in emojis for lookup purposes
   local diff_refs = state.INFO.diff_refs
   if diff_refs == nil then
     u.notify("Gitlab did not provide diff refs required to review this MR", vim.log.levels.ERROR)

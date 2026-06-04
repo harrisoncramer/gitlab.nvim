@@ -2,7 +2,6 @@ require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local async = require("gitlab.async")
 local server = require("gitlab.server")
-local emoji = require("gitlab.emoji")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
@@ -45,13 +44,11 @@ local function setup(args)
   end
 
   state.merge_settings(args) -- Merges user settings with default settings
-  state.set_plugin_configuration() -- Sets auth_token and gitlab_url into the settings module
   server.build() -- Builds the Go binary if it doesn't exist
   state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
   require("gitlab.colors") -- Sets colors
   reviewer.init()
   discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-  emoji.init() -- Read in emojis for lookup purposes
 
   local is_healthy = health.check(true)
   if not is_healthy then
