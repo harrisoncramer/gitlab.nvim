@@ -1,43 +1,56 @@
 -- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
-local Job = require("plenary.job")
 local u = require("gitlab.utils")
 local M = {}
 
+---Send a request to the Go server
+---@param endpoint string The endpoint path on the server.
+---@param method string The HTTP rquest method.
+---@param callback fun(data: table) The function to run on the decoded JSON response data if the response contains no error details.
+---@param on_error_callback? fun(data: table) The function to run on the decoded JSON response data in case the response contains error details.
 M.run_job = function(endpoint, method, body, callback, on_error_callback)
   local state = require("gitlab.state")
   local port = state.settings.server and state.settings.server.port
-  local args =
-    { "--noproxy", "localhost", "-s", "-X", (method or "POST"), string.format("localhost:%s%s", port, endpoint) }
+  local cmd = {
+    "curl",
+    "--noproxy",
+    "localhost",
+    "-s",
+    "-X",
+    (method or "POST"),
+    string.format("localhost:%s%s", port, endpoint),
+  }
 
   if body ~= nil then
     local encoded_body = vim.json.encode(body)
-    table.insert(args, 1, "-d")
-    table.insert(args, 2, encoded_body)
+    table.insert(cmd, 2, "-d")
+    table.insert(cmd, 3, encoded_body)
   end
 
   -- This handler will handle all responses from the Go server. Anything with a successful
   -- status will call the callback (if it is supplied for the job). Otherwise, it will print out the
   -- success message or error message and details from the Go server and run the on_error_callback
   -- (if supplied for the job).
-  local stderr = {}
-  Job:new({
-    command = "curl",
-    args = args,
-    on_stdout = function(_, output)
-      vim.defer_fn(function()
-        if output == nil then
-          return
-        end
-        local data_ok, data = pcall(vim.json.decode, output)
+  vim.system(cmd, { text = true }, function(out)
+    vim.schedule(function()
+      if out.code ~= 0 then
+        u.notify(string.format("Go server exited with non-zero code: %d", out.code), vim.log.levels.ERROR)
+      end
 
+      if out.stderr ~= "" then
+        u.notify(string.format("Could not run command `%s`! Stderr was:", table.concat(cmd, " ")), vim.log.levels.ERROR)
+        u.notify(vim.trim(out.stderr), vim.log.levels.ERROR)
+      end
+
+      if out.stdout ~= "" then
+        local data_ok, data = pcall(vim.json.decode, out.stdout)
         -- Failing to unmarshal JSON
         if not data_ok then
           local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)
-          if type(output) == "string" then
-            msg = string.format(msg .. ", got: '%s'", output)
+          if type(out.stdout) == "string" then
+            msg = string.format(msg .. ", got: '%s'", out.stdout)
           end
-          u.notify(string.format(msg, endpoint, output), vim.log.levels.WARN)
+          u.notify(string.format(msg, endpoint, out.stdout), vim.log.levels.WARN)
           return
         end
 
@@ -60,28 +73,9 @@ M.run_job = function(endpoint, method, body, callback, on_error_callback)
             on_error_callback(data)
           end
         end
-      end, 0)
-    end,
-    on_stderr = function(_, data)
-      if data then
-        table.insert(stderr, data)
       end
-    end,
-    on_exit = function(code, status)
-      vim.defer_fn(function()
-        if #stderr ~= 0 then
-          u.notify(
-            string.format("Could not run command `%s %s`! Stderr was:", code.command, table.concat(code.args, " ")),
-            vim.log.levels.ERROR
-          )
-          vim.notify(string.format("%s", table.concat(stderr, "\n")), vim.log.levels.ERROR)
-        end
-        if status ~= 0 then
-          u.notify(string.format("Go server exited with non-zero code: %d", status), vim.log.levels.ERROR)
-        end
-      end, 0)
-    end,
-  }):start()
+    end)
+  end)
 end
 
 return M

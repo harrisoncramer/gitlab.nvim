@@ -4,7 +4,6 @@
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
-local Job = require("plenary.job")
 local M = {}
 
 -- Builds the binary if it doesn't exist, and starts the server. If the pre-existing binary has an older
@@ -62,8 +61,6 @@ M.start = function(callback)
 
   local settings = vim.json.encode(go_server_settings)
 
-  local stderr_buf = ""
-
   local ok, err = pcall(vim.system, { state.settings.server.binary, settings }, {
     stdout = function(_, data)
       if data == nil or parsed_port ~= nil then
@@ -85,18 +82,12 @@ M.start = function(callback)
         end
       end
     end,
-    stderr = function(_, data)
-      if data == nil or data == "" then
-        return
-      end
-      stderr_buf = stderr_buf .. data
-    end,
   }, function(out)
     if out.code ~= 0 then
       vim.schedule(function()
         local msg = "Golang gitlab server exited: code: " .. out.code .. ", signal: " .. (out.signal or 0)
-        if stderr_buf ~= "" then
-          msg = msg .. ", msg: " .. vim.trim(stderr_buf)
+        if out.stderr ~= "" then
+          msg = msg .. ", msg: " .. vim.trim(out.stderr)
         end
         u.notify(msg, vim.log.levels.ERROR)
       end)
@@ -214,44 +205,34 @@ M.restart = function(cb)
   end)
 end
 
--- Returns the version (git tag) that was baked into the binary when it was last built
+-- Runs `callback` with the version (git tag) that was baked into the binary when it was last built.
 M.get_version = function(callback)
   if not state.go_server_running then
     u.notify("Gitlab server not running", vim.log.levels.ERROR)
-    return nil
+    return
   end
   local parent_dir = u.get_root_path()
 
   local version_output = vim.system({ "git", "describe", "--tags", "--always" }, { cwd = parent_dir }):wait()
   local plugin_version = version_output.code == 0 and vim.trim(version_output.stdout) or "unknown"
 
-  local args =
-    { "--noproxy", "localhost", "-s", "-X", "GET", string.format("localhost:%s/version", state.settings.server.port) }
+  -- We call the "/version" endpoint here instead of through the regular run_job pattern because
+  -- earlier versions of the plugin may not have the endpoint. We handle a 404 as an "unknown"
+  -- version error.
+  local cmd = {
+    "curl",
+    "--noproxy",
+    "localhost",
+    "-s",
+    "-X",
+    "GET",
+    string.format("localhost:%s/version", state.settings.server.port),
+  }
+  local result = vim.system(cmd):wait()
+  local _, data = pcall(vim.json.decode, result.stdout)
+  local binary_version = data and data.version and data.version or "unknown"
 
-  -- We call the "/version" endpoint here instead of through the regular jobs pattern because earlier versions of the plugin
-  -- may not have it. We handle a 404 as an "unknown" version error.
-  Job:new({
-    command = "curl",
-    args = args,
-    on_stdout = function(_, output)
-      vim.defer_fn(function()
-        if output == nil then
-          callback({ plugin_version = plugin_version, binary_version = "unknown" })
-          return
-        end
-
-        local data_ok, data = pcall(vim.json.decode, output)
-        if not data_ok or data == nil or data.version == nil then
-          callback({ plugin_version = plugin_version, binary_version = "unknown" })
-          return
-        end
-
-        callback({ plugin_version = plugin_version, binary_version = data.version })
-      end, 0)
-    end,
-    on_stderr = function() end,
-    on_exit = function() end,
-  }):start()
+  callback({ plugin_version = plugin_version, binary_version = binary_version })
 end
 
 return M

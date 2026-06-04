@@ -14,7 +14,7 @@ local M = {}
 ---@field all_diff_output table The data from the git diff command
 
 ---Turn hunk line into Lua table
----@param line table
+---@param line string
 ---@return Hunk|nil
 M.parse_possible_hunk_headers = function(line)
   if line:sub(1, 2) == "@@" then
@@ -34,7 +34,7 @@ M.parse_possible_hunk_headers = function(line)
 end
 ---@param linnr number
 ---@param hunk Hunk
----@param all_diff_output table
+---@param all_diff_output string[]
 ---@return boolean
 local line_was_removed = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
@@ -58,7 +58,7 @@ end
 
 ---@param linnr number
 ---@param hunk Hunk
----@param all_diff_output table
+---@param all_diff_output string[]
 ---@return boolean
 local line_was_added = function(linnr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
@@ -96,46 +96,26 @@ local parse_hunks_and_diff = function(base_sha)
   local hunks = {}
   local all_diff_output = {}
 
+  local git = require("gitlab.git")
   local reviewer = require("gitlab.reviewer")
-  local cmd = {
-    "diff",
-    "--minimal",
-    "--unified=0",
-    "--no-color",
-    "--no-ext-diff",
-    base_sha,
-    "--",
-    reviewer.get_current_file_oldpath(),
-    reviewer.get_current_file_path(),
-  }
 
-  local Job = require("plenary.job")
-  local diff_job = Job:new({
-    command = "git",
-    args = cmd,
-    on_exit = function(j, return_code)
-      if return_code == 0 then
-        all_diff_output = j:result()
-        for _, line in ipairs(all_diff_output) do
-          local hunk = M.parse_possible_hunk_headers(line)
-          if hunk ~= nil then
-            table.insert(hunks, hunk)
-          end
-        end
-      else
-        M.notify("Failed to get git diff: " .. j:stderr(), vim.log.levels.WARN)
+  local diff, _ = git.diff_files(base_sha, reviewer.get_current_file_oldpath(), reviewer.get_current_file_path())
+  if diff ~= nil then
+    for line in diff:gmatch("[^\r\n]+") do
+      table.insert(all_diff_output, line)
+      local hunk = M.parse_possible_hunk_headers(line)
+      if hunk ~= nil then
+        table.insert(hunks, hunk)
       end
-    end,
-  })
-
-  diff_job:sync()
+    end
+  end
 
   return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
 -- Parses the lines from a diff and returns the
 -- index of the next hunk, when provided an initial index
----@param lines table
+---@param lines string[]
 ---@param i integer
 ---@return integer|nil
 local next_hunk_index = function(lines, i)
