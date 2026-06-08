@@ -59,15 +59,6 @@ M.filter = function(input_table, value_to_remove)
   return resultTable
 end
 
-M.filter_by_key_value = function(input_table, target_key, target_value)
-  local result_table = {}
-  for _, v in ipairs(input_table) do
-    if v[target_key] ~= target_value then
-      table.insert(result_table, v)
-    end
-  end
-end
-
 ---Merges two deeply nested tables together, overriding values from the first with conflicts
 ---@param defaults table The first table
 ---@param overrides table The second table
@@ -324,13 +315,6 @@ M.map = function(tbl, f)
   return t
 end
 
-M.reduce = function(tbl, agg, f)
-  for _, v in pairs(tbl) do
-    agg = f(agg, v)
-  end
-  return agg
-end
-
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
@@ -338,10 +322,6 @@ end
 -- Re-raise Vimscript error message after removing existing message prefixes
 M.notify_vim_error = function(msg, lvl)
   M.notify(msg:gsub("^Vim:", ""):gsub("^gitlab.nvim: ", ""), lvl)
-end
-
-M.get_current_line_number = function()
-  return vim.api.nvim_call_function("line", { "." })
 end
 
 M.is_windows = function()
@@ -424,14 +404,6 @@ M.toggle_string_bool = function(bool)
   return toggled
 end
 
-M.string_starts = function(str, start)
-  return str:sub(1, #start) == start
-end
-
-M.press_enter = function()
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", false, true, true), "n", false)
-end
-
 M.press_escape = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
 end
@@ -443,36 +415,6 @@ M.from_iso_format_date_to_timestamp = function(date_string)
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 end
-
-M.format_date = function(date_string)
-  local date_table = os.date("!*t")
-  local date = M.from_iso_format_date_to_timestamp(date_string)
-
-  local current_date = os.time({
-    year = date_table.year,
-    month = date_table.month,
-    day = date_table.day,
-    hour = date_table.hour,
-    min = date_table.min,
-    sec = date_table.sec,
-  })
-
-  local time_diff = current_date - date
-
-  if time_diff < 60 then
-    return M.pluralize(time_diff, "second")
-  elseif time_diff < 3600 then
-    return M.pluralize(math.floor(time_diff / 60), "minute")
-  elseif time_diff < 86400 then
-    return M.pluralize(math.floor(time_diff / 3600), "hour")
-  elseif time_diff < 2592000 then
-    return M.pluralize(math.floor(time_diff / 86400), "day")
-  else
-    local formatted_date = os.date("%A, %B %e", date)
-    return formatted_date
-  end
-end
-
 M.difference = function(a, b)
   local set_b = {}
   for _, val in ipairs(b) do
@@ -508,16 +450,6 @@ end
 M.get_root_path = function()
   local path = debug.getinfo(1, "S").source:sub(2)
   return vim.fn.fnamemodify(path, ":p:h:h:h:h")
-end
-
-M.remove_last_chunk = function(sentence)
-  local words = {}
-  for word in sentence:gmatch("%S+") do
-    table.insert(words, word)
-  end
-  table.remove(words, #words)
-  local sentence_without_last = table.concat(words, " ")
-  return sentence_without_last
 end
 
 M.get_line_content = function(bufnr, start)
