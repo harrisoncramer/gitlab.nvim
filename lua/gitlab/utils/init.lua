@@ -126,21 +126,6 @@ M.time_since = function(date_string, current_date_table)
   end
 end
 
----Removes the first value from a list and returns the new, smaller list
----@param tbl table The table
----@return table
-M.remove_first_value = function(tbl)
-  local sliced_list = {}
-  if M.table_size(tbl) <= 1 then
-    return sliced_list
-  end
-  for i = 2, #tbl do
-    table.insert(sliced_list, tbl[i])
-  end
-
-  return sliced_list
-end
-
 ---Spreads all the values from t2 into t1
 ---@param t1 table The first table (gets the values)
 ---@param t2 table The second table
@@ -174,14 +159,6 @@ M.contains = function(list, search_value)
     end
   end
   return false
-end
-
----Trims whitespace from a string
----@param s string The string to trim
----@return string
-M.trim = function(s)
-  local res = s:gsub("^%s+", ""):gsub("%s+$", "")
-  return res
 end
 
 ---Splits a string by new lines and returns an iterator
@@ -556,10 +533,6 @@ M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
-M.make_comma_separated_readable = function(str)
-  return string.gsub(str, ",", ", ")
-end
-
 ---Select a git branch and perform callback with the branch as an argument
 ---@param cb function The callback to perform with the selected branch
 M.select_target_branch = function(cb)
@@ -574,11 +547,6 @@ M.select_target_branch = function(cb)
       cb(choice)
     end
   end)
-end
-
-M.basename = function(str)
-  local name = string.gsub(str, "(.*/)(.*)", "%2")
-  return name
 end
 
 M.get_web_url = function()
