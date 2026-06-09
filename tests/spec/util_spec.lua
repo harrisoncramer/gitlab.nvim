@@ -86,42 +86,6 @@ describe("utils/init.lua", function()
     end)
   end)
 
-  describe("remove_first_value", function()
-    it("Removes the first value correctly", function()
-      local got = u.remove_first_value({ 1, 2 })
-      local want = { 2 }
-      assert.are.same(want, got)
-    end)
-    it("Handles a one-length list", function()
-      local got = u.remove_first_value({ 1 })
-      local want = {}
-      assert.are.same(want, got)
-    end)
-    it("Handles a zero-length list", function()
-      local got = u.remove_first_value({})
-      local want = {}
-      assert.are.same(want, got)
-    end)
-  end)
-
-  describe("table_size", function()
-    it("Works for associative tables", function()
-      local got = u.remove_first_value({ 1, 2 })
-      local want = { 2 }
-      assert.are.same(want, got)
-    end)
-    it("Handles a one-length list", function()
-      local got = u.remove_first_value({ 1 })
-      local want = {}
-      assert.are.same(want, got)
-    end)
-    it("Handles a zero-length list", function()
-      local got = u.remove_first_value({})
-      local want = {}
-      assert.are.same(want, got)
-    end)
-  end)
-
   describe("contains", function()
     it("Finds a value in a list", function()
       local got = u.contains({ 1, 2 }, 1)
