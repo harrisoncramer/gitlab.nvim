@@ -1,6 +1,7 @@
 -- This module contains code shared between at least two modules. This includes
 -- actions common to multiple tree types, as well as general utility functions
--- that are specific to actions (like jumping to a file or opening a URL)
+-- that are specific to actions (like jumping to a file or opening a URL).
+
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
@@ -8,7 +9,7 @@ local indicators_common = require("gitlab.indicators.common")
 local state = require("gitlab.state")
 local M = {}
 
----Build note header from note
+---Build note header from note.
 ---@param note Note|DraftNote
 ---@return string
 M.build_note_header = function(note)
@@ -20,6 +21,9 @@ M.build_note_header = function(note)
   return "@" .. note.author.username .. " " .. time
 end
 
+---Switch the options that control if buffers can be modified.
+---@param bool boolean The value to set
+---@param ... integer List of buffer numbers
 M.switch_can_edit_bufs = function(bool, ...)
   local bufnrs = { ... }
   ---@param v integer
@@ -28,15 +32,18 @@ M.switch_can_edit_bufs = function(bool, ...)
   end
 end
 
----Takes in a chunk of text separated by new line characters and returns a lua table
+---Transform a string containing new line characters into a table of lines.
+---TODO: Replace this function with direct calls of u.lines_into_table, as the extra
+---line is not necessary!
 ---@param content string
----@return table
+---@return string[]
 M.build_content = function(content)
   local description_lines = u.lines_into_table(content)
   table.insert(description_lines, "")
   return description_lines
 end
 
+---Fill discussion tree buffers with warnings, if there are no linked or unlinked comments.
 M.add_empty_titles = function()
   local draft_notes = require("gitlab.actions.draft_notes")
   local discussions = require("gitlab.actions.discussions")
@@ -88,7 +95,9 @@ M.add_empty_titles = function()
   end
 end
 
+---Return the URL for the current note.
 ---@param tree NuiTree
+---@return string?
 M.get_url = function(tree)
   local current_node = tree:get_node()
   local note_node = M.get_note_node(tree, current_node)
@@ -103,6 +112,7 @@ M.get_url = function(tree)
   return url
 end
 
+---Open the current note in the browser.
 ---@param tree NuiTree
 M.open_in_browser = function(tree)
   local url = M.get_url(tree)
@@ -111,6 +121,7 @@ M.open_in_browser = function(tree)
   end
 end
 
+---Copy the current note's URL to the clipboard.
 ---@param tree NuiTree
 M.copy_node_url = function(tree)
   local url = M.get_url(tree)
@@ -120,13 +131,14 @@ M.copy_node_url = function(tree)
   end
 end
 
--- For developers!
+---For developers!
+---@param tree NuiTree
 M.print_node = function(tree)
   local current_node = tree:get_node()
   vim.print(current_node)
 end
 
----Check if type of node is note or note body
+---Return true if type of node is note or note body (as opposed to e.g. "file_name").
 ---@param node? NuiTree.Node
 ---@return boolean
 M.is_node_note = function(node)
@@ -137,7 +149,7 @@ M.is_node_note = function(node)
   end
 end
 
----Get root node
+---Get root node at the current cursor position.
 ---@param tree NuiTree
 ---@param node? NuiTree.Node
 ---@return NuiTree.Node?
@@ -153,7 +165,7 @@ M.get_root_node = function(tree, node)
   end
 end
 
----Get note node
+---Get the main note node at the current cursor position.
 ---@param tree NuiTree
 ---@param node? NuiTree.Node
 ---@return NuiTree.Node?
@@ -173,12 +185,14 @@ M.get_note_node = function(tree, node)
   end
 end
 
----Takes a node and returns the line where the note is positioned in the new SHA. If
----the line is not in the new SHA, returns nil
+---Return the line where the note is positioned in the new SHA.
+---If the line is not in the new SHA, return nil for a single-line comment.
+---TODO: For ranged comments this function may return 0 for removed lines. Shouldn't it
+---return nil instead?
 ---@param node NuiTree.Node
----@return number|nil
-local function get_new_line(node)
-  ---@type GitlabLineRange|nil
+---@return integer?
+local function get_new_linenr(node)
+  ---@type GitlabLineRange?
   local range = node.range
   if range == nil then
     return node.new_line
@@ -188,12 +202,14 @@ local function get_new_line(node)
   return new_start_line
 end
 
----Takes a node and returns the line where the note is positioned in the old SHA. If
----the line is not in the old SHA, returns nil
+---Return the line where the note is positioned in the old SHA.
+---If the line is not in the old SHA, return nil for a single-line comment.
+---TODO: For ranged comments this function may return 0 for added lines. Shouldn't it
+---return nil instead?
 ---@param node NuiTree.Node
----@return number|nil
-local function get_old_line(node)
-  ---@type GitlabLineRange|nil
+---@return integer?
+local function get_old_linenr(node)
+  ---@type GitlabLineRange?
   local range = node.range
   if range == nil then
     return node.old_line
@@ -203,11 +219,14 @@ local function get_old_line(node)
   return old_start_line
 end
 
+---Get the line number of a single-line comment.
+---TODO: Consider if this can be removed if all comments would be created as "multi-line".
+---See lua/gitlab/reviewer/location.lua:74.
 ---@param id string|integer
----@return integer|nil line_number
+---@return integer? line_number
 ---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number = function(id)
-  ---@type Discussion|DraftNote|nil
+  ---@type (Discussion|DraftNote)?
   local d_or_n
   d_or_n = List.new(state.DISCUSSION_DATA and state.DISCUSSION_DATA.discussions or {}):find(function(d)
     return d.id == id
@@ -224,10 +243,11 @@ M.get_line_number = function(id)
   return ((is_new_sha and first_note.position.new_line or first_note.position.old_line) or 1), is_new_sha
 end
 
----Return the start and end line numbers for the note range. The range is calculated from the line
----codes but the position itself is based on either the `new_line` or `old_line`.
----@param old_line integer|nil The line number in the OLD version
----@param new_line integer|nil The line number in the NEW version
+---Return start and end line numbers for the note range, and whether comment is on "NEW SHA".
+---The range is calculated from the line codes but the position itself is based on
+---either the `new_line` or `old_line`.
+---@param old_line? integer The line number in the OLD version
+---@param new_line? integer The line number in the NEW version
 ---@param start_line_code string The line code for the start of the range
 ---@param end_line_code string The line code for the end of the range
 ---@return integer start_line
@@ -250,8 +270,9 @@ M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end
   end
 end
 
+---Return line number for jumping to reviewer.
 ---@param root_node NuiTree.Node
----@return integer|nil line_number
+---@return integer? line_number
 ---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
@@ -267,7 +288,8 @@ M.get_line_number_from_node = function(root_node)
   end
 end
 
--- This function (settings.keymaps.discussion_tree.jump_to_reviewer) will jump the cursor to the reviewer's location associated with the note. The implementation depends on the reviewer
+---Move the cursor to the reviewer's location associated with the note.
+---@param tree NuiTree
 M.jump_to_reviewer = function(tree)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)
@@ -283,7 +305,8 @@ M.jump_to_reviewer = function(tree)
   reviewer.jump(root_node.file_name, root_node.old_file_name, line_number, is_new_sha)
 end
 
--- This function (settings.keymaps.discussion_tree.jump_to_file) will jump to the file changed in a new tab
+---Jump to the file in a new tab.
+---@param tree NuiTree
 M.jump_to_file = function(tree)
   local node = tree:get_node()
   local root_node = M.get_root_node(tree, node)
@@ -303,7 +326,7 @@ M.jump_to_file = function(tree)
     return
   end
   vim.cmd.tabnew()
-  local line_number = get_new_line(root_node) or get_old_line(root_node)
+  local line_number = get_new_linenr(root_node) or get_old_linenr(root_node)
   if line_number == nil or line_number == 0 then
     line_number = 1
   end

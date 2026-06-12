@@ -29,19 +29,18 @@ local revisions = state.dependencies.revisions
 local merge_requests_dep = state.dependencies.merge_requests
 local merge_requests_by_username_dep = state.dependencies.merge_requests_by_username
 
----@param args Settings | {} | nil
+---@param args? GitlabSettings
 ---@return nil
 local function setup(args)
   if args == nil then
     args = {}
   end
 
-  state.merge_settings(args) -- Merges user settings with default settings
-  server.build() -- Builds the Go binary if it doesn't exist
-  state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
+  state.merge_settings(args)
+  server.build()
+  state.set_global_keymaps()
   require("gitlab.colors") -- Sets colors
-  reviewer.init()
-  discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
+  discussions.initialize_discussions()
 
   local is_healthy = health.check(true)
   if not is_healthy then

@@ -2,6 +2,8 @@ local M = {}
 
 local minimum_go_version = "1.25.1"
 
+---Return true if Go is available and its version is supported by the plugin.
+---@return boolean
 M.is_go_valid = function()
   local has_go, go = pcall(vim.system, { "go", "version" })
   if not has_go then
@@ -12,6 +14,8 @@ M.is_go_valid = function()
   return go_version ~= nil and vim.version.ge(go_version, minimum_go_version)
 end
 
+---Return error if the Go version is not valid.
+---@return string?
 M.check_go_version = function()
   local has_version = M.is_go_valid()
   if not has_version then

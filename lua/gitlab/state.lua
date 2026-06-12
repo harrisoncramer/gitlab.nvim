@@ -5,12 +5,14 @@
 
 local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
+
 local M = {
   ahead_behind = { nil, nil },
 }
 
----Returns a gitlab token, and a gitlab URL. Used to connect to gitlab.
----@return string|nil, string|nil, string|nil
+---Return a gitlab token and a gitlab URL required to connect to Gitlab.
+---TODO: Remove the third return value - it is always nil.
+---@return string?, string?, string?
 M.default_auth_provider = function()
   local git = require("gitlab.git")
   local base_path, err = M.settings.config_path, nil
@@ -41,9 +43,10 @@ M.default_auth_provider = function()
   return auth_token, gitlab_url, err
 end
 
---- These are the default settings for the plugin
+---The default settings for the plugin.
 M.settings = {
   auth_provider = M.default_auth_provider,
+  -- TODO: Remove file_separator, replace with u.path_separator in code.
   file_separator = u.path_separator,
   server = {
     binary = nil,
@@ -197,6 +200,7 @@ M.settings = {
     template_file = nil,
     delete_branch = false,
     squash = false,
+    -- TODO: The "fork" settings could be a config in .gitlab.nvim - they seem to be project-local
     fork = {
       enabled = false,
       forked_project_id = nil,
@@ -289,8 +293,6 @@ M.settings = {
     success = "✓",
     failed = "",
   },
-  go_server_running = false,
-  is_gitlab_project = false,
   colors = {
     discussion_tree = {
       username = "Keyword",
@@ -312,6 +314,7 @@ M.settings = {
 }
 
 -- These are the initial states of the discussion trees
+-- TODO: Move to M definition.
 M.discussion_tree = {
   resolved_expanded = false,
   unresolved_expanded = false,
@@ -322,9 +325,11 @@ M.unlinked_discussion_tree = {
 }
 
 -- Used to set a specific MR when choosing a merge request
+-- TODO: Move to M definition.
 M.chosen_mr_iid = 0
 
--- These keymaps are set globally when the plugin is initialized
+---Set global keymaps.
+---To be used when the plugin is initialized.
 M.set_global_keymaps = function()
   local keymaps = M.settings.keymaps
 
@@ -332,6 +337,7 @@ M.set_global_keymaps = function()
     return
   end
 
+  -- TODO: Refactor: simplify all the `function() somefunc() end` calls to `somefunc`.
   if keymaps.global.start_review then
     vim.keymap.set("n", keymaps.global.start_review, function()
       require("gitlab").review()
@@ -483,9 +489,9 @@ M.set_global_keymaps = function()
   end
 end
 
--- Merges user settings into the default settings, overriding them
----@param args Settings
----@return Settings
+---Merge user settings into the default settings, overriding the defaults.
+---@param args GitlabSettings
+---@return GitlabSettings
 M.merge_settings = function(args)
   if args.server and args.server.binary ~= nil then
     M.settings.server.binary_provided = true
@@ -498,10 +504,9 @@ M.print_settings = function()
   vim.print(M.settings)
 end
 
--- First reads environment variables into the settings module,
--- then attemps to read a `.gitlab.nvim` configuration file.
--- If after doing this, any variables are missing, alerts the user.
--- The `.gitlab.nvim` configuration file takes precedence.
+---Load Gitlab auth token and URL into the settings and notify user if auth token is
+---missing.
+---@return boolean success True if plugin is already initialized or when initialization succeeds, otherwise false (if auth token is missing)
 M.set_plugin_configuration = function()
   if M.initialized then
     return true
@@ -509,7 +514,7 @@ M.set_plugin_configuration = function()
 
   local token, url, err = M.settings.auth_provider()
   if err ~= nil then
-    return
+    return false
   end
 
   M.settings.auth_token = token
@@ -527,11 +532,10 @@ M.set_plugin_configuration = function()
   return true
 end
 
--- Dependencies
--- These tables are passed to the async.sequence function, which calls them in sequence
--- before calling an action. They are used to set global state that's required
--- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
--- adding a reviewer) requires some initial state.
+-- GitlabDependency definitions to be passed to the async.sequence function, which calls
+-- them in sequence before performing an action. They are used to set global state
+-- that's required for each of the actions to occur.
+---@type GitlabDependencies
 M.dependencies = {
   user = {
     endpoint = "/users/me",
@@ -630,6 +634,9 @@ M.dependencies = {
   },
 }
 
+---Load new state for a dependency and execute callback with the data it returns.
+---@param dep string The dependency name to re-load
+---@param cb fun(data) The function to call with the dependency data
 M.load_new_state = function(dep, cb)
   local job = require("gitlab.job")
   local dependency = M.dependencies[dep]
@@ -648,10 +655,12 @@ M.load_new_state = function(dep, cb)
   )
 end
 
--- This function clears out all of the previously fetched data. It's used
--- to reset the plugin state when the Go server is restarted
+---Clear out all of the previously fetched data.
+---Used to reset plugin state when the Go server is restarted.
 M.clear_data = function()
   M.INFO = nil
+  -- FIXME: The following loop should use pairs instead of ipairs to actually clear the
+  -- state.
   for _, dep in ipairs(M.dependencies) do
     M[dep.state] = nil
   end

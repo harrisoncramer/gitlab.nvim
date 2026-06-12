@@ -4,8 +4,11 @@ local state = require("gitlab.state")
 
 local M = {}
 
----@param nodes Discussion[]|UnlinkedDiscussion[]|nil
----@return number, number, number
+---Return the number of resolvable, resolved, and non-resolvable comments.
+---@param nodes? Discussion[]|UnlinkedDiscussion[]
+---@return integer total_resolvable
+---@return integer total_resolved
+---@return integer total_non_resolvable
 local get_data = function(nodes)
   local total_resolvable = 0
   local total_resolved = 0
@@ -14,24 +17,24 @@ local get_data = function(nodes)
     return total_resolvable, total_resolved, total_non_resolvable
   end
 
-  total_resolvable = List.new(nodes):reduce(function(agg, d)
-    local first_child = d.notes[1]
+  total_resolvable = List.new(nodes):reduce(function(agg, node)
+    local first_child = node.notes[1]
     if first_child and first_child.resolvable then
       agg = agg + 1
     end
     return agg
   end, 0)
 
-  total_non_resolvable = List.new(nodes):reduce(function(agg, d)
-    local first_child = d.notes[1]
+  total_non_resolvable = List.new(nodes):reduce(function(agg, node)
+    local first_child = node.notes[1]
     if first_child and not first_child.resolvable then
       agg = agg + 1
     end
     return agg
   end, 0)
 
-  total_resolved = List.new(nodes):reduce(function(agg, d)
-    local first_child = d.notes[1]
+  total_resolved = List.new(nodes):reduce(function(agg, node)
+    local first_child = node.notes[1]
     if first_child and first_child.resolved then
       agg = agg + 1
     end
@@ -44,6 +47,8 @@ end
 local spinner_index = 0
 state.discussion_tree.last_updated = nil
 
+---Return the raw content of the winbar.
+---@return string
 local function content()
   local updated
   if state.discussion_tree.last_updated then
@@ -89,7 +94,7 @@ local function content()
   return state.settings.discussion_tree.winbar and state.settings.discussion_tree.winbar(t) or M.make_winbar(t)
 end
 
----This function updates the winbar
+---Update the winbar.
 M.update_winbar = function()
   local d = require("gitlab.actions.discussions")
   if d.split == nil then
@@ -109,6 +114,7 @@ M.update_winbar = function()
   vim.api.nvim_set_option_value("winbar", c, { scope = "local", win = win_id })
 end
 
+---TODO: remove this function and hardcode " " where called
 local function get_connector(base_title)
   return string.match(base_title, "%($") and "" or " "
 end
@@ -144,6 +150,7 @@ local add_drafts_and_resolvable = function(
 end
 
 ---@param t WinbarTable
+---@return string winbar The raw content of the winbar
 M.make_winbar = function(t)
   local discussions_focused = require("gitlab.actions.discussions").current_view_type == "discussions"
   local discussion_text = add_drafts_and_resolvable(
@@ -199,19 +206,29 @@ M.make_winbar = function(t)
   )
 end
 
----Returns a string for the winbar indicating the sort method
+---Return a string for the winbar indicating the sort method.
 ---@return string
 M.get_sort_method = function()
   local sort_method = state.settings.discussion_tree.sort_by == "original_comment" and "↓ by thread" or "↑ by reply"
   return "%#GitlabSortMethod#" .. sort_method .. "%#Comment#"
 end
 
+---Return the winbar component for resolvable discussions.
+---@param focused boolean Whether the particular section (Comments x Notes) is focused
+---@param resolved_count integer The number of resolved discussions
+---@param resolvable_count integer The total number of resolvable discussions
+---@return string winbar_component
 M.get_resolved_text = function(focused, resolved_count, resolvable_count)
   local text = focused and ("%#GitlabResolved#" .. state.settings.discussion_tree.resolved .. "%#Text#")
     or state.settings.discussion_tree.resolved
   return " " .. string.format("%d%s/%d", resolved_count, text, resolvable_count)
 end
 
+---Return the winbar component for draft discussions.
+---@param base_title string
+---@param drafts_count integer The number of draft discussions
+---@param focused boolean Whether the particular section (Comments x Notes) is focused
+---@return string winbar_component
 M.get_drafts_text = function(base_title, drafts_count, focused)
   return get_connector(base_title)
     .. string.format(
@@ -224,6 +241,11 @@ M.get_drafts_text = function(base_title, drafts_count, focused)
     )
 end
 
+---Return the winbar component for non-resolvable discussions.
+---@param base_title string
+---@param non_resolvable_count integer The number of non-resolvable discussions
+---@param focused boolean Whether the particular section (Comments x Notes) is focused
+---@return string winbar_component
 M.get_nonresolveable_text = function(base_title, non_resolvable_count, focused)
   return get_connector(base_title)
     .. string.format(
@@ -236,7 +258,7 @@ M.get_nonresolveable_text = function(base_title, non_resolvable_count, focused)
     )
 end
 
----Returns a string for the winbar indicating the mode type, live or draft
+---Return a string for the winbar indicating the mode type: live or draft.
 ---@return string
 M.get_mode = function()
   if state.settings.discussion_tree.draft_mode then
@@ -246,8 +268,10 @@ M.get_mode = function()
   end
 end
 
----@param ahead number|nil
----@param behind number|nil
+---Return the winbar component for number of ahead and behind commits.
+---@param ahead? number
+---@param behind? number
+---@return string winbar_component
 M.get_ahead_behind = function(ahead, behind)
   local a = ahead == nil and "?" or tostring(ahead)
   local b = behind == nil and "?" or tostring(behind)
@@ -256,7 +280,7 @@ M.get_ahead_behind = function(ahead, behind)
   return a .. "↑ " .. b .. "↓"
 end
 
----Set up a timer to update the winbar periodically
+---Set up a timer to update the winbar periodically.
 M.start_timer = function()
   M.cleanup_timer()
   ---@type nil|uv_timer_t
@@ -264,7 +288,7 @@ M.start_timer = function()
   M.timer:start(0, 100, vim.schedule_wrap(M.update_winbar))
 end
 
---Stop and close the timer
+---Stop and close the timer.
 M.cleanup_timer = function()
   if M.timer ~= nil then
     M.timer:stop()

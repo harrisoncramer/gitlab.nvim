@@ -1,13 +1,14 @@
 -- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
 local u = require("gitlab.utils")
+
 local M = {}
 
----Send a request to the Go server
----@param endpoint string The endpoint path on the server.
----@param method string The HTTP rquest method.
----@param callback fun(data: table) The function to run on the decoded JSON response data if the response contains no error details.
----@param on_error_callback? fun(data: table) The function to run on the decoded JSON response data in case the response contains error details.
+---Send a request to the Go server.
+---@param endpoint string The endpoint path on the server
+---@param method string The HTTP rquest method
+---@param callback fun(data: table) The function to run on the decoded JSON response data if the response contains no error details
+---@param on_error_callback? fun(data: table) The function to run on the decoded JSON response data in case the response contains error details
 M.run_job = function(endpoint, method, body, callback, on_error_callback)
   local state = require("gitlab.state")
   local port = state.settings.server and state.settings.server.port

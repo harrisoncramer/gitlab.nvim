@@ -1,30 +1,32 @@
 -- This module is responsible for the MR pipeline
 -- This lets the user see the current status of the pipeline
 -- and retrigger the pipeline from within the editor
+
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
 local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
+
 local M = {
   pipeline_jobs = {},
   latest_pipeline = nil,
   pipeline_popup = nil,
 }
 
-local function get_latest_pipelines(count)
-  count = count or 1 -- Default to 1 if count is not provided
-  local pipelines = {}
-
-  if not state.PIPELINE then
+---Return a list of pipeline metadata, if available.
+---@return table[]?
+local function get_latest_pipelines()
+  if state.PIPELINE == nil then
     u.notify("Pipeline state is not initialized", vim.log.levels.WARN)
     return nil
   end
 
-  for i = 1, math.max(count, #state.PIPELINE) do
-    local pipeline = state.PIPELINE[i].latest_pipeline
-    if type(pipeline) == "table" and u.table_size(pipeline) > 0 then
-      table.insert(pipelines, pipeline)
+  local pipelines = {}
+  for _, pipeline in ipairs(state.PIPELINE) do
+    local latest_pipeline = pipeline.latest_pipeline
+    if type(latest_pipeline) == "table" and u.table_size(latest_pipeline) > 0 then
+      table.insert(pipelines, latest_pipeline)
     end
   end
 
@@ -35,17 +37,17 @@ local function get_latest_pipelines(count)
   return pipelines
 end
 
+---Get the jobs of the idx'th pipeline.
+---@param idx integer
+---@return table
 local function get_pipeline_jobs(idx)
   return u.reverse(type(state.PIPELINE[idx].jobs) == "table" and state.PIPELINE[idx].jobs or {})
 end
 
--- The function will render the Pipeline state in a popup
+---Render the Pipeline state in a popup.
 M.open = function()
-  M.latest_pipelines = get_latest_pipelines()
-  if not M.latest_pipelines then
-    return
-  end
-  if not M.latest_pipelines or #M.latest_pipelines == 0 then
+  local latest_pipelines = get_latest_pipelines()
+  if not latest_pipelines or #latest_pipelines == 0 then
     return
   end
 
@@ -53,7 +55,7 @@ M.open = function()
   local total_height = 0
   local pipelines_data = {}
 
-  for idx, pipeline in ipairs(M.latest_pipelines) do
+  for idx, pipeline in ipairs(latest_pipelines) do
     local width = string.len(pipeline.web_url) + 10
     max_width = math.max(max_width, width)
 
@@ -76,8 +78,13 @@ M.open = function()
     })
   end
 
-  local pipeline_popup =
-    Popup(popup.create_popup_state("Loading Pipelines...", state.settings.popup.pipeline, max_width, total_height, 60))
+  local pipeline_popup = Popup(popup.create_popup_state({
+    title = "Loading Pipelines...",
+    user_settings = state.settings.popup.pipeline,
+    width = max_width,
+    height = total_height,
+    zindex = 60,
+  }))
   popup.set_up_autocommands(pipeline_popup, nil, vim.api.nvim_get_current_win())
   M.pipeline_popup = pipeline_popup
   pipeline_popup:mount()
@@ -100,12 +107,12 @@ M.open = function()
     table.insert(lines, "")
     table.insert(lines, "Jobs:")
 
-    local longest_title = u.get_longest_string(u.map(data.jobs, function(v)
+    local max_title_length = u.get_max_length(u.map(data.jobs, function(v)
       return v.name
     end))
 
     local function row_offset(name)
-      local offset = longest_title - string.len(name)
+      local offset = max_title_length - string.len(name)
       local res = string.rep(" ", offset + 5)
       return res
     end
@@ -157,6 +164,7 @@ M.open = function()
   end)
 end
 
+---Re-trigger failed pipelines.
 M.retrigger = function()
   local pipelines = get_latest_pipelines()
   if not pipelines then
@@ -184,10 +192,11 @@ M.retrigger = function()
   end
 end
 
+---Close pipeline popup and open the logs from the job under cursor in a new tab.
 M.see_logs = function()
   local bufnr = vim.api.nvim_get_current_buf()
-  local linnr = vim.api.nvim_win_get_cursor(0)[1]
-  local text = u.get_line_content(bufnr, linnr)
+  local linenr = vim.api.nvim_win_get_cursor(0)[1]
+  local text = u.get_line_content(bufnr, linenr)
 
   local job_name = string.match(text, "(.-)%s%s%s%s%s")
 
@@ -223,6 +232,7 @@ M.see_logs = function()
       return
     end
 
+    -- TODO: make this configurable - allow users to not close the popup when seeing the logs.
     M.pipeline_popup:unmount()
 
     vim.cmd.tabnew()
@@ -239,9 +249,14 @@ M.see_logs = function()
   end)
 end
 
----Returns the user-defined symbol representing the status
----of the current pipeline. Takes an optional argument to
----colorize the pipeline icon.
+---Return the user-defined symbol representing the status of the current pipeline.
+---Takes an optional argument to colorize the pipeline icon.
+---TODO: This function is only called with `wrap_with_color = false` so
+---`M.latest_pipeline` is never accessed - luckily so, because it is never set either,
+---so accessing `status` on it would throw an error. Pipeline status coloring is now
+---handled differently, so this function can be simplified and probably ultimately
+---inlined at call site.
+---@param idx integer The index of the pipeline within the table of the latest pipelines
 ---@param wrap_with_color boolean
 ---@return string
 M.get_pipeline_icon = function(idx, wrap_with_color)
@@ -258,9 +273,9 @@ M.get_pipeline_icon = function(idx, wrap_with_color)
   return "%#DiagnosticWarn#" .. symbol
 end
 
----Returns the status of the latest pipeline and the symbol
---representing the status of the current pipeline. Takes an optional argument to
----colorize the pipeline icon.
+---Return the status of the latest pipeline and the symbol representing its status.
+---Takes an optional argument to colorize the pipeline icon.
+---@param idx integer The index of the pipeline within the table of the latest pipelines
 ---@param wrap_with_color boolean
 ---@return string
 M.get_pipeline_status = function(idx, wrap_with_color)
@@ -272,8 +287,15 @@ M.get_pipeline_status = function(idx, wrap_with_color)
   )
 end
 
-M.color_status = function(status, bufnr, status_line, linnr)
+---Colorize the pipeline status line.
+---@param status "canceled"|"created"|"failed"|"pending"|"preparing"|"running"|"scheduled"|"skipped"|"success"
+---@param bufnr integer The buffer number of the pipeline popup
+---@param status_line string The content of the given line (used to calculate offset for extmark)
+---@param linenr integer The line number in the pipeline popup to colorize
+M.color_status = function(status, bufnr, status_line, linenr)
   local ns_id = vim.api.nvim_create_namespace("GitlabNamespace")
+  -- TODO: The following line is probably dead code. It sets guifg to an icon like "" and
+  -- StatusHighlight is never used.
   vim.cmd(string.format("highlight default StatusHighlight guifg=%s", state.settings.pipeline[status]))
 
   local status_to_color_map = {
@@ -291,9 +313,9 @@ M.color_status = function(status, bufnr, status_line, linnr)
   vim.api.nvim_buf_set_extmark(
     bufnr,
     ns_id,
-    linnr - 1,
+    linenr - 1,
     0,
-    { end_row = linnr - 1, end_col = string.len(status_line), hl_group = status_to_color_map[status] }
+    { end_row = linenr - 1, end_col = string.len(status_line), hl_group = status_to_color_map[status] }
   )
 end
 

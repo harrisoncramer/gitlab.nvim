@@ -1,12 +1,15 @@
+-- This has become a huge garbage can for helper functions.
+-- TODO: Consider splitting this into meaningful modules.
+
 local git = require("gitlab.git")
 local List = require("gitlab.utils.list")
-local has_devicons, devicons = pcall(require, "nvim-web-devicons")
+
 local M = {}
 
----Pulls out a list of values matching a given key from an array of tables
+---Pull out a list of values matching a given key from an array of tables.
 ---@param t table List of tables to search
 ---@param key string Value to search for in the list
----@return table List List of values that were extracted
+---@return table
 M.extract = function(t, key)
   local resultTable = {}
   for _, value in ipairs(t) do
@@ -17,22 +20,12 @@ M.extract = function(t, key)
   return resultTable
 end
 
----Get the last word in a sentence
----@param sentence string The string to get the last word from
----@param divider string The regex to split the sentence by, defaults to whitespace
----@return string
-M.get_last_word = function(sentence, divider)
-  local words = {}
-  local pattern = string.format("([^%s]+)", divider or " ")
-  for word in sentence:gmatch(pattern) do
-    table.insert(words, word)
-  end
-  return words[#words] or ""
-end
-
----Return the first non-nil value in the input table, or nil
----@param values table The list of input values
----@return any
+---Return the first value in the input table or nil if there are no values in the table.
+---This is useful for cases where we want to get the first non-nil boolean value, but
+---`b ~= nil and b or c` would evaluate to `c` if `b` was `false`.
+---Note: Lua removes `nil` values from a table automatically.
+---@param values boolean[] The list of input values
+---@return boolean
 M.get_first_non_nil_value = function(values)
   for _, val in pairs(values) do
     if val ~= nil then
@@ -41,25 +34,30 @@ M.get_first_non_nil_value = function(values)
   end
 end
 
----Returns whether a string ends with a substring
+---Return whether a string ends with a suffix (true if suffix is empty).
 ---@param str string
----@param ending string
+---@param suffix string
 ---@return boolean
-M.ends_with = function(str, ending)
-  return ending == "" or str:sub(-#ending) == ending
+M.ends_with = function(str, suffix)
+  return suffix == "" or str:sub(-#suffix) == suffix
 end
 
+---Return a copy of `input_table` with `value_to_remove` removed.
+---@generic T
+---@param input_table T[]
+---@param value_to_remove T
+---@return T[]
 M.filter = function(input_table, value_to_remove)
-  local resultTable = {}
+  local result = {}
   for _, v in ipairs(input_table) do
     if v ~= value_to_remove then
-      table.insert(resultTable, v)
+      table.insert(result, v)
     end
   end
-  return resultTable
+  return result
 end
 
----Merges two deeply nested tables together, overriding values from the first with conflicts
+---Merge two deeply nested tables overriding values from the first in case of conflicts.
 ---@param defaults table The first table
 ---@param overrides table The second table
 ---@return table
@@ -70,12 +68,11 @@ M.merge = function(defaults, overrides)
   return vim.tbl_deep_extend("force", defaults, overrides)
 end
 
----Combines two list-like (non associative) tables, keeping values from both
----@param t1 table The first table
----@param ... table[] The first table
+---Combine list-like (non associative) tables in input order, keeping values from all.
+---@param ... table The tables to combine
 ---@return table
-M.combine = function(t1, ...)
-  local result = t1
+M.combine = function(...)
+  local result = {}
   local tables = { ... }
   for _, t in ipairs(tables) do
     for _, v in ipairs(t) do
@@ -85,7 +82,8 @@ M.combine = function(t1, ...)
   return result
 end
 
----Pluralizes the input word, e.g. "3 cows"
+---Pluralize the input word if necessary, e.g. "3 minutes", but "1 minute".
+---TODO: Fix "-1" which produces "-1 minutes".
 ---@param num integer The count of the item/word
 ---@param word string The word to pluralize
 ---@return string
@@ -93,8 +91,13 @@ M.pluralize = function(num, word)
   return num .. string.format(" %s", word) .. ((num > 1 or num <= 0) and "s" or "")
 end
 
---- Provides a human readable time since a given ISO date string
----@param date_string string -- The ISO time stamp to compare with the current time
+---Provide a human readable time since a given ISO date string.
+---TODO: Verify that time zone is handled correctly by this function. Current date is
+---calculated as Coordinated Universal Time, but the reference `date_string` seems to be
+---taken at face value. This should handle date_string formats like
+---"2026-06-23T15:31:08.521+02:00", and "2026-05-24T14:50:46.096Z"
+---@param date_string string The ISO time stamp to compare with the current time
+---@param current_date_table? osdate Only used in tests. Table with YYYY, MM, DD, HH, MM, SS, weekday (Sunday is 1), day of the year, and boolean daylight saving flag
 ---@return string
 M.time_since = function(date_string, current_date_table)
   local dt = current_date_table or os.date("!*t")
@@ -126,7 +129,8 @@ M.time_since = function(date_string, current_date_table)
   end
 end
 
----Spreads all the values from t2 into t1
+---Spread all the values from t2 into t1.
+---TODO: Replace with M.combine.
 ---@param t1 table The first table (gets the values)
 ---@param t2 table The second table
 ---@return table
@@ -138,7 +142,8 @@ M.spread = function(t1, t2)
   return t1
 end
 
----Returns the number of keys or values in a table
+---Return the number of keys or values in a table.
+---TODO: Replace with next().
 ---@param t table The table to count
 ---@return integer
 M.table_size = function(t)
@@ -149,7 +154,7 @@ M.table_size = function(t)
   return count
 end
 
----Returns whether a given value is in a list or not
+---Return whether a given value is in a list or not.
 ---@param list table The list to search
 ---@return boolean
 M.contains = function(list, search_value)
@@ -161,9 +166,10 @@ M.contains = function(list, search_value)
   return false
 end
 
----Splits a string by new lines and returns an iterator
+---Split a string by new lines and return an iterator.
+-- TODO: Replace newline hack with s:gmatch("[^\r\n]+"), add tests.
 ---@param s string The string to split
----@return table: An iterator object
+---@return fun():string new_lines The iterator object
 M.split_by_new_lines = function(s)
   if s:sub(-1) ~= "\n" then
     s = s .. "\n"
@@ -171,7 +177,7 @@ M.split_by_new_lines = function(s)
   return s:gmatch("(.-)\n") -- Match 0 or more (as few as possible) characters followed by a new line.
 end
 
----Takes a string of lines and returns a table of lines
+---Take a string of newline-separated lines and return a table of lines.
 ---@param s string The string to parse
 ---@return table
 M.lines_into_table = function(s)
@@ -182,9 +188,10 @@ M.lines_into_table = function(s)
   return lines
 end
 
--- Reverses the order of elements in a list
----@param list table The list to reverse
----@return table
+---Return a new list which is a copy of `list` with the order reversed.
+---@generic T
+---@param list T[] The list to reverse
+---@return T[]
 M.reverse = function(list)
   if #list == 0 then
     return list
@@ -196,9 +203,9 @@ M.reverse = function(list)
   return rev
 end
 
----Returns the difference between a time offset and UTC time, in seconds
----@param offset string The offset to compare, e.g. -0500 for EST
----@return number
+---Return the value in seconds of a time offset.
+---@param offset string The offset to compare, e.g. "-0500" for EST
+---@return integer
 M.offset_to_seconds = function(offset)
   local sign, hours, minutes = offset:match("([%+%-])(%d%d)(%d%d)")
   local offset_in_seconds = tonumber(hours) * 3600 + tonumber(minutes) * 60
@@ -208,7 +215,12 @@ M.offset_to_seconds = function(offset)
   return offset_in_seconds
 end
 
----Converts a UTC timestamp and offset to a human readable datestring
+---Convert a UTC timestamp and offset to a human readable datestring.
+---TODO: 1. Always called with vim.fn.strftime("%z") as `offset` outside of tests,
+---         consider using it as a "default" value
+---      2. Simplify the triple date_string:match
+---      3. Simplify the time zone offset calculation
+---      4. Use YYYY-MM-DD instead of MM/DD/YYYY in return statement (https://xkcd.com/1179/)
 ---@param date_string string The time stamp
 ---@param offset string The offset of the user's local time zone, e.g. -0500 for EST
 ---@return string
@@ -256,7 +268,7 @@ M.format_to_local = function(date_string, offset)
   return tostring(os.date("%m/%d/%Y at %H:%M", localTimestamp))
 end
 
--- Returns a comma separated (human readable) list of values from a list of associative tables
+---Return a comma separated (human readable) list of values from a list of associative tables.
 ---@param list_of_tables table The list to traverse
 ---@param key string The key of the values to pull from the tables
 ---@return string
@@ -271,12 +283,12 @@ M.make_readable_list = function(list_of_tables, key)
   return res
 end
 
--- Returns the length of the longest string in a list of strings
----@param list table The list of strings
----@return number
-M.get_longest_string = function(list)
+---Return the length of the longest string in a list of strings.
+---@param strings string[]
+---@return integer
+M.get_max_length = function(strings)
   local longest = 0
-  for _, v in pairs(list) do
+  for _, v in pairs(strings) do
     if vim.fn.strcharlen(v) > longest then
       longest = vim.fn.strcharlen(v)
     end
@@ -284,6 +296,12 @@ M.get_longest_string = function(list)
   return longest
 end
 
+---Return table `tbl` with function `f` applied to each value in the table.
+---TODO: The only use of this function can be replaced by M.extract(t, "name").
+---@generic K, V, U
+---@param tbl table<K, V>
+---@param f fun(value: V): U
+---@return table<K, U>
 M.map = function(tbl, f)
   local t = {}
   for k, v in pairs(tbl) do
@@ -292,15 +310,24 @@ M.map = function(tbl, f)
   return t
 end
 
+---Notify user with a message with a prepended plugin identifier.
+---@param msg string
+---@param lvl vim.log.levels
 M.notify = function(msg, lvl)
   vim.notify("gitlab.nvim: " .. msg, lvl)
 end
 
--- Re-raise Vimscript error message after removing existing message prefixes
+---Re-raise Vimscript error message after removing existing message prefixes.
+---This is used instead of plain M.notify to suppress double use of the gitlab.nvim
+---prefix in vimscript errors that called gitlab.nvim's API.
+---@param msg string
+---@param lvl vim.log.levels
 M.notify_vim_error = function(msg, lvl)
   M.notify(msg:gsub("^Vim:", ""):gsub("^gitlab.nvim: ", ""), lvl)
 end
 
+---Return true when running on Windows.
+---@return boolean
 M.is_windows = function()
   if vim.fn.has("win32") == 1 or vim.fn.has("win32unix") == 1 then
     return true
@@ -323,6 +350,9 @@ M.split_path = function(path)
   return path_parts
 end
 
+---Return the contents of a buffer as a string with lines separated by the '\n' character.
+---@param bufnr integer
+---@return string
 M.get_buffer_text = function(bufnr)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return ""
@@ -332,12 +362,14 @@ M.get_buffer_text = function(bufnr)
   return text
 end
 
----Returns the number of lines in the buffer. Returns 1 even for empty buffers.
+---Return the number of lines in the buffer. Returns 1 even for empty buffers.
+---@param bufnr integer
+---@return integer
 M.get_buffer_length = function(bufnr)
   return #vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 end
 
----Convert string to corresponding boolean
+---Convert string to corresponding Boolean.
 ---@param str string
 ---@return boolean
 M.string_to_bool = function(str)
@@ -350,7 +382,7 @@ M.string_to_bool = function(str)
   return false
 end
 
----Convert boolean to corresponding string
+---Convert Boolean to corresponding string.
 ---@param bool boolean
 ---@return string
 M.bool_to_string = function(bool)
@@ -360,7 +392,7 @@ M.bool_to_string = function(bool)
   return "false"
 end
 
----Toggle boolean value
+---Toggle Boolean value.
 ---@param bool string
 ---@return string
 M.toggle_string_bool = function(bool)
@@ -372,6 +404,7 @@ M.toggle_string_bool = function(bool)
     ["False"] = "True",
     ["FALSE"] = "TRUE",
   }
+  -- TODO: Just do one replacement with "%s+".
   bool = bool:gsub("^%s+", ""):gsub("%s+$", "")
   local toggled = string_bools[bool]
   if toggled == nil then
@@ -381,6 +414,7 @@ M.toggle_string_bool = function(bool)
   return toggled
 end
 
+---Simulate the user pressing the <Esc> key in order to get into normal mode.
 M.press_escape = function()
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
 end
@@ -392,6 +426,12 @@ M.from_iso_format_date_to_timestamp = function(date_string)
   local year, month, day, hour, min, sec = date_string:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
   return os.time({ year = year, month = month, day = day, hour = hour, min = min, sec = sec })
 end
+
+---Return a copy of `a` without the items that are also in `b`.
+---@generic T
+---@param a T[]
+---@param b T[]
+---@return T[]
 M.difference = function(a, b)
   local set_b = {}
   for _, val in ipairs(b) do
@@ -408,6 +448,13 @@ M.difference = function(a, b)
   return not_included
 end
 
+---@class ReadFileOpts
+---@field remove_newlines? boolean
+
+---Return the contents of a file as a string.
+---@param file_path string
+---@param opts? ReadFileOpts
+---@return string?
 M.read_file = function(file_path, opts)
   local file = io.open(file_path, "r")
   if file == nil then
@@ -423,18 +470,26 @@ M.read_file = function(file_path, opts)
   return file_contents
 end
 
--- Returns the root path of the plugin (four levels up from this file: lua/gitlab/utils/init.lua)
+---Return the root path of the plugin (four levels up from this file: lua/gitlab/utils/init.lua)
+---@return string
 M.get_root_path = function()
   local path = debug.getinfo(1, "S").source:sub(2)
   return vim.fn.fnamemodify(path, ":p:h:h:h:h")
 end
 
-M.get_line_content = function(bufnr, start)
+---Return the specified line of the given (or current) buffer.
+---@param bufnr? integer The buffer to get the line from. If nil, the current buffer is used
+---@param linenr integer The 1-indexed line number to return
+---@return string
+M.get_line_content = function(bufnr, linenr)
   local current_buffer = vim.api.nvim_get_current_buf()
-  local lines = vim.api.nvim_buf_get_lines(bufnr ~= nil and bufnr or current_buffer, start - 1, start, false)
+  local lines = vim.api.nvim_buf_get_lines(bufnr ~= nil and bufnr or current_buffer, linenr - 1, linenr, false)
   return lines[1]
 end
 
+---Switch if buffer can be modified.
+---@param buf integer Buffer number
+---@param bool boolean The value to set
 M.switch_can_edit_buf = function(buf, bool)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -443,9 +498,9 @@ M.switch_can_edit_buf = function(buf, bool)
   vim.api.nvim_set_option_value("readonly", not bool, { buf = buf })
 end
 
--- Gets the window holding a buffer in the current tab page
----@param buffer_id number Id of a buffer
----@return integer|nil
+---Return the window holding a buffer in the current tab page.
+---@param buffer_id integer Id of a buffer
+---@return integer?
 M.get_window_id_by_buffer_id = function(buffer_id)
   local tabpage = vim.api.nvim_get_current_tabpage()
   local windows = vim.api.nvim_tabpage_list_wins(tabpage)
@@ -456,6 +511,10 @@ M.get_window_id_by_buffer_id = function(buffer_id)
   end)
 end
 
+---Return the list of file and directory names in the given directory, sorted by the
+---last modification time from newest to oldest.
+---@param folder_path string
+---@return string[]? files
 M.list_files_in_folder = function(folder_path)
   if vim.fn.isdirectory(folder_path) == 0 then
     return nil
@@ -486,8 +545,9 @@ M.list_files_in_folder = function(folder_path)
   return files
 end
 
----Check if current mode is visual mode
----@return boolean is_visual true if current mode is visual mode
+---Return true if current mode is visual mode, otherwise false.
+---TODO: Move to lua/gitlab/actions/comment.lua where is its only call site.
+---@return boolean
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
@@ -498,7 +558,9 @@ M.check_visual_mode = function()
 end
 
 ---Return start line and end line of visual selection.
----@return integer start,integer end Start line and end line
+---TODO: Move to `lua/gitlab/reviewer/location.lua`
+---@return integer
+---@return integer
 M.get_visual_selection_boundaries = function()
   local start_line = vim.fn.line("v")
   local end_line = vim.fn.line(".")
@@ -508,10 +570,12 @@ M.get_visual_selection_boundaries = function()
   return start_line, end_line
 end
 
----Get icon for filename if nvim-web-devicons plugin is available otherwise return empty string
+---Get icon for filename if nvim-web-devicons plugin is available, otherwise return
+---empty string.
 ---@return string?
 ---@return string?
 M.get_icon = function(filename)
+  local has_devicons, devicons = pcall(require, "nvim-web-devicons")
   if has_devicons then
     local extension = vim.fn.fnamemodify(filename, ":e")
     local icon, icon_hl = devicons.get_icon(filename, extension, { default = true })
@@ -525,7 +589,8 @@ M.get_icon = function(filename)
   end
 end
 
----Return content between start_line and end_line
+---Return content between start_line and end_line.
+---TODO: Consider removing this thin wrapper.
 ---@param start_line integer
 ---@param end_line integer
 ---@return string[]
@@ -533,7 +598,7 @@ M.get_lines = function(start_line, end_line)
   return vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
 end
 
----Select a git branch and perform callback with the branch as an argument
+---Select a git branch and perform callback with the branch as an argument.
 ---@param cb function The callback to perform with the selected branch
 M.select_target_branch = function(cb)
   local all_branch_names = git.get_all_merge_targets()
@@ -549,6 +614,8 @@ M.select_target_branch = function(cb)
   end)
 end
 
+---Return the project's Gitlab URL.
+---@return string?
 M.get_web_url = function()
   local web_url = require("gitlab.state").INFO.web_url
   if web_url ~= nil then
@@ -557,6 +624,7 @@ M.get_web_url = function()
   M.notify("Could not get Gitlab URL", vim.log.levels.ERROR)
 end
 
+---Open the `url` based on OS.
 ---@param url? string
 M.open_in_browser = function(url)
   if vim.fn.has("mac") == 1 then
@@ -570,7 +638,8 @@ M.open_in_browser = function(url)
   end
 end
 
----Combines two tables
+---Combine two tables.
+---TODO: Replace with M.combine.
 ---@param t1 table
 ---@param t2 table
 ---@return table
@@ -584,13 +653,17 @@ M.join = function(t1, t2)
   end
   return res
 end
----Trims the trailing slash from a URL
+
+---Trim the trailing slash from a URL
 ---@param s string
 ---@return string
 M.trim_slash = function(s)
   return (s:gsub("/+$", ""))
 end
 
+---Return an empty table if `data` is nil, otherwise return `data` unchanged.
+---@param data? table|vim.NIL
+---@return table
 M.ensure_table = function(data)
   if data == vim.NIL or data == nil then
     return {}
@@ -598,9 +671,15 @@ M.ensure_table = function(data)
   return data
 end
 
-M.get_nested_field = function(table, field)
+---Return the value of a `field` from `tbl`.
+---Recurses into subtables, if the field name contains "." characters, e.g.,
+---get_nested_field({subtable = {field = 1}}, "subtable.field") will return `1`
+---@param tbl table
+---@param field string The field to return
+---@return any
+M.get_nested_field = function(tbl, field)
   local subfield = string.match(field, "[^.]+")
-  local subtable = table[subfield]
+  local subtable = tbl[subfield]
   if subtable ~= nil then
     local new_field = string.gsub(field, "^" .. subfield .. ".?", "")
     if new_field ~= "" then
@@ -611,6 +690,7 @@ M.get_nested_field = function(table, field)
   end
 end
 
+---Open one fold level if there are closed folds under the cursor.
 M.open_fold_under_cursor = function()
   if vim.fn.foldclosed(vim.fn.line(".")) > -1 then
     vim.cmd("normal! zo")

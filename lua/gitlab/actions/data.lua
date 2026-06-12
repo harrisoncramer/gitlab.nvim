@@ -12,6 +12,14 @@ local revisions = state.dependencies.revisions
 local latest_pipeline = state.dependencies.latest_pipeline
 local draft_notes = state.dependencies.draft_notes
 
+---@class GitlabResource
+---@field type "info"|"user"|"labels"|"mergeability"|"project_members"|"revisions"|"pipeline"|"draft_notes"
+---@field refresh boolean If true, refresh the data by hitting Gitlab's APIs again.
+
+---Load the data about the current MR, and execute callback with the date as an argument.
+---@param resources GitlabResource[]
+---@param cb fun(data)
+---@return nil
 M.data = function(resources, cb)
   if type(resources) ~= "table" or type(cb) ~= "function" then
     u.notify("The data function must be passed a resources table and a callback function", vim.log.levels.ERROR)
@@ -39,6 +47,7 @@ M.data = function(resources, cb)
   -- in parallel where possible to speed up this API
   return async.sequence(api_calls, function()
     local data = {}
+    -- FIXME: Shouldn't this really be `for k, v in pairs(api_calls) do`?
     for k, v in pairs(all_resources) do
       data[k] = state[v.state]
     end
