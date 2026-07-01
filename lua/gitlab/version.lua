@@ -1,7 +1,7 @@
 local M = {}
 
 M.is_go_valid = function()
-  local go_version = io.popen("go version"):read("*a")
+  local go_version = io.popen("go version 2>&1"):read("*a")
   if go_version then
     local major, minor, _ = go_version:match("(%d+)%.(%d+)%.?(%d*)")
     if major and tonumber(major) >= 1 and tonumber(minor) >= 25 then
