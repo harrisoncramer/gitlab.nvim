@@ -1,14 +1,15 @@
 local M = {}
 
 M.is_go_valid = function()
-  local go_version = io.popen("go version 2>&1"):read("*a")
-  if go_version then
-    local major, minor, _ = go_version:match("(%d+)%.(%d+)%.?(%d*)")
-    if major and tonumber(major) >= 1 and tonumber(minor) >= 25 then
-      return true
-    else
-      return false
-    end
+  local has_go, go = pcall(vim.system, {"go", "version"});
+  if not has_go then
+    return false
+  end
+
+  local go_version = go:wait().stdout;
+  local major, minor, _ = go_version:match("(%d+)%.(%d+)%.?(%d*)")
+  if major and tonumber(major) >= 1 and tonumber(minor) >= 25 then
+    return true
   else
     return false
   end
