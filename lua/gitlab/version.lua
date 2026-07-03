@@ -1,7 +1,7 @@
 local M = {}
 
 M.is_go_valid = function()
-  local has_go, go = pcall(vim.system, {"go", "version"});
+  local has_go, go = pcall(vim.system, { "go", "version" })
   if not has_go then
     return false
   end
