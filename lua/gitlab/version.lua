@@ -6,13 +6,8 @@ M.is_go_valid = function()
     return false
   end
 
-  local go_version = go:wait().stdout;
-  local major, minor, _ = go_version:match("(%d+)%.(%d+)%.?(%d*)")
-  if major and tonumber(major) >= 1 and tonumber(minor) >= 25 then
-    return true
-  else
-    return false
-  end
+  local go_version = vim.version.parse(go:wait().stdout, { strict = false })
+  return vim.version.ge(go_version, { 1, 25, 0 })
 end
 
 M.check_go_version = function()
