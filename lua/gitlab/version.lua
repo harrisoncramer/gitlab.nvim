@@ -7,7 +7,7 @@ M.is_go_valid = function()
   end
 
   local go_version = vim.version.parse(go:wait().stdout, { strict = false })
-  return vim.version.ge(go_version, { 1, 25, 0 })
+  return go_version ~= nil and vim.version.ge(go_version, { 1, 25, 0 })
 end
 
 M.check_go_version = function()
