@@ -106,20 +106,11 @@ M.build = function(override)
 
   -- If the user provided a path to the server, don't build it.
   if state.settings.server.binary_provided then
-    local binary_exists = vim.loop.fs_stat(state.settings.server.binary)
-    if binary_exists == nil then
-      u.notify(
-        string.format("The user-provided server path (%s) does not exist.", state.settings.server.binary),
-        vim.log.levels.ERROR
-      )
-      return false
-    end
     return
   end
 
   local version_issue = version.check_go_version()
   if version_issue ~= nil then
-    u.notify(version_issue, vim.log.levels.ERROR)
     return
   end
 
