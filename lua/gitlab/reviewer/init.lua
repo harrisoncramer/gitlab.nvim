@@ -59,9 +59,9 @@ M.open = function()
     end
   end
 
+  M.is_open = true
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
 
-  M.is_open = true
   M.diffview = require("diffview.lib").get_current_view()
   if M.diffview == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
@@ -304,7 +304,11 @@ M.set_callback_for_buf_read = function(callback)
     pattern = { "DiffviewDiffBufRead" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabid then
+      -- Only run the callback when we're in the MR's tabpage or when the tabpage has
+      -- not yet been set (tabid = nil) in a freshly started review (is_open = true).
+      -- TODO: This is a hacky workaround for cases when an added file is diffeed
+      -- against diffview://null and this autocommand fires before tabid is set.
+      if vim.api.nvim_get_current_tabpage() == M.tabid or (M.is_open and M.tabid == nil) then
         callback(...)
       end
     end,
