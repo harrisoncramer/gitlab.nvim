@@ -177,10 +177,6 @@ M.open = function(callback, view_type)
   if type(callback) == "function" then
     callback()
   end
-
-  vim.schedule(function()
-    M.refresh_diagnostics()
-  end)
 end
 
 -- Clears the discussion state and unmounts the split
