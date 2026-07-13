@@ -47,9 +47,19 @@ M.check = function(return_results)
     },
   }
 
-  local go_version_problem = version.check_go_version()
-  if go_version_problem ~= nil then
-    table.insert(warnings, go_version_problem)
+  if state.settings.server.binary_provided then
+    local binary_exists = vim.loop.fs_stat(state.settings.server.binary)
+    if binary_exists == nil then
+      table.insert(
+        errors,
+        string.format("The user-provided server path (%s) does not exist", state.settings.server.binary)
+      )
+    end
+  else
+    local go_version_problem = version.check_go_version()
+    if go_version_problem ~= nil then
+      table.insert(errors, go_version_problem)
+    end
   end
 
   for _, dep in ipairs(required_deps) do

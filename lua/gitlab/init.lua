@@ -12,7 +12,6 @@ local summary = require("gitlab.actions.summary")
 local data = require("gitlab.actions.data")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
-local version = require("gitlab.version")
 local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
@@ -35,12 +34,6 @@ local merge_requests_by_username_dep = state.dependencies.merge_requests_by_user
 local function setup(args)
   if args == nil then
     args = {}
-  end
-
-  local version_issue = version.check_go_version()
-  if version_issue ~= nil then
-    u.notify(version_issue, vim.log.levels.ERROR)
-    return
   end
 
   state.merge_settings(args) -- Merges user settings with default settings

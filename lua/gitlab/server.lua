@@ -4,6 +4,7 @@
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
+local version = require("gitlab.version")
 local M = {}
 
 -- Builds the binary if it doesn't exist, and starts the server. If the pre-existing binary has an older
@@ -23,8 +24,8 @@ M.build_and_start = function(callback)
       callback()
       return
     end
-    M.get_version(function(version)
-      if version.plugin_version ~= version.binary_version then
+    M.get_version(function(versions)
+      if versions.plugin_version ~= versions.binary_version then
         M.shutdown(function()
           if M.build(true) then
             M.start(callback)
@@ -105,14 +106,11 @@ M.build = function(override)
 
   -- If the user provided a path to the server, don't build it.
   if state.settings.server.binary_provided then
-    local binary_exists = vim.loop.fs_stat(state.settings.server.binary)
-    if binary_exists == nil then
-      u.notify(
-        string.format("The user-provided server path (%s) does not exist.", state.settings.server.binary),
-        vim.log.levels.ERROR
-      )
-      return false
-    end
+    return
+  end
+
+  local version_issue = version.check_go_version()
+  if version_issue ~= nil then
     return
   end
 
@@ -150,9 +148,9 @@ M.build = function(override)
   local version_output = vim
     .system({ "git", "describe", "--tags", "--always" }, { cwd = state.settings.root_path })
     :wait()
-  local version = version_output.code == 0 and vim.trim(version_output.stdout) or "unknown"
+  local plugin_version = version_output.code == 0 and vim.trim(version_output.stdout) or "unknown"
 
-  local ldflags = string.format("-X main.Version=%s", version)
+  local ldflags = string.format("-X main.Version=%s", plugin_version)
   local res = vim
     .system(
       { "go", "build", "-buildvcs=false", "-ldflags", ldflags, "-o", state.settings.server.binary },
