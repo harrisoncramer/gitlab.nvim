@@ -37,10 +37,16 @@ function async:fetch(dependencies, i, argTable)
 
   -- Call the API, set the data, and then call the next API
   local body = dependency.body and dependency.body(argTable) or nil
+  local on_error = nil
+  if dependency.non_blocking then
+    on_error = function()
+      self:fetch(dependencies, i + 1, argTable)
+    end
+  end
   job.run_job(dependency.endpoint, dependency.method or "GET", body, function(data)
     state[dependency.state] = dependency.key and data[dependency.key] or data
     self:fetch(dependencies, i + 1, argTable)
-  end)
+  end, on_error)
 end
 
 -- Will call APIs in sequence and set global state

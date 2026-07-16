@@ -574,6 +574,7 @@ M.dependencies = {
     key = "draft_notes",
     state = "DRAFT_NOTES",
     refresh = false,
+    non_blocking = true,
   },
   project_members = {
     endpoint = "/project/members",
