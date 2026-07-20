@@ -2,9 +2,11 @@ local List = require("gitlab.utils.list")
 
 local M = {}
 
----Runs a system command, captures the output (if it exists) and handles errors
----@param command table
----@return string|nil, string|nil
+---Run a system command, capture the output (if it exists) and handle errors.
+---TODO: Rewrite using vim.system instead of vim.fn.system.
+---@param command string[]
+---@return string? result The result of the command as a string. Nil if the command failed
+---@return string? error The error the command failed with. Nil if the command succeeded
 local run_system = function(command)
   local result = vim.fn.trim(vim.fn.system(command))
   if vim.v.shell_error ~= 0 then
@@ -14,44 +16,46 @@ local run_system = function(command)
   return result, nil
 end
 
----Returns all branches for the current repository
----@param args table|nil extra arguments for `git branch`
----@return string|nil, string|nil
+---Return all branches for the current repository.
+---@param args? string[] Extra arguments for `git branch`
+---@return string?, string?
 M.branches = function(args)
-  -- Load here to prevent loop
   local u = require("gitlab.utils")
   return run_system(u.combine({ "git", "branch" }, args or {}))
 end
 
----Returns true if the working tree hasn't got any changes that haven't been committed
----@return boolean, string|nil
+---Return true if the working tree hasn't got any changes that haven't been committed.
+---@return boolean, string?
 M.has_clean_tree = function()
   local changes, err = run_system({ "git", "status", "--short", "--untracked-files=no" })
   return changes == "", err
 end
 
----Returns true if the `file` has got any uncommitted changes
+---Return true if the `file` has got any uncommitted changes.
 ---@param file string File to check for changes
----@return boolean, string|nil
+---@return boolean, string?
 M.has_changes = function(file)
   local changes, err = run_system({ "git", "status", "--short", "--untracked-files=no", "--", file })
   return changes ~= "", err
 end
 
----Gets the base directory of the current project
----@return string|nil, string|nil
+---Return the base directory of the current project and possible error from git.
+---@return string?, string?
 M.base_dir = function()
   return run_system({ "git", "rev-parse", "--show-toplevel" })
 end
 
----Switches the current project to the given branch
----@return string|nil, string|nil
+---Switch the current project to the given branch.
+---@param branch string The branch to switch to
+---@return string?, string?
 M.switch_branch = function(branch)
   return run_system({ "git", "checkout", "-q", branch })
 end
 
----Returns the name of the remote-tracking branch for the current branch or nil if it can't be found
----@return string|nil
+---Return the name of the upstream branch for the current branch or nil if it can't be found.
+---TODO: This should really be called "get_upstream_branch", and the use of "remote
+---branch" should be revised throughout this module.
+---@return string?
 M.get_remote_branch = function()
   local remote_branch, err = run_system({ "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" })
   if err or remote_branch == "" then
@@ -61,9 +65,9 @@ M.get_remote_branch = function()
   return remote_branch
 end
 
----Fetch the remote branch
+---Fetch the remote branch.
 ---@param remote_branch string The name of the repo and branch to fetch (e.g., "origin/some_branch")
----@return boolean fetch_successful False if an error occurred while fetching, true otherwise.
+---@return boolean fetch_successful False if an error occurred while fetching, true otherwise
 M.fetch_remote_branch = function(remote_branch)
   local remote, branch = string.match(remote_branch, "([^/]+)/(.+)")
   if not remote or not branch then
@@ -78,11 +82,12 @@ M.fetch_remote_branch = function(remote_branch)
   return true
 end
 
----Determines whether the tracking branch is ahead of or behind the current branch and returns the
----number of ahead and behind commits or nil values in case of errors.
----@param current_branch string|nil
----@param remote_branch string|nil
----@return integer|nil ahead, integer|nil behind
+---Return the number of commits the local branch is ahead of and behind the upstream or
+---nil values in case of errors.
+---@param current_branch? string The name of the local branch
+---@param remote_branch? string The name of the remote branch
+---@return integer? ahead The number of commits local is ahead of upstream
+---@return integer? behind The number of commits local is behind upstream
 M.get_ahead_behind = function(current_branch, remote_branch)
   if current_branch == nil or remote_branch == nil then
     return nil, nil
@@ -109,7 +114,7 @@ M.get_ahead_behind = function(current_branch, remote_branch)
 end
 
 ---Return the name of the current branch, or nil (detached HEAD or git failure).
----@return string|nil
+---@return string?
 M.get_current_branch = function()
   local current_branch, err = run_system({ "git", "branch", "--show-current" })
   if err then
@@ -124,7 +129,7 @@ M.get_current_branch = function()
 end
 
 ---Return the list of possible merge targets.
----@return table|nil
+---@return table?
 M.get_all_merge_targets = function()
   local current_branch = M.get_current_branch()
   if current_branch == nil then
@@ -136,7 +141,8 @@ M.get_all_merge_targets = function()
 end
 
 ---Return the list of names of all remote-tracking branches or an empty list.
----@return table, string|nil
+---@return string[] result List of branch names
+---@return string? error The error when listing branches fails
 M.get_all_remote_branches = function()
   local state = require("gitlab.state")
   local all_branches, err = M.branches({ "--remotes" })
@@ -151,7 +157,7 @@ M.get_all_remote_branches = function()
   local lines = u.lines_into_table(all_branches)
   return List.new(lines)
     :map(function(line)
-      -- Trim the remote branch
+      -- Trim the remote name from the branch name
       return line:match(state.settings.connection_settings.remote .. "/(%S+)")
     end)
     :filter(function(branch)
@@ -161,17 +167,18 @@ M.get_all_remote_branches = function()
 end
 
 ---Return whether something
+---TODO: Remove - unused.
 ---@param current_branch string
----@return string|nil, string|nil
+---@return string?, string?
 M.contains_branch = function(current_branch)
   return run_system({ "git", "branch", "-r", "--contains", current_branch })
 end
 
---- Returns true if `branch` is up-to-date on remote, otherwise false and warns user
----@param ahead integer|nil The number of commits the current branch is ahead of remote
----@param behind integer|nil The number of commits the current branch is behind remote
----@param remote_branch string|nil The remote branch, e.g., origin/feature-branch
----@param log_level number
+---Return true if local is up-to-date with remote, otherwise false and notify user.
+---@param ahead? integer The number of commits the current branch is ahead of remote
+---@param behind? integer The number of commits the current branch is behind remote
+---@param remote_branch? string The remote branch, e.g., origin/feature-branch
+---@param log_level vim.log.levels
 ---@return boolean
 M.evaluate_ahead_behind = function(ahead, behind, remote_branch, log_level)
   if ahead == nil or behind == nil then
@@ -200,13 +207,13 @@ M.evaluate_ahead_behind = function(ahead, behind, remote_branch, log_level)
     return false
   end
 
-  return true -- Checks passed, branch is up-to-date
+  return true -- Checks passed, local is up-to-date
 end
 
---- Returns true if `branch` is up-to-date on remote, otherwise false and notifies user.
---- This is a blocking function. For a non-blocking version use
---- gitlab.git_async.check_current_branch_up_to_date_on_remote.
----@param log_level number The log level with which user will be notified
+---Return true if local is up-to-date with remote, otherwise false and notify user.
+---This is a blocking function. For a non-blocking version use
+---gitlab.git_async.check_current_branch_up_to_date_on_remote.
+---@param log_level vim.log.levels The log level with which user will be notified
 ---@return boolean
 M.check_current_branch_up_to_date_on_remote = function(log_level)
   local current_branch = M.get_current_branch()
@@ -216,7 +223,7 @@ M.check_current_branch_up_to_date_on_remote = function(log_level)
   return M.evaluate_ahead_behind(ahead, behind, remote_branch, log_level)
 end
 
----Warns user if the current MR is in a bad state (closed, has conflicts, merged)
+---Warn user if the current MR is in a bad state (closed, has conflicts, merged).
 M.check_mr_in_good_condition = function()
   local state = require("gitlab.state")
   local u = require("gitlab.utils")
@@ -234,12 +241,12 @@ M.check_mr_in_good_condition = function()
   end
 end
 
----Returns the full diff between the local working tree relative to the named `base_sha`, for the
----given file(s).
----@param base_sha string Base sha to diff against
----@param old_path string? Old file name
----@param new_path string? New file name - relevant for renamed files, ignored if same as old_path
----@return string|nil diff, string|nil err
+---Return the full diff between the local working tree relative to the named `base_sha`,
+---for the given file(s).
+---@param base_sha string Base SHA to diff against
+---@param old_path? string Old file name
+---@param new_path? string New file name - relevant for renamed files, ignored if same as old_path
+---@return string? diff, string? err
 M.diff_files = function(base_sha, old_path, new_path)
   return run_system({
     "git",

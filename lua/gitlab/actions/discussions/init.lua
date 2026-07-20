@@ -2,6 +2,7 @@
 -- That includes things like editing existing notes in the tree,
 -- replying to notes in the tree, and marking discussions as resolved/unresolved.
 -- Draft notes are managed separately, under lua/gitlab/actions/draft_notes/init.lua
+
 local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
@@ -28,15 +29,16 @@ local M = {
   linked_bufnr = nil,
   ---@type number
   unlinked_bufnr = nil,
-  ---@type NuiTree|nil
+  ---@type NuiTree?
   discussion_tree = nil,
-  ---@type NuiTree|nil
+  ---@type NuiTree?
   unlinked_discussion_tree = nil,
 }
 
----Re-fetches all discussions and re-renders the relevant view
+---Re-fetch all discussions and re-render the relevant view.
+---TODO: simplify the function signature - "unlinked" and "all" should not be two booleans
 ---@param unlinked boolean
----@param all boolean|nil
+---@param all? boolean
 M.rebuild_view = function(unlinked, all)
   M.load_discussions(function()
     if all then
@@ -52,8 +54,8 @@ M.rebuild_view = function(unlinked, all)
   end)
 end
 
----Makes API call to get the discussion data, stores it in the state, and calls the callback
----@param callback function|nil
+---Make API call to get the discussion data, stores it in the state, and calls the callback.
+---@param callback? fun()
 M.load_discussions = function(callback)
   local git = require("gitlab.git")
   require("gitlab.git_async").get_ahead_behind(
@@ -100,7 +102,7 @@ M.initialize_discussions = function()
   end)
 end
 
---- Take existing data and refresh the diagnostics and the signs
+---Take existing data and refresh the diagnostics and the signs.
 M.refresh_diagnostics = function()
   if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
@@ -108,10 +110,9 @@ M.refresh_diagnostics = function()
   common.add_empty_titles()
 end
 
----Opens the discussion tree, sets the keybindings. It also
----creates the tree for notes (which are not linked to specific lines of code)
+---Open the discussion and unlinked note trees and set the keybindings.
 ---@param callback? function
----@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed).
+---@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed)
 M.open = function(callback, view_type)
   local original_window = vim.api.nvim_get_current_win() -- The window from which ther user called M.open
 
@@ -179,7 +180,7 @@ M.open = function(callback, view_type)
   end
 end
 
--- Clears the discussion state and unmounts the split
+---Clear the discussion state and unmounts the split.
 M.close = function()
   if M.split then
     M.split:unmount()
@@ -201,7 +202,7 @@ M.move_to_discussion_tree = function()
       -- All diagnostics in `diagnotics_namespace` have diagnostic_id
       local discussion_id = diagnostic.user_data.discussion_id
       local discussion_node, line_number = M.discussion_tree:get_node("-" .. discussion_id)
-      if discussion_node == {} or discussion_node == nil then
+      if discussion_node == nil or next(discussion_node) == nil then
         u.notify("Discussion not found", vim.log.levels.WARN)
         return
       end
@@ -249,7 +250,8 @@ M.move_to_discussion_tree = function()
   end
 end
 
--- The reply popup will mount in a window when you trigger it (settings.keymaps.discussion_tree.reply) when hovering over a node in the discussion tree.
+---Open a reply popup for a note in the discussion tree.
+---@param tree NuiTree
 M.reply = function(tree)
   if M.is_draft_note(tree) then
     u.notify("Gitlab does not support replying to draft notes", vim.log.levels.WARN)
@@ -277,7 +279,9 @@ M.reply = function(tree)
   layout:mount()
 end
 
--- This function (settings.keymaps.discussion_tree.delete_comment) will trigger a popup prompting you to delete the current comment
+---Open a popup prompting the user to delete the current comment.
+---@param tree NuiTree
+---@param unlinked boolean
 M.delete_comment = function(tree, unlinked)
   vim.ui.select({ "Confirm", "Cancel" }, {
     prompt = "Delete comment?",
@@ -303,7 +307,9 @@ M.delete_comment = function(tree, unlinked)
   end)
 end
 
--- This function (settings.keymaps.discussion_tree.edit_comment) will open the edit popup for the current comment in the discussion tree
+---Open the edit popup for the current comment in the discussion tree.
+---@param tree NuiTree
+---@param unlinked boolean
 M.edit_comment = function(tree, unlinked)
   local current_node = tree:get_node()
   local note_node = common.get_note_node(tree, current_node)
@@ -314,7 +320,7 @@ M.edit_comment = function(tree, unlinked)
   end
   local title = "Edit Comment"
   title = root_node.file_name ~= nil and string.format("%s [%s]", title, root_node.file_name) or title
-  local edit_popup = Popup(popup.create_popup_state(title, state.settings.popup.edit))
+  local edit_popup = Popup(popup.create_popup_state({ title = title, user_settings = state.settings.popup.edit }))
 
   popup.set_up_autocommands(edit_popup, nil, vim.api.nvim_get_current_win())
 
@@ -323,7 +329,7 @@ M.edit_comment = function(tree, unlinked)
   -- Gather all lines from immediate children that aren't note nodes
   local lines = List.new(note_node:get_child_ids()):reduce(function(agg, child_id)
     local child_node = tree:get_node(child_id)
-    if not child_node:has_children() then
+    if child_node and not child_node:has_children() then
       local line = tree:get_node(child_id).text
       table.insert(agg, line)
     end
@@ -345,14 +351,15 @@ M.edit_comment = function(tree, unlinked)
     local comment = require("gitlab.actions.comment")
     popup.set_popup_keymaps(
       edit_popup,
-      comment.confirm_edit_comment(tostring(root_node.id), tonumber(note_node.root_note_id or note_node.id), unlinked),
+      comment.confirm_edit_comment(tostring(root_node.id), note_node.root_note_id or note_node.id, unlinked),
       nil,
       popup.editable_popup_opts
     )
   end
 end
 
--- This function (settings.keymaps.discussion_tree.toggle_discussion_resolved) will toggle the resolved status of the current discussion and send the change to the Go server
+---Toggle the resolved status of the current discussion and send the change to the Go server.
+---@param tree NuiTree
 M.toggle_discussion_resolved = function(tree)
   local note = tree:get_node()
   if note == nil then
@@ -379,14 +386,19 @@ M.toggle_discussion_resolved = function(tree)
   end)
 end
 
----Opens a popup prompting the user to choose an emoji to attach to the current node
+---Open a popup prompting the user to choose an emoji to attach to the current node.
 ---@param tree any
 ---@param unlinked boolean
 M.add_emoji_to_note = function(tree, unlinked)
   local node = tree:get_node()
   local note_node = common.get_note_node(tree, node)
-  local root_node = common.get_root_node(tree, node)
-  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+
+  if note_node == nil then
+    u.notify("Could not get note", vim.log.levels.ERROR)
+    return
+  end
+
+  local note_id = note_node.root_note_id or note_node.id
   local emojis = require("gitlab.emoji").emoji_list
   emoji.pick_emoji(emojis, function(name)
     local body = { emoji = name, note_id = note_id }
@@ -397,14 +409,19 @@ M.add_emoji_to_note = function(tree, unlinked)
   end)
 end
 
----Opens a popup prompting the user to choose an emoji to remove from the current node
+---Open a popup prompting the user to choose an emoji to remove from the current node.
 ---@param tree any
 ---@param unlinked boolean
 M.delete_emoji_from_note = function(tree, unlinked)
   local node = tree:get_node()
   local note_node = common.get_note_node(tree, node)
-  local root_node = common.get_root_node(tree, node)
-  local note_id = tonumber(note_node.is_root and root_node.root_note_id or note_node.id)
+
+  if note_node == nil then
+    u.notify("Could not get note", vim.log.levels.ERROR)
+    return
+  end
+
+  local note_id = note_node.root_note_id or note_node.id
   local note_id_str = tostring(note_id)
 
   local e = require("gitlab.emoji")
@@ -436,9 +453,8 @@ end
 -- 🌲 Helper Functions
 --
 
----Used to collect all nodes in a tree prior to rebuilding it, so that they
----can be re-expanded before render
----@param tree any
+---Collect all nodes in a tree prior to rebuilding it, so they can be re-expanded before render.
+---@param tree? NuiTree
 ---@return table
 M.gather_expanded_node_ids = function(tree)
   -- Gather all nodes for later expansion, after rebuild
@@ -451,8 +467,8 @@ M.gather_expanded_node_ids = function(tree)
   return ids
 end
 
----Rebuilds the discussion tree, which contains all comments and draft comments
----linked to specific places in the code.
+---Rebuild the discussion tree, which contains all comments and draft comments linked to
+---specific places in the code.
 M.rebuild_discussion_tree = function()
   if M.linked_bufnr == nil then
     return
@@ -491,7 +507,7 @@ M.rebuild_discussion_tree = function()
   state.discussion_tree.unresolved_expanded = false
 end
 
----Rebuilds the unlinked discussion tree, which contains all notes and draft notes.
+---Rebuild the unlinked discussion tree, which contains all notes and draft notes.
 M.rebuild_unlinked_discussion_tree = function()
   if M.unlinked_bufnr == nil then
     return
@@ -530,25 +546,7 @@ M.rebuild_unlinked_discussion_tree = function()
   state.unlinked_discussion_tree.unresolved_expanded = false
 end
 
----Adds a discussion to the global state. Works for both notes (unlinked) and diff-linked comments,
-M.add_discussion = function(arg)
-  local discussion = arg.data.discussion
-  if arg.unlinked then
-    if type(state.DISCUSSION_DATA.unlinked_discussions) ~= "table" then
-      state.DISCUSSION_DATA.unlinked_discussions = {}
-    end
-    table.insert(state.DISCUSSION_DATA.unlinked_discussions, 1, discussion)
-    M.rebuild_unlinked_discussion_tree()
-  else
-    if type(state.DISCUSSION_DATA.discussions) ~= "table" then
-      state.DISCUSSION_DATA.discussions = {}
-    end
-    table.insert(state.DISCUSSION_DATA.discussions, 1, discussion)
-    M.rebuild_discussion_tree()
-  end
-end
-
----Creates the split for the discussion tree and returns it, with both buffer numbers
+---Create the split for the discussion tree and returns it, with both buffer numbers.
 ---@return NuiSplit
 ---@return integer
 ---@return integer
@@ -584,13 +582,17 @@ M.create_split_and_bufs = function()
   return split, linked_bufnr, unlinked_bufnr
 end
 
----Check if type of current node is note or note body
+---Check if type of current node is note or note body.
 ---@param tree NuiTree
 ---@return boolean
 M.is_current_node_note = function(tree)
   return common.is_node_note(tree:get_node())
 end
 
+---Set the discussion tree keymaps.
+---@param tree NuiTree The current discussion tree
+---@param bufnr integer The number of the buffer that holds the discussion tree
+---@param unlinked boolean If true, the comment is not linked to a line
 M.set_tree_keymaps = function(tree, bufnr, unlinked)
   -- Require keymaps only after user settings have been merged with defaults
   local keymaps = require("gitlab.state").settings.keymaps
@@ -824,8 +826,8 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   emoji.init_popup(tree, bufnr)
 end
 
----Toggles the current view type (or sets it to `override`) and then updates the view.
----@param override? "discussions"|"notes" The view type to select.
+---Toggle the current view type (or sets it to `override`) and update the view.
+---@param override? "discussions"|"notes" The view type to select
 M.switch_view_type = function(override)
   vim.api.nvim_set_option_value("winfixbuf", false, { win = M.split.winid })
   if override == "discussions" or M.current_view_type == "notes" then
@@ -839,7 +841,7 @@ M.switch_view_type = function(override)
   winbar.update_winbar()
 end
 
----Toggle comments tree type between "simple" and "by_file_name"
+---Toggle comments tree type between "simple" and "by_file_name".
 M.toggle_tree_type = function()
   if state.settings.discussion_tree.tree_type == "simple" then
     state.settings.discussion_tree.tree_type = "by_file_name"
@@ -849,13 +851,12 @@ M.toggle_tree_type = function()
   M.rebuild_discussion_tree()
 end
 
----Toggle between draft mode (comments posted as drafts) and live mode (comments are posted immediately)
+---Toggle between creating comments as drafts and publishing immediately.
 M.toggle_draft_mode = function()
   state.settings.discussion_tree.draft_mode = not state.settings.discussion_tree.draft_mode
 end
 
----Toggle between sorting by "original comment" (oldest at the top) or "latest reply" (newest at the
----top).
+---Toggle between sorting by "original comment" (oldest first) or "latest reply" (newest first).
 M.toggle_sort_method = function()
   if state.settings.discussion_tree.sort_by == "original_comment" then
     state.settings.discussion_tree.sort_by = "latest_reply"
@@ -866,14 +867,14 @@ M.toggle_sort_method = function()
   M.rebuild_view(false, true)
 end
 
----Toggle between displaying relative time (e.g., "5 days ago") and absolute time (e.g., "04/10/2025 at 22:49")
+---Toggle between displaying relative time ("5 days ago") and absolute ("04/10/2025 at 22:49").
 M.toggle_date_format = function()
   state.settings.discussion_tree.relative_date = not state.settings.discussion_tree.relative_date
   M.rebuild_unlinked_discussion_tree()
   M.rebuild_discussion_tree()
 end
 
----Indicates whether the node under the cursor is a draft note or not
+---Indicate whether the node under the cursor is a draft note or not.
 ---@param tree NuiTree
 ---@return boolean
 M.is_draft_note = function(tree)

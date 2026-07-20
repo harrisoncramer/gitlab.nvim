@@ -1,8 +1,10 @@
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
+
 local M = {}
 
+---Prompt user to select file, post attachment to Gitlab and paste markdown link in current buffer.
 M.attach_file = function()
   local attachment_dir = state.settings.attachment_dir
   if not attachment_dir or attachment_dir == "" then

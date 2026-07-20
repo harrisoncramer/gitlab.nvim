@@ -1,6 +1,6 @@
---- This module is responsible for creating new comments
---- in the reviewer's buffer. The reviewer will pass back
---- to this module the data required to make the API calls
+-- This module is responsible for creating new comments in the reviewer's buffer. The reviewer will
+-- pass back to this module the data required to make the API calls.
+
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
 local state = require("gitlab.state")
@@ -21,11 +21,10 @@ local M = {
   comment_popup = nil,
 }
 
----Fires the API that sends the comment data to the Go server, called when you "confirm" creation
----via the M.settings.keymaps.popup.perform_action keybinding
+---Fire the API to send the comment data to the Go server.
 ---@param text string comment text
 ---@param unlinked boolean if true, the comment is not linked to a line
----@param discussion_id string | nil The ID of the discussion to which the reply is responding, nil if not a reply
+---@param discussion_id? string The ID of the discussion when replying in a thread, otherwise nil
 local confirm_create_comment = function(text, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
@@ -100,8 +99,7 @@ local confirm_create_comment = function(text, unlinked, discussion_id)
   end)
 end
 
--- This function will actually send the deletion to Gitlab when you make a selection,
--- and re-render the tree
+---Send comment deletion request to the Go server and re-render the tree.
 ---@param note_id integer
 ---@param discussion_id string
 ---@param unlinked boolean
@@ -113,7 +111,7 @@ M.confirm_delete_comment = function(note_id, discussion_id, unlinked)
   end)
 end
 
----This function sends the edited comment to the Go server
+---Send edited comment to the Go server.
 ---@param discussion_id string
 ---@param note_id integer
 ---@param unlinked boolean
@@ -133,13 +131,13 @@ end
 
 ---@class LayoutOpts
 ---@field unlinked boolean
----@field discussion_id string|nil
----@field reply boolean|nil
----@field file_name string|nil
+---@field discussion_id? string
+---@field reply? boolean
+---@field file_name? string
 
----This function sets up the layout and popups needed to create a comment, note and
----multi-line comment. It also sets up the basic keybindings for switching between
----window panes, and for the non-primary sections.
+---Set up the layout and popups needed to create a comment, note and multi-line comment.
+---Also set up basic keybindings for the non-primary sections, and for switching between
+---sections.
 ---@param opts LayoutOpts
 ---@return NuiLayout
 M.create_comment_layout = function(opts)
@@ -163,7 +161,7 @@ M.create_comment_layout = function(opts)
   local settings = u.merge(popup_settings, user_settings or {})
 
   local current_win = vim.api.nvim_get_current_win()
-  M.comment_popup = Popup(popup.create_popup_state(title, settings))
+  M.comment_popup = Popup(popup.create_popup_state({ title = title, user_settings = settings }))
   M.draft_popup = Popup(popup.create_box_popup_state("Draft", false, settings))
 
   local internal_layout = Layout.Box({
@@ -206,8 +204,8 @@ M.create_comment_layout = function(opts)
   return layout
 end
 
---- This function will open a comment popup in order to create a comment on the changed/updated
---- line in the current MR
+---Open a comment popup in order to create a comment on the changed/updated line in the
+---current MR.
 M.create_comment = function()
   M.location = Location.new()
   if not M.can_create_comment(false) then
@@ -218,8 +216,8 @@ M.create_comment = function()
   layout:mount()
 end
 
---- This function will open a multi-line comment popup in order to create a multi-line comment
---- on the changed/updated line in the current MR
+---Open a multi-line comment popup in order to create a multi-line comment on the
+---changed/updated line in the current MR.
 M.create_multiline_comment = function()
   M.location = Location.new()
   if not M.can_create_comment(true) then
@@ -231,8 +229,8 @@ M.create_multiline_comment = function()
   layout:mount()
 end
 
---- This function will open a a popup to create a "note" (e.g. unlinked comment)
---- on the changed/updated line in the current MR
+---Open a popup to create a "note" (e.g. unlinked comment) on the changed/updated line
+---in the current MR.
 M.create_note = function()
   local layout = M.create_comment_layout({ unlinked = true })
   layout:mount()
@@ -240,7 +238,7 @@ end
 
 ---Given the current visually selected area of text, builds text to fill in the
 ---comment popup with a suggested change
----@return LineRange|nil
+---@return LineRange?
 local build_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local range_length = M.location.visual_range.end_line - M.location.visual_range.start_line
@@ -273,9 +271,8 @@ local build_suggestion = function()
   return suggestion_lines
 end
 
---- This function will open a a popup to create a suggestion comment
---- on the changed/updated line in the current MR
---- See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
+---Open a popup to create a suggestion comment on the changed/updated line in the current MR
+---See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
   M.location = Location.new()
   if not M.can_create_comment(true) then
@@ -295,7 +292,7 @@ M.create_comment_suggestion = function()
   end)
 end
 
----Returns true if it's possible to create an Inline Comment
+---Return true if it's possible to create an inline comment.
 ---@param must_be_visual boolean True if current mode must be visual
 ---@return boolean
 M.can_create_comment = function(must_be_visual)
@@ -366,8 +363,8 @@ M.can_create_comment = function(must_be_visual)
   return true
 end
 
----Checks to see whether you are commenting on a valid buffer. The Diffview plugin names non-existent
----buffers as 'null'
+---Check whether user is commenting on a valid buffer.
+---Tightly coupled to how the Diffview plugin names non-existent buffers!
 ---@return boolean
 M.sha_exists = function()
   if vim.fn.expand("%") == "diffview://null" then

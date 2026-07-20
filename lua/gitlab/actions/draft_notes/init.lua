@@ -2,6 +2,7 @@
 -- That includes things like editing existing draft notes in the tree, and
 -- and deleting them. Normal notes and comments are managed separately,
 -- under lua/gitlab/actions/discussions/init.lua
+
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local git = require("gitlab.git")
@@ -15,9 +16,9 @@ local branch_not_in_sync_comment = " (even if local branch not in sync with remo
 
 local M = {}
 
----Re-fetches all draft notes (and non-draft notes) and re-renders the relevant views
+---Re-fetch all draft notes (and non-draft notes) and re-render the relevant views.
 ---@param unlinked boolean
----@param all boolean|nil
+---@param all? boolean
 M.rebuild_view = function(unlinked, all)
   M.load_draft_notes(function()
     local discussions = require("gitlab.actions.discussions")
@@ -25,8 +26,8 @@ M.rebuild_view = function(unlinked, all)
   end)
 end
 
----Makes API call to get the discussion data, stores it in the state, and calls the callback
----@param callback function|nil
+---Make API call to get the discussion data, store it in the state, and call the callback.
+---@param callback? fun()
 M.load_draft_notes = function(callback)
   state.discussion_tree.last_updated = nil
   state.load_new_state("draft_notes", function()
@@ -36,7 +37,7 @@ M.load_draft_notes = function(callback)
   end)
 end
 
----Will actually send the edits to Gitlab and refresh the draft_notes tree
+---Send the edits to Gitlab and refresh the draft_notes tree.
 ---@param note_id integer
 ---@param unlinked boolean
 ---@return function
@@ -54,7 +55,7 @@ M.confirm_edit_draft_note = function(note_id, unlinked)
   end
 end
 
----This function will actually send the deletion to Gitlab when you make a selection, and re-render the tree
+---Send the deletion to Gitlab when the user makes a selection, and re-render the tree.
 ---@param note_id integer
 ---@param unlinked boolean
 M.confirm_delete_draft_note = function(note_id, unlinked)
@@ -64,7 +65,8 @@ M.confirm_delete_draft_note = function(note_id, unlinked)
   end)
 end
 
--- This function will trigger a popup prompting you to publish the current draft comment
+---Trigger a popup prompting the user to publish the current draft comment.
+---@param tree NuiTree
 M.publish_draft = function(tree)
   local branch_in_sync = git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR)
   local sync_comment = branch_in_sync and "" or branch_not_in_sync_comment
@@ -77,7 +79,7 @@ M.publish_draft = function(tree)
   end)
 end
 
--- This function will trigger a popup prompting you to publish all draft notes
+---Trigger a popup prompting the user to publish all draft notes.
 M.publish_all_drafts = function()
   local branch_in_sync = git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR)
   local sync_comment = branch_in_sync and "" or branch_not_in_sync_comment
@@ -90,7 +92,7 @@ M.publish_all_drafts = function()
   end)
 end
 
----Publishes all draft notes and comments. Re-renders all discussion views.
+---Publish all draft notes and comments and re-render all discussion views.
 M.confirm_publish_all_drafts = function()
   local body = { publish_all = true }
   job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
@@ -106,9 +108,8 @@ M.confirm_publish_all_drafts = function()
   end)
 end
 
----Publishes the current draft note that is being hovered over in the tree,
----and then makes an API call to refresh the relevant data for that tree
----and re-render it.
+---Publish the current draft note that is being hovered over in the tree, and make an
+---API call to refresh the relevant data for that tree and re-render it.
 ---@param tree NuiTree
 M.confirm_publish_draft = function(tree)
   local current_node = tree:get_node()
@@ -133,15 +134,19 @@ M.confirm_publish_draft = function(tree)
   end)
 end
 
---- Helper functions
----Tells whether a draft note was left on a particular diff or is an unlinked note
+--
+-- Helper functions
+--
+
+---Return true if a draft note was left on a particular diff, false if it is an unlinked note.
 ---@param note DraftNote
+---@return boolean
 M.has_position = function(note)
   return note.position.new_path ~= nil or note.position.old_path ~= nil
 end
 
----Builds a note for the discussion tree for draft notes that are roots
----of their own discussions, e.g. not replies
+---Build a note for the discussion tree for draft notes that are roots of their own
+---discussions, e.g. not replies.
 ---@param note DraftNote
 ---@return NuiTree.Node
 M.build_root_draft_note = function(note)
@@ -164,8 +169,8 @@ M.build_root_draft_note = function(note)
   }, root_text_nodes)
 end
 
----Returns a list of nodes to add to the discussion tree. Can filter and return only unlinked (note) nodes.
----@param unlinked boolean
+---Return a list of nodes to add to the discussion tree.
+---@param unlinked boolean If true, return only unlinked (note) nodes
 ---@return NuiTree.Node[]
 M.add_draft_notes_to_table = function(unlinked)
   local draft_notes = List.new(state.DRAFT_NOTES)

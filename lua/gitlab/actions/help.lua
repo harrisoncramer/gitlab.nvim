@@ -1,4 +1,3 @@
-local M = {}
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local event = require("nui.utils.autocmd").event
@@ -6,10 +5,13 @@ local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
 local Popup = require("nui.popup")
 
----@class HelpPopupOpts
----@field discussion_tree boolean|nil Whether help popup is for the discussion tree
+local M = {}
 
---- @param opts HelpPopupOpts|nil Table with options for the help popup
+---@class HelpPopupOpts
+---@field discussion_tree? boolean Whether help popup is for the discussion tree
+
+---Open the help popup.
+---@param opts? HelpPopupOpts Table with options for the help popup
 M.open = function(opts)
   local help_opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
@@ -35,9 +37,16 @@ M.open = function(opts)
     )
   end
 
-  local longest_line = u.get_longest_string(help_content_lines)
-  local popup_opts = { "Help", state.settings.popup.help, longest_line + 3, #help_content_lines, 70 }
-  local help_popup = Popup(popup.create_popup_state(unpack(popup_opts)))
+  local max_line_length = u.get_max_length(help_content_lines)
+  ---@type PopupOpts
+  local popup_opts = {
+    title = "Help",
+    user_settings = state.settings.popup.help,
+    width = max_line_length + 3,
+    height = #help_content_lines,
+    zindex = 70,
+  }
+  local help_popup = Popup(popup.create_popup_state(popup_opts))
 
   help_popup:on(event.BufLeave, function()
     help_popup:unmount()

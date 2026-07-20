@@ -5,6 +5,7 @@ local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local job = require("gitlab.job")
 local version = require("gitlab.version")
+
 local M = {}
 
 -- Builds the binary if it doesn't exist, and starts the server. If the pre-existing binary has an older
@@ -38,7 +39,7 @@ M.build_and_start = function(callback)
   end)
 end
 
--- Starts the Go server and call the callback provided
+---Starts the Go server and call the callback provided
 M.start = function(callback)
   if state.settings.port ~= nil and state.settings.server.port == nil then
     state.settings.server.port = state.settings.port

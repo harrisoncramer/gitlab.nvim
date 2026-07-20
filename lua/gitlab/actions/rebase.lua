@@ -3,11 +3,13 @@
 
 local M = {}
 
----@class RebaseOpts
----@field skip_ci boolean? If true, a CI pipeline is not created.
----@field force boolean? If true, MR is rebased even if MR already is rebased.
+---@class RebaseOpts Overrides for the rebase function.
+---@field skip_ci? boolean If true, a CI pipeline is not created
+---@field force? boolean If true, MR is rebased even if MR already is rebased. This is a client-side concept (not sent to Go server)
 
+---Return true if the rebase is possible, otherwise false.
 ---@param opts RebaseOpts
+---@return boolean
 local can_rebase = function(opts)
   local u = require("gitlab.utils")
   -- Check if there are local changes (we wouldn't be able to run `git pull` after rebasing)
@@ -51,9 +53,9 @@ local can_rebase = function(opts)
   return true
 end
 
----Callback to run after the async `git pull` call exits
----@param result string|nil The stdout from the `git pull` call if any.
----@param err string|nil The stderr from the `git pull` call if any.
+---Callback to run after the async `git pull` call exits.
+---@param result? string The stdout from the `git pull` call if any
+---@param err? string The stderr from the `git pull` call if any
 local on_pull_exit = function(result, err)
   if result ~= nil then
     local reviewer = require("gitlab.reviewer")
@@ -68,6 +70,7 @@ end
 ---@class RebaseBody
 ---@field skip_ci boolean? If true, a CI pipeline is not created.
 
+---Send request to Go server to rebase MR.
 ---@param rebase_body RebaseBody
 local confirm_rebase = function(rebase_body)
   local u = require("gitlab.utils")
@@ -85,6 +88,7 @@ local confirm_rebase = function(rebase_body)
   end)
 end
 
+---Rebase the feature branch on the server.
 ---@param opts RebaseOpts
 M.rebase = function(opts)
   opts = opts or {}

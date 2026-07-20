@@ -1,6 +1,7 @@
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
+
 local M = {}
 
 ---@class Hunk
@@ -10,12 +11,12 @@ local M = {}
 ---@field new_range integer
 
 ---@class HunksAndDiff
----@field hunks Hunk[] list of hunks
----@field all_diff_output table The data from the git diff command
+---@field hunks Hunk[] List of hunks
+---@field all_diff_output string[] The data from the git diff command
 
----Turn hunk line into Lua table
+---Parse hunk header line into a Lua table. Return nil, if line is not a hunk header.
 ---@param line string
----@return Hunk|nil
+---@return Hunk?
 M.parse_possible_hunk_headers = function(line)
   if line:sub(1, 2) == "@@" then
     -- match:
@@ -32,11 +33,13 @@ M.parse_possible_hunk_headers = function(line)
     }
   end
 end
----@param linnr number
----@param hunk Hunk
+
+---Return true if given line was removed in the MR.
+---@param linenr integer Line number in the old version of the file
+---@param hunk Hunk A hunk candidate from the file's diff
 ---@param all_diff_output string[]
 ---@return boolean
-local line_was_removed = function(linnr, hunk, all_diff_output)
+local line_was_removed = function(linenr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = M.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
@@ -45,7 +48,7 @@ local line_was_removed = function(linnr, hunk, all_diff_output)
       -- to see if that line is deleted or not.
       for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range, 1 do
         local line_content = all_diff_output[matching_line_index + 1]
-        if hunk_line_index == linnr then
+        if hunk_line_index == linenr then
           if string.match(line_content, "^%-") then
             return true
           end
@@ -56,11 +59,12 @@ local line_was_removed = function(linnr, hunk, all_diff_output)
   return false
 end
 
----@param linnr number
----@param hunk Hunk
+---Return true if given line was added in the MR.
+---@param linenr integer Line number in the new version of the file
+---@param hunk Hunk A hunk candidate from the file's diff
 ---@param all_diff_output string[]
 ---@return boolean
-local line_was_added = function(linnr, hunk, all_diff_output)
+local line_was_added = function(linenr, hunk, all_diff_output)
   for matching_line_index, line in ipairs(all_diff_output) do
     local found_hunk = M.parse_possible_hunk_headers(line)
     if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
@@ -80,7 +84,7 @@ local line_was_added = function(linnr, hunk, all_diff_output)
       -- matches the index of a line that was added
       local starting_index = found_hunk.new_line - 1 -- The "+j" will add one
       for j, _ in ipairs(hunk_lines) do
-        if (starting_index + j) == linnr then
+        if (starting_index + j) == linenr then
           return true
         end
       end
@@ -89,9 +93,9 @@ local line_was_added = function(linnr, hunk, all_diff_output)
   return false
 end
 
----Parse git diff hunks.
----@param base_sha string Git base SHA of merge request.
----@return HunksAndDiff
+---Parse the diff of the current file against the base SHA of the MR.
+---@param base_sha string Git base SHA of the merge request
+---@return HunksAndDiff hunks_and_diff The hunk headers and full diff of the file
 local parse_hunks_and_diff = function(base_sha)
   local hunks = {}
   local all_diff_output = {}
@@ -113,11 +117,11 @@ local parse_hunks_and_diff = function(base_sha)
   return { hunks = hunks, all_diff_output = all_diff_output }
 end
 
--- Parses the lines from a diff and returns the
--- index of the next hunk, when provided an initial index
+---Parse the lines from a diff and return the index of the next hunk, when provided an
+---initial index.
 ---@param lines string[]
 ---@param i integer
----@return integer|nil
+---@return integer?
 local next_hunk_index = function(lines, i)
   for j, line in ipairs(lines) do
     local hunk = M.parse_possible_hunk_headers(line)
@@ -128,25 +132,25 @@ local next_hunk_index = function(lines, i)
   return nil
 end
 
---- Processes the number of changes until the target is reached. This returns
---- a negative or positive number indicating the number of lines in the hunk
---- that have been added or removed prior to the target line
----@param line_number number
+---Process the number of changes until the target is reached.
+---This returns a negative or positive number indicating the number of lines in
+---the hunk that have been added or removed prior to the target line.
+---@param linenr integer
 ---@param hunk Hunk
----@param lines table
+---@param lines string[]
 ---@return integer
-local net_changed_in_hunk_before_line = function(line_number, hunk, lines)
+local net_changed_in_hunk_before_line = function(linenr, hunk, lines)
   local net_lines = 0
   local current_line_old = hunk.old_line
 
   for _, line in ipairs(lines) do
     if line:sub(1, 1) == "-" then
-      if current_line_old < line_number then
+      if current_line_old < linenr then
         net_lines = net_lines - 1
       end
       current_line_old = current_line_old + 1
     elseif line:sub(1, 1) == "+" then
-      if current_line_old < line_number then
+      if current_line_old < linenr then
         net_lines = net_lines + 1
       end
     else
@@ -157,8 +161,9 @@ local net_changed_in_hunk_before_line = function(line_number, hunk, lines)
   return net_lines
 end
 
----Counts the total number of changes in a set of lines, can be positive if added lines or negative if removed lines
----@param lines table
+---Count the total number of changes in a set of lines, positive if added lines and
+---negative if removed lines.
+---@param lines string[]
 ---@return integer
 local count_changes = function(lines)
   local total = 0
@@ -172,10 +177,11 @@ local count_changes = function(lines)
   return total
 end
 
----@param new_line number|nil
+---Return the modification type for the selected line.
+---@param new_line? integer The starting or ending line of the current selection in the new version
 ---@param hunks Hunk[]
----@param all_diff_output table
----@return string|nil
+---@param all_diff_output string[]
+---@return ("added"|"bad_file_unmodified")?
 local function get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
   if new_line == nil then
     return nil
@@ -188,11 +194,12 @@ local function get_modification_type_from_new_sha(new_line, hunks, all_diff_outp
   end) and "added" or "bad_file_unmodified"
 end
 
----@param old_line number|nil
----@param new_line number|nil
+---Return the modification type for the selected line.
+---@param old_line? integer The starting or ending line of the current selection in the old version
+---@param new_line? integer The starting or ending line of the current selection in the new version
 ---@param hunks Hunk[]
----@param all_diff_output table
----@return string|nil
+---@param all_diff_output string[]
+---@return ("deleted"|"unmodified")?
 local function get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
   if old_line == nil then
     return nil
@@ -207,12 +214,19 @@ local function get_modification_type_from_old_sha(old_line, new_line, hunks, all
   end) and "deleted" or "unmodified"
 end
 
----Returns whether the comment is on a deleted line, added line, or unmodified line.
----This is in order to build the payload for Gitlab correctly by setting the old line and new line.
----@param old_line number|nil
----@param new_line number|nil
+---Return the modification type of the line for which the comment is created.
+---This is in order to build the payload for Gitlab correctly by setting the old line
+---and new line.
+---FIXME: This misses the fact that Gitlab also uses the type "expanded" (when
+---commenting on lines that are more than 3 lines away from any change, thus are on
+---folded lines that the user expanded manually).
+---FIXME: This function is called three times when creating a ranged comment - this
+---means three `git diff` calls, six times parsing the same diff output. This should
+---only be done once!
+---@param old_line? integer
+---@param new_line? integer
 ---@param new_sha_focused boolean
----@return string|nil
+---@return ("added"|"bad_file_unmodified"|"deleted"|"unmodified")?
 function M.get_modification_type(old_line, new_line, new_sha_focused)
   local hunk_and_diff_data = parse_hunks_and_diff(state.INFO.diff_refs.base_sha)
   if hunk_and_diff_data.hunks == nil then
@@ -225,14 +239,15 @@ function M.get_modification_type(old_line, new_line, new_sha_focused)
     or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
 end
 
----Returns the matching line number of a line in the new/old version of the file compared to the current SHA.
----@param old_sha string
----@param new_sha string
----@param file_path string
----@param old_file_path string
----@param line_number number
----@return number|nil
-M.calculate_matching_line_new = function(old_sha, new_sha, file_path, old_file_path, line_number)
+---Return the matching line number of a line in the new/old version of the file compared
+---to the currently selected version.
+---@param old_sha string The base SHA of the MR when getting matching line in the old version, otherwise the head SHA when getting matching line in the new version
+---@param new_sha string The head SHA of the MR when getting matching line in the old version, otherwise the base SHA when getting matching line in the new version
+---@param file_path string The file name after change
+---@param old_file_path string The file name before change (different from file_path for renamed/moved files)
+---@param linenr integer The starting or ending line of the current selection
+---@return integer?
+M.calculate_matching_line_new = function(old_sha, new_sha, file_path, old_file_path, linenr)
   local net_change = 0
   local diff_cmd = string.format(
     "git diff --minimal --unified=0 --no-color %s %s -- %s %s",
@@ -256,17 +271,17 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, old_file_p
   for i, line in ipairs(all_lines) do
     local hunk = M.parse_possible_hunk_headers(line)
     if hunk ~= nil then
-      if line_number <= hunk.old_line then
+      if linenr <= hunk.old_line then
         -- We have reached a hunk which starts after our target, return the changed total lines
-        return line_number + net_change
+        return linenr + net_change
       end
 
       local n = next_hunk_index(all_lines, i) or #all_lines
       local diff_lines = all_lines:slice(i + 1, n - 1)
 
       -- If the line is IN the hunk, process the hunk and return the change until that line
-      if line_number >= hunk.old_line and line_number < hunk.old_line + hunk.old_range then
-        net_change = line_number + net_change + net_changed_in_hunk_before_line(line_number, hunk, diff_lines)
+      if linenr >= hunk.old_line and linenr < hunk.old_line + hunk.old_range then
+        net_change = linenr + net_change + net_changed_in_hunk_before_line(linenr, hunk, diff_lines)
         return net_change
       end
 
@@ -276,7 +291,7 @@ M.calculate_matching_line_new = function(old_sha, new_sha, file_path, old_file_p
   end
 
   -- TODO: Possibly handle lines that are out of range in the new files
-  return line_number + net_change + 1
+  return linenr + net_change + 1
 end
 
 return M

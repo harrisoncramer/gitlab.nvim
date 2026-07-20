@@ -1,5 +1,6 @@
 -- This module is responsible for creating am MR
 -- for the current branch
+
 local Layout = require("nui.layout")
 local Input = require("nui.input")
 local Popup = require("nui.popup")
@@ -36,6 +37,7 @@ local M = {
   },
 }
 
+---Reset the state associated with the MR creation process.
 M.reset_state = function()
   M.started = false
   M.mr.title = ""
@@ -44,10 +46,10 @@ M.reset_state = function()
   M.mr.forked_project_id = nil
 end
 
----1. If the user has already begun writing an MR, prompt them to
---- continue working on it.
+---1. If the user has already begun writing an MR, prompt them to continue working on it.
 ---@param args? Mr
 M.start = function(args)
+  args = args or {}
   if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
     return
   end
@@ -67,12 +69,9 @@ M.start = function(args)
   end
 end
 
----2. Pick the target branch
----@param mr? Mr
+---2. Pick the target branch.
+---@param mr Mr
 M.pick_target = function(mr)
-  if not mr then
-    mr = {}
-  end
   if mr.target ~= nil then
     M.pick_template(mr)
     return
@@ -91,21 +90,18 @@ M.pick_target = function(mr)
   end)
 end
 
+---Return the path to the template file.
+---@param t string The template file basename
+---@return string template_path The absolute path to the template file in this repository
 local function make_template_path(t)
   local base_dir, err = git.base_dir()
   if err ~= nil then
-    return
+    return ""
   end
-  return base_dir
-    .. state.settings.file_separator
-    .. ".gitlab"
-    .. state.settings.file_separator
-    .. "merge_request_templates"
-    .. state.settings.file_separator
-    .. t
+  return table.concat({ base_dir, ".gitlab", "merge_request_templates", t }, u.path_separator)
 end
 
----3. Pick template (if applicable). This is used as the description
+---3. Pick template (if applicable) to be used as the MR description.
 ---@param mr Mr
 M.pick_template = function(mr)
   if mr.description ~= nil then
@@ -120,17 +116,17 @@ M.pick_template = function(mr)
     return
   end
 
-  local all_templates = u.list_files_in_folder(".gitlab" .. state.settings.file_separator .. "merge_request_templates")
+  local all_templates = u.list_files_in_folder(".gitlab" .. u.path_separator .. "merge_request_templates")
   if all_templates == nil then
     M.add_title(mr)
     return
   end
 
-  local opts = { "Blank Template" }
+  local items = { "Blank Template" }
   for _, v in ipairs(all_templates) do
-    table.insert(opts, v)
+    table.insert(items, v)
   end
-  vim.ui.select(opts, {
+  vim.ui.select(items, {
     prompt = "Choose Template",
   }, function(choice)
     if choice and choice ~= "Blank Template" then
@@ -140,7 +136,7 @@ M.pick_template = function(mr)
   end)
 end
 
----4. Prompts the user for the title of the MR
+---4. Prompt the user for the title of the MR.
 ---@param mr Mr
 M.add_title = function(mr)
   if mr.title ~= nil then
@@ -176,7 +172,7 @@ M.add_title = function(mr)
   input:mount()
 end
 
----Sets the ID of the base project when working from a fork
+---Set the ID of the base project when working from a fork.
 ---@param mr Mr
 M.open_fork_popup = function(mr)
   local input = Input({
@@ -204,8 +200,8 @@ M.open_fork_popup = function(mr)
 end
 
 ---5. Show the final popup.
----The function will render a popup containing the MR title and MR description,
----target branch, and the "delete_branch" and "squash" options. All fields are editable.
+---Render a popup containing the MR title and description, target branch, and the
+---"delete_branch" and "squash" options. All fields are editable.
 ---@param mr Mr
 M.open_confirmation_popup = function(mr)
   M.started = true
@@ -255,6 +251,8 @@ M.open_confirmation_popup = function(mr)
   end
 
   local description_lines = mr.description and common.build_content(mr.description) or { "" }
+  -- TODO: replace `u.get_first_non_nil_value` with properly merging user-provided MR
+  -- opts with defaults when starting MR creation.
   local delete_branch = u.get_first_non_nil_value({ mr.delete_branch, state.settings.create_mr.delete_branch })
   local squash = u.get_first_non_nil_value({ mr.squash, state.settings.create_mr.squash })
 
@@ -293,7 +291,7 @@ M.open_confirmation_popup = function(mr)
   end)
 end
 
----Prompts for interactive selection of a new target among remote-tracking branches
+---Prompt for interactive selection of a new target among remote-tracking branches.
 M.select_new_target = function()
   local bufnr = vim.api.nvim_get_current_buf()
   u.select_target_branch(function(target)
@@ -305,7 +303,7 @@ M.select_new_target = function()
   end)
 end
 
----This function will POST the new MR to create it
+---Get data from the confirmation popup and POST the new MR to Gitlab.
 M.create_mr = function()
   local description = u.get_buffer_text(M.description_bufnr)
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
@@ -331,11 +329,20 @@ M.create_mr = function()
   end)
 end
 
+---Create the layout and popups for the main MR confirmation.
+---@return NuiLayout layout The main MR confirmation popup layout
+---@return NuiPopup title_popup
+---@return NuiPopup description_popup
+---@return NuiPopup target_branch_popup
+---@return NuiPopup source_branch_popup
+---@return NuiPopup delete_branch_popup
+---@return NuiPopup squash_popup
+---@return NuiPopup forked_project_id_popup
 M.create_layout = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.create_mr or {})
   local title_popup = Popup(popup.create_box_popup_state("Title", false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(popup.create_popup_state("Description", settings))
+  local description_popup = Popup(popup.create_popup_state({ title = "Description", user_settings = settings }))
   M.description_bufnr = description_popup.bufnr
   local target_branch_popup = Popup(popup.create_box_popup_state("Target branch", false, settings))
   M.target_bufnr = target_branch_popup.bufnr

@@ -2,7 +2,9 @@ local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
 
 -- Basic emoji aliases that are missing in Gitlab's list.
+---@type Emoji
 local thumbsup = { name = "+1", shortname = ":+1:", moji = "👍", category = "People & Body" }
+---@type Emoji
 local thumbsdown = { name = "-1", shortname = ":-1:", moji = "👎", category = "People & Body" }
 
 local M = {
@@ -54,7 +56,9 @@ M.popup_opts = {
   border = "single",
 }
 
-M.show_popup = function(char)
+---Show the popup with user names.
+---@param names string The names of the users who awarded this emoji as a comma-separated string
+M.show_popup = function(names)
   -- Close existing popup if it's open
   if M.popup_win_id and vim.api.nvim_win_is_valid(M.popup_win_id) then
     vim.api.nvim_win_close(M.popup_win_id, true)
@@ -64,12 +68,13 @@ M.show_popup = function(char)
   local buf = vim.api.nvim_create_buf(false, true)
 
   -- Set the content of the popup buffer to the character
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { char })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { names })
 
   -- Open the popup window and store its ID
   M.popup_win_id = vim.api.nvim_open_win(buf, false, M.popup_opts)
 end
 
+---Close the popup and clear the state.
 M.close_popup = function()
   if M.popup_win_id and vim.api.nvim_win_is_valid(M.popup_win_id) then
     vim.api.nvim_win_close(M.popup_win_id, true)
@@ -77,6 +82,13 @@ M.close_popup = function()
   end
 end
 
+---Set up autocommand to show popup with emoji awarder name.
+---TODO: This autocommand iterates over the full emoji map on each CursorHold.
+---This could be more efficiency (and possibly in a more user-friendly way) be
+---implemented as diagnostics: Emojis would only be recalculated on tree changes and
+---we'd get navigation to emojis and showing a popup for free (]d, [d, <c-w>d).
+---@param tree NuiTree
+---@param bufnr integer The number of the buffer that holds the discussion tree
 M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
     callback = function()
@@ -87,6 +99,11 @@ M.init_popup = function(tree, bufnr)
 
       local note_node = common.get_note_node(tree, node)
       local root_node = common.get_root_node(tree, node)
+      if note_node == nil or root_node == nil then
+        u.notify("Could not get note or root node of comment", vim.log.levels.ERROR)
+        return
+      end
+
       local note_id_str = tostring(note_node.is_root and root_node.root_note_id or note_node.id)
       local emojis = require("gitlab.state").DISCUSSION_DATA.emojis
 
@@ -126,21 +143,35 @@ M.init_popup = function(tree, bufnr)
   })
 end
 
----@param name string
+---@class NoteEmoji
+---@field awardable_id integer ID of the note for which emoji was awarded, e.g., 3244783717
+---@field awardable_type string E.g., "Note"
+---@field created_at string Time on which the emoji was created, e.g., "2026-07-06T16:28:14.039Z"
+---@field id integer ID of the emoji, e.g., 50933088
+---@field name string The short emoji name "thumbsup"
+---@field updated_at string Time on which the emoji was updated, e.g., "2026-07-06T16:28:14.039Z"
+---@field user Author The user who awarded the emoji
+
+---Return the names of the users who awarded this emoji as a comma-separated string.
+---@param emoji_name string
+---@param note_emojis NoteEmoji[]
 ---@return string
-M.get_users_who_reacted_with_emoji = function(name, note_emojis)
+M.get_users_who_reacted_with_emoji = function(emoji_name, note_emojis)
   local result = ""
   for _, v in pairs(note_emojis) do
-    if v.name == name then
+    if v.name == emoji_name then
       result = result .. v.user.name .. ", "
     end
   end
   return string.len(result) > 3 and result:sub(1, -3) or result
 end
 
-M.pick_emoji = function(options, cb)
+---Prompt user to pick an emoji from a list and run callback on the selection.
+---@param emojis Emoji[] The list of emojis to pick from
+---@param cb fun(name: string) The callback that will run after selecting an emoji. It is passed the emoji's shortname without the surrounding colons as an argument, e.g., ("thumbsup")
+M.pick_emoji = function(emojis, cb)
   local settings = require("gitlab.state").settings
-  vim.ui.select(options, {
+  vim.ui.select(emojis, {
     prompt = "Choose emoji",
     format_item = function(val)
       if type(settings.emojis.formatter) == "function" then
@@ -153,7 +184,7 @@ M.pick_emoji = function(options, cb)
       return
     end
     local name = choice.shortname:sub(2, -2)
-    cb(name, choice)
+    cb(name)
   end)
 end
 

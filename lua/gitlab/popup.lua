@@ -3,14 +3,10 @@ local u = require("gitlab.utils")
 local M = {}
 
 ---Get the popup view_opts
----@param title string The string to appear on top of the popup
----@param user_settings table|nil User-defined popup settings
----@param width? number Override default width
----@param height? number Override default height
----@param zindex? number Override default zindex
+---@param opts PopupOpts Options for customizing the popup
 ---@return table
-M.create_popup_state = function(title, user_settings, width, height, zindex)
-  local settings = u.merge(require("gitlab.state").settings.popup, user_settings or {})
+M.create_popup_state = function(opts)
+  local settings = u.merge(require("gitlab.state").settings.popup, opts.user_settings or {})
   local view_opts = {
     buf_options = {
       filetype = "markdown",
@@ -18,17 +14,17 @@ M.create_popup_state = function(title, user_settings, width, height, zindex)
     relative = "editor",
     enter = true,
     focusable = true,
-    zindex = zindex or 50,
+    zindex = opts.zindex or 50,
     border = {
       style = settings.border,
       text = {
-        top = title,
+        top = opts.title,
       },
     },
     position = settings.position,
     size = {
-      width = width and math.min(width, vim.o.columns - 2) or settings.width,
-      height = height and math.min(height, vim.o.lines - 3) or settings.height,
+      width = opts.width and math.min(opts.width, vim.o.columns - 2) or settings.width,
+      height = opts.height and math.min(opts.height, vim.o.lines - 3) or settings.height,
     },
     opacity = settings.opacity,
   }
@@ -37,7 +33,7 @@ M.create_popup_state = function(title, user_settings, width, height, zindex)
 end
 
 ---Create view_opts for Box popups used inside popup Layouts
----@param title string|nil The string to appear on top of the popup
+---@param title? string The string to appear on top of the popup
 ---@param enter boolean Whether the pop should be focused after creation
 ---@param settings table User defined popup settings
 ---@return table
@@ -147,18 +143,18 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
   end
 end
 
---- Setup autocommands for the popup
---- @param popup NuiPopup
---- @param layout NuiLayout|nil
---- @param previous_window number|nil Number of window active before the popup was opened
---- @param opts table|nil Table with options for updating the popup
+---Set up autocommands for the popup.
+---@param popup NuiPopup
+---@param layout? NuiLayout
+---@param previous_window? integer Number of window active before the popup was opened
+---@param opts? PopupOpts Table with options for updating the popup
 M.set_up_autocommands = function(popup, layout, previous_window, opts)
   -- Make the popup/layout resizable
   popup:on("VimResized", function()
     if layout ~= nil then
       layout:update()
     else
-      popup:update_layout(opts and M.create_popup_state(unpack(opts)))
+      popup:update_layout(opts and M.create_popup_state(opts))
     end
   end)
 
@@ -239,11 +235,11 @@ M.set_cycle_popups_keymaps = function(popups)
 end
 
 ---Create the title for the comment popup.
----@param title string The main title, e.g., "Comment".
----@param file_name string Name of file for which comment is created.
----@param start_line integer Start of the line range.
----@param end_line integer End of the line range.
----@return string title The full title of the popup.
+---@param title string The main title, e.g., "Comment"
+---@param file_name string Name of file for which comment is created
+---@param start_line integer Start of the line range
+---@param end_line integer End of the line range
+---@return string title The full title of the popup
 M.create_title = function(title, file_name, start_line, end_line)
   local range = start_line < end_line and string.format("-%s", end_line) or ""
   local position = string.format("%s%s", start_line, range)
