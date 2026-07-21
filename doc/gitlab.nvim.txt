@@ -151,7 +151,7 @@ automatically. This is performed whenever the Go server binary is not found in
 the expected location or when the plugin is updated to a newer version.
 
 If you can't or don't want to install Go, you can instead pre-build the server
-binary (some peple use Nix for this) and configure `gitlab.nvim` to use that
+binary (some people use Nix for this) and configure `gitlab.nvim` to use that
 binary instead, see the `server` section in |gitlab.nvim.configuring-the-plugin|.
 
 
@@ -252,7 +252,7 @@ you call this function with no values the defaults will be used:
         reload_review = "gl<C-R>", -- Load new MR state from Gitlab and apply new diff refs to the diff view
         summary = "gls", -- Show the editable summary of the MR
         copy_mr_url = "glu", -- Copy the URL of the MR to the system clipboard
-        open_in_browser = "glo", -- Openthe URL of the MR in the default Internet browser
+        open_in_browser = "glo", -- Open the URL of the MR in the default Internet browser
         create_note = "gln", -- Create a note (comment not linked to a specific line)
         pipeline = "glp", -- Show the pipeline status
         toggle_discussions = "gld", -- Toggle the discussions window
@@ -350,7 +350,7 @@ you call this function with no values the defaults will be used:
     },
     emojis = {
       -- Function for modifying how emojis are displayed in the picker. This does not affect the actual selected emoji.
-      -- The function is passed an emoji object as a paramter, e.g.,
+      -- The function is passed an emoji object as a parameter, e.g.,
       -- {"name": "thumbs up", "shortname": ":thumbsup:", "moji": "👍", "category": "People & Body"}
       -- This is useful if your editor/terminal/font/tmux does not render some emojis properly,
       -- e.g., you can remove skin tones and additionally show the shortname and category with
@@ -740,7 +740,7 @@ are available in the current project:
 RESTARTING THE GO SERVER                              *gitlab.nvim.restarting*
 
 The `gitlab.nvim` server will shut down automatically when you exit Neovim.
-You may restart the server at any time via the the `restart` command:
+You may restart the server at any time via the `restart` command:
 >lua
   require("gitlab.server").restart()
 <
@@ -898,7 +898,7 @@ gitlab.choose_merge_request_by_username({opts}) ~
 
 Choose a merge request based on the username provided. Like the `choose_merge_request`
 action, this will automatically check out the branch locally and open the
-the reviewer pane when the MR is chosen.
+reviewer pane when the MR is chosen.
 >lua
   require("gitlab").choose_merge_request_by_username({ username = "hcramer" })
 <
@@ -1021,9 +1021,9 @@ Starts the process of creating an MR for the currently checked out branch.
               Takes precedence over the {template_file}, if both options are
               used.
             • {title}: (string) MR title.
-            • {delete_branch}: (bool) If true, the source branch will be
+            • {delete_branch}: (boolean) If true, the source branch will be
               marked for deletion.
-            • {squash}: (bool) If true, the commits will be marked for
+            • {squash}: (boolean) If true, the commits will be marked for
               squashing.
 
 After selecting all necessary details, you'll be presented with a confirmation
@@ -1175,13 +1175,13 @@ request" page). You can see the current settings in the Summary view, see
     Parameters: ~
         • {opts}: (table?) Keyword arguments that can be used to override
           individual current settings.
-            • {auto_merge}: (bool) If true, the merge request is set to merge
-              automatically when the pipeline succeeds. If false, an immediate
-              merge is attempted. Currently, the plugin doesn't allow
+            • {auto_merge}: (boolean) If true, the merge request is set to
+              merge automatically when the pipeline succeeds. If false, an
+              immediate merge is attempted. Currently, the plugin doesn't allow
               cancelling the auto-merge.
-            • {delete_branch}: (bool) If true, the source branch will be
+            • {delete_branch}: (boolean) If true, the source branch will be
               deleted.
-            • {squash}: (bool) If true, the commits will be squashed. If
+            • {squash}: (boolean) If true, the commits will be squashed. If
               you enable {squash} you will be prompted for a squash
               message. To use the default message, leave the popup empty.
               Use the `keymaps.popup.perform_action` to merge the MR
@@ -1199,11 +1199,11 @@ updates the reviewer.
     Parameters: ~
         • {opts}: (table?) Keyword arguments that can be used to override
           default behavior.
-            • {skip_ci}: (`bool?`, default: `false`) If true, a CI pipeline is
-              not created (this may lead to a failed Mergeability Check
+            • {skip_ci}: (`boolean?`, default: `false`) If true, a CI pipeline
+              is not created (this may lead to a failed Mergeability Check
               CI_MUST_PASS).
-            • {force}: (`bool?`, default: `false`) If true, MR is rebased even
-              if MR already is rebased (this may run an unnecessary CI
+            • {force}: (`boolean?`, default: `false`) If true, MR is rebased
+              even if MR already is rebased (this may run an unnecessary CI
               pipeline).
 
                                                             *gitlab.nvim.data*
@@ -1241,7 +1241,7 @@ execute and passed the data as an argument.
                       `jobs` as fields.
                     • "draft_notes": The current user's unpublished notes.
                     • "discussion_data": The comments and notes in the MR.
-                • {refresh}: (bool) Whether to re-fetch the data from Gitlab
+                • {refresh}: (boolean) Whether to re-fetch the data from Gitlab
                   or use the cached data locally, if available.
         • {cb}: (function) The callback function that runs after all of the
           resources have been fetched. Will be passed a table with the data,
