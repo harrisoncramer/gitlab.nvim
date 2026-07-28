@@ -78,6 +78,9 @@ return {
   close_review = function()
     reviewer.close()
   end,
+  browse_commits = async.sequence({ info }, function()
+    reviewer.browse_commits()
+  end),
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
   rebase = async.sequence({ u.merge(mergeability, { refresh = true }), info }, rebase.rebase),

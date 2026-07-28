@@ -178,6 +178,7 @@ These keymaps are available globally (i.e., in any buffer).
 | `glC`     | Create a new MR for currently checked-out feature branch                                          |
 | `glc`     | Chose MR for review                                                                               |
 | `glS`     | Start review for the currently checked-out branch                                                 |
+| `glh`     | Browse the MR's commit history, one commit at a time (read-only)                                  |
 | `gl<C-R>` | Load new MR state from Gitlab and apply new diff refs to the diff view                            |
 | `gls`     | Show the editable summary of the MR                                                               |
 | `glu`     | Copy the URL of the MR to the system clipboard                                                    |

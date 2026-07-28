@@ -92,6 +92,32 @@ M.open = function()
   git.check_mr_in_good_condition()
 end
 
+-- Opens a read-only, commit-by-commit browser for the MR range using Diffview's
+-- FileHistory. Each entry shows a single commit's isolated diff, for understanding
+-- how the MR was built up; commenting is not supported here (that stays in M.open).
+M.browse_commits = function()
+  -- Diffview does not deduplicate views: DiffviewFileHistory always opens a new tabpage.
+  -- Focus the existing browser instead of stacking a second, orphaning the first (whose
+  -- keymaps would then reject every action, since only the newest tab passes the gate).
+  if M.history_tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.history_tabid) then
+    vim.api.nvim_set_current_tabpage(M.history_tabid)
+    return
+  end
+
+  local diff_refs = state.INFO.diff_refs
+  if diff_refs == nil then
+    u.notify("Gitlab did not provide diff refs required to browse this MR", vim.log.levels.ERROR)
+    return
+  end
+
+  if diff_refs.base_sha == "" or diff_refs.head_sha == "" then
+    u.notify("Merge request contains no changes", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.api.nvim_command(string.format("DiffviewFileHistory --range=%s..%s", diff_refs.base_sha, diff_refs.head_sha))
+end
+
 ---Close the reviewer and clean up.
 M.close = function()
   if M.tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.tabid) then
@@ -474,6 +500,13 @@ M.set_reviewer_autocommands = function(bufnr)
     group = group,
     buffer = bufnr,
     callback = function()
+      -- These autocommands manage the reviewer's own two windows, but they are
+      -- buffer-local and Diffview shares a revision's buffer across views, so the same
+      -- buffer shows up in the commit browser's tab. Acting there would strip the browse
+      -- keymaps and make the blob writable. Gate matches set_callback_for_buf_read.
+      if not (vim.api.nvim_get_current_tabpage() == M.tabid or (M.is_open and M.tabid == nil)) then
+        return
+      end
       if vim.api.nvim_get_current_win() == M.buf_winids[bufnr] then
         M.stored_win = vim.api.nvim_get_current_win()
         u.switch_can_edit_buf(bufnr, false)
