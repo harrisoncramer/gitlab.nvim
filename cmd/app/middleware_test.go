@@ -111,4 +111,59 @@ func TestValidatorMiddleware(t *testing.T) {
 		), request)
 		assert(t, data.Message, "Some message")
 	})
+	t.Run("Should reject a line_range with a missing endpoint instead of panicking", func(t *testing.T) {
+		payload := PostCommentRequest{
+			Comment: "Some comment",
+			PositionData: PositionData{
+				FileName:  "file.txt",
+				LineRange: &LineRange{}, // Start and End left nil
+			},
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/comment", payload)
+		svc := middleware(
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[PostCommentRequest]}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, status := getFailData(t, svc, request)
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "Start is required; End is required")
+		assert(t, status, http.StatusBadRequest)
+	})
+	t.Run("Should reject a missing line_range when FileName is set", func(t *testing.T) {
+		payload := PostCommentRequest{
+			Comment: "Some comment",
+			PositionData: PositionData{
+				FileName: "file.txt",
+				// LineRange left nil entirely (not just an empty struct).
+			},
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/comment", payload)
+		svc := middleware(
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[PostCommentRequest]}),
+			withMethodCheck(http.MethodPost),
+		)
+		data, status := getFailData(t, svc, request)
+		assert(t, data.Message, "Invalid payload")
+		assert(t, data.Details, "The field 'LineRange' failed on validation on the 'required_with' tag")
+		assert(t, status, http.StatusBadRequest)
+	})
+	t.Run("Should allow a missing line_range when there is no FileName (unlinked comment)", func(t *testing.T) {
+		payload := PostCommentRequest{
+			Comment: "Some comment",
+			// PositionData is left zero-valued: no FileName, no LineRange.
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/comment", payload)
+		svc := middleware(
+			commentService{testProjectData, fakeCommentClient{}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[PostCommentRequest]}),
+			withMethodCheck(http.MethodPost),
+		)
+		data := getSuccessData(t, svc, request)
+		assert(t, data.Message, "Comment created successfully")
+	})
 }

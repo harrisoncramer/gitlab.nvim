@@ -557,19 +557,6 @@ M.check_visual_mode = function()
   return true
 end
 
----Return start line and end line of visual selection.
----TODO: Move to `lua/gitlab/reviewer/location.lua`
----@return integer
----@return integer
-M.get_visual_selection_boundaries = function()
-  local start_line = vim.fn.line("v")
-  local end_line = vim.fn.line(".")
-  if start_line > end_line then
-    start_line, end_line = end_line, start_line
-  end
-  return start_line, end_line
-end
-
 ---Get icon for filename if nvim-web-devicons plugin is available, otherwise return
 ---empty string.
 ---@return string?

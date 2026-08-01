@@ -70,6 +70,11 @@ end
 M.is_old_sha = function(d_or_n)
   local position = M.get_first_note(d_or_n).position
   local old_start_line = position.line_range ~= nil and M.parse_line_code(position.line_range.start.line_code) or nil
+  -- FIXME: Update how `old_start_line ~= 0` is evaluated. After the Location refactor,
+  -- the numbers in line codes never are set to 0, but we should support the old way of
+  -- determining "is_old_sha" at least for some time because users will encounter the
+  -- old values in existing discussion nodes created with the old version of the plugin.
+  -- This should also check if the type of the range location(s) is "old".
   return position.old_line ~= nil and old_start_line ~= 0
 end
 

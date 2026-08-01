@@ -8,6 +8,7 @@ local job = require("gitlab.job")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local git = require("gitlab.git")
+local hunks = require("gitlab.hunks")
 local discussions = require("gitlab.actions.discussions")
 local draft_notes = require("gitlab.actions.draft_notes")
 local miscellaneous = require("gitlab.actions.miscellaneous")
@@ -20,6 +21,19 @@ local M = {
   draft_popup = nil,
   comment_popup = nil,
 }
+
+---Build a Location from the live reviewer state (the active Diffview session).
+---Return nil when the location cannot be built due to missing reviewer data.
+---@return Location?
+M.new_location_from_reviewer = function()
+  local reviewer_data = reviewer.get_reviewer_data()
+  if reviewer_data == nil then
+    return nil
+  end
+  local diff_hunks =
+    hunks.get_hunks(reviewer_data.old_sha, reviewer_data.new_sha, reviewer_data.old_file_name, reviewer_data.file_name)
+  return Location.new(reviewer_data, diff_hunks)
+end
 
 ---Fire the API to send the comment data to the Go server.
 ---@param text string comment text
@@ -151,11 +165,11 @@ M.create_comment_layout = function(opts)
     title = "Note"
     user_settings = popup_settings.note
   else
-    local file_name = (M.location.reviewer_data.new_sha_focused or M.location.reviewer_data.old_file_name == "")
+    local file_name = (M.location.reviewer_data.new_file_focused or M.location.reviewer_data.old_file_name == "")
         and M.location.reviewer_data.file_name
       or M.location.reviewer_data.old_file_name
     title =
-      popup.create_title("Comment", file_name, M.location.visual_range.start_line, M.location.visual_range.end_line)
+      popup.create_title("Comment", file_name, M.location.reviewer_data.start_line, M.location.reviewer_data.end_line)
     user_settings = popup_settings.comment
   end
   local settings = u.merge(popup_settings, user_settings or {})
@@ -207,7 +221,7 @@ end
 ---Open a comment popup in order to create a comment on the changed/updated line in the
 ---current MR.
 M.create_comment = function()
-  M.location = Location.new()
+  M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(false) then
     return
   end
@@ -219,7 +233,7 @@ end
 ---Open a multi-line comment popup in order to create a multi-line comment on the
 ---changed/updated line in the current MR.
 M.create_multiline_comment = function()
-  M.location = Location.new()
+  M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(true) then
     u.press_escape()
     return
@@ -238,12 +252,12 @@ end
 
 ---Given the current visually selected area of text, builds text to fill in the
 ---comment popup with a suggested change
----@return LineRange?
+---@return string[]?
 local build_suggestion = function()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local range_length = M.location.visual_range.end_line - M.location.visual_range.start_line
+  local range_length = M.location.reviewer_data.end_line - M.location.reviewer_data.start_line
   local backticks = "```"
-  local selected_lines = u.get_lines(M.location.visual_range.start_line, M.location.visual_range.end_line)
+  local selected_lines = u.get_lines(M.location.reviewer_data.start_line, M.location.reviewer_data.end_line)
 
   for _, line in ipairs(selected_lines) do
     if string.match(line, "^```%S*$") then
@@ -253,9 +267,9 @@ local build_suggestion = function()
   end
 
   local suggestion_start
-  if M.location.visual_range.start_line == current_line then
+  if M.location.reviewer_data.start_line == current_line then
     suggestion_start = backticks .. "suggestion:-0+" .. range_length
-  elseif M.location.visual_range.end_line == current_line then
+  elseif M.location.reviewer_data.end_line == current_line then
     suggestion_start = backticks .. "suggestion:-" .. range_length .. "+0"
   else
     --- This should never happen afaik
@@ -274,7 +288,7 @@ end
 ---Open a popup to create a suggestion comment on the changed/updated line in the current MR
 ---See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
 M.create_comment_suggestion = function()
-  M.location = Location.new()
+  M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(true) then
     u.press_escape()
     return
@@ -355,7 +369,7 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
-  if M.location == nil or M.location.location_data == nil then
+  if M.location == nil then
     u.notify("Error getting location information", vim.log.levels.ERROR)
     return false
   end
