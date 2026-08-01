@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
@@ -30,15 +31,13 @@ func (a projectMemberService) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	projectMembers, res, err := a.client.ListAllProjectMembers(a.projectInfo.ProjectId, &projectMemberOptions)
+	it, hasErr := gitlab.Scan(func(p gitlab.PaginationOptionFunc) ([]*gitlab.ProjectMember, *gitlab.Response, error) {
+		return a.client.ListAllProjectMembers(a.projectInfo.ProjectId, &projectMemberOptions, p)
+	})
+	projectMembers := slices.Collect(it)
 
-	if err != nil {
+	if err := hasErr(); err != nil {
 		handleError(w, err, "Could not retrieve project members", http.StatusInternalServerError)
-		return
-	}
-
-	if res.StatusCode >= 300 {
-		handleError(w, GenericError{r.URL.Path}, "Could not retrieve project members", res.StatusCode)
 		return
 	}
 
@@ -49,7 +48,7 @@ func (a projectMemberService) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		ProjectMembers:  projectMembers,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
