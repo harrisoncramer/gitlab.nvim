@@ -91,7 +91,7 @@ And with <a href="https://github.com/lewis6991/pckr.nvim">pckr.nvim</a>:
 
 ### Notes on dependencies
 
-`gitlab.nvim` uses the `diffview.nvim` plugin for showing the diffs in a MR. We recommend using `dlyongemallo`'s [diffview+](https://github.com/dlyongemallo/diffview-plus.nvim) fork which is the de-facto maintained version of the plugin with many fixes and improvements (e.g., marking files as viewed). The original [sindrets/diffview.nvim](https://github.com/sindrets/diffview.nvim) plugin will be supported by `gitlab.nvim` as long as the maintenance remains feasible.
+`gitlab.nvim` uses the `diffview.nvim` plugin for showing the diffs in a MR. We recommend using `dlyongemallo`'s [diffview+](https://github.com/dlyongemallo/diffview-plus.nvim) fork which is an actively maintained version of the plugin with many fixes and improvements (e.g., marking files as viewed). Importantly, it allows setting the same similarity threshold for detecting renamed files as is used by Gitlab (30%). When using the original [sindrets/diffview.nvim](https://github.com/sindrets/diffview.nvim) plugin, file renames may not be detected correctly and comments created on such files will contain incorrect metadata or may fail. Nevertheless, the original `sindrets/diffview.nvim` plugin will be supported by `gitlab.nvim` as long as the maintenance remains feasible.
 
 Some plugin actions use Neovim’s `vim.ui.select()` picker, which looks much nicer if you use `dressing.nvim` or a similar UI plugin. To use Dressing with `gitlab.nvim`, enable it for `vim.ui.select()` like this:
 ```lua

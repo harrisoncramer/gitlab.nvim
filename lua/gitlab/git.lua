@@ -8,7 +8,7 @@ local M = {}
 ---@return string? result The result of the command as a string. Nil if the command failed
 ---@return string? error The error the command failed with. Nil if the command succeeded
 local run_system = function(command)
-  local result = vim.fn.trim(vim.fn.system(command))
+  local result = vim.fn.trim(vim.fn.system(command), "\r\n")
   if vim.v.shell_error ~= 0 then
     require("gitlab.utils").notify(result, vim.log.levels.ERROR)
     return nil, result
@@ -241,21 +241,27 @@ M.check_mr_in_good_condition = function()
   end
 end
 
----Return the full diff between the local working tree relative to the named `base_sha`,
----for the given file(s).
----@param base_sha string Base SHA to diff against
+---Return the diff between two commits for the given file(s).
+---Diffs the two commit trees directly rather than against the working tree, so it's
+---correct regardless of what's currently checked out.
+---@param old_sha string SHA to diff from
+---@param new_sha string SHA to diff to
 ---@param old_path? string Old file name
 ---@param new_path? string New file name - relevant for renamed files, ignored if same as old_path
 ---@return string? diff, string? err
-M.diff_files = function(base_sha, old_path, new_path)
+M.diff_files = function(old_sha, new_sha, old_path, new_path)
   return run_system({
     "git",
+    "-c",
+    "diff.suppressBlankEmpty=false",
     "diff",
     "--minimal",
-    "--unified=0",
+    "--find-renames=30%",
+    "--unified=3",
     "--no-color",
     "--no-ext-diff",
-    base_sha,
+    old_sha,
+    new_sha,
     "--",
     old_path,
     new_path,

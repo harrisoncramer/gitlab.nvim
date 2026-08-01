@@ -6,7 +6,6 @@
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
-local hunks = require("gitlab.hunks")
 local async = require("diffview.async")
 
 local M = {
@@ -34,7 +33,10 @@ M.open = function()
   require("gitlab.git_async").check_current_branch_up_to_date_on_remote()
   local git = require("gitlab.git")
 
-  local diffview_open_command = "DiffviewOpen"
+  -- The rename threshold used by Gitlab (through Gitaly) is 30%, see
+  -- https://gitlab.com/gitlab-org/gitaly/-/blob/db39e26f8f8a8da62e2c2db00325cf51315c89db/internal/gitaly/service/diff/commit_diff.go#L64-64
+  -- https://gitlab.com/gitlab-org/gitaly/-/blob/0e81e24ae1f650c242670eb7bf66c4b4b91b7813/internal/gitaly/service/diff/find_changed_paths.go#L116-116
+  local diffview_open_command = "DiffviewOpen --rename-threshold=30"
 
   if state.settings.reviewer_settings.diffview.imply_local then
     local has_clean_tree, err = git.has_clean_tree()
@@ -172,66 +174,44 @@ M.jump = function(file_name, old_file_name, linenr, new_buffer)
   vim.cmd("normal! zz")
 end
 
----Get the data from diffview, such as line information and file name.
----To be used by other modules such as the comment module to create line codes or set
----diagnostics.
----@param current_win integer The ID of the currently focused window
----@return DiffviewInfo?
-M.get_reviewer_data = function(current_win)
-  if M.diffview == nil then
-    return
+---Return start line and end line of visual selection.
+---@return integer
+---@return integer
+local get_visual_selection_boundaries = function()
+  local start_line = vim.fn.line("v")
+  local end_line = vim.fn.line(".")
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
   end
-  local old_win = u.get_window_id_by_buffer_id(M.diffview_layout.a.file.bufnr)
-  local new_win = u.get_window_id_by_buffer_id(M.diffview_layout.b.file.bufnr)
+  return start_line, end_line
+end
 
-  if old_win == nil or new_win == nil then
-    u.notify("Error getting window IDs for current files", vim.log.levels.ERROR)
-    return
-  end
-
-  local current_file = M.get_current_file_path()
-  if current_file == nil then
-    u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
+---Get the data from the reviewer: file names, line information, and cursor focus.
+---@return ReviewerData?
+M.get_reviewer_data = function()
+  if M.diffview_layout == nil then
     return
   end
 
-  local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
-  local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
-
-  local new_sha_focused = M.is_new_sha_focused(current_win)
-
-  local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
-  if modification_type == nil then
-    u.notify("Error getting modification type", vim.log.levels.ERROR)
-    return
-  end
-
-  -- FIXME: This causes false positive warnings when the selection range spans a
-  -- modified line but the new_line itself is on an unmodified line.
-  if modification_type == "bad_file_unmodified" then
-    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
-  end
-
-  local current_bufnr = new_sha_focused and M.diffview_layout.b.file.bufnr or M.diffview_layout.a.file.bufnr
-  local opposite_bufnr = new_sha_focused and M.diffview_layout.a.file.bufnr or M.diffview_layout.b.file.bufnr
+  local start_line, end_line = get_visual_selection_boundaries()
+  local new_file_focused = M.is_new_file_focused(vim.api.nvim_get_current_win())
+  local diff_refs = state.INFO.diff_refs
 
   return {
-    old_file_name = M.is_file_renamed() and M.diffview_layout.a.file.path or "",
+    old_file_name = M.is_file_renamed() and M.diffview_layout.a.file.path or M.diffview_layout.b.file.path,
     file_name = M.diffview_layout.b.file.path,
-    old_line_from_buf = old_line,
-    new_line_from_buf = new_line,
-    modification_type = modification_type,
-    current_bufnr = current_bufnr,
-    opposite_bufnr = opposite_bufnr,
-    new_sha_focused = new_sha_focused,
-    current_win_id = current_win,
+    old_sha = diff_refs.base_sha,
+    new_sha = diff_refs.head_sha,
+    start_line = start_line,
+    end_line = end_line,
+    new_file_focused = new_file_focused,
   }
 end
 
 ---Return true if user is focused on the new version of the file, otherwise false.
 ---@param current_win integer The ID of the currently focused window
 ---@return boolean
-M.is_new_sha_focused = function(current_win)
+M.is_new_file_focused = function(current_win)
   local b_win = u.get_window_id_by_buffer_id(M.diffview_layout.b.file.bufnr)
   local a_win = u.get_window_id_by_buffer_id(M.diffview_layout.a.file.bufnr)
   if a_win ~= current_win and b_win ~= current_win then

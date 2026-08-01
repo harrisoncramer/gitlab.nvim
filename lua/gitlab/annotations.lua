@@ -11,13 +11,22 @@
 ---@field avatar_url string
 ---@field web_url string
 
----@class LinePosition
----@field line_code string
----@field type string
+---The modification of a line in a diff.
+---@alias ModificationType
+---| "old" A deleted line
+---| "new" An added line
+---| "" An unmodified line adjacent to a hunk
+---| "expanded" A line more than 3 lines away from any change (i.e. one that Gitlab only shows upon manually expanding the diff)
 
----@class GitlabLineRange
----@field start LinePosition
----@field end LinePosition
+---@class PositionInfo
+---@field line_code? string SHA of the file name with old and new line numbers, e.g., 3f454a98e586d1aa0d322e19afd5e67e08f2d3c8_1_1
+---@field old_line integer The corresponding line in the old version of the file. For added lines it is the line after the last common unchanged line
+---@field new_line integer The corresponding line in the new version of the file. For deleted lines it is the line after the last common unchanged line
+---@field type ModificationType
+
+---@class LineRange
+---@field start PositionInfo
+---@field end PositionInfo
 
 ---@class NotePosition
 ---@field base_sha string
@@ -28,7 +37,7 @@
 ---@field new_line integer?
 ---@field old_path string?
 ---@field old_line integer?
----@field line_range GitlabLineRange?
+---@field line_range LineRange?
 
 ---@class Note
 ---@field id integer
@@ -98,21 +107,14 @@
 ---@field lnum number
 ---@field buffer number?
 
----@class LineRange
+---@class ReviewerData
+---@field old_file_name string
+---@field file_name string
+---@field old_sha string
+---@field new_sha string
 ---@field start_line integer
 ---@field end_line integer
-
----@class DiffviewInfo
----@field modification_type string
----@field file_name string
----Relevant for renamed files only, the name of the file in the previous commit
----@field old_file_name string
----@field current_bufnr integer
----@field opposite_bufnr integer
----@field new_line_from_buf integer
----@field old_line_from_buf integer
----@field new_sha_focused boolean
----@field current_win_id integer
+---@field new_file_focused boolean
 
 ---@class DraftNote
 ---@field note string
