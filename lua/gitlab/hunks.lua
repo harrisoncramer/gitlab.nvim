@@ -25,11 +25,13 @@ M.parse_possible_hunk_headers = function(line)
     --  @@ -41,0 +42,4 @@ ...
     local old_start, old_range, new_start, new_range = line:match("@@+ %-(%d+),?(%d*) %+(%d+),?(%d*) @@+")
 
+    -- Git omits the ",N" count when it is exactly 1, so an empty capture means 1,
+    -- while a captured "0" means a genuine zero-length range (pure insertion/deletion).
     return {
       old_line = tonumber(old_start),
-      old_range = tonumber(old_range) or 0,
+      old_range = tonumber(old_range) or 1,
       new_line = tonumber(new_start),
-      new_range = tonumber(new_range) or 0,
+      new_range = tonumber(new_range) or 1,
     }
   end
 end
