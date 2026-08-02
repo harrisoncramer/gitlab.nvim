@@ -6,6 +6,7 @@ on:
       - develop
     paths:
       - 'lua/**' # Ignore changes to the Go code
+      - 'tests/**'
 jobs:
   lua_lint:
     name: Lint Lua 💅

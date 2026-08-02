@@ -17,6 +17,25 @@ local M = {
   buf_winids = {},
 }
 
+---Handle Diffview's "view_closed" event for the reviewer's own tabpage: forget it, and stop
+---the winbar timer only if no discussion window is registered in any tab anymore (one may
+---still be open elsewhere, e.g. the commit browser).
+---@param view { tabpage: integer }
+M.on_diffview_closed = function(view)
+  if view.tabpage == M.tabid then
+    M.tabid = nil
+    if not require("gitlab.actions.discussions.windows").any() then
+      require("gitlab.actions.discussions.winbar").cleanup_timer()
+    end
+  end
+end
+
+---Tear down discussion windows before auto-opening fresh ones for a (re-)opened review.
+M.reset_discussions_for_auto_open = function()
+  require("gitlab.actions.discussions").close_all()
+  require("gitlab").toggle_discussions() -- Fetches data and opens discussions
+end
+
 -- Open the reviewer windows.
 M.open = function()
   require("gitlab.emoji").init() -- Read in emojis for lookup purposes
@@ -70,24 +89,15 @@ M.open = function()
     )
   end
 
-  -- Register Diffview hook for close event to set tab page # to nil
-  local on_diffview_closed = function(view)
-    if view.tabpage == M.tabid then
-      M.tabid = nil
-      require("gitlab.actions.discussions.winbar").cleanup_timer()
-    end
-  end
   require("diffview.config").user_emitter:on("view_closed", function(_, args)
     if M.tabid == args.tabpage then
       M.is_open = false
-      on_diffview_closed(args)
+      M.on_diffview_closed(args)
     end
   end)
 
   if state.settings.discussion_tree.auto_open then
-    local discussions = require("gitlab.actions.discussions")
-    discussions.close()
-    require("gitlab").toggle_discussions() -- Fetches data and opens discussions
+    M.reset_discussions_for_auto_open()
   end
 
   git.check_mr_in_good_condition()
@@ -118,6 +128,12 @@ M.browse_commits = function()
 
   vim.api.nvim_command(string.format("DiffviewFileHistory --range=%s..%s", diff_refs.base_sha, diff_refs.head_sha))
   M.history_tabid = vim.api.nvim_get_current_tabpage()
+
+  if state.settings.discussion_tree.auto_open then
+    -- Not reset_discussions_for_auto_open: its close_all() would take the reviewer's own
+    -- discussion window down with it, and that one lives in a different tabpage.
+    require("gitlab").toggle_discussions()
+  end
 end
 
 ---Forget the commit-history tab once its Diffview view closes. history_tabid gates the
@@ -130,16 +146,35 @@ M.clear_history_tab = function(tabpage)
   end
 end
 
----Close the reviewer and clean up.
+---Close the reviewer's own tabpage, together with the discussion window registered there.
+---Leaves windows in other tabs (e.g. the commit browser) standing. M.close_session tears
+---those down too.
 M.close = function()
-  if M.tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.tabid) then
-    -- FIXME: This fails if there is only one tabpage. Find a way to use DiffviewClose
-    -- that was originally here, but use it for the correct tabpage when there are
-    -- multiple Diffviews open.
-    vim.cmd.tabclose(vim.api.nvim_tabpage_get_number(M.tabid))
+  if M.tabid == nil or not vim.api.nvim_tabpage_is_valid(M.tabid) then
+    return
   end
-  local discussions = require("gitlab.actions.discussions")
-  discussions.close()
+  -- NuiSplit releases its buffer and augroups only in Split:unmount, which tabclose does
+  -- not trigger, so unmount explicitly first.
+  require("gitlab.actions.discussions").close(M.tabid)
+  -- FIXME: This fails if there is only one tabpage. Find a way to use DiffviewClose
+  -- that was originally here, but use it for the correct tabpage when there are
+  -- multiple Diffviews open. pcall'd so M.close_session still runs its remaining steps
+  -- when this is the only tabpage left.
+  pcall(vim.cmd.tabclose, vim.api.nvim_tabpage_get_number(M.tabid))
+end
+
+---Tear down the whole review session: the reviewer tab (see M.close), the commit-browser
+---tab with its history_tabid handle, and every discussion window left in another tab.
+---Use this when the MR under review is being left behind, M.close alone when it is not.
+M.close_session = function()
+  M.close()
+  if M.history_tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.history_tabid) then
+    local closed = pcall(vim.cmd.tabclose, vim.api.nvim_tabpage_get_number(M.history_tabid))
+    if closed then
+      M.history_tabid = nil
+    end
+  end
+  require("gitlab.actions.discussions").close_all()
 end
 
 ---Load new INFO state from Gitlab. Then, if diffview.api is available, apply the new
