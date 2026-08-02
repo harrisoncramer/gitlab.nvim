@@ -21,10 +21,9 @@ local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
 local emoji = require("gitlab.emoji")
+local windows = require("gitlab.actions.discussions.windows")
 
 local M = {
-  split_visible = false,
-  split = nil,
   ---@type integer
   linked_bufnr = nil,
   ---@type integer
@@ -35,15 +34,37 @@ local M = {
   unlinked_discussion_tree = nil,
 }
 
----Delete discussion buffers to prevent leaked buffers on each M.open/M.close cycle.
----@param split_bufnr integer? Passed in because `unmount` has already nil'd `M.split.bufnr`.
-local function delete_bufs(split_bufnr)
-  -- pairs, because any of these might be nil
-  for _, bufnr in pairs({ split_bufnr, M.linked_bufnr, M.unlinked_bufnr }) do
+---Delete the buffer of one window's split, to prevent a leaked buffer on each open/close
+---cycle.
+---@param split_bufnr integer? Passed in because `unmount` has already nil'd `split.bufnr`.
+local function delete_split_buf(split_bufnr)
+  if split_bufnr ~= nil and vim.api.nvim_buf_is_valid(split_bufnr) then
+    vim.api.nvim_buf_delete(split_bufnr, { force = true })
+  end
+end
+
+---Delete the discussion buffers that all windows share, to prevent two leaked buffers on
+---each open/close cycle.
+local function delete_bufs()
+  -- pairs, because either of these might be nil
+  for _, bufnr in pairs({ M.linked_bufnr, M.unlinked_bufnr }) do
     if vim.api.nvim_buf_is_valid(bufnr) then
       vim.api.nvim_buf_delete(bufnr, { force = true })
     end
   end
+end
+
+---Find the registry entry owning `winid`, across all tabpages.
+---@param winid integer
+---@return DiscussionWindowEntry?
+local function entry_for_winid(winid)
+  local found
+  windows.each(function(entry)
+    if entry.winid == winid then
+      found = entry
+    end
+  end)
+  return found
 end
 
 ---Re-fetch all discussions and re-render the relevant view.
@@ -124,66 +145,102 @@ end
 
 ---Open the discussion and unlinked note trees and set the keybindings.
 ---@param callback? function
----@param view_type "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed)
+---@param view_type? "discussions"|"notes" Defines the view type to select (useful for overriding the default view type when jumping to discussion tree when it's closed)
 M.open = function(callback, view_type)
   local original_window = vim.api.nvim_get_current_win() -- The window from which ther user called M.open
+  local tabid = vim.api.nvim_get_current_tabpage()
 
-  M.current_view_type = view_type and view_type or state.settings.discussion_tree.default_view
+  local requested_view_type = view_type and view_type or state.settings.discussion_tree.default_view
   state.DISCUSSION_DATA = u.ensure_table(state.DISCUSSION_DATA)
   state.DISCUSSION_DATA.discussions = u.ensure_table(state.DISCUSSION_DATA.discussions)
   state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(state.DISCUSSION_DATA.unlinked_discussions)
   state.DRAFT_NOTES = u.ensure_table(state.DRAFT_NOTES)
 
-  -- Make discussion split window and buffers, store buffer numbers
-  local split, linked_bufnr, unlinked_bufnr = M.create_split_and_bufs()
-  M.split = split
-  M.linked_bufnr = linked_bufnr
-  M.unlinked_bufnr = unlinked_bufnr
-  M.split_visible = true
+  -- The current tabpage already has a discussion window; focus it instead of mounting a
+  -- second one.
+  local existing = windows.get(tabid)
+  if existing then
+    vim.api.nvim_set_current_win(existing.winid)
+    if type(callback) == "function" then
+      callback()
+    end
+    return
+  end
+
+  local is_first_window = not windows.any()
+
+  -- Make discussion split window, creating the shared buffers only for the first window
+  -- (later tabs reuse them, so they show the same tree).
+  local split = M.create_split()
+  if is_first_window then
+    M.linked_bufnr, M.unlinked_bufnr = M.create_bufs()
+  end
   split:mount()
+
+  windows.set(tabid, { split = split, winid = split.winid, bufnr = M.linked_bufnr, view_type = requested_view_type })
 
   -- Set window and buffer local options to discussion tree split after mounting the split
   for opt, val in pairs(state.settings.discussion_tree.winopts) do
-    vim.api.nvim_set_option_value(opt, val, { win = M.split.winid })
+    vim.api.nvim_set_option_value(opt, val, { win = split.winid })
   end
 
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
-  vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
+  if is_first_window then
+    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
+    vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
 
-  -- Set autocmds to clean up state when discussions buffers are deleted manually
-  vim.api.nvim_create_autocmd("BufWipeout", {
-    buffer = M.linked_bufnr,
-    callback = function()
-      M.linked_bufnr = nil
-    end,
-  })
-  vim.api.nvim_create_autocmd("BufWipeout", {
-    buffer = M.unlinked_bufnr,
-    callback = function()
-      M.unlinked_bufnr = nil
-    end,
-  })
+    -- Set autocmds to clean up state when discussions buffers are deleted manually
+    vim.api.nvim_create_autocmd("BufWipeout", {
+      buffer = M.linked_bufnr,
+      callback = function()
+        M.linked_bufnr = nil
+      end,
+    })
+    vim.api.nvim_create_autocmd("BufWipeout", {
+      buffer = M.unlinked_bufnr,
+      callback = function()
+        M.unlinked_bufnr = nil
+      end,
+    })
+  end
 
-  -- Set autocmd to clean up state when discussions split is closed manually
+  -- Set autocmd to clean up state when this tab's discussion split is closed manually
   vim.api.nvim_create_autocmd("WinClosed", {
-    pattern = tostring(M.split.winid),
-    -- M.close deletes the tree buffers. Autocmds do not nest, so only outside this callback
-    -- (hence vim.schedule) does that fire BufWipeout and run the resets above.
+    pattern = tostring(split.winid),
     callback = function()
-      vim.schedule(M.close)
+      windows.remove_by_winid(split.winid)
+      if not windows.any() then
+        winbar.cleanup_timer()
+      end
+      -- nui nils `split.bufnr` as it tears the split down, so read it while it is still set.
+      local split_bufnr = split.bufnr
+      -- Unmount, or the split keeps its buffer and augroups for the rest of the session,
+      -- one set per window the user closes by hand. Defer it: delete_bufs wipes the
+      -- discussion buffers, and a buffer wiped from inside this callback fires no
+      -- BufWipeout, so the autocmds above would never reset the bufnr fields.
+      vim.schedule(function()
+        pcall(function()
+          split:unmount()
+        end)
+        delete_split_buf(split_bufnr)
+        if not windows.any() then
+          delete_bufs()
+        end
+      end)
     end,
   })
 
   -- Initialize winbar
-  winbar.start_timer()
+  if is_first_window then
+    winbar.start_timer()
+  end
 
   -- Rebuild trees in order to set keymaps and make buffers protected
-  M.switch_view_type(M.current_view_type)
+  M.switch_view_type(requested_view_type)
   M.rebuild_unlinked_discussion_tree()
   M.rebuild_discussion_tree()
 
   -- Focus the correct window
-  local win_to_enter = not state.settings.discussion_tree.focus_on_open and original_window or M.split.winid
+  local win_to_enter = not state.settings.discussion_tree.focus_on_open and original_window or split.winid
   if vim.api.nvim_win_is_valid(win_to_enter) then
     vim.api.nvim_set_current_win(win_to_enter)
   end
@@ -196,21 +253,22 @@ M.open = function(callback, view_type)
   end
 end
 
----Clear the discussion state and unmount the split.
-M.close = function()
-  if M.split == nil then
+---Unmount the discussion split of `tabid` (default: the current tabpage).
+---@param tabid integer?
+M.close = function(tabid)
+  tabid = tabid or vim.api.nvim_get_current_tabpage()
+  local entry = windows.get(tabid)
+  if entry == nil then
     return
   end
-  -- nui nils `split.winid` and `split.bufnr` as it tears them down, so read both while they
-  -- are still set.
-  local winid = M.split.winid
-  local split_bufnr = M.split.bufnr
-  if winid ~= nil and vim.api.nvim_win_is_valid(winid) then
-    local ok, err = pcall(vim.api.nvim_win_close, winid, true)
+  -- nui nils `split.bufnr` as it tears the split down, so read it while it is still set.
+  local split_bufnr = entry.split.bufnr
+  if vim.api.nvim_win_is_valid(entry.winid) then
+    local ok, err = pcall(vim.api.nvim_win_close, entry.winid, true)
     if not ok and tostring(err):find("E444") then
       -- Last window in the session, so it needs a sibling before it can be closed.
       vim.cmd("silent! vsplit")
-      ok = pcall(vim.api.nvim_win_close, winid, true)
+      ok = pcall(vim.api.nvim_win_close, entry.winid, true)
     end
     if not ok then
       u.notify("Could not close the discussion window", vim.log.levels.WARN)
@@ -220,16 +278,35 @@ M.close = function()
   -- Release nui's own buffer and augroups, which nothing else frees. Guarded so a failure
   -- in there cannot skip the state cleanup below.
   pcall(function()
-    M.split:unmount()
+    entry.split:unmount()
   end)
-  M.split_visible = false
-  M.discussion_tree = nil
-  delete_bufs(split_bufnr)
+  delete_split_buf(split_bufnr)
+  windows.remove(tabid)
+  if not windows.any() then
+    winbar.cleanup_timer()
+    delete_bufs()
+  end
+end
+
+---Unmount every registered discussion window, across all tabpages. A window left in
+---another tab would otherwise keep showing the outgoing MR's discussions and hold its
+---NuiSplit buffer and augroups.
+M.close_all = function()
+  local tabids = {}
+  windows.each(function(_, tabid)
+    table.insert(tabids, tabid)
+  end)
+  -- Close after collecting: it fires WinClosed, which mutates the registry we'd otherwise
+  -- still be iterating.
+  for _, tabid in ipairs(tabids) do
+    M.close(tabid)
+  end
   winbar.cleanup_timer()
 end
 
 ---Move to the discussion tree at the discussion from diagnostic on current line.
 M.move_to_discussion_tree = function()
+  local tabid = vim.api.nvim_get_current_tabpage()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local d = vim.diagnostic.get(0, { namespace = diagnostics.diagnostics_namespace, lnum = current_line - 1 })
 
@@ -251,12 +328,17 @@ M.move_to_discussion_tree = function()
         discussion_node:expand()
       end
       M.discussion_tree:render()
-      vim.api.nvim_set_current_win(M.split.winid)
-      M.switch_view_type("discussions")
-      vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
+      local entry = windows.get(tabid)
+      if entry then
+        vim.api.nvim_set_current_win(entry.winid)
+        M.switch_view_type("discussions")
+        vim.api.nvim_win_set_cursor(entry.winid, { line_number, 0 })
+      else
+        u.notify("Discussion tree window not found", vim.log.levels.WARN)
+      end
     end
 
-    if not M.split_visible then
+    if windows.get(tabid) == nil then
       M.open(jump_after_tree_opened, "discussions")
     else
       jump_after_tree_opened()
@@ -264,9 +346,10 @@ M.move_to_discussion_tree = function()
   end
 
   if #d == 0 then
-    if state.settings.reviewer_settings.jump_with_no_diagnostics then
-      vim.api.nvim_win_set_cursor(M.split.winid, { M.last_row, M.last_column })
-      vim.api.nvim_set_current_win(M.split.winid)
+    local entry = windows.get(tabid)
+    if state.settings.reviewer_settings.jump_with_no_diagnostics and entry then
+      vim.api.nvim_win_set_cursor(entry.winid, { entry.last_row, entry.last_column })
+      vim.api.nvim_set_current_win(entry.winid)
     else
       u.notify("No diagnostics for this line.", vim.log.levels.WARN)
     end
@@ -296,7 +379,7 @@ M.reply = function(tree)
     return
   end
 
-  local node = tree:get_node()
+  local node = common.get_current_node(tree)
   local discussion_node = common.get_root_node(tree, node)
 
   if discussion_node == nil then
@@ -325,7 +408,7 @@ M.delete_comment = function(tree, unlinked)
     prompt = "Delete comment?",
   }, function(choice)
     if choice == "Confirm" then
-      local current_node = tree:get_node()
+      local current_node = common.get_current_node(tree)
       local note_node = common.get_note_node(tree, current_node)
       local root_node = common.get_root_node(tree, current_node)
       if note_node == nil or root_node == nil then
@@ -349,7 +432,7 @@ end
 ---@param tree NuiTree
 ---@param unlinked boolean
 M.edit_comment = function(tree, unlinked)
-  local current_node = tree:get_node()
+  local current_node = common.get_current_node(tree)
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
   if note_node == nil or root_node == nil then
@@ -399,7 +482,7 @@ end
 ---Toggle the resolved status of the current discussion and send the change to the Go server.
 ---@param tree NuiTree
 M.toggle_discussion_resolved = function(tree)
-  local note = tree:get_node()
+  local note = common.get_current_node(tree)
   if note == nil then
     return
   end
@@ -428,7 +511,7 @@ end
 ---@param tree any
 ---@param unlinked boolean
 M.add_emoji_to_note = function(tree, unlinked)
-  local node = tree:get_node()
+  local node = common.get_current_node(tree)
   local note_node = common.get_note_node(tree, node)
 
   if note_node == nil then
@@ -451,7 +534,7 @@ end
 ---@param tree any
 ---@param unlinked boolean
 M.delete_emoji_from_note = function(tree, unlinked)
-  local node = tree:get_node()
+  local node = common.get_current_node(tree)
   local note_node = common.get_note_node(tree, node)
 
   if note_node == nil then
@@ -512,8 +595,18 @@ M.rebuild_discussion_tree = function()
     return
   end
 
-  local current_node = discussions_tree.get_node_at_cursor(M.discussion_tree, M.last_node_at_cursor)
-  local current_cursor_column = vim.api.nvim_win_get_cursor(0)[2]
+  -- The buffer is shared between windows, and the rebuild clears and re-adds its lines.
+  -- Capture the cursor per window, or only one window's position survives.
+  local restore_targets = {}
+  windows.each(function(entry)
+    if entry.bufnr == M.linked_bufnr then
+      table.insert(restore_targets, {
+        winid = entry.winid,
+        node = discussions_tree.get_node_at_cursor(M.discussion_tree, entry.winid, entry.last_node_at_cursor),
+        column = vim.api.nvim_win_get_cursor(entry.winid)[2],
+      })
+    end
+  end)
 
   local expanded_node_ids = M.gather_expanded_node_ids(M.discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
@@ -536,7 +629,9 @@ M.rebuild_discussion_tree = function()
     tree_utils.open_node_by_id(discussion_tree, id)
   end
   discussion_tree:render()
-  discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_cursor_column, current_node, nil)
+  for _, target in ipairs(restore_targets) do
+    discussions_tree.restore_cursor_position(target.winid, discussion_tree, target.column, target.node, nil)
+  end
 
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
   M.discussion_tree = discussion_tree
@@ -551,8 +646,17 @@ M.rebuild_unlinked_discussion_tree = function()
     return
   end
 
-  local current_node = discussions_tree.get_node_at_cursor(M.unlinked_discussion_tree, M.last_node_at_cursor)
-  local current_cursor_column = vim.api.nvim_win_get_cursor(0)[2]
+  -- Capture cursor state per registered window, see M.rebuild_discussion_tree.
+  local restore_targets = {}
+  windows.each(function(entry)
+    if entry.bufnr == M.unlinked_bufnr then
+      table.insert(restore_targets, {
+        winid = entry.winid,
+        node = discussions_tree.get_node_at_cursor(M.unlinked_discussion_tree, entry.winid, entry.last_node_at_cursor),
+        column = vim.api.nvim_win_get_cursor(entry.winid)[2],
+      })
+    end
+  end)
 
   local expanded_node_ids = M.gather_expanded_node_ids(M.unlinked_discussion_tree)
   common.switch_can_edit_bufs(true, M.linked_bufnr, M.unlinked_bufnr)
@@ -575,7 +679,9 @@ M.rebuild_unlinked_discussion_tree = function()
     tree_utils.open_node_by_id(unlinked_discussion_tree, id)
   end
   unlinked_discussion_tree:render()
-  discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_cursor_column, current_node)
+  for _, target in ipairs(restore_targets) do
+    discussions_tree.restore_cursor_position(target.winid, unlinked_discussion_tree, target.column, target.node)
+  end
 
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
   M.unlinked_discussion_tree = unlinked_discussion_tree
@@ -584,47 +690,60 @@ M.rebuild_unlinked_discussion_tree = function()
   state.unlinked_discussion_tree.unresolved_expanded = false
 end
 
----Create the split for the discussion tree and returns it, with both buffer numbers.
+---Create the split window for the discussion tree in the current tabpage.
 ---@return NuiSplit
----@return integer
----@return integer
-M.create_split_and_bufs = function()
+M.create_split = function()
   local position = state.settings.discussion_tree.position
   local size = state.settings.discussion_tree.size
   local relative = state.settings.discussion_tree.relative
 
-  local split = Split({
+  return Split({
     relative = relative,
     position = position,
     size = size,
   })
+end
 
+---Create the linked/unlinked discussion buffers, shared by every discussion window, and
+---their cursor-tracking autocmds.
+---@return integer linked_bufnr
+---@return integer unlinked_bufnr
+M.create_bufs = function()
   local linked_bufnr = vim.api.nvim_create_buf(true, false)
   local unlinked_bufnr = vim.api.nvim_create_buf(true, false)
 
   vim.api.nvim_create_autocmd("WinLeave", {
     buffer = linked_bufnr,
     callback = function()
-      M.last_row, M.last_column = unpack(vim.api.nvim_win_get_cursor(0))
-      M.last_node_at_cursor = M.discussion_tree and M.discussion_tree:get_node() or nil
+      local entry = entry_for_winid(vim.api.nvim_get_current_win())
+      if entry == nil then
+        return
+      end
+      entry.last_row, entry.last_column = unpack(vim.api.nvim_win_get_cursor(0))
+      entry.last_node_at_cursor = M.discussion_tree and M.discussion_tree:get_node(entry.last_row) or nil
     end,
   })
 
   vim.api.nvim_create_autocmd("WinLeave", {
     buffer = unlinked_bufnr,
     callback = function()
-      M.last_node_at_cursor = M.unlinked_discussion_tree and M.unlinked_discussion_tree:get_node() or nil
+      local entry = entry_for_winid(vim.api.nvim_get_current_win())
+      if entry == nil then
+        return
+      end
+      local cursor_row = vim.api.nvim_win_get_cursor(0)[1]
+      entry.last_node_at_cursor = M.unlinked_discussion_tree and M.unlinked_discussion_tree:get_node(cursor_row) or nil
     end,
   })
 
-  return split, linked_bufnr, unlinked_bufnr
+  return linked_bufnr, unlinked_bufnr
 end
 
 ---Check if type of current node is note or note body.
 ---@param tree NuiTree
 ---@return boolean
 M.is_current_node_note = function(tree)
-  return common.is_node_note(tree:get_node())
+  return common.is_node_note(common.get_current_node(tree))
 end
 
 ---Set the discussion tree keymaps.
@@ -741,13 +860,21 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.toggle_node then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_node, function()
-      tree_utils.toggle_node(M.split.winid, tree)
+      local entry = windows.get()
+      if entry == nil then
+        return
+      end
+      tree_utils.toggle_node(entry.winid, tree)
     end, { buffer = bufnr, desc = "Toggle node", nowait = keymaps.discussion_tree.toggle_node_nowait })
   end
 
   if keymaps.discussion_tree.toggle_all_discussions then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_all_discussions, function()
-      tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
+      local entry = windows.get()
+      if entry == nil then
+        return
+      end
+      tree_utils.toggle_nodes(entry.winid, tree, unlinked, {
         toggle_resolved = true,
         toggle_unresolved = true,
         keep_current_open = state.settings.discussion_tree.keep_current_open,
@@ -761,7 +888,11 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.toggle_resolved_discussions then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_resolved_discussions, function()
-      tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
+      local entry = windows.get()
+      if entry == nil then
+        return
+      end
+      tree_utils.toggle_nodes(entry.winid, tree, unlinked, {
         toggle_resolved = true,
         toggle_unresolved = false,
         keep_current_open = state.settings.discussion_tree.keep_current_open,
@@ -775,7 +906,11 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
 
   if keymaps.discussion_tree.toggle_unresolved_discussions then
     vim.keymap.set("n", keymaps.discussion_tree.toggle_unresolved_discussions, function()
-      tree_utils.toggle_nodes(M.split.winid, tree, unlinked, {
+      local entry = windows.get()
+      if entry == nil then
+        return
+      end
+      tree_utils.toggle_nodes(entry.winid, tree, unlinked, {
         toggle_resolved = false,
         toggle_unresolved = true,
         keep_current_open = state.settings.discussion_tree.keep_current_open,
@@ -864,18 +999,25 @@ M.set_tree_keymaps = function(tree, bufnr, unlinked)
   emoji.init_popup(tree, bufnr)
 end
 
----Toggle the current view type (or sets it to `override`) and update the view.
+---Toggle the view type of the current tabpage's discussion window, or set it to
+---`override`.
 ---@param override? "discussions"|"notes" The view type to select
 M.switch_view_type = function(override)
-  vim.api.nvim_set_option_value("winfixbuf", false, { win = M.split.winid })
-  if override == "discussions" or M.current_view_type == "notes" then
-    M.current_view_type = "discussions"
-    vim.api.nvim_set_current_buf(M.linked_bufnr)
-  elseif override == "notes" or M.current_view_type == "discussions" then
-    M.current_view_type = "notes"
-    vim.api.nvim_set_current_buf(M.unlinked_bufnr)
+  local entry = windows.get()
+  if entry == nil then
+    return
   end
-  vim.api.nvim_set_option_value("winfixbuf", true, { win = M.split.winid })
+  vim.api.nvim_set_option_value("winfixbuf", false, { win = entry.winid })
+  if override == "discussions" or entry.view_type == "notes" then
+    entry.view_type = "discussions"
+    entry.bufnr = M.linked_bufnr
+    vim.api.nvim_win_set_buf(entry.winid, entry.bufnr)
+  elseif override == "notes" or entry.view_type == "discussions" then
+    entry.view_type = "notes"
+    entry.bufnr = M.unlinked_bufnr
+    vim.api.nvim_win_set_buf(entry.winid, entry.bufnr)
+  end
+  vim.api.nvim_set_option_value("winfixbuf", true, { win = entry.winid })
   winbar.update_winbar()
 end
 
@@ -916,7 +1058,7 @@ end
 ---@param tree NuiTree
 ---@return boolean
 M.is_draft_note = function(tree)
-  local current_node = tree:get_node()
+  local current_node = common.get_current_node(tree)
   local note_node = common.get_note_node(tree, current_node)
   if note_node and note_node.is_draft then
     return true

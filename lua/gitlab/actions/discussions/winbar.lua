@@ -1,6 +1,7 @@
 local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
+local windows = require("gitlab.actions.discussions.windows")
 
 local M = {}
 
@@ -47,9 +48,10 @@ end
 local spinner_index = 0
 state.discussion_tree.last_updated = nil
 
----Return the raw content of the winbar.
+---Return the raw content of the winbar for a window showing `view_type`.
+---@param view_type "discussions"|"notes"
 ---@return string
-local function content()
+local function content(view_type)
   local updated
   if state.discussion_tree.last_updated then
     local last_update = tostring(os.date("!%Y-%m-%dT%H:%M:%S", state.discussion_tree.last_updated))
@@ -77,6 +79,7 @@ local function content()
   end)
 
   local t = {
+    view_type = view_type,
     resolvable_discussions = resolvable_discussions,
     resolved_discussions = resolved_discussions,
     non_resolvable_discussions = non_resolvable_discussions,
@@ -94,24 +97,12 @@ local function content()
   return state.settings.discussion_tree.winbar and state.settings.discussion_tree.winbar(t) or M.make_winbar(t)
 end
 
----Update the winbar.
+---Update the winbar in every registered discussion window, from each window's own
+---view_type.
 M.update_winbar = function()
-  local d = require("gitlab.actions.discussions")
-  if d.split == nil then
-    return
-  end
-
-  local win_id = d.split.winid
-  if win_id == nil then
-    return
-  end
-
-  if not vim.api.nvim_win_is_valid(win_id) then
-    return
-  end
-
-  local c = content()
-  vim.api.nvim_set_option_value("winbar", c, { scope = "local", win = win_id })
+  windows.each(function(entry)
+    vim.api.nvim_set_option_value("winbar", content(entry.view_type), { scope = "local", win = entry.winid })
+  end)
 end
 
 ---TODO: remove this function and hardcode " " where called
@@ -152,7 +143,7 @@ end
 ---@param t WinbarTable
 ---@return string winbar The raw content of the winbar
 M.make_winbar = function(t)
-  local discussions_focused = require("gitlab.actions.discussions").current_view_type == "discussions"
+  local discussions_focused = t.view_type == "discussions"
   local discussion_text = add_drafts_and_resolvable(
     "Comments:",
     t.resolvable_discussions,

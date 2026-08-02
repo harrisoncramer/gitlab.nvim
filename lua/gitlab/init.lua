@@ -6,6 +6,7 @@ local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local history = require("gitlab.reviewer.history")
 local discussions = require("gitlab.actions.discussions")
+local discussion_windows = require("gitlab.actions.discussions.windows")
 local merge_requests = require("gitlab.actions.merge_requests")
 local merge = require("gitlab.actions.merge")
 local rebase = require("gitlab.actions.rebase")
@@ -78,7 +79,7 @@ return {
     reviewer.reload()
   end,
   close_review = function()
-    reviewer.close()
+    reviewer.close_session()
   end,
   browse_commits = async.sequence({ info }, function()
     reviewer.browse_commits()
@@ -94,7 +95,7 @@ return {
   rebase = async.sequence({ u.merge(mergeability, { refresh = true }), info }, rebase.rebase),
   -- Discussion Tree Actions 🌴
   toggle_discussions = function()
-    if discussions.split_visible then
+    if discussion_windows.get() then
       discussions.close()
     else
       async.sequence({

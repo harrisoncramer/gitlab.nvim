@@ -112,7 +112,7 @@ end
 ---API call to refresh the relevant data for that tree and re-render it.
 ---@param tree NuiTree
 M.confirm_publish_draft = function(tree)
-  local current_node = tree:get_node()
+  local current_node = common.get_current_node(tree)
   local note_node = common.get_note_node(tree, current_node)
   local root_node = common.get_root_node(tree, current_node)
 
