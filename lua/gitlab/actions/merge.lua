@@ -61,7 +61,7 @@ M.confirm_merge = function(merge_body, squash_message)
   end
 
   client.send_request("/mr/merge", "POST", merge_body, function(data)
-    reviewer.close()
+    reviewer.close_session()
     u.notify(data.message, vim.log.levels.INFO)
   end)
 end

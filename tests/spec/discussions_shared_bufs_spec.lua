@@ -1,8 +1,9 @@
--- The linked and unlinked buffers belong to one open, not to the session, so close() owns
--- their release.
+-- The linked and unlinked buffers are shared by every discussion window but not by the
+-- session: the first open creates them, the last close owns their release.
 
 local discussions = require("gitlab.actions.discussions")
 local draft_notes = require("gitlab.actions.draft_notes")
+local windows = require("gitlab.actions.discussions.windows")
 local winbar = require("gitlab.actions.discussions.winbar")
 local state = require("gitlab.state")
 
@@ -25,8 +26,6 @@ describe("actions/discussions buffers", function()
 
   after_each(function()
     draft_notes.rebuild_view = original_rebuild_view
-    discussions.split = nil
-    discussions.split_visible = false
     discussions.discussion_tree = nil
     discussions.linked_bufnr = nil
     discussions.unlinked_bufnr = nil
@@ -68,5 +67,35 @@ describe("actions/discussions buffers", function()
       ("unlinked buffer %d of the first open leaked"):format(first_unlinked)
     )
     discussions.close()
+  end)
+
+  it("Keeps the buffers while another tab still shows them", function()
+    vim.cmd("tabnew")
+    discussions.open()
+    local linked, unlinked = discussions.linked_bufnr, discussions.unlinked_bufnr
+    vim.cmd("tabnew")
+    discussions.open()
+
+    discussions.close()
+
+    assert.is_true(vim.api.nvim_buf_is_valid(linked), ("linked buffer %d was pulled from the other tab"):format(linked))
+    assert.is_true(
+      vim.api.nvim_buf_is_valid(unlinked),
+      ("unlinked buffer %d was pulled from the other tab"):format(unlinked)
+    )
+  end)
+
+  it("Deletes both buffers when the user closes the last window by hand", function()
+    vim.cmd("tabnew")
+    discussions.open()
+    local linked = discussions.linked_bufnr
+
+    vim.api.nvim_win_close(windows.get().winid, true)
+
+    local released = vim.wait(200, function()
+      return not vim.api.nvim_buf_is_valid(linked)
+    end, 10)
+
+    assert.is_true(released, ("linked buffer %d is still alive 200ms after the window closed"):format(linked))
   end)
 end)
