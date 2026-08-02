@@ -37,28 +37,14 @@ M.parse_possible_hunk_headers = function(line)
 end
 
 ---Return true if given line was removed in the MR.
+---The diff comes from `git.diff_files`, which runs with `--unified=0`. A hunk
+---therefore carries no context lines and its old range holds removed lines only,
+---so membership in that range already answers the question.
 ---@param linenr integer Line number in the old version of the file
 ---@param hunk Hunk A hunk candidate from the file's diff
----@param all_diff_output string[]
 ---@return boolean
-local line_was_removed = function(linenr, hunk, all_diff_output)
-  for matching_line_index, line in ipairs(all_diff_output) do
-    local found_hunk = M.parse_possible_hunk_headers(line)
-    if found_hunk ~= nil and vim.deep_equal(found_hunk, hunk) then
-      -- We found a matching hunk, now we need to iterate over the lines from the raw diff output
-      -- at that hunk until we reach the line we are looking for. When the indexes match we check
-      -- to see if that line is deleted or not.
-      for hunk_line_index = found_hunk.old_line, hunk.old_line + hunk.old_range, 1 do
-        local line_content = all_diff_output[matching_line_index + 1]
-        if hunk_line_index == linenr then
-          if string.match(line_content, "^%-") then
-            return true
-          end
-        end
-      end
-    end
-  end
-  return false
+local line_was_removed = function(linenr, hunk)
+  return linenr >= hunk.old_line and linenr < hunk.old_line + hunk.old_range
 end
 
 ---Return true if given line was added in the MR.
@@ -200,9 +186,8 @@ end
 ---@param old_line? integer The starting or ending line of the current selection in the old version
 ---@param new_line? integer The starting or ending line of the current selection in the new version
 ---@param hunks Hunk[]
----@param all_diff_output string[]
 ---@return ("deleted"|"unmodified")?
-local function get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
+local function get_modification_type_from_old_sha(old_line, new_line, hunks)
   if old_line == nil then
     return nil
   end
@@ -212,7 +197,7 @@ local function get_modification_type_from_old_sha(old_line, new_line, hunks, all
     local new_line_end = hunk.new_line + hunk.new_range - (hunk.new_range > 0 and 1 or 0)
     local in_old_range = old_line >= hunk.old_line and old_line <= old_line_end
     local in_new_range = new_line >= hunk.new_line and new_line <= new_line_end
-    return (in_old_range or in_new_range) and line_was_removed(old_line, hunk, all_diff_output)
+    return (in_old_range or in_new_range) and line_was_removed(old_line, hunk)
   end) and "deleted" or "unmodified"
 end
 
@@ -238,7 +223,7 @@ function M.get_modification_type(old_line, new_line, new_sha_focused)
   local hunks = hunk_and_diff_data.hunks
   local all_diff_output = hunk_and_diff_data.all_diff_output
   return new_sha_focused and get_modification_type_from_new_sha(new_line, hunks, all_diff_output)
-    or get_modification_type_from_old_sha(old_line, new_line, hunks, all_diff_output)
+    or get_modification_type_from_old_sha(old_line, new_line, hunks)
 end
 
 ---Return the matching line number of a line in the new/old version of the file compared

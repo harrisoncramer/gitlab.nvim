@@ -85,5 +85,45 @@ index 1111111..2222222 100644
       local got = hunks.get_modification_type(4, 4, true)
       assert.are.same("bad_file_unmodified", got)
     end)
+
+    it("treats a deleted line as deleted", function()
+      stub_diff([[
+diff --git a/file.txt b/file.txt
+index 1111111..2222222 100644
+--- a/file.txt
++++ b/file.txt
+@@ -5 +4,0 @@
+-old line 5
+]])
+
+      assert.are.same("deleted", hunks.get_modification_type(5, 4, false))
+    end)
+
+    it("treats the line below a single-line deletion as unmodified", function()
+      stub_diff([[
+diff --git a/file.txt b/file.txt
+index 1111111..2222222 100644
+--- a/file.txt
++++ b/file.txt
+@@ -5 +4,0 @@
+-old line 5
+]])
+
+      assert.are.same("unmodified", hunks.get_modification_type(6, 5, false))
+    end)
+
+    it("treats the line below a multi-line deletion as unmodified", function()
+      stub_diff([[
+diff --git a/file.txt b/file.txt
+index 1111111..2222222 100644
+--- a/file.txt
++++ b/file.txt
+@@ -5,2 +4,0 @@
+-old line 5
+-old line 6
+]])
+
+      assert.are.same("unmodified", hunks.get_modification_type(7, 5, false))
+    end)
   end)
 end)
