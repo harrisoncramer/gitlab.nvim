@@ -105,9 +105,14 @@ M.refresh_diagnostics = function()
   M.clear_diagnostics()
   M.placeable_discussions = indicators_common.filter_placeable_discussions()
 
-  local view = require("gitlab.reviewer").diffview
+  local reviewer = require("gitlab.reviewer")
+  local view = reviewer.diffview
   if view == nil then
-    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    -- A nil view means either no reviewer was opened (commenting from the commit browser
+    -- lands here) or an open one lost its view. Only the second is an error.
+    if reviewer.is_open then
+      u.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    end
     return
   end
   M.place_diagnostics(view.cur_layout.a.file.bufnr)
@@ -151,6 +156,36 @@ M.place_diagnostics = function(bufnr)
     elseif bufnr == view.cur_layout.b.file.bufnr then
       set_diagnostics(M.diagnostics_namespace, bufnr, M.parse_diagnostics(new_discussions), create_display_opts())
     end
+  end)
+
+  if not ok then
+    u.notify(string.format("Error setting diagnostics: %s", err), vim.log.levels.ERROR)
+  end
+end
+
+---Place the diagnostics for the comments anchored to the commit the browser shows. Diffview
+---reuses a revision's buffer across views, so the buffer is written even when the commit
+---has no comments, to drop what another commit or the reviewer put there.
+---@param bufnr integer Buffer holding the commit's version of the file (the new side)
+---@param sha string The commit currently browsed
+---@param file_path string Path of the file shown
+M.place_commit_diagnostics = function(bufnr, sha, file_path)
+  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+  if not state.settings.discussion_signs.enabled then
+    return
+  end
+
+  -- An old-side line is numbered against the MR base, while the old side shown here is the
+  -- commit's parent, so only new-side notes can be placed.
+  local commit_discussions = List.new(indicators_common.filter_commit_discussions(sha)):filter(function(d_or_n)
+    local note = indicators_common.get_first_note(d_or_n)
+    return note.position.new_path == file_path and indicators_common.is_new_sha(d_or_n)
+  end)
+
+  local ok, err = pcall(function()
+    set_diagnostics(M.diagnostics_namespace, bufnr, M.parse_diagnostics(commit_discussions), create_display_opts())
   end)
 
   if not ok then

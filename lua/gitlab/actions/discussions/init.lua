@@ -117,6 +117,7 @@ end
 M.refresh_diagnostics = function()
   if state.settings.discussion_signs.enabled then
     diagnostics.refresh_diagnostics()
+    require("gitlab.reviewer.history").refresh_diagnostics()
   end
   common.add_empty_titles()
 end

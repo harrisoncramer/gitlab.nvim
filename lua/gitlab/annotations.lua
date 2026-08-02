@@ -199,6 +199,7 @@
 ---@field file_name? string
 ---@field resolved? string
 ---@field unresolved? string
+---@field commit? string
 ---@field draft? string
 ---@field draft_mode? string
 ---@field live_mode? string

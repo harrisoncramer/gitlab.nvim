@@ -150,7 +150,7 @@ end
 ---@param note DraftNote
 ---@return NuiTree.Node
 M.build_root_draft_note = function(note)
-  local _, root_text, root_text_nodes = discussion_tree.build_note(note)
+  local _, root_text, root_text_nodes = discussion_tree.build_note(note, nil, true)
   return NuiTree.Node({
     range = (type(note.position) == "table" and note.position.line_range or nil),
     text = root_text,
@@ -166,6 +166,9 @@ M.build_root_draft_note = function(note)
     resolvable = false,
     resolved = false,
     url = state.INFO.web_url .. "#note_" .. note.id,
+    -- go-gitlab types commit_id as a plain string, so a note without a commit arrives as
+    -- "", never nil
+    commit_id = (note.commit_id ~= nil and note.commit_id ~= "") and note.commit_id or nil,
   }, root_text_nodes)
 end
 

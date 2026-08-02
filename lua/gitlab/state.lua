@@ -306,6 +306,7 @@ M.settings = {
       file_name = "Normal",
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
+      commit = "DiagnosticSignInfo",
       draft = "DiffviewReference",
       draft_mode = "DiagnosticWarn",
       live_mode = "DiagnosticOk",

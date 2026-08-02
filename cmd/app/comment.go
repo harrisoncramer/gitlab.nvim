@@ -97,6 +97,10 @@ func (a commentService) postComment(w http.ResponseWriter, r *http.Request) {
 		opt.Position = buildCommentPosition(commentWithPositionData)
 	}
 
+	if payload.CommitID != "" {
+		opt.CommitID = &payload.CommitID
+	}
+
 	discussion, res, err := a.client.CreateMergeRequestDiscussion(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
 
 	if err != nil {
