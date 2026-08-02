@@ -41,10 +41,13 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_new_line = nil
     local root_old_line = nil
     local root_url
+    ---@type string?
+    local root_commit_id
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
+        _, root_text, root_text_nodes =
+          M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable }, true)
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
         root_old_file_name = (type(note.position) == "table" and note.position.old_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
@@ -55,6 +58,9 @@ M.add_discussions_to_table = function(items, unlinked)
         resolved = note.resolved
         root_url = state.INFO.web_url .. "#note_" .. note.id
         range = (type(note.position) == "table" and note.position.line_range or nil)
+        -- go-gitlab types commit_id as a plain string, so a note without a commit arrives
+        -- as "", never nil
+        root_commit_id = (note.commit_id ~= nil and note.commit_id ~= "") and note.commit_id or nil
       else -- Otherwise insert it as a child node...
         local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
@@ -89,6 +95,7 @@ M.add_discussions_to_table = function(items, unlinked)
       resolvable = resolvable,
       resolved = resolved,
       url = root_url,
+      commit_id = root_commit_id,
     }, body)
 
     table.insert(t, root_node)
@@ -272,9 +279,10 @@ end
 ---Build note node body.
 ---@param note Note|DraftNote
 ---@param resolve_info? ResolveInfo Nil if the note is a child node
+---@param is_root? boolean True if the note is the root of a discussion or draft note
 ---@return string
 ---@return NuiTree.Node[]
-local function build_note_body(note, resolve_info)
+local function build_note_body(note, resolve_info, is_root)
   local text_nodes = {}
   local i = 0
   for body_line in u.split_by_new_lines(note.body or note.note) do
@@ -300,7 +308,13 @@ local function build_note_body(note, resolve_info)
     symbol = state.settings.discussion_tree.unlinked
   end
 
-  local noteHeader = common.build_note_header(note) .. " " .. symbol
+  -- The marker belongs to the discussion, so it goes on the root and not on every reply
+  local commit_marker = ""
+  if is_root and note.commit_id and note.commit_id ~= "" then
+    commit_marker = " " .. note.commit_id:sub(1, 7)
+  end
+
+  local noteHeader = common.build_note_header(note) .. commit_marker .. " " .. symbol
 
   return noteHeader, text_nodes
 end
@@ -308,11 +322,12 @@ end
 ---Build note node.
 ---@param note Note|DraftNote
 ---@param resolve_info? ResolveInfo Nil if the note is a child node
+---@param is_root? boolean True if the note is the root of a discussion or draft note
 ---@return NuiTree.Node
 ---@return string
 ---@return NuiTree.Node[]
-M.build_note = function(note, resolve_info)
-  local text, text_nodes = build_note_body(note, resolve_info)
+M.build_note = function(note, resolve_info, is_root)
+  local text, text_nodes = build_note_body(note, resolve_info, is_root)
   local note_node = NuiTree.Node({
     text = text,
     is_draft = note.note ~= nil,

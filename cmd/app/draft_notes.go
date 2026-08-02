@@ -112,6 +112,10 @@ func (a draftNoteService) postDraftNote(w http.ResponseWriter, r *http.Request) 
 		opt.Position = buildCommentPosition(draftNoteWithPosition)
 	}
 
+	if payload.CommitID != "" {
+		opt.CommitID = &payload.CommitID
+	}
+
 	draftNote, res, err := a.client.CreateDraftNote(a.projectInfo.ProjectId, a.projectInfo.MergeId, &opt)
 
 	if err != nil {

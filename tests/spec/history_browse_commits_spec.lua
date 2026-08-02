@@ -1,6 +1,6 @@
 -- Verifies M.browse_commits focuses an already-open commit browser instead of opening a
 -- second one: Diffview does not dedupe FileHistory views, so a second DiffviewFileHistory
--- call would orphan the first tab.
+-- call would orphan the first tab (see reviewer.clear_history_tab).
 
 local reviewer = require("gitlab.reviewer")
 

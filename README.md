@@ -179,7 +179,7 @@ These keymaps are available globally (i.e., in any buffer).
 | `glc`     | Chose MR for review                                                                               |
 | `glS`     | Start review for the currently checked-out branch                                                 |
 | `glQ`     | Close the reviewer, discussions, and shut down the Go server                                      |
-| `glh`     | Browse the MR's commit history, one commit at a time (read-only)                                  |
+| `glh`     | Browse the MR's commit history, one commit at a time                                              |
 | `gl<C-R>` | Load new MR state from Gitlab and apply new diff refs to the diff view                            |
 | `gls`     | Show the editable summary of the MR                                                               |
 | `glu`     | Copy the URL of the MR to the system clipboard                                                    |
@@ -240,6 +240,21 @@ These `keymaps` are active in the reviewer window (the diff view).
 | `c`  | Create a comment for the lines that the following {motion} moves over    |
 | `s`  | Create a suggestion for the lines that the following {motion} moves over |
 | `a`  | Jump to the comment in the discussion tree                               |
+
+#### Commit Browser Keymaps
+
+These `keymaps` are active in the commit browser (`glh`), which steps through the
+MR one commit at a time.
+
+| Keys | Action                                                                          |
+| ---- | -------------------------------------------------------------------------------- |
+| `c`  | Comment on the current line, anchored to the commit being viewed                 |
+| `a`  | Jump to the comment in the discussion tree                                        |
+| `g?` | Show these keymaps                                                               |
+
+`c` only works on the new (right) side; commenting on a line the commit deletes
+(left side) is not supported. `]v` / `[v` follow the line to the next commit
+that changes it, then fall back to the next commit that merely touches the file.
 
 ## Contributing
 
