@@ -4,6 +4,7 @@ local async = require("gitlab.async")
 local server = require("gitlab.server")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
+local history = require("gitlab.reviewer.history")
 local discussions = require("gitlab.actions.discussions")
 local merge_requests = require("gitlab.actions.merge_requests")
 local merge = require("gitlab.actions.merge")
@@ -43,6 +44,7 @@ local function setup(args)
   -- FIXME: The plugin should be set up more lazily: All the work in
   -- initialize_discussions should be done only when a review is actually opened
   discussions.initialize_discussions()
+  history.setup()
 
   local is_healthy = health.check(true)
   if not is_healthy then
@@ -83,6 +85,12 @@ return {
   end,
   browse_commits = async.sequence({ info }, function()
     reviewer.browse_commits()
+  end),
+  history_create_comment = async.sequence({ info, revisions }, function()
+    history.create_comment()
+  end),
+  history_create_multiline_comment = async.sequence({ info, revisions }, function()
+    history.create_multiline_comment()
   end),
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
