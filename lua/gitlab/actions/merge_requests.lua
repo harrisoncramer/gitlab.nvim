@@ -27,9 +27,7 @@ M.choose_merge_request = function(opts)
       return
     end
 
-    if reviewer.is_open then
-      reviewer.close()
-    end
+    reviewer.close_session()
 
     if choice.source_branch ~= git.get_current_branch() then
       local has_clean_tree, clean_tree_err = git.has_clean_tree()

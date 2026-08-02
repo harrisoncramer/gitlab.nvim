@@ -94,6 +94,7 @@ describe("actions/common.jump_to_reviewer", function()
   local originals = {}
 
   before_each(function()
+    originals.get_current_node = common.get_current_node
     originals.get_line_number_from_node = common.get_line_number_from_node
     originals.reviewer_jump = reviewer.jump
     originals.jump_to_commit = history.jump_to_commit
@@ -101,6 +102,7 @@ describe("actions/common.jump_to_reviewer", function()
   end)
 
   after_each(function()
+    common.get_current_node = originals.get_current_node
     common.get_line_number_from_node = originals.get_line_number_from_node
     reviewer.jump = originals.reviewer_jump
     history.jump_to_commit = originals.jump_to_commit
@@ -109,14 +111,11 @@ describe("actions/common.jump_to_reviewer", function()
 
   ---@param node table The node the cursor is on
   ---@param is_new_sha boolean
-  ---@return table calls, table tree A tree holding `node`, to pass to jump_to_reviewer
   local function arrange(node, is_new_sha)
     local calls = { reviewer = {}, history = {}, notified = {} }
-    local tree = {
-      get_node = function()
-        return node
-      end,
-    }
+    common.get_current_node = function()
+      return node
+    end
     common.get_line_number_from_node = function()
       return 11, is_new_sha
     end
@@ -129,32 +128,31 @@ describe("actions/common.jump_to_reviewer", function()
     require("gitlab.utils").notify = function(msg)
       table.insert(calls.notified, msg)
     end
-    return calls, tree
+    return calls
   end
 
   it("Sends a commit-anchored comment to the commit browser", function()
-    local calls, tree = arrange({ is_root = true, type = "note", file_name = "file.lua", commit_id = "abc123" }, true)
+    local calls = arrange({ is_root = true, type = "note", file_name = "file.lua", commit_id = "abc123" }, true)
 
-    common.jump_to_reviewer(tree)
+    common.jump_to_reviewer({})
 
     assert.are.same({}, calls.reviewer)
     assert.are.same({ { "abc123", "file.lua", 11 } }, calls.history)
   end)
 
   it("Sends a plain comment to the reviewer", function()
-    local calls, tree =
-      arrange({ is_root = true, type = "note", file_name = "file.lua", old_file_name = "file.lua" }, true)
+    local calls = arrange({ is_root = true, type = "note", file_name = "file.lua", old_file_name = "file.lua" }, true)
 
-    common.jump_to_reviewer(tree)
+    common.jump_to_reviewer({})
 
     assert.are.same({}, calls.history)
     assert.are.equal(1, #calls.reviewer)
   end)
 
   it("Refuses an old-side commit comment rather than jumping to a wrong line", function()
-    local calls, tree = arrange({ is_root = true, type = "note", file_name = "file.lua", commit_id = "abc123" }, false)
+    local calls = arrange({ is_root = true, type = "note", file_name = "file.lua", commit_id = "abc123" }, false)
 
-    common.jump_to_reviewer(tree)
+    common.jump_to_reviewer({})
 
     assert.are.same({}, calls.history)
     assert.are.same({}, calls.reviewer)
