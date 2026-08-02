@@ -9,6 +9,7 @@ import (
 
 type fakeDraftNoteManager struct {
 	testBase
+	capturedOpt **gitlab.CreateDraftNoteOptions
 }
 
 func (f fakeDraftNoteManager) ListDraftNotes(pid interface{}, mergeRequest int64, opt *gitlab.ListDraftNotesOptions, options ...gitlab.RequestOptionFunc) ([]*gitlab.DraftNote, *gitlab.Response, error) {
@@ -23,6 +24,9 @@ func (f fakeDraftNoteManager) CreateDraftNote(pid interface{}, mergeRequest int6
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
+	}
+	if f.capturedOpt != nil {
+		*f.capturedOpt = opt
 	}
 	return &gitlab.DraftNote{}, resp, err
 }
@@ -103,6 +107,54 @@ func TestPostDraftNote(t *testing.T) {
 		)
 		data := getSuccessData(t, svc, request)
 		assert(t, data.Message, "Draft note created successfully")
+	})
+
+	t.Run("Passes commit_id through to the Gitlab client when provided", func(t *testing.T) {
+		testData := PostDraftNoteRequest{
+			Comment: "Some comment",
+			PositionData: PositionData{
+				FileName: "file.txt",
+				CommitID: "abc123",
+				LineRange: &LineRange{
+					Start: &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+					End:   &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+				},
+			},
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testData)
+		var capturedOpt *gitlab.CreateDraftNoteOptions
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{capturedOpt: &capturedOpt}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		getSuccessData(t, svc, request)
+		if capturedOpt.CommitID == nil {
+			t.Fatal("expected CommitID to be set")
+		}
+		assert(t, *capturedOpt.CommitID, "abc123")
+	})
+
+	t.Run("Leaves commit_id unset when not provided", func(t *testing.T) {
+		request := makeRequest(t, http.MethodPost, "/mr/draft_notes/", testPostDraftNoteRequestData)
+		var capturedOpt *gitlab.CreateDraftNoteOptions
+		svc := middleware(
+			draftNoteService{testProjectData, fakeDraftNoteManager{capturedOpt: &capturedOpt}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:  newPayload[PostDraftNoteRequest],
+				http.MethodPatch: newPayload[UpdateDraftNoteRequest],
+			}),
+			withMethodCheck(http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete),
+		)
+		getSuccessData(t, svc, request)
+		if capturedOpt.CommitID != nil {
+			t.Fatalf("expected CommitID to be nil, got %q", *capturedOpt.CommitID)
+		}
 	})
 }
 

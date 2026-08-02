@@ -11,10 +11,13 @@ let formatted_date = '\w\+ \{1,2}\d\{1,2}, \d\{4}'
 let absolute_time = '\d\{2}/\d\{2}/\d\{4} at \d\{2}:\d\{2}'
 let date = '\%(' . time_ago . '\|' . formatted_date . '\|' . absolute_time . '\|just now\)'
 
-let published = date . ' \%(' . g:gitlab_discussion_tree_resolved . '\|' . g:gitlab_discussion_tree_unresolved . '\|' . g:gitlab_discussion_tree_unlinked . '\)\?'
+" Commits are referenced by the first 7 characters of their SHA, e.g. '1a2b3c4'
+let commit_ref = '[0-9a-f]\{7}'
+
+let published = date . '\%( ' . commit_ref . '\)\?' . ' \%(' . g:gitlab_discussion_tree_resolved . '\|' . g:gitlab_discussion_tree_unresolved . '\|' . g:gitlab_discussion_tree_unlinked . '\)\?'
 let state = ' \%(' . published . '\|' . g:gitlab_discussion_tree_draft . '\)'
 
-execute 'syntax match GitlabNoteHeader "' . expanders . username . state . '" contains=GitlabDate,GitlabUnresolved,GitlabUnlinked,GitlabResolved,GitlabExpander,GitlabDraft,GitlabUsername'
+execute 'syntax match GitlabNoteHeader "' . expanders . username . state . '" contains=GitlabDate,GitlabUnresolved,GitlabUnlinked,GitlabResolved,GitlabExpander,GitlabDraft,GitlabUsername,GitlabCommit'
 
 execute 'syntax match GitlabDate "' . date . '" contained'
 execute 'syntax match GitlabUnresolved "' . g:gitlab_discussion_tree_unresolved . '" contained'
@@ -24,5 +27,6 @@ execute 'syntax match GitlabExpander "' . expanders . '" contained'
 execute 'syntax match GitlabDraft "' . g:gitlab_discussion_tree_draft . '" contained'
 execute 'syntax match GitlabUsername "' . username . '" contained'
 execute 'syntax match GitlabMention "' . username . '"'
+execute 'syntax match GitlabCommit "' . commit_ref . '" contained'
 
 let b:current_syntax = 'gitlab'

@@ -12,6 +12,7 @@ local M = {
   is_open = false,
   bufnr = nil,
   tabid = nil,
+  history_tabid = nil,
   stored_win = nil,
   buf_winids = {},
 }
@@ -92,9 +93,9 @@ M.open = function()
   git.check_mr_in_good_condition()
 end
 
--- Opens a read-only, commit-by-commit browser for the MR range using Diffview's
--- FileHistory. Each entry shows a single commit's isolated diff, for understanding
--- how the MR was built up; commenting is not supported here (that stays in M.open).
+-- Opens a commit-by-commit browser for the MR range using Diffview's FileHistory. Each
+-- entry shows a single commit's isolated diff, for understanding how the MR was built up
+-- and commenting against the browsed commit directly (see reviewer/history.lua).
 M.browse_commits = function()
   -- Diffview does not deduplicate views: DiffviewFileHistory always opens a new tabpage.
   -- Focus the existing browser instead of stacking a second, orphaning the first (whose
@@ -116,6 +117,17 @@ M.browse_commits = function()
   end
 
   vim.api.nvim_command(string.format("DiffviewFileHistory --range=%s..%s", diff_refs.base_sha, diff_refs.head_sha))
+  M.history_tabid = vim.api.nvim_get_current_tabpage()
+end
+
+---Forget the commit-history tab once its Diffview view closes. history_tabid gates the
+---browse keymaps and comment path; left pointing at a closed tab it would be a dangling
+---handle. Mirrors the tabid cleanup in M.open.
+---@param tabpage integer Tabpage of the closed Diffview view
+M.clear_history_tab = function(tabpage)
+  if M.history_tabid == tabpage then
+    M.history_tabid = nil
+  end
 end
 
 ---Close the reviewer and clean up.
@@ -372,7 +384,7 @@ end
 ---Set the operatorfunc that will work on the lines defined by the motion that follows
 ---after the operator mapping, and enter the operator-pending mode.
 ---@param cb string Name of the gitlab.nvim API function to call, e.g., "create_multiline_comment"
-local function execute_operatorfunc(cb)
+M.execute_operatorfunc = function(cb)
   M.old_opfunc = vim.opt.operatorfunc
   M.old_winnr = vim.api.nvim_get_current_win()
   M.old_cursor_position = vim.api.nvim_win_get_cursor(M.old_winnr)
@@ -415,7 +427,7 @@ M.set_keymaps = function(bufnr)
       keymaps.reviewer.create_comment,
       function()
         M.operator_count = vim.v.count
-        execute_operatorfunc("create_multiline_comment")
+        M.execute_operatorfunc("create_multiline_comment")
       end,
       { buffer = bufnr, desc = "Create comment for range of motion", nowait = keymaps.reviewer.create_comment_nowait }
     )
@@ -445,7 +457,7 @@ M.set_keymaps = function(bufnr)
     vim.keymap.set("n", keymaps.reviewer.create_suggestion, function()
       M.operator_count = vim.v.count
       M.operator = keymaps.reviewer.create_suggestion
-      execute_operatorfunc("create_comment_suggestion")
+      M.execute_operatorfunc("create_comment_suggestion")
     end, {
       buffer = bufnr,
       desc = "Create suggestion for range of motion",
