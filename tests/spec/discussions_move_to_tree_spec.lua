@@ -164,7 +164,7 @@ describe("actions/discussions.move_to_discussion_tree", function()
     discussions.move_to_discussion_tree()
 
     assert.are.equal(diff_winid, vim.api.nvim_get_current_win())
-    assert.are.same({ "No diagnostics for this line." }, notifications)
+    assert.are.same({ "No comment on this line." }, notifications)
   end)
 
   it("Jumps to the tree window's last position on a line without a diagnostic when enabled", function()

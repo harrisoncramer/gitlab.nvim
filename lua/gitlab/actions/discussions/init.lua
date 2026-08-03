@@ -368,7 +368,7 @@ M.move_to_discussion_tree = function()
 
   if #d == 0 then
     if not (state.settings.reviewer_settings.jump_with_no_diagnostics and jump_to_last_position(tabid)) then
-      u.notify("No diagnostics for this line.", vim.log.levels.WARN)
+      u.notify("No comment on this line.", vim.log.levels.WARN)
     end
   elseif #d == 1 then
     jump_to(d[1])
