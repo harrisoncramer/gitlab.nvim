@@ -155,7 +155,11 @@ M.open = function(callback, view_type)
   -- Set autocmd to clean up state when discussions split is closed manually
   vim.api.nvim_create_autocmd("WinClosed", {
     pattern = tostring(M.split.winid),
-    callback = M.close,
+    -- M.close deletes the tree buffers. Autocmds do not nest, so only outside this callback
+    -- (hence vim.schedule) does that fire BufWipeout and run the resets above.
+    callback = function()
+      vim.schedule(M.close)
+    end,
   })
 
   -- Initialize winbar
@@ -180,10 +184,35 @@ M.open = function(callback, view_type)
   end
 end
 
----Clear the discussion state and unmounts the split.
+---Clear the discussion state and unmount the split.
 M.close = function()
-  if M.split then
+  if M.split == nil then
+    return
+  end
+  -- nui nils `split.winid` and `split.bufnr` as it tears them down, so read both while they
+  -- are still set.
+  local winid = M.split.winid
+  local split_bufnr = M.split.bufnr
+  if winid ~= nil and vim.api.nvim_win_is_valid(winid) then
+    local ok, err = pcall(vim.api.nvim_win_close, winid, true)
+    if not ok and tostring(err):find("E444") then
+      -- Last window in the session, so it needs a sibling before it can be closed.
+      vim.cmd("silent! vsplit")
+      ok = pcall(vim.api.nvim_win_close, winid, true)
+    end
+    if not ok then
+      u.notify("Could not close the discussion window", vim.log.levels.WARN)
+      return
+    end
+  end
+  -- Release nui's own buffer and augroups, which nothing else frees. Guarded so a failure
+  -- in there cannot skip the state cleanup below.
+  pcall(function()
     M.split:unmount()
+  end)
+  -- Reached only when unmount did not get that far, and nothing else would free that buffer.
+  if split_bufnr ~= nil and vim.api.nvim_buf_is_valid(split_bufnr) then
+    vim.api.nvim_buf_delete(split_bufnr, { force = true })
   end
   M.split_visible = false
   M.discussion_tree = nil
