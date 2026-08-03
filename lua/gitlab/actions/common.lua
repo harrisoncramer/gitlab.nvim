@@ -159,6 +159,11 @@ M.get_root_node = function(tree, node)
   end
   if node.type == "note_body" or node.type == "note" and not node.is_root then
     local parent_id = node:get_parent_id()
+    -- `tree:get_node(nil)` falls back to the node under the cursor, which can be this very
+    -- node again. Because this is a tail call recursion, it would loop forever instead of overflowing.
+    if parent_id == nil then
+      return nil
+    end
     return M.get_root_node(tree, tree:get_node(parent_id))
   elseif node.is_root then
     return node
