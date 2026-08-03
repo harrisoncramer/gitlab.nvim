@@ -304,70 +304,85 @@ M.close_all = function()
   winbar.cleanup_timer()
 end
 
+---Expand the discussion in the tree and put the cursor on it, in the discussion window of
+---`tabid`.
+---@param tabid integer
+---@param discussion_id string
+local function reveal_discussion(tabid, discussion_id)
+  local discussion_node, line_number = M.discussion_tree:get_node("-" .. discussion_id)
+  if discussion_node == nil or next(discussion_node) == nil then
+    u.notify("Discussion not found", vim.log.levels.WARN)
+    return
+  end
+  if not discussion_node:is_expanded() then
+    for _, child in ipairs(discussion_node:get_child_ids()) do
+      M.discussion_tree:get_node(child):expand()
+    end
+    discussion_node:expand()
+  end
+  M.discussion_tree:render()
+
+  local entry = windows.get(tabid)
+  if entry == nil then
+    u.notify("Discussion tree window not found", vim.log.levels.WARN)
+    return
+  end
+  vim.api.nvim_set_current_win(entry.winid)
+  M.switch_view_type("discussions")
+  vim.api.nvim_win_set_cursor(entry.winid, { line_number, 0 })
+end
+
+---Move the cursor to the position the discussion window of `tabid` was last left at,
+---without selecting a discussion.
+---@param tabid integer
+---@return boolean True if the tab has a discussion window to jump to
+local function jump_to_last_position(tabid)
+  local entry = windows.get(tabid)
+  if entry == nil then
+    return false
+  end
+  vim.api.nvim_win_set_cursor(entry.winid, { entry.last_row, entry.last_column })
+  vim.api.nvim_set_current_win(entry.winid)
+  return true
+end
+
 ---Move to the discussion tree at the discussion from diagnostic on current line.
 M.move_to_discussion_tree = function()
   local tabid = vim.api.nvim_get_current_tabpage()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local d = vim.diagnostic.get(0, { namespace = diagnostics.diagnostics_namespace, lnum = current_line - 1 })
 
-  ---Function used to jump to the discussion tree after the menu selection.
-  local jump_after_menu_selection = function(diagnostic)
-    ---Function used to jump to the discussion tree after the discussion tree is opened.
-    local jump_after_tree_opened = function()
-      -- All diagnostics in `diagnotics_namespace` have diagnostic_id
-      local discussion_id = diagnostic.user_data.discussion_id
-      local discussion_node, line_number = M.discussion_tree:get_node("-" .. discussion_id)
-      if discussion_node == nil or next(discussion_node) == nil then
-        u.notify("Discussion not found", vim.log.levels.WARN)
-        return
-      end
-      if not discussion_node:is_expanded() then
-        for _, child in ipairs(discussion_node:get_child_ids()) do
-          M.discussion_tree:get_node(child):expand()
-        end
-        discussion_node:expand()
-      end
-      M.discussion_tree:render()
-      local entry = windows.get(tabid)
-      if entry then
-        vim.api.nvim_set_current_win(entry.winid)
-        M.switch_view_type("discussions")
-        vim.api.nvim_win_set_cursor(entry.winid, { line_number, 0 })
-      else
-        u.notify("Discussion tree window not found", vim.log.levels.WARN)
-      end
+  ---Jump to the discussion the diagnostic was created for, opening the tree if needed.
+  ---@param diagnostic vim.Diagnostic
+  local jump_to = function(diagnostic)
+    -- All diagnostics in `diagnostics_namespace` have a discussion_id
+    local reveal = function()
+      reveal_discussion(tabid, diagnostic.user_data.discussion_id)
     end
-
     if windows.get(tabid) == nil then
-      M.open(jump_after_tree_opened, "discussions")
+      M.open(reveal, "discussions")
     else
-      jump_after_tree_opened()
+      reveal()
     end
   end
 
   if #d == 0 then
-    local entry = windows.get(tabid)
-    if state.settings.reviewer_settings.jump_with_no_diagnostics and entry then
-      vim.api.nvim_win_set_cursor(entry.winid, { entry.last_row, entry.last_column })
-      vim.api.nvim_set_current_win(entry.winid)
-    else
+    if not (state.settings.reviewer_settings.jump_with_no_diagnostics and jump_to_last_position(tabid)) then
       u.notify("No diagnostics for this line.", vim.log.levels.WARN)
     end
-    return
-  elseif #d > 1 then
+  elseif #d == 1 then
+    jump_to(d[1])
+  else
     vim.ui.select(d, {
       prompt = "Choose discussion to jump to",
       format_item = function(diagnostic)
         return diagnostic.message
       end,
     }, function(diagnostic)
-      if not diagnostic then
-        return
+      if diagnostic ~= nil then
+        jump_to(diagnostic)
       end
-      jump_after_menu_selection(diagnostic)
     end)
-  else
-    jump_after_menu_selection(d[1])
   end
 end
 
