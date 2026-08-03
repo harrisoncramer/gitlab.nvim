@@ -35,6 +35,17 @@ local M = {
   unlinked_discussion_tree = nil,
 }
 
+---Delete discussion buffers to prevent leaked buffers on each M.open/M.close cycle.
+---@param split_bufnr number? Passed in because `unmount` has already nil'd `M.split.bufnr`.
+local function delete_bufs(split_bufnr)
+  -- pairs, because any of these might be nil
+  for _, bufnr in pairs({ split_bufnr, M.linked_bufnr, M.unlinked_bufnr }) do
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_buf_delete(bufnr, { force = true })
+    end
+  end
+end
+
 ---Re-fetch all discussions and re-render the relevant view.
 ---TODO: simplify the function signature - "unlinked" and "all" should not be two booleans
 ---@param unlinked boolean
@@ -210,12 +221,9 @@ M.close = function()
   pcall(function()
     M.split:unmount()
   end)
-  -- Reached only when unmount did not get that far, and nothing else would free that buffer.
-  if split_bufnr ~= nil and vim.api.nvim_buf_is_valid(split_bufnr) then
-    vim.api.nvim_buf_delete(split_bufnr, { force = true })
-  end
   M.split_visible = false
   M.discussion_tree = nil
+  delete_bufs(split_bufnr)
   winbar.cleanup_timer()
 end
 
