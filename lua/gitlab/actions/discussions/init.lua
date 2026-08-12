@@ -25,9 +25,9 @@ local emoji = require("gitlab.emoji")
 local M = {
   split_visible = false,
   split = nil,
-  ---@type number
+  ---@type integer
   linked_bufnr = nil,
-  ---@type number
+  ---@type integer
   unlinked_bufnr = nil,
   ---@type NuiTree?
   discussion_tree = nil,
@@ -36,7 +36,7 @@ local M = {
 }
 
 ---Delete discussion buffers to prevent leaked buffers on each M.open/M.close cycle.
----@param split_bufnr number? Passed in because `unmount` has already nil'd `M.split.bufnr`.
+---@param split_bufnr integer? Passed in because `unmount` has already nil'd `M.split.bufnr`.
 local function delete_bufs(split_bufnr)
   -- pairs, because any of these might be nil
   for _, bufnr in pairs({ split_bufnr, M.linked_bufnr, M.unlinked_bufnr }) do
