@@ -44,21 +44,28 @@ local get_data = function(nodes)
   return total_resolvable, total_resolved, total_non_resolvable
 end
 
-local spinner_index = 0
-state.discussion_tree.last_updated = nil
+---Return the time since last update and a spinner if an update is under way.
+---@return string
+local function get_last_update()
+  local parts = {}
+  if state.discussion_tree.last_updated then
+    local last_update = tostring(os.date("!%Y-%m-%dT%H:%M:%S", state.discussion_tree.last_updated))
+    table.insert(parts, u.time_since(last_update))
+  end
+
+  local ms = vim.uv.hrtime() / 1e6 -- ns -> ms
+  local spinner_index = math.floor(ms / 100) % #state.settings.discussion_tree.spinner_chars + 1
+  local spinner_char = state.settings.discussion_tree.spinner_chars[spinner_index]
+  table.insert(
+    parts,
+    state.discussion_tree.updating and spinner_char or (state.discussion_tree.last_updated and "⟳" or "never updated")
+  )
+  return table.concat(parts, " ")
+end
 
 ---Return the raw content of the winbar.
 ---@return string
 local function content()
-  local updated
-  if state.discussion_tree.last_updated then
-    local last_update = tostring(os.date("!%Y-%m-%dT%H:%M:%S", state.discussion_tree.last_updated))
-    updated = u.time_since(last_update) .. " ⟳"
-  else
-    spinner_index = (spinner_index % #state.settings.discussion_tree.spinner_chars) + 1
-    updated = state.settings.discussion_tree.spinner_chars[spinner_index]
-  end
-
   local resolvable_discussions, resolved_discussions, non_resolvable_discussions =
     get_data(state.DISCUSSION_DATA.discussions)
   local resolvable_notes, resolved_notes, non_resolvable_notes = get_data(state.DISCUSSION_DATA.unlinked_discussions)
@@ -88,7 +95,7 @@ local function content()
     help_keymap = state.settings.keymaps.help,
     ahead = state.ahead_behind[1],
     behind = state.ahead_behind[2],
-    updated = updated,
+    updated = get_last_update(),
   }
 
   return state.settings.discussion_tree.winbar and state.settings.discussion_tree.winbar(t) or M.make_winbar(t)

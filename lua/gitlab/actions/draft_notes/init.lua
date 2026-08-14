@@ -29,7 +29,7 @@ end
 ---Make API call to get the discussion data, store it in the state, and call the callback.
 ---@param callback? fun()
 M.load_draft_notes = function(callback)
-  state.discussion_tree.last_updated = nil
+  state.discussion_tree.updating = true
   state.load_new_state("draft_notes", function()
     if callback ~= nil then
       callback()

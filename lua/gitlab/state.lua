@@ -8,6 +8,19 @@ local List = require("gitlab.utils.list")
 
 local M = {
   ahead_behind = { nil, nil },
+  -- Initial states of the discussion trees
+  discussion_tree = {
+    last_updated = nil,
+    updating = false,
+    resolved_expanded = false,
+    unresolved_expanded = false,
+  },
+  unlinked_discussion_tree = {
+    resolved_expanded = false,
+    unresolved_expanded = false,
+  },
+  -- Used to set a specific MR when choosing a merge request
+  chosen_mr_iid = 0,
 }
 
 ---Return a gitlab token and a gitlab URL required to connect to Gitlab.
@@ -312,21 +325,6 @@ M.settings = {
     },
   },
 }
-
--- These are the initial states of the discussion trees
--- TODO: Move to M definition.
-M.discussion_tree = {
-  resolved_expanded = false,
-  unresolved_expanded = false,
-}
-M.unlinked_discussion_tree = {
-  resolved_expanded = false,
-  unresolved_expanded = false,
-}
-
--- Used to set a specific MR when choosing a merge request
--- TODO: Move to M definition.
-M.chosen_mr_iid = 0
 
 ---Set global keymaps.
 ---To be used when the plugin is initialized.
