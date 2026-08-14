@@ -61,6 +61,7 @@ M.rebuild_view = function(unlinked, all)
       M.rebuild_discussion_tree()
     end
     state.discussion_tree.last_updated = os.time()
+    state.discussion_tree.updating = false
     M.refresh_diagnostics()
   end)
 end
@@ -76,7 +77,7 @@ M.load_discussions = function(callback)
       state.ahead_behind = { ahead, behind }
     end
   )
-  state.discussion_tree.last_updated = nil
+  state.discussion_tree.updating = true
   state.load_new_state("discussion_data", function(data)
     if not state.DISCUSSION_DATA then
       state.DISCUSSION_DATA = {}
@@ -92,7 +93,6 @@ end
 
 ---Initialize everything for discussions like setup of signs, callbacks for reviewer, etc.
 M.initialize_discussions = function()
-  state.discussion_tree.last_updated = os.time()
   signs.setup_signs()
   reviewer.set_callback_for_file_changed(function(args)
     diagnostics.place_diagnostics(args.buf)
