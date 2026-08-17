@@ -27,13 +27,16 @@ M.rebuild_view = function(unlinked, all)
 end
 
 ---Make API call to get the discussion data, store it in the state, and call the callback.
----@param callback? fun()
-M.load_draft_notes = function(callback)
-  state.discussion_tree.updating = true
+---@param on_success fun()
+M.load_draft_notes = function(on_success)
+  state.discussion_tree.updating = state.discussion_tree.updating + 1
   state.load_new_state("draft_notes", function()
-    if callback ~= nil then
-      callback()
-    end
+    state.discussion_tree.last_updated = os.time()
+    state.discussion_tree.updating = state.discussion_tree.updating - 1
+    on_success()
+  end, function(data)
+    client.notify_error(data)
+    state.discussion_tree.updating = state.discussion_tree.updating - 1
   end)
 end
 
@@ -100,9 +103,7 @@ M.confirm_publish_all_drafts = function()
     state.DRAFT_NOTES = {}
     require("gitlab.actions.discussions").rebuild_view(false, true)
   end, function(data)
-    if data then
-      u.notify(string.format("%s: %s", data.message, data.error), vim.log.levels.ERROR)
-    end
+    client.notify_error(data)
     u.notify(
       "Draft(s) may have been published despite the error. Check the discussion tree. Try publishing drafts individually.",
       vim.log.levels.WARN
@@ -132,9 +133,7 @@ M.confirm_publish_draft = function(tree)
     u.notify(data.message, vim.log.levels.INFO)
     M.rebuild_view(unlinked)
   end, function(data)
-    if data then
-      u.notify(string.format("%s: %s", data.message, data.error), vim.log.levels.ERROR)
-    end
+    client.notify_error(data)
     u.notify("Draft may have been published despite the error. Check the discussion tree.", vim.log.levels.WARN)
     M.rebuild_view(unlinked)
   end)

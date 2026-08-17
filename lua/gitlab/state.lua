@@ -11,7 +11,7 @@ local M = {
   -- Initial states of the discussion trees
   discussion_tree = {
     last_updated = nil,
-    updating = false,
+    updating = 0,
     resolved_expanded = false,
     unresolved_expanded = false,
   },
@@ -634,8 +634,9 @@ M.dependencies = {
 
 ---Load new state for a dependency and execute callback with the data it returns.
 ---@param dep string The dependency name to re-load
----@param cb fun(data) The function to call with the dependency data
-M.load_new_state = function(dep, cb)
+---@param on_success fun(data:SuccessResponse) The function to call with the dependency data
+---@param on_error? fun(data:ErrorResponse?) The function to call when the request fails
+M.load_new_state = function(dep, on_success, on_error)
   local client = require("gitlab.client")
   local dependency = M.dependencies[dep]
   client.send_request(
@@ -646,10 +647,9 @@ M.load_new_state = function(dep, cb)
       if dependency.key then
         M[dependency.state] = u.ensure_table(data[dependency.key])
       end
-      if type(cb) == "function" then
-        cb(data) -- To set data manually...
-      end
-    end
+      on_success(data) -- To set data manually...
+    end,
+    on_error
   )
 end
 
