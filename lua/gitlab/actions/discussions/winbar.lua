@@ -58,7 +58,8 @@ local function get_last_update()
   local spinner_char = state.settings.discussion_tree.spinner_chars[spinner_index]
   table.insert(
     parts,
-    state.discussion_tree.updating and spinner_char or (state.discussion_tree.last_updated and "⟳" or "never updated")
+    state.discussion_tree.updating > 0 and spinner_char
+      or (state.discussion_tree.last_updated and "⟳" or "never updated")
   )
   return table.concat(parts, " ")
 end

@@ -60,15 +60,14 @@ M.rebuild_view = function(unlinked, all)
     else
       M.rebuild_discussion_tree()
     end
-    state.discussion_tree.last_updated = os.time()
-    state.discussion_tree.updating = false
     M.refresh_diagnostics()
   end)
 end
 
----Make API call to get the discussion data, stores it in the state, and calls the callback.
----@param callback? fun()
-M.load_discussions = function(callback)
+---Make API call to get the discussion data, store it in the state, and call the callback.
+---@param on_success fun()
+M.load_discussions = function(on_success)
+  state.discussion_tree.updating = state.discussion_tree.updating + 1
   local git = require("gitlab.git")
   require("gitlab.git_async").get_ahead_behind(
     git.get_current_branch(),
@@ -77,7 +76,6 @@ M.load_discussions = function(callback)
       state.ahead_behind = { ahead, behind }
     end
   )
-  state.discussion_tree.updating = true
   state.load_new_state("discussion_data", function(data)
     if not state.DISCUSSION_DATA then
       state.DISCUSSION_DATA = {}
@@ -85,9 +83,12 @@ M.load_discussions = function(callback)
     state.DISCUSSION_DATA.discussions = u.ensure_table(data.discussions)
     state.DISCUSSION_DATA.unlinked_discussions = u.ensure_table(data.unlinked_discussions)
     state.DISCUSSION_DATA.emojis = u.ensure_table(data.emojis)
-    if callback ~= nil then
-      callback()
-    end
+    state.discussion_tree.last_updated = os.time()
+    state.discussion_tree.updating = state.discussion_tree.updating - 1
+    on_success()
+  end, function(data)
+    client.notify_error(data)
+    state.discussion_tree.updating = state.discussion_tree.updating - 1
   end)
 end
 
