@@ -348,13 +348,17 @@ M.jump_to_reviewer = function(tree)
   -- A commit-anchored comment has no position in the MR's changeset. Its line numbers
   -- only mean anything in that commit's own diff, which is what the commit browser shows.
   if root_node.commit_id ~= nil then
-    -- An old-side line is numbered against the MR base, while the browser shows
-    -- `parent..commit`. Only new-side lines carry over unchanged.
-    if not is_new_sha then
-      u.notify("Cannot jump to a commit comment left on a deleted line", vim.log.levels.WARN)
-      return
-    end
-    require("gitlab.reviewer.history").jump_to_commit(root_node.commit_id, root_node.file_name, line_number)
+    -- Gitlab renumbers a commit comment's top-level old_line to the MR base where it can,
+    -- but leaves the line range in the commit's own numbering, which is what the browser
+    -- shows. A comment without a range is not one this plugin wrote.
+    local on_old_side = not is_new_sha
+    local range_start = on_old_side and root_node.range ~= nil and root_node.range.start.old_line or nil
+    require("gitlab.reviewer.history").jump_to_commit(
+      root_node.commit_id,
+      root_node.file_name,
+      range_start or line_number,
+      on_old_side
+    )
     return
   end
   reviewer.jump(root_node.file_name, root_node.old_file_name, line_number, is_new_sha)

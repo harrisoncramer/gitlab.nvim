@@ -175,7 +175,8 @@ end
 ---@param sha string Target commit SHA
 ---@param file_path string Path of the file to show
 ---@param cursor_line integer Line to place the cursor on
-M.select_commit = function(view, sha, file_path, cursor_line)
+---@param on_old_side? boolean Land in the old (commit^) window instead of the new one
+M.select_commit = function(view, sha, file_path, cursor_line, on_old_side)
   local log_entry = List.new(view.panel.entries or {}):find(function(entry)
     return entry.commit ~= nil and entry.commit.hash == sha
   end)
@@ -196,13 +197,14 @@ M.select_commit = function(view, sha, file_path, cursor_line)
   end
 
   async.await(view:set_file(file_entry))
-  view.cur_layout.b:focus()
+  local target = on_old_side and view.cur_layout.a or view.cur_layout.b
+  target:focus()
   M.refresh_diagnostics()
 
-  local new_win = u.get_window_id_by_buffer_id(view.cur_layout.b.file.bufnr)
-  if new_win ~= nil then
-    local line_count = vim.api.nvim_buf_line_count(view.cur_layout.b.file.bufnr)
-    vim.api.nvim_win_set_cursor(new_win, { math.max(1, math.min(cursor_line, line_count)), 0 })
+  local win = u.get_window_id_by_buffer_id(target.file.bufnr)
+  if win ~= nil then
+    local line_count = vim.api.nvim_buf_line_count(target.file.bufnr)
+    vim.api.nvim_win_set_cursor(win, { math.max(1, math.min(cursor_line, line_count)), 0 })
   end
 end
 
@@ -237,7 +239,8 @@ end
 ---@param sha string The commit the comment is anchored to
 ---@param file_path string Path of the commented file
 ---@param line integer Line of the comment, in that commit's version of the file
-M.jump_to_commit = function(sha, file_path, line)
+---@param on_old_side? boolean The comment sits on a line the commit deletes
+M.jump_to_commit = function(sha, file_path, line, on_old_side)
   reviewer.browse_commits()
   if reviewer.history_tabid == nil or vim.api.nvim_get_current_tabpage() ~= reviewer.history_tabid then
     u.notify("Could not open the commit browser", vim.log.levels.ERROR)
@@ -261,7 +264,7 @@ M.jump_to_commit = function(sha, file_path, line)
     return
   end
 
-  M.select_commit(view, sha, file_path, line)
+  M.select_commit(view, sha, file_path, line, on_old_side)
 end
 
 ---Attach the browse-mode keymaps to a diff buffer.
