@@ -173,3 +173,26 @@ describe("actions/common.jump_to_reviewer", function()
     assert.are.same({ { "abc123", "file.lua", 11, true } }, calls.history)
   end)
 end)
+
+describe("actions/common.get_line_number_from_node", function()
+  ---A root node for a comment on a line the browsed commit leaves unchanged: the range is
+  ---typed "" and numbered in the commit's own diff, the top-level old_line is what Gitlab
+  ---renumbered against the MR base.
+  local function unmodified_line_node()
+    return {
+      old_line = 2,
+      new_line = 8,
+      range = {
+        start = { type = "", old_line = 8, new_line = 8, line_code = "abc_8_8" },
+        ["end"] = { type = "", old_line = 8, new_line = 8, line_code = "abc_8_8" },
+      },
+    }
+  end
+
+  it("Reads a comment on an unmodified line as the new side, at its new line", function()
+    local line_number, is_new_sha = common.get_line_number_from_node(unmodified_line_node())
+
+    assert.are.equal(8, line_number)
+    assert.is_true(is_new_sha)
+  end)
+end)

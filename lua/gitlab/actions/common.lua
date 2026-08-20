@@ -308,7 +308,7 @@ end
 ---returns empty line codes, but the position itself is based on either the `new_line` or `old_line`.
 ---@param old_line? integer The line number in the OLD version
 ---@param new_line? integer The line number in the NEW version
----@param line_range LineRange The range of the note
+---@param line_range LineRange The range, whose type says which side the comment is on
 ---@return integer start_line
 ---@return integer end_line
 ---@return boolean is_new_sha True if line range refers to NEW SHA
@@ -316,7 +316,8 @@ M.get_line_numbers_for_range = function(old_line, new_line, line_range)
   local start, end_ = line_range.start, line_range["end"]
   local old_start_line, new_start_line = indicators_common.parse_line_code(start.line_code)
   local old_end_line, new_end_line = indicators_common.parse_line_code(end_.line_code)
-  if old_line ~= nil and old_start_line ~= 0 then
+  local on_old_side = indicators_common.is_old_position({ old_line = old_line, line_range = line_range })
+  if on_old_side and old_line ~= nil then
     local range = get_range_length(old_start_line, old_end_line, start.old_line, end_.old_line)
     return (old_line - range), old_line, false
   elseif new_line ~= nil then
