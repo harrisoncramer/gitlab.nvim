@@ -8,10 +8,12 @@
 -- start_sha on its first parent and head_sha on the commit, plus a top-level commit_id;
 -- anything else is rejected with "commit_id does not match the diff refs".
 --
--- GitLab stores base_sha/start_sha as the MR base whatever we send. An old-side (left
--- window) line, one the commit deletes, is then numbered against a diff other than the one
--- the browser shows, with no verified anchor, so we refuse to comment there (see
--- create_comment).
+-- GitLab stores base_sha/start_sha as the MR base whatever we send, and renumbers the
+-- position's old_line to match, so the position carries the commit's own line numbers and
+-- GitLab does the translation (measured, see
+-- memories/gitlab-api-experiments/replay-percommit-context.sh). The old (left window) side
+-- stays refused: a line the commit deletes need not exist in the MR base at all, and that
+-- case is unmeasured (see create_comment).
 --
 -- Those commit-anchored notes are marked in the browser and nowhere else, since their
 -- lines only mean anything in the commit's own diff (see indicators/common.lua).
@@ -19,6 +21,8 @@
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
+local hunks = require("gitlab.hunks")
+local Location = require("gitlab.reviewer.location")
 local reviewer = require("gitlab.reviewer")
 local async = require("diffview.async")
 
@@ -106,32 +110,24 @@ local function visual_selection_boundaries()
   return start_line, end_line
 end
 
----Build a Location-shaped object for the existing comment path, covering
----[start_line, end_line]. M.create_comment and M.create_multiline_comment refuse the old
----side first, so a range always types as "new".
+---Build the Location for [start_line, end_line] against the browsed commit's own diff.
 ---@param ctx BrowseContext
 ---@param start_line integer
 ---@param end_line integer
----@return table
+---@return Location
 local function build_location(ctx, start_line, end_line)
-  return {
-    location_data = {
-      old_line = nil,
-      new_line = end_line,
-      -- Gitlab wants a line_range even for a single line, with start == end.
-      line_range = {
-        start = { new_line = start_line, type = "new" },
-        ["end"] = { new_line = end_line, type = "new" },
-      },
-    },
-    reviewer_data = {
-      file_name = ctx.file,
-      old_file_name = ctx.old_file,
-      new_file_focused = ctx.new_side,
-      start_line = start_line,
-      end_line = end_line,
-    },
+  ---@type ReviewerData
+  local reviewer_data = {
+    file_name = ctx.file,
+    old_file_name = ctx.old_file,
+    old_sha = ctx.parent_sha,
+    new_sha = ctx.commit_sha,
+    start_line = start_line,
+    end_line = end_line,
+    new_file_focused = ctx.new_side,
   }
+  local diff_hunks = hunks.get_hunks(ctx.parent_sha, ctx.commit_sha, ctx.old_file, ctx.file)
+  return Location.new(reviewer_data, diff_hunks)
 end
 
 ---Attach the commit_override anchoring the location to ctx's browsed commit (see module
