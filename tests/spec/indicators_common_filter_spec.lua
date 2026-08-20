@@ -71,3 +71,38 @@ describe("indicators/common.filter_placeable_discussions", function()
     assert.are.equal(1, #result)
   end)
 end)
+
+describe("indicators/common.is_old_sha", function()
+  local function discussion_with(position)
+    return { id = "1", notes = { { position = position } } }
+  end
+
+  local function ranged(type_, old_line, new_line)
+    return {
+      old_line = old_line,
+      new_line = new_line,
+      line_range = {
+        start = { type = type_, old_line = old_line, new_line = new_line, line_code = "abc_5_7" },
+        ["end"] = { type = type_, old_line = old_line, new_line = new_line, line_code = "abc_5_7" },
+      },
+    }
+  end
+
+  it("Reads a deleted line as the old side", function()
+    assert.is_true(common.is_old_sha(discussion_with(ranged("old", 5, 0))))
+  end)
+
+  it("Reads an unmodified line as the new side, though it carries an old line number", function()
+    assert.is_false(common.is_old_sha(discussion_with(ranged("", 5, 7))))
+  end)
+
+  it("Reads an added line as the new side", function()
+    assert.is_false(common.is_old_sha(discussion_with(ranged("new", 0, 7))))
+  end)
+
+  it("Falls back to the line numbers when the range carries no type", function()
+    local position = ranged("old", 5, 0)
+    position.line_range.start.type = nil
+    assert.is_true(common.is_old_sha(discussion_with(position)))
+  end)
+end)
