@@ -11,9 +11,8 @@
 -- GitLab stores base_sha/start_sha as the MR base whatever we send, and renumbers the
 -- position's old_line to match, so the position carries the commit's own line numbers and
 -- GitLab does the translation (measured, see
--- memories/gitlab-api-experiments/replay-percommit-context.sh). The old (left window) side
--- stays refused: a line the commit deletes need not exist in the MR base at all, and that
--- case is unmeasured (see create_comment).
+-- memories/gitlab-api-experiments/replay-percommit-context.sh). Both windows are
+-- commentable: the side the cursor is in decides how the line is typed.
 --
 -- Those commit-anchored notes are marked in the browser and nowhere else, since their
 -- lines only mean anything in the commit's own diff (see indicators/common.lua).
@@ -145,15 +144,9 @@ local function submit_comment(ctx, location)
 end
 
 ---Comment on the current line while browsing, anchored to the browsed commit.
----The old (commit^) side has no verified anchor and is refused, see the module header.
 M.create_comment = function()
   local ctx = M.get_context()
   if ctx == nil then
-    return
-  end
-
-  if not ctx.new_side then
-    u.notify("Comments can only be placed from the new side (right window) while browsing commits", vim.log.levels.WARN)
     return
   end
 
@@ -161,7 +154,6 @@ M.create_comment = function()
 end
 
 ---Comment on the range covered by the operator motion or visual selection while browsing.
----Same new-side restriction as M.create_comment.
 M.create_multiline_comment = function()
   if not u.check_visual_mode() then
     return
@@ -170,12 +162,6 @@ M.create_multiline_comment = function()
   local ctx = M.get_context()
   if ctx == nil then
     u.press_escape()
-    return
-  end
-
-  if not ctx.new_side then
-    u.press_escape()
-    u.notify("Comments can only be placed from the new side (right window) while browsing commits", vim.log.levels.WARN)
     return
   end
 

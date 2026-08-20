@@ -251,9 +251,10 @@ MR one commit at a time.
 | `a`  | Jump to the comment in the discussion tree                                        |
 | `g?` | Show these keymaps                                                               |
 
-`c` only works on the new (right) side; commenting on a line the commit deletes
-(left side) is not supported. `]v` / `[v` follow the line to the next commit
-that changes it, then fall back to the next commit that merely touches the file.
+`c` works on both sides of the diff, including a line the commit deletes. To
+follow the line under the cursor to the next commit that changes it, bind
+`select_next_change_here` / `select_prev_change_here` in your diffview config.
+Those actions exist only in the `diffview+` fork.
 
 ## Contributing
 
