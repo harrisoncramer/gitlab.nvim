@@ -290,18 +290,18 @@ end
 ---either the `new_line` or `old_line`.
 ---@param old_line? integer The line number in the OLD version
 ---@param new_line? integer The line number in the NEW version
----@param start_line_code string The line code for the start of the range
----@param end_line_code string The line code for the end of the range
+---@param line_range LineRange The range, whose type says which side the comment is on
 ---@return integer start_line
 ---@return integer end_line
 ---@return boolean is_new_sha True if line range refers to NEW SHA
-M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end_line_code)
-  local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
-  local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
-  if old_line ~= nil and old_start_line ~= 0 then
+M.get_line_numbers_for_range = function(old_line, new_line, line_range)
+  local old_start_line, new_start_line = indicators_common.parse_line_code(line_range.start.line_code)
+  local old_end_line, new_end_line = indicators_common.parse_line_code(line_range["end"].line_code)
+  local on_old_side = indicators_common.is_old_position({ old_line = old_line, line_range = line_range })
+  if on_old_side and old_line ~= nil then
     local range = old_end_line - old_start_line
     return (old_line - range), old_line, false
-  elseif new_line ~= nil then
+  elseif not on_old_side and new_line ~= nil then
     local range = new_end_line - new_start_line
     -- Force start_line to be greater than 0
     -- TODO: use `math.max(new_line - range, 1)` instead
@@ -319,12 +319,8 @@ end
 ---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local line_number, _, is_new_sha = M.get_line_numbers_for_range(
-      root_node.old_line,
-      root_node.new_line,
-      root_node.range.start.line_code,
-      root_node.range["end"].line_code
-    )
+    local line_number, _, is_new_sha =
+      M.get_line_numbers_for_range(root_node.old_line, root_node.new_line, root_node.range)
     return line_number, is_new_sha
   else
     return M.get_line_number(root_node.id)

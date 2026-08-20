@@ -40,6 +40,25 @@ local function make_old_side_discussion(id, commit_id, old_line, path)
   return discussion
 end
 
+---A note on a line the commit leaves unchanged: the range is typed "" and numbered in the
+---commit's own diff, the top-level old_line is what Gitlab renumbered against the MR base.
+---@param id string
+---@param commit_id string
+---@param base_old_line integer Line in the MR base
+---@param new_line integer Line in the commit
+---@param path string
+local function make_unmodified_line_discussion(id, commit_id, base_old_line, new_line, path)
+  local discussion = make_discussion(id, commit_id, new_line, path)
+  local position = discussion.notes[1].position
+  local line_code = "abc_" .. new_line .. "_" .. new_line
+  position.old_line = base_old_line
+  position.line_range = {
+    start = { old_line = new_line, new_line = new_line, type = "", line_code = line_code },
+    ["end"] = { old_line = new_line, new_line = new_line, type = "", line_code = line_code },
+  }
+  return discussion
+end
+
 ---@return integer bufnr
 local function make_buffer()
   local bufnr = vim.api.nvim_create_buf(false, true)
@@ -115,6 +134,17 @@ describe("indicators/diagnostics.place_commit_diagnostics", function()
     assert.are.equal(1, #result)
     assert.are.equal(2, result[1].lnum)
     assert.are.equal("d1", result[1].user_data.discussion_id)
+  end)
+
+  it("Marks an unmodified line at the commit's own number, not the renumbered old line", function()
+    state.DISCUSSION_DATA = { discussions = { make_unmodified_line_discussion("d1", "sha1", 2, 4, "f.lua") } }
+    state.DRAFT_NOTES = {}
+
+    diagnostics.place_commit_diagnostics(bufnr, "sha1", "f.lua", false)
+
+    local result = placed(bufnr)
+    assert.are.equal(1, #result)
+    assert.are.equal(3, result[1].lnum)
   end)
 
   it("Leaves out the comments of other commits", function()

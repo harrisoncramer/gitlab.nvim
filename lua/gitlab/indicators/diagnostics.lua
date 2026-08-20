@@ -76,12 +76,8 @@ local create_multiline_diagnostic = function(d_or_n)
     error("Parsing multi-line comment but note does not contain line range")
   end
 
-  local start_line, end_line, _ = actions_common.get_line_numbers_for_range(
-    first_note.position.old_line,
-    first_note.position.new_line,
-    line_range.start.line_code,
-    line_range["end"].line_code
-  )
+  local start_line, end_line, _ =
+    actions_common.get_line_numbers_for_range(first_note.position.old_line, first_note.position.new_line, line_range)
 
   return create_diagnostic({
     lnum = start_line - 1,
