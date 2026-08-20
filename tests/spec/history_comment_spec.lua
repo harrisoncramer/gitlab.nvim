@@ -19,7 +19,9 @@ describe("reviewer/history.lua create_comment", function()
   local original_get_context = history.get_context
   local original_create_comment_for_location = comment.create_comment_for_location
 
-  -- The browsed commit adds line 41, so line 42 is unmodified and carries both numbers.
+  -- The browsed commit replaces old line 40 with two lines, so on the new side line 40 is
+  -- added and line 42 is unmodified with a different old number, and on the old side line
+  -- 40 is deleted.
   before_each(function()
     stub_diff([[
 diff --git a/f.lua b/f.lua
@@ -28,9 +30,10 @@ index 1111111..2222222 100644
 +++ b/f.lua
 @@ -39,3 +39,4 @@
  line 39
- line 40
+-line 40 removed by the browsed commit
++line 40 added by the browsed commit
 +line 41 added by the browsed commit
- line 41
+ line 42
 ]])
   end)
 
@@ -48,7 +51,7 @@ index 1111111..2222222 100644
         file = "f.lua",
         old_file = "f.lua",
         new_side = true,
-        line = 41,
+        line = 40,
       }
     end
 
@@ -60,11 +63,11 @@ index 1111111..2222222 100644
     history.create_comment()
 
     assert.is_not_nil(captured)
-    assert.are.equal(41, captured.location_data.new_line)
+    assert.are.equal(40, captured.location_data.new_line)
     assert.is_nil(captured.location_data.old_line)
     assert.are.equal("new", captured.location_data.line_range.start.type)
-    assert.are.equal(41, captured.location_data.line_range.start.new_line)
-    assert.are.equal(41, captured.location_data.line_range["end"].new_line)
+    assert.are.equal(40, captured.location_data.line_range.start.new_line)
+    assert.are.equal(40, captured.location_data.line_range["end"].new_line)
     assert.are.equal("commitABC", captured.commit_override.head_sha)
     assert.are.equal("commitABC", captured.commit_override.commit_id)
     -- Gitlab rejects commit_id unless the position is the commit's own diff refs.
@@ -99,39 +102,31 @@ index 1111111..2222222 100644
     assert.are.equal(41, captured.location_data.line_range["end"].old_line)
   end)
 
-  it("Refuses to comment on the old side and creates no comment", function()
+  it("Types an old-side line as a deletion of the browsed commit", function()
     history.get_context = function()
       return {
         commit_sha = "commitABC",
+        parent_sha = "parentXYZ",
         file = "f.lua",
         old_file = "f.lua",
         new_side = false,
-        line = 5,
+        line = 40,
       }
     end
 
-    local called = false
-    comment.create_comment_for_location = function()
-      called = true
-    end
-
-    local u = require("gitlab.utils")
-    local original_notify = u.notify
-    local notified
-    u.notify = function(msg, lvl)
-      notified = { msg = msg, lvl = lvl }
+    local captured
+    comment.create_comment_for_location = function(location)
+      captured = location
     end
 
     history.create_comment()
 
-    u.notify = original_notify
-
-    assert.is_false(called)
-    assert.is_not_nil(notified)
-    assert.are.equal(
-      "Comments can only be placed from the new side (right window) while browsing commits",
-      notified.msg
-    )
+    -- Numbered in the commit's own diff; Gitlab renumbers old_line to the MR base itself.
+    assert.is_not_nil(captured)
+    assert.are.equal("old", captured.location_data.line_range["end"].type)
+    assert.are.equal(40, captured.location_data.old_line)
+    assert.is_nil(captured.location_data.new_line)
+    assert.are.equal("commitABC", captured.commit_override.commit_id)
   end)
 end)
 
@@ -203,13 +198,14 @@ index 1111111..2222222 100644
     assert.are.equal("parentXYZ", captured.commit_override.start_sha)
   end)
 
-  it("Refuses to comment on the old side for a range and creates no comment", function()
+  it("Anchors an old-side range comment to the browsed commit", function()
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
     vim.cmd("normal! V2j")
 
     history.get_context = function()
       return {
         commit_sha = "commitABC",
+        parent_sha = "parentXYZ",
         file = "f.lua",
         old_file = "f.lua",
         new_side = false,
@@ -217,27 +213,17 @@ index 1111111..2222222 100644
       }
     end
 
-    local called = false
-    comment.create_comment_for_location = function()
-      called = true
-    end
-
-    local u = require("gitlab.utils")
-    local original_notify = u.notify
-    local notified
-    u.notify = function(msg, lvl)
-      notified = { msg = msg, lvl = lvl }
+    local captured
+    comment.create_comment_for_location = function(location)
+      captured = location
     end
 
     history.create_multiline_comment()
 
-    u.notify = original_notify
-
-    assert.is_false(called)
-    assert.is_not_nil(notified)
-    assert.are.equal(
-      "Comments can only be placed from the new side (right window) while browsing commits",
-      notified.msg
-    )
+    assert.is_not_nil(captured)
+    assert.are.equal(2, captured.location_data.line_range.start.old_line)
+    assert.are.equal(4, captured.location_data.line_range["end"].old_line)
+    assert.are.equal("commitABC", captured.commit_override.commit_id)
+    assert.are.equal("parentXYZ", captured.commit_override.base_sha)
   end)
 end)
