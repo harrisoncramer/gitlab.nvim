@@ -35,17 +35,31 @@ M.new_location_from_reviewer = function()
   return Location.new(reviewer_data, diff_hunks)
 end
 
+---Decide if the comment is a draft based on the draft popup field.
+---@return boolean? is_draft True if the draft popup exists and the string it contains converts to `true`. If the draft popup does not exist, return nil.
+local get_draft_value_from_popup = function()
+  local buf_is_valid = M.draft_popup and M.draft_popup.bufnr and vim.api.nvim_buf_is_valid(M.draft_popup.bufnr)
+  if buf_is_valid then
+    return u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+  else
+    return nil
+  end
+end
+
 ---Fire the API to send the comment data to the Go server.
 ---@param text string comment text
 ---@param unlinked boolean if true, the comment is not linked to a line
 ---@param discussion_id? string The ID of the discussion when replying in a thread, otherwise nil
-local confirm_create_comment = function(text, unlinked, discussion_id)
+M.confirm_create_comment = function(text, unlinked, discussion_id)
   if text == nil then
     u.notify("Reviewer did not provide text of change", vim.log.levels.ERROR)
     return
   end
 
-  local is_draft = M.draft_popup and u.string_to_bool(u.get_buffer_text(M.draft_popup.bufnr))
+  local is_draft = get_draft_value_from_popup()
+  if is_draft == nil then
+    is_draft = state.settings.discussion_tree.draft_mode
+  end
 
   -- Creating a normal reply to a discussion
   if discussion_id ~= nil and not is_draft then
@@ -200,13 +214,13 @@ M.create_comment_layout = function(opts)
   ---Keybinding for focus on draft section
   popup.set_popup_keymaps(M.draft_popup, function()
     local text = u.get_buffer_text(M.comment_popup.bufnr)
-    confirm_create_comment(text, unlinked, opts.discussion_id)
+    M.confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.toggle_bool, popup.non_editable_popup_opts)
 
   ---Keybinding for focus on text section
   popup.set_popup_keymaps(M.comment_popup, function(text)
-    confirm_create_comment(text, unlinked, opts.discussion_id)
+    M.confirm_create_comment(text, unlinked, opts.discussion_id)
     vim.api.nvim_set_current_win(current_win)
   end, miscellaneous.attach_file, popup.editable_popup_opts)
 
@@ -218,92 +232,68 @@ M.create_comment_layout = function(opts)
   return layout
 end
 
----Open a comment popup in order to create a comment on the changed/updated line in the
----current MR.
-M.create_comment = function()
+---@class CreateCommentsOpts Options for the create_comment function.
+---@field with_suggestion boolean When true, paste the default suggestion into the comment buffer.
+
+---Open a popup to create a comment on the currently selected line(s) in the reviwer.
+---In normal mode comments on the current line.
+---In visual mode comments on the whole selection.
+---@param opts CreateCommentsOpts?
+M.create_comment = function(opts)
+  opts = opts or {}
   M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(false) then
     return
   end
 
+  local suggestion_lines = require("gitlab.actions.suggestions").build_suggestion(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    M.location.reviewer_data.start_line,
+    M.location.reviewer_data.end_line
+  )
+
   local layout = M.create_comment_layout({ unlinked = false })
   layout:mount()
-end
 
----Open a multi-line comment popup in order to create a multi-line comment on the
----changed/updated line in the current MR.
-M.create_multiline_comment = function()
-  M.location = M.new_location_from_reviewer()
-  if not M.can_create_comment(true) then
-    u.press_escape()
-    return
+  if opts.with_suggestion then
+    vim.schedule(function()
+      if suggestion_lines then
+        vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
+      end
+    end)
   end
-
-  local layout = M.create_comment_layout({ unlinked = false })
-  layout:mount()
 end
 
----Open a popup to create a "note" (e.g. unlinked comment) on the changed/updated line
----in the current MR.
+---Open a popup to create a "note" (e.g. unlinked comment) for the current MR.
 M.create_note = function()
   local layout = M.create_comment_layout({ unlinked = true })
   layout:mount()
 end
 
----Given the current visually selected area of text, builds text to fill in the
----comment popup with a suggested change
----@return string[]?
-local build_suggestion = function()
-  local current_line = vim.api.nvim_win_get_cursor(0)[1]
-  local range_length = M.location.reviewer_data.end_line - M.location.reviewer_data.start_line
-  local backticks = "```"
-  local selected_lines = u.get_lines(M.location.reviewer_data.start_line, M.location.reviewer_data.end_line)
-
-  for _, line in ipairs(selected_lines) do
-    if string.match(line, "^```%S*$") then
-      backticks = "````"
-      break
-    end
-  end
-
-  local suggestion_start
-  if M.location.reviewer_data.start_line == current_line then
-    suggestion_start = backticks .. "suggestion:-0+" .. range_length
-  elseif M.location.reviewer_data.end_line == current_line then
-    suggestion_start = backticks .. "suggestion:-" .. range_length .. "+0"
-  else
-    --- This should never happen afaik
-    u.notify("Unexpected suggestion position", vim.log.levels.ERROR)
-    return nil
-  end
-  suggestion_start = suggestion_start
-  local suggestion_lines = {}
-  table.insert(suggestion_lines, suggestion_start)
-  vim.list_extend(suggestion_lines, selected_lines)
-  table.insert(suggestion_lines, backticks)
-
-  return suggestion_lines
-end
-
----Open a popup to create a suggestion comment on the changed/updated line in the current MR
----See: https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html
-M.create_comment_suggestion = function()
+---Open new tab with a suggestion preview for the line(s) selected in the reviewer.
+M.create_comment_with_suggestion = function()
   M.location = M.new_location_from_reviewer()
   if not M.can_create_comment(true) then
     u.press_escape()
     return
   end
 
-  local suggestion_lines = build_suggestion()
+  local old_file_name = M.location.reviewer_data.old_file_name ~= "" and M.location.reviewer_data.old_file_name
+    or M.location.reviewer_data.file_name
+  local new_file_focused = M.location.reviewer_data.new_file_focused
 
-  local layout = M.create_comment_layout({ unlinked = false })
-  layout:mount()
-
-  vim.schedule(function()
-    if suggestion_lines then
-      vim.api.nvim_buf_set_lines(M.comment_popup.bufnr, 0, -1, false, suggestion_lines)
-    end
-  end)
+  ---@type ShowPreviewOpts
+  local opts = {
+    old_file_name = old_file_name,
+    new_file_name = M.location.reviewer_data.file_name,
+    start_line = M.location.reviewer_data.start_line,
+    end_line = M.location.reviewer_data.end_line,
+    new_file_focused = new_file_focused,
+    revision = new_file_focused and "HEAD" or require("gitlab.state").INFO.target_branch,
+    note_header = "comment",
+    comment_type = "new",
+  }
+  require("gitlab.actions.suggestions").show_preview(opts)
 end
 
 ---Return true if it's possible to create an inline comment.
@@ -364,7 +354,7 @@ M.can_create_comment = function(must_be_visual)
     return false
   end
 
-  -- Check we're in visual mode for code suggestions and multiline comments
+  -- Check we're in visual mode for code suggestions
   if must_be_visual and not u.check_visual_mode() then
     return false
   end

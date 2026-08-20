@@ -297,11 +297,22 @@ you call this function with no values the defaults will be used:
         toggle_unresolved_discussions = "U", -- Open or close all unresolved discussions
         refresh_data = "<C-R>", -- Refresh the data in the view by hitting Gitlab's APIs again
         print_node = "<leader>p", -- Print the current node (for debugging)
+        edit_suggestion = "se", -- Edit comment with suggestion preview in a new tab
+        reply_with_suggestion = "sr", -- Reply to comment with a suggestion preview in a new tab
+        apply_suggestion = "sa", -- Apply the suggestion to the local file with a preview in a new tab
+      },
+      suggestion_preview = {
+        apply_changes = "ZZ", -- Close suggestion preview tab, and post comment to Gitlab (discarding changes to local file). In "apply mode", accept suggestion, commit changes, then push to remote and resolve thread
+        discard_changes = "ZQ", -- Close suggestion preview tab and discard changes in local file
+        attach_file = "ZA", -- Attach a file from the `settings.attachment_dir`
+        apply_changes_locally = "Zz", -- Only in "apply mode", close suggestion preview tab and write suggestion buffer to local file (no changes posted to Gitlab)
+        paste_default_suggestion = "glS", -- Paste the default suggestion below the cursor (overrides default "glS" (start review) keybinding for the "Note" buffer)
       },
       reviewer = {
         disable_all = false, -- Disable all default mappings for the reviewer windows
         create_comment = "c", -- Create a comment for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
         create_suggestion = "s", -- Create a suggestion for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
+        create_suggestion_with_preview = "S", -- In a new tab create a suggestion with a diff preview for the lines that the following {motion} moves over. Repeat the key(s) for creating comment for the current line
         move_to_discussion_tree = "a", -- Jump to the comment in the discussion tree
       },
     },
@@ -518,23 +529,19 @@ configuration for more information.
 
 REVIEWING AN MR                                  *gitlab.nvim.reviewing-an-mr*
 
-The `review` action will open a diff of the changes. You can leave comments
-using the `create_comment` action. In visual mode, add multiline comments with
-the `create_multiline_comment` command, and add suggested changes with the
-`create_comment_suggestion` command:
+The `review` action opens a diff of the changes (see |gitlab.nvim.review|).
+Alternatively, use `choose_merge_request` for more flexibility in choosing the
+MR (see |gitlab.nvim.choose_merge_request|).
 >lua
   require("gitlab").review()
-  require("gitlab").create_comment()
-  require("gitlab").create_multiline_comment()
-  require("gitlab").create_comment_suggestion()
+  require("gitlab").choose_merge_request({ labels = {"include_mrs_with_label"} })
 <
-For suggesting changes you can use `create_comment_suggestion` in visual mode
-which works similar to `create_multiline_comment` but prefills the comment
-window with Gitlab’s suggest changes
-<https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html>
-code block with prefilled code from the visual selection. Just like the
-summary, all the different kinds of comments are saved via the
-`keymaps.popup.perform_action` keybinding.
+You can leave comments in the reviewer windows using the `keymaps.reviewer`
+keybindings which in normal mode work as operators and in visual mode they
+create comments on the selected lines. Alternatively, you can use the
+`create_comment` API in your custom mappings (see
+|gitlab.nvim.create_comment|). See `settings.keymaps.popup` for the
+keybindings available in the popup windows.
 
 
 DRAFT NOTES                                       *gitlab.nvim.draft-comments*
@@ -664,9 +671,11 @@ https://{GITLAB_URL}/-/emojis/{VERSION}/emojis.json.
 UPLOADING FILES                                  *gitlab.nvim.uploading-files*
 
 To attach a file to an MR description, reply, comment, and so forth use the
-`keymaps.popup.perform_linewise_action` keybinding when the popup is open.
-This will open a picker that will look for files in the directory you specify
-in the `settings.attachment_dir` folder (this must be an absolute path).
+`keymaps.popup.perform_linewise_action` keybinding when the popup is open (or
+the `keymaps.suggestion_preview.attach_file` in the comment buffer of the
+suggestion preview). This will open a picker that will look for files in the
+directory you specify in the `settings.attachment_dir` folder (this must be an
+absolute path).
 
 When you have picked the file, it will be added to the current buffer at the
 current line.
@@ -972,35 +981,29 @@ have permission or has not previously approved the MR.
                                                   *gitlab.nvim.create_comment*
 gitlab.create_comment() ~
 
-Opens a popup to create a comment on the current line. Must be called when focused on the
-reviewer pane (see the gitlab.nvim.review command), otherwise it will error.
+Opens a popup to create a comment on the selected line(s) in the current
+buffer. Must be called when focused on the reviewer pane (see the
+|gitlab.nvim.review| command). In normal mode comments on the current line. In
+visual mode comments on the selected lines:
 >lua
   require("gitlab").create_comment()
+  require("gitlab").create_comment({ with_suggestion = true })
+<
+    Parameters: ~
+        • {opts}: (table|nil) Keyword arguments that can be used to include
+          a suggestion in the comment.
+            • {with_suggestion} (boolean) When true, pastes into the comment
+              buffer Gitlab’s suggestion code block prefilled with the
+              original text from the visual selection. See
+              https://docs.gitlab.com/ee/user/project/merge_requests/reviews/suggestions.html.
 
-After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_action` keybinding, by default `ZZ`.
-
-                                        *gitlab.nvim.create_multiline_comment*
-gitlab.create_multiline_comment() ~
-
-Opens a popup to create a multi-line comment. May only be called in visual
-mode, and will use the currently selected lines.
->lua
-  require("gitlab").create_multiline_comment()
-
-After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
-
-                                       *gitlab.nvim.create_comment_suggestion*
-gitlab.create_comment_suggestion() ~
-
-Opens a popup to create a comment suggestion (aka a comment that makes a committable
-change suggestion to the currently selected lines).
->lua
-  require("gitlab").create_multiline_comment()
-
-After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_linewise_action` keybinding, by default `ZA`.
+In the popup, you can use the `keymaps.popup.perform_linewise_action`
+keybinding (default: `ZA`) to attach a file to the comment. After the comment
+is typed, submit it to Gitlab via the `keymaps.popup.perform_action`
+keybinding, (default: `ZZ`). Discard the comment with
+`keymaps.popup.discard_changes` (default: `ZQ`). Otherwise, if you close the
+popup with something like `<c-w>q`, the comment contents are saved to the
+temporary register(s) (|gitlab.nvim.temp-registers|).
 
                                                        *gitlab.nvim.create_mr*
 gitlab.create_mr({opts}) ~
@@ -1060,7 +1063,7 @@ tied to specific changes in an MR.
   require("gitlab").create_note()
 
 After the comment is typed, submit it to Gitlab via the
-`keymaps.popup.perform_action` keybinding, by default `ZZ`.
+`keymaps.popup.perform_action` keybinding (default: `ZZ`).
 
                                               *gitlab.nvim.toggle_discussions*
 gitlab.toggle_discussions() ~
