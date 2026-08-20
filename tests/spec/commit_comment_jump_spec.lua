@@ -137,7 +137,7 @@ describe("actions/common.jump_to_reviewer", function()
     common.jump_to_reviewer({})
 
     assert.are.same({}, calls.reviewer)
-    assert.are.same({ { "abc123", "file.lua", 11 } }, calls.history)
+    assert.are.same({ { "abc123", "file.lua", 11, false } }, calls.history)
   end)
 
   it("Sends a plain comment to the reviewer", function()
@@ -149,13 +149,27 @@ describe("actions/common.jump_to_reviewer", function()
     assert.are.equal(1, #calls.reviewer)
   end)
 
-  it("Refuses an old-side commit comment rather than jumping to a wrong line", function()
+  it("Takes an old-side commit comment's line from the range, not the renumbered position", function()
+    local calls = arrange({
+      is_root = true,
+      type = "note",
+      file_name = "file.lua",
+      commit_id = "abc123",
+      range = { start = { old_line = 10 }, ["end"] = { old_line = 10 } },
+    }, false)
+
+    common.jump_to_reviewer({})
+
+    assert.are.same({}, calls.reviewer)
+    -- 11 is what Gitlab renumbered against the MR base; 10 is the browser's own line.
+    assert.are.same({ { "abc123", "file.lua", 10, true } }, calls.history)
+  end)
+
+  it("Falls back to the stored line for a commit comment with no range", function()
     local calls = arrange({ is_root = true, type = "note", file_name = "file.lua", commit_id = "abc123" }, false)
 
     common.jump_to_reviewer({})
 
-    assert.are.same({}, calls.history)
-    assert.are.same({}, calls.reviewer)
-    assert.are.equal(1, #calls.notified)
+    assert.are.same({ { "abc123", "file.lua", 11, true } }, calls.history)
   end)
 end)
