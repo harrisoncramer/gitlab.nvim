@@ -163,13 +163,31 @@ M.place_diagnostics = function(bufnr)
   end
 end
 
----Place the diagnostics for the comments anchored to the commit the browser shows. Diffview
----reuses a revision's buffer across views, so the buffer is written even when the commit
----has no comments, to drop what another commit or the reviewer put there.
----@param bufnr integer Buffer holding the commit's version of the file (the new side)
+---Create the diagnostic for a note on a line the browsed commit deletes.
+---Gitlab renumbers a stored commit comment's top-level old_line to the MR base wherever the
+---line exists there, but leaves the line range in the commit's own numbering, which is what
+---the browser's old side shows. A note without a range was not written by this plugin, and
+---its old_line is all there is (actions/common.lua resolves the jump the same way).
+---@param d_or_n Discussion|DraftNote
+---@return vim.Diagnostic.Set
+local create_commit_old_side_diagnostic = function(d_or_n)
+  local position = indicators_common.get_first_note(d_or_n).position
+  local line_range = position.line_range
+  if line_range == nil then
+    return create_diagnostic({ lnum = position.old_line - 1 }, d_or_n)
+  end
+  return create_diagnostic({ lnum = line_range.start.old_line - 1, end_lnum = line_range["end"].old_line - 1 }, d_or_n)
+end
+
+---Place the diagnostics for the comments anchored to the commit the browser shows, on one
+---side of its diff. Diffview reuses a revision's buffer across views, so the buffer is
+---written even when the commit has no comments, to drop what another commit or the reviewer
+---put there.
+---@param bufnr integer Buffer holding one side of the browsed commit's diff
 ---@param sha string The commit currently browsed
----@param file_path string Path of the file shown
-M.place_commit_diagnostics = function(bufnr, sha, file_path)
+---@param file_path string Path of the file shown, in the version that side holds
+---@param on_old_side boolean True for the parent's version of the file (left window)
+M.place_commit_diagnostics = function(bufnr, sha, file_path, on_old_side)
   if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
     return
   end
@@ -177,15 +195,18 @@ M.place_commit_diagnostics = function(bufnr, sha, file_path)
     return
   end
 
-  -- An old-side line is numbered against the MR base, while the old side shown here is the
-  -- commit's parent, so only new-side notes can be placed.
-  local commit_discussions = List.new(indicators_common.filter_commit_discussions(sha)):filter(function(d_or_n)
-    local note = indicators_common.get_first_note(d_or_n)
-    return note.position.new_path == file_path and indicators_common.is_new_sha(d_or_n)
+  local side_discussions = List.new(indicators_common.filter_commit_discussions(sha)):filter(function(d_or_n)
+    local position = indicators_common.get_first_note(d_or_n).position
+    if on_old_side then
+      return position.old_path == file_path and indicators_common.is_old_sha(d_or_n)
+    end
+    return position.new_path == file_path and indicators_common.is_new_sha(d_or_n)
   end)
 
   local ok, err = pcall(function()
-    set_diagnostics(M.diagnostics_namespace, bufnr, M.parse_diagnostics(commit_discussions), create_display_opts())
+    local parsed = on_old_side and side_discussions:map(create_commit_old_side_diagnostic)
+      or M.parse_diagnostics(side_discussions)
+    set_diagnostics(M.diagnostics_namespace, bufnr, parsed, create_display_opts())
   end)
 
   if not ok then
