@@ -15,7 +15,9 @@
 -- commentable: the side the cursor is in decides how the line is typed.
 --
 -- Those commit-anchored notes are marked in the browser and nowhere else, since their
--- lines only mean anything in the commit's own diff (see indicators/common.lua).
+-- lines only mean anything in the commit's own diff (see indicators/common.lua). Both sides
+-- are marked: a deleted line's number survives in the note's line range, which Gitlab stores
+-- unchanged even where it renumbers the top-level old_line to the MR base.
 
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
@@ -225,12 +227,15 @@ M.refresh_diagnostics = function()
   local log_entry, file = cur_item[1], cur_item[2]
   local sha = log_entry ~= nil and log_entry.commit ~= nil and log_entry.commit.hash or nil
   local layout = view.cur_layout
-  local bufnr = layout ~= nil and layout.b ~= nil and layout.b.file ~= nil and layout.b.file.bufnr or nil
-  if sha == nil or file == nil or bufnr == nil then
+  if sha == nil or file == nil or layout == nil then
     return
   end
 
-  require("gitlab.indicators.diagnostics").place_commit_diagnostics(bufnr, sha, file.path)
+  local new_bufnr = layout.b ~= nil and layout.b.file ~= nil and layout.b.file.bufnr or nil
+  local old_bufnr = layout.a ~= nil and layout.a.file ~= nil and layout.a.file.bufnr or nil
+  local diagnostics = require("gitlab.indicators.diagnostics")
+  diagnostics.place_commit_diagnostics(new_bufnr, sha, file.path, false)
+  diagnostics.place_commit_diagnostics(old_bufnr, sha, file.oldpath or file.path, true)
 end
 
 ---Show the commit that a commit-anchored comment was left on, in the commit browser.

@@ -931,12 +931,14 @@ Opens a view of the MR's commit history, letting you step through it one commit
 at a time. Each entry shows a single commit's isolated diff, to understand how
 the MR was built up.
 
-Press `c` to comment on a line, anchored to the commit being viewed. This only
-works on the new (right) side; commenting on a line the commit deletes (left
-side) is not supported. Use `]v` / `[v` to follow the line to the next commit
-that changes it, then to the next commit that merely touches the file. Press
-`a` on a commented line to jump to the comment in the discussion tree. `g?`
-lists these keymaps.
+Press `c` to comment on a line, anchored to the commit being viewed. This works
+on both sides of the diff, including a line the commit deletes. Press `a` on a
+commented line to jump to the comment in the discussion tree. `g?` lists these
+keymaps.
+
+To follow the line under the cursor to the next commit that changes it, bind
+`select_next_change_here` / `select_prev_change_here` in your diffview config.
+Those actions exist only in the `diffview+` fork.
 >lua
   require("gitlab").browse_commits()
 <
