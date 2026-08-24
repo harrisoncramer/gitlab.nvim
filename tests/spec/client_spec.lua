@@ -1,7 +1,7 @@
-describe("gitlab/job.lua", function()
+describe("gitlab/client.lua", function()
   describe("_make_on_exit", function()
     local notifications
-    local job
+    local client
 
     before_each(function()
       notifications = {}
@@ -10,15 +10,15 @@ describe("gitlab/job.lua", function()
           table.insert(notifications, { msg = msg, level = level })
         end,
       }
-      -- job.lua captures `u` via a top-level require, so stubbing gitlab.utils only
-      -- takes effect if job.lua is required again after the stub is in place.
-      package.loaded["gitlab.job"] = nil
-      job = require("gitlab.job")
+      -- client.lua captures `u` via a top-level require, so stubbing gitlab.utils only
+      -- takes effect if client.lua is required again after the stub is in place.
+      package.loaded["gitlab.client"] = nil
+      client = require("gitlab.client")
     end)
 
     after_each(function()
       package.loaded["gitlab.utils"] = nil
-      package.loaded["gitlab.job"] = nil
+      package.loaded["gitlab.client"] = nil
     end)
 
     -- vim.schedule callbacks run on the next event-loop tick, so tests need to poll
@@ -33,7 +33,7 @@ describe("gitlab/job.lua", function()
 
     describe("curl-level notices", function()
       it("does not notify when curl exits cleanly with no stderr", function()
-        job._make_on_exit({ "curl" }, "/ping", nil, nil)(base_out())
+        client._make_on_exit({ "curl" }, "/ping", nil, nil)(base_out())
         -- No side effect to poll for here: just let the scheduled callback run.
         vim.wait(50)
         assert.are.same({}, notifications)
@@ -42,7 +42,7 @@ describe("gitlab/job.lua", function()
       it("warns with the exit code when curl exits non-zero", function()
         local out = base_out()
         out.code = 3
-        job._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
+        client._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
         end)
@@ -55,7 +55,7 @@ describe("gitlab/job.lua", function()
         local out = base_out()
         out.code = 0
         out.signal = 9
-        job._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
+        client._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
         end)
@@ -67,7 +67,7 @@ describe("gitlab/job.lua", function()
       it("warns with the command and trimmed stderr when curl writes to stderr", function()
         local out = base_out()
         out.stderr = "  some linker warning\n"
-        job._make_on_exit({ "curl", "-s", "localhost:1234/ping" }, "/ping", nil, nil)(out)
+        client._make_on_exit({ "curl", "-s", "localhost:1234/ping" }, "/ping", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
         end)
@@ -81,7 +81,7 @@ describe("gitlab/job.lua", function()
     describe("JSON decoding", function()
       it("treats an empty body as no usable data without notifying a decode failure", function()
         local seen_error_callback_calls = 0
-        job._make_on_exit({ "curl" }, "/ping", nil, function()
+        client._make_on_exit({ "curl" }, "/ping", nil, function()
           seen_error_callback_calls = seen_error_callback_calls + 1
         end)(base_out())
         wait_for(function()
@@ -94,7 +94,7 @@ describe("gitlab/job.lua", function()
       it("reports error with the endpoint and decode error when the body is invalid JSON", function()
         local out = base_out()
         out.stdout = "not json"
-        job._make_on_exit({ "curl" }, "/mr/info", nil, nil)(out)
+        client._make_on_exit({ "curl" }, "/mr/info", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
         end)
@@ -108,7 +108,7 @@ describe("gitlab/job.lua", function()
     describe("dispatch outcomes", function()
       it("calls on_error_callback with no arguments when there is no usable data", function()
         local seen = "unset"
-        job._make_on_exit({ "curl" }, "/ping", function()
+        client._make_on_exit({ "curl" }, "/ping", function()
           error("callback should not run")
         end, function(data)
           seen = data
@@ -120,7 +120,7 @@ describe("gitlab/job.lua", function()
       end)
 
       it("notifies nothing when there is no usable data and no on_error_callback", function()
-        job._make_on_exit({ "curl" }, "/ping", nil, nil)(base_out())
+        client._make_on_exit({ "curl" }, "/ping", nil, nil)(base_out())
         -- No side effect to poll for here: just let the scheduled callback run.
         vim.wait(50)
         assert.are.same({}, notifications)
@@ -130,7 +130,7 @@ describe("gitlab/job.lua", function()
         local seen
         local out = base_out()
         out.stdout = vim.json.encode({ message = "Failed", details = "Gitlab Error" })
-        job._make_on_exit({ "curl" }, "/ping", nil, function(data)
+        client._make_on_exit({ "curl" }, "/ping", nil, function(data)
           seen = data
         end)(out)
         wait_for(function()
@@ -144,7 +144,7 @@ describe("gitlab/job.lua", function()
       it("notifies message and details on an application-level error with no on_error_callback", function()
         local out = base_out()
         out.stdout = vim.json.encode({ message = "Failed", details = "Gitlab Error" })
-        job._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
+        client._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
         end)
@@ -157,7 +157,7 @@ describe("gitlab/job.lua", function()
         local seen
         local out = base_out()
         out.stdout = vim.json.encode({ message = "Done" })
-        job._make_on_exit({ "curl" }, "/ping", function(data)
+        client._make_on_exit({ "curl" }, "/ping", function(data)
           seen = data
         end, function()
           error("on_error_callback should not run")
@@ -172,7 +172,7 @@ describe("gitlab/job.lua", function()
       it("notifies the message on success with no callback", function()
         local out = base_out()
         out.stdout = vim.json.encode({ message = "Done" })
-        job._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
+        client._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
         end)

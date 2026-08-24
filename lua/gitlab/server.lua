@@ -3,7 +3,7 @@
 -- to Gitlab and returning the data
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local version = require("gitlab.version")
 
 local M = {}
@@ -174,7 +174,7 @@ M.shutdown = function(cb)
     vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
     return
   end
-  job.run_job("/shutdown", "POST", { restart = false }, function(data)
+  client.send_request("/shutdown", "POST", { restart = false }, function(data)
     state.go_server_running = false
     state.clear_data()
     if cb then
@@ -191,7 +191,7 @@ M.restart = function(cb)
     vim.notify("The gitlab.nvim server is not running", vim.log.levels.ERROR)
     return
   end
-  job.run_job("/shutdown", "POST", { restart = true }, function(data)
+  client.send_request("/shutdown", "POST", { restart = true }, function(data)
     state.go_server_running = false
     M.start(function()
       state.clear_data()
@@ -215,9 +215,9 @@ M.get_version = function(callback)
   local version_output = vim.system({ "git", "describe", "--tags", "--always" }, { cwd = parent_dir }):wait()
   local plugin_version = version_output.code == 0 and vim.trim(version_output.stdout) or "unknown"
 
-  -- We call the "/version" endpoint here instead of through the regular run_job pattern because
-  -- earlier versions of the plugin may not have the endpoint. We handle a 404 as an "unknown"
-  -- version error.
+  -- We call the "/version" endpoint here instead of through the regular send_request
+  -- pattern because earlier versions of the plugin may not have the endpoint. We handle
+  -- a 404 as an "unknown" version error.
   local cmd = {
     "curl",
     "--noproxy",

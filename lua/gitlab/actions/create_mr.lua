@@ -4,7 +4,7 @@
 local Layout = require("nui.layout")
 local Input = require("nui.input")
 local Popup = require("nui.popup")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local git = require("gitlab.git")
@@ -321,7 +321,7 @@ M.create_mr = function()
     forked_project_id = forked_project_id,
   }
 
-  job.run_job("/create_mr", "POST", body, function(data)
+  client.send_request("/create_mr", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.reset_state()
     M.layout:unmount()

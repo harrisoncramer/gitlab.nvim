@@ -6,7 +6,7 @@
 local Split = require("nui.split")
 local Popup = require("nui.popup")
 local NuiTree = require("nui.tree")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local state = require("gitlab.state")
@@ -416,7 +416,7 @@ M.toggle_discussion_resolved = function(tree)
     resolved = not note.resolved,
   }
 
-  job.run_job("/mr/discussions/resolve", "PUT", body, function(data)
+  client.send_request("/mr/discussions/resolve", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     local unlinked = tree.bufnr == M.unlinked_bufnr
     M.rebuild_view(unlinked)
@@ -439,7 +439,7 @@ M.add_emoji_to_note = function(tree, unlinked)
   local emojis = require("gitlab.emoji").emoji_list
   emoji.pick_emoji(emojis, function(name)
     local body = { emoji = name, note_id = note_id }
-    job.run_job("/mr/awardable/note/", "POST", body, function()
+    client.send_request("/mr/awardable/note/", "POST", body, function()
       u.notify("Emoji added", vim.log.levels.INFO)
       M.rebuild_view(unlinked)
     end)
@@ -479,7 +479,7 @@ M.delete_emoji_from_note = function(tree, unlinked)
         break
       end
     end
-    job.run_job(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function()
+    client.send_request(string.format("/mr/awardable/note/%d/%d", note_id, awardable_id), "DELETE", nil, function()
       u.notify("Emoji removed", vim.log.levels.INFO)
       M.rebuild_view(unlinked)
     end)

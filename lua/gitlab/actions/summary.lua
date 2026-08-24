@@ -5,7 +5,7 @@
 local Layout = require("nui.layout")
 local Popup = require("nui.popup")
 local git = require("gitlab.git")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
@@ -229,7 +229,7 @@ M.edit_summary = function()
   local description = u.get_buffer_text(M.description_bufnr)
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
   local body = { title = title, description = description }
-  job.run_job("/mr/summary", "PUT", body, function(data)
+  client.send_request("/mr/summary", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
     state.INFO.title = data.mr.title

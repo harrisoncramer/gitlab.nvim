@@ -2,7 +2,7 @@
 -- and assignees in Gitlab, those who must review an MR.
 
 local u = require("gitlab.utils")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local M = {}
@@ -51,7 +51,7 @@ M.add_popup = function(type)
     local current_ids = u.extract(current, "id")
     table.insert(current_ids, choice.id)
     local body = { ids = current_ids }
-    job.run_job("/mr/" .. type, "PUT", body, function(data)
+    client.send_request("/mr/" .. type, "PUT", body, function(data)
       refresh_user_state(plural, data[plural], data.message)
     end)
   end)
@@ -73,7 +73,7 @@ M.delete_popup = function(type)
     end
     local ids = u.extract(M.filter_eligible(current, { choice }), "id")
     local body = { ids = ids }
-    job.run_job("/mr/" .. type, "PUT", body, function(data)
+    client.send_request("/mr/" .. type, "PUT", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       refresh_user_state(plural, data[plural], data.message)
     end)
