@@ -6,7 +6,7 @@
 local common = require("gitlab.actions.common")
 local discussion_tree = require("gitlab.actions.discussions.tree")
 local git = require("gitlab.git")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local NuiTree = require("nui.tree")
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
@@ -48,7 +48,7 @@ M.confirm_edit_draft_note = function(note_id, unlinked)
       return note.id == note_id
     end)
     local body = { note = text, position = the_note.position }
-    job.run_job(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
+    client.send_request(string.format("/mr/draft_notes/%d", note_id), "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       M.rebuild_view(unlinked)
     end)
@@ -59,7 +59,7 @@ end
 ---@param note_id integer
 ---@param unlinked boolean
 M.confirm_delete_draft_note = function(note_id, unlinked)
-  job.run_job(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
+  client.send_request(string.format("/mr/draft_notes/%d", note_id), "DELETE", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.rebuild_view(unlinked)
   end)
@@ -95,7 +95,7 @@ end
 ---Publish all draft notes and comments and re-render all discussion views.
 M.confirm_publish_all_drafts = function()
   local body = { publish_all = true }
-  job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
+  client.send_request("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.DRAFT_NOTES = {}
     require("gitlab.actions.discussions").rebuild_view(false, true)
@@ -128,7 +128,7 @@ M.confirm_publish_draft = function(tree)
   local note_id = note_node.is_root and root_node.id or note_node.id
   local body = { note = note_id }
   local unlinked = tree.bufnr == require("gitlab.actions.discussions").unlinked_bufnr
-  job.run_job("/mr/draft_notes/publish", "POST", body, function(data)
+  client.send_request("/mr/draft_notes/publish", "POST", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     M.rebuild_view(unlinked)
   end, function(data)

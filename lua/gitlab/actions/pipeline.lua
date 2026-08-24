@@ -4,7 +4,7 @@
 
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 
@@ -182,7 +182,7 @@ M.retrigger = function()
           return
         end
         if not failed_pipelines[pipeline.id] then
-          job.run_job("/pipeline/trigger/" .. pipeline.id, "POST", nil, function()
+          client.send_request("/pipeline/trigger/" .. pipeline.id, "POST", nil, function()
             u.notify("Pipeline " .. pipeline.id .. " re-triggered!", vim.log.levels.INFO)
           end)
           failed_pipelines[pipeline.id] = true
@@ -218,7 +218,7 @@ M.see_logs = function()
   end
 
   local body = { job_id = j.id }
-  job.run_job("/job", "GET", body, function(data)
+  client.send_request("/job", "GET", body, function(data)
     local file = data.file
     if file == "" then
       u.notify("Log trace is empty", vim.log.levels.WARN)

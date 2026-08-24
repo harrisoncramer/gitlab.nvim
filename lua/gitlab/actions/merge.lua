@@ -2,7 +2,7 @@ local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local reviewer = require("gitlab.reviewer")
 
 local M = {}
@@ -59,7 +59,7 @@ M.confirm_merge = function(merge_body, squash_message)
     merge_body.squash_message = squash_message
   end
 
-  job.run_job("/mr/merge", "POST", merge_body, function(data)
+  client.send_request("/mr/merge", "POST", merge_body, function(data)
     reviewer.close()
     u.notify(data.message, vim.log.levels.INFO)
   end)

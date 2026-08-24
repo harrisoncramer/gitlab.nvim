@@ -75,8 +75,8 @@ end
 local confirm_rebase = function(rebase_body)
   local u = require("gitlab.utils")
   u.notify("Rebase in progress", vim.log.levels.INFO)
-  local job = require("gitlab.job")
-  job.run_job("/mr/rebase", "POST", rebase_body, function(data)
+  local client = require("gitlab.client")
+  client.send_request("/mr/rebase", "POST", rebase_body, function(data)
     u.notify(data.message .. ", updating local state", vim.log.levels.INFO)
     local state = require("gitlab.state")
     require("gitlab.git_async").pull(

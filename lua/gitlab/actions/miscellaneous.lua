@@ -1,6 +1,6 @@
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 
 local M = {}
 
@@ -27,7 +27,7 @@ M.attach_file = function()
     end
     local full_path = attachment_dir .. u.path_separator .. choice
     local body = { file_path = full_path, file_name = choice }
-    job.run_job("/attachment", "POST", body, function(data)
+    client.send_request("/attachment", "POST", body, function(data)
       local markdown = data.markdown
       vim.api.nvim_put({ markdown }, "l", true, false)
     end)

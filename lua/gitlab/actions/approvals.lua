@@ -1,4 +1,4 @@
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local state = require("gitlab.state")
 local u = require("gitlab.utils")
 
@@ -15,7 +15,7 @@ end
 
 ---Send the approval to Gitlab, notify user, and re-fresh state.
 M.approve = function()
-  job.run_job("/mr/approve", "POST", nil, function(data)
+  client.send_request("/mr/approve", "POST", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     refresh_status_state()
   end)
@@ -23,7 +23,7 @@ end
 
 ---Send the approval revocation to Gitlab, notify user, and re-fresh state.
 M.revoke = function()
-  job.run_job("/mr/revoke", "POST", nil, function(data)
+  client.send_request("/mr/revoke", "POST", nil, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     refresh_status_state()
   end)

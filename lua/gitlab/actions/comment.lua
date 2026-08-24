@@ -4,7 +4,7 @@
 local Popup = require("nui.popup")
 local Layout = require("nui.layout")
 local state = require("gitlab.state")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local git = require("gitlab.git")
@@ -50,7 +50,7 @@ local confirm_create_comment = function(text, unlinked, discussion_id)
   -- Creating a normal reply to a discussion
   if discussion_id ~= nil and not is_draft then
     local body = { discussion_id = discussion_id, reply = text, draft = is_draft }
-    job.run_job("/mr/reply", "POST", body, function()
+    client.send_request("/mr/reply", "POST", body, function()
       u.notify("Sent reply!", vim.log.levels.INFO)
       discussions.rebuild_view(unlinked)
     end)
@@ -60,7 +60,7 @@ local confirm_create_comment = function(text, unlinked, discussion_id)
   -- Creating a draft reply, in response to a discussion ID
   if discussion_id ~= nil and is_draft then
     local body = { comment = text, discussion_id = discussion_id }
-    job.run_job("/mr/draft_notes/", "POST", body, function()
+    client.send_request("/mr/draft_notes/", "POST", body, function()
       u.notify("Draft reply created!", vim.log.levels.INFO)
       draft_notes.load_draft_notes(function()
         discussions.rebuild_view(unlinked)
@@ -73,7 +73,7 @@ local confirm_create_comment = function(text, unlinked, discussion_id)
   if unlinked and discussion_id == nil then
     local body = { comment = text }
     local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
-    job.run_job(endpoint, "POST", body, function()
+    client.send_request(endpoint, "POST", body, function()
       u.notify(is_draft and "Draft note created!" or "Note created!", vim.log.levels.INFO)
       if is_draft then
         draft_notes.load_draft_notes(function()
@@ -101,7 +101,7 @@ local confirm_create_comment = function(text, unlinked, discussion_id)
   -- Creating a new comment (linked to specific changes)
   local body = u.merge({ type = "text", comment = text }, position_data)
   local endpoint = is_draft and "/mr/draft_notes/" or "/mr/comment"
-  job.run_job(endpoint, "POST", body, function()
+  client.send_request(endpoint, "POST", body, function()
     u.notify(is_draft and "Draft comment created!" or "Comment created!", vim.log.levels.INFO)
     if is_draft then
       draft_notes.load_draft_notes(function()
@@ -119,7 +119,7 @@ end
 ---@param unlinked boolean
 M.confirm_delete_comment = function(note_id, discussion_id, unlinked)
   local body = { discussion_id = discussion_id, note_id = tonumber(note_id) }
-  job.run_job("/mr/comment", "DELETE", body, function(data)
+  client.send_request("/mr/comment", "DELETE", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     discussions.rebuild_view(unlinked)
   end)
@@ -136,7 +136,7 @@ M.confirm_edit_comment = function(discussion_id, note_id, unlinked)
       note_id = note_id,
       comment = text,
     }
-    job.run_job("/mr/comment", "PATCH", body, function(data)
+    client.send_request("/mr/comment", "PATCH", body, function(data)
       u.notify(data.message, vim.log.levels.INFO)
       discussions.rebuild_view(unlinked)
     end)

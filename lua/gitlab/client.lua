@@ -1,4 +1,3 @@
--- TODO: Rename this module to "client.lua" to make the purpose more obvious.
 -- This module is responsible for making API calls to the Go server and
 -- running the callbacks associated with those jobs when the JSON is returned
 local u = require("gitlab.utils")
@@ -20,12 +19,13 @@ local M = {}
 ---details. If OnSuccessCallback is omitted, the response's `message` is just notified.
 ---@alias OnSuccessCallback fun(data: SuccessResponse)
 
----Function to run if a job fails: called with the decoded response data if it contains
----error details from the Go server, or without arguments if no usable response was
----received at all (transport failure, empty body, or invalid JSON).
+---Function to run if a request fails: called with the decoded response data if it
+---contains error details from the Go server, or without arguments if no usable response
+---was received at all (transport failure, empty body, or invalid JSON).
+---If OnErrorCallback is omitted, the response's `message` and `error` are just
+---notified.
 ---@alias OnErrorCallback fun(data: ErrorResponse?)
 
----TODO: Consider renaming to something like "send_request" or "request.
 ---Send a request to the Go server and run callbacks on the output.
 ---If `callback` and `on_error_callback` are provided, exactly one of them runs for
 ---every request outcome: a successful response, an application-level error from the Go
@@ -36,7 +36,7 @@ local M = {}
 ---@param body? table The request body, if required by the endpoint
 ---@param on_success? OnSuccessCallback
 ---@param on_error? OnErrorCallback
-M.run_job = function(endpoint, method, body, on_success, on_error)
+M.send_request = function(endpoint, method, body, on_success, on_error)
   local state = require("gitlab.state")
   local port = state.settings.server and state.settings.server.port
   local cmd = {
@@ -65,7 +65,7 @@ M.run_job = function(endpoint, method, body, on_success, on_error)
   end
 end
 
----Return the on_exit function for the vim.system call in M.run_job.
+---Return the on_exit function for the vim.system call in M.send_request.
 ---Exported only so tests can call it directly; not part of the public API.
 ---@param cmd string[]
 ---@param endpoint string

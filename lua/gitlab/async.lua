@@ -2,7 +2,7 @@
 -- an abstraction around the APIs that lets us ensure state.
 
 local server = require("gitlab.server")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local state = require("gitlab.state")
 
 local M = {}
@@ -58,11 +58,11 @@ function async:fetch(dependencies, i, args)
   -- Find a way to pass the right OPTS.open_reviewer option - don't open the reviewer if
   -- the user just wanted to see the summary, add a reviewer, or similar.
   local body = dependency.body and dependency.body(args) or nil
-  job.run_job(dependency.endpoint, dependency.method or "GET", body, function(data)
+  client.send_request(dependency.endpoint, dependency.method or "GET", body, function(data)
     state[dependency.state] = dependency.key and data[dependency.key] or data
-    -- TODO: Consider if this cannot be called outside of the run_job callback to fetch
-    -- the dependencies in parallel rather than in sequence and run self.cb in this
-    -- callback instead of self:fetch when the last dependency has been fetched.
+    -- TODO: Consider if this cannot be called outside of the send_request callback to
+    -- fetch the dependencies in parallel rather than in sequence and run self.cb in
+    -- this callback instead of self:fetch when the last dependency has been fetched.
     self:fetch(dependencies, i + 1, args)
   end)
 end

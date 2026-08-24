@@ -1,7 +1,7 @@
 -- This module is responsible for the creation, deletion,
 -- and assignment and removeal of labels.
 local u = require("gitlab.utils")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
 
@@ -44,7 +44,7 @@ M.add_popup = function(type)
     end
     table.insert(current_labels, choice)
     local body = { labels = current_labels }
-    job.run_job("/mr/" .. type, "PUT", body, function(data)
+    client.send_request("/mr/" .. type, "PUT", body, function(data)
       refresh_label_state(data.labels, data.message)
     end)
   end)
@@ -60,7 +60,7 @@ M.delete_popup = function(type)
     end
     local filtered_labels = u.filter(current_labels, choice)
     local body = { labels = filtered_labels }
-    job.run_job("/mr/" .. type, "PUT", body, function(data)
+    client.send_request("/mr/" .. type, "PUT", body, function(data)
       refresh_label_state(data.labels, data.message)
     end)
   end)

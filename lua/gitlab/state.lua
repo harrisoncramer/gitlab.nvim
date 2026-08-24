@@ -638,9 +638,9 @@ M.dependencies = {
 ---@param dep string The dependency name to re-load
 ---@param cb fun(data) The function to call with the dependency data
 M.load_new_state = function(dep, cb)
-  local job = require("gitlab.job")
+  local client = require("gitlab.client")
   local dependency = M.dependencies[dep]
-  job.run_job(
+  client.send_request(
     dependency.endpoint,
     dependency.method or "GET",
     dependency.body and dependency.body() or nil,
