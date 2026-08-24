@@ -130,10 +130,10 @@ describe("gitlab/client.lua", function()
     end)
 
     describe("dispatch outcomes", function()
-      it("calls on_error_callback with no arguments when there is no usable data", function()
+      it("calls on_error callback with no arguments when there is no usable data", function()
         local seen = "unset"
         client._make_on_exit({ "curl" }, "/ping", function()
-          error("callback should not run")
+          error("on_success should not run")
         end, function(data)
           seen = data
         end)(base_out())
@@ -143,17 +143,17 @@ describe("gitlab/client.lua", function()
         assert.is_nil(seen)
       end)
 
-      it("notifies nothing when there is no usable data and no on_error_callback", function()
+      it("notifies nothing when there is no usable data and no on_error callback", function()
         client._make_on_exit({ "curl" }, "/ping", nil, nil)(base_out())
         -- No side effect to poll for here: just let the scheduled callback run.
         vim.wait(50)
         assert.are.same({}, notifications)
       end)
 
-      it("calls on_error_callback with the full decoded data on an application-level error", function()
+      it("calls on_error callback with the full decoded data on an application-level error", function()
         local seen
         local out = base_out()
-        out.stdout = vim.json.encode({ message = "Failed", details = "Gitlab Error" })
+        out.stdout = vim.json.encode({ message = "Failed", error = "Gitlab Error" })
         client._make_on_exit({ "curl" }, "/ping", nil, function(data)
           seen = data
         end)(out)
@@ -161,13 +161,13 @@ describe("gitlab/client.lua", function()
           return seen ~= nil
         end)
         assert.are.same("Failed", seen.message)
-        assert.are.same("Gitlab Error", seen.details)
+        assert.are.same("Gitlab Error", seen.error)
         assert.are.same({}, notifications)
       end)
 
-      it("notifies message and details on an application-level error with no on_error_callback", function()
+      it("notifies message and error on an application-level error with no on_error callback", function()
         local out = base_out()
-        out.stdout = vim.json.encode({ message = "Failed", details = "Gitlab Error" })
+        out.stdout = vim.json.encode({ message = "Failed", error = "Gitlab Error" })
         client._make_on_exit({ "curl" }, "/ping", nil, nil)(out)
         wait_for(function()
           return #notifications > 0
@@ -177,14 +177,14 @@ describe("gitlab/client.lua", function()
         assert.are.same(vim.log.levels.ERROR, notifications[1].level)
       end)
 
-      it("calls callback with the decoded data on success", function()
+      it("calls on_success callback with the decoded data on success", function()
         local seen
         local out = base_out()
         out.stdout = vim.json.encode({ message = "Done" })
         client._make_on_exit({ "curl" }, "/ping", function(data)
           seen = data
         end, function()
-          error("on_error_callback should not run")
+          error("on_error should not run")
         end)(out)
         wait_for(function()
           return seen ~= nil

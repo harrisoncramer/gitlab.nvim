@@ -105,13 +105,13 @@ func (f *testBase) handleGitlabError() (*gitlab.Response, error) {
 func checkErrorFromGitlab(t *testing.T, data ErrorResponse, msg string) {
 	t.Helper()
 	assert(t, data.Message, msg)
-	assert(t, data.Details, errorFromGitlab.Error())
+	assert(t, data.Error, errorFromGitlab.Error())
 }
 
 func checkNon200(t *testing.T, data ErrorResponse, msg, endpoint string) {
 	t.Helper()
 	assert(t, data.Message, msg)
-	assert(t, data.Details, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
+	assert(t, data.Error, fmt.Sprintf("An error occurred on the %s endpoint", endpoint))
 }
 
 type FakeGitManager struct {

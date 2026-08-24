@@ -14,21 +14,21 @@ local M = {}
 ---`cmd/app/client.go`).
 ---@class ErrorResponse
 ---@field message string
----@field details string -- TODO: Rename to error to make it more obvious
+---@field error string
 
----Function to run on the decoded JSON response data if the response contains no error
----details. If OnSuccessCallback is omitted, the response's `message` is just notified.
+---Function to run on the decoded JSON response data if the response contains no error.
+---If OnSuccessCallback is omitted, the response's `message` is just notified.
 ---@alias OnSuccessCallback fun(data: SuccessResponse)
 
 ---Function to run if a request fails: called with the decoded response data if it
----contains error details from the Go server, or without arguments if no usable response
+---contains an error from the Go server, or without arguments if no usable response
 ---was received at all (transport failure, empty body, or invalid JSON).
 ---If OnErrorCallback is omitted, the response's `message` and `error` are just
 ---notified.
 ---@alias OnErrorCallback fun(data: ErrorResponse?)
 
 ---Send a request to the Go server and run callbacks on the output.
----If `callback` and `on_error_callback` are provided, exactly one of them runs for
+---If `on_success` and `on_error` callbacks are provided, exactly one of them runs for
 ---every request outcome: a successful response, an application-level error from the Go
 ---server, a transport-level failure (curl error, empty body, or invalid JSON), or
 ---`curl` itself failing to spawn.
@@ -148,12 +148,18 @@ M._make_on_exit = function(display_cmd, endpoint, on_success, on_error)
         end
         return
       end
+      -- TODO: data.details is checked to prevent breaking for binary_provided users.
+      -- Remove in the future.
+      if data.details ~= nil and data.error == nil then
+        u.notify("Go server returned outdated response format. Rebuild the Go server.", vim.log.levels.WARN)
+        data.error = data.details
+      end
       -- Application-level error from the Go server:
-      if data.details ~= nil then
+      if data.error ~= nil then
         if type(on_error) == "function" then
           on_error(data)
         else
-          u.notify(string.format("%s: %s", data.message, data.details), vim.log.levels.ERROR)
+          M.notify_error(data)
         end
         return
       end
@@ -164,6 +170,13 @@ M._make_on_exit = function(display_cmd, endpoint, on_success, on_error)
         u.notify(string.format("%s", data.message), vim.log.levels.INFO)
       end
     end)
+  end
+end
+
+---@param data? ErrorResponse
+M.notify_error = function(data)
+  if data then
+    u.notify(string.format("%s: %s", data.message, data.error), vim.log.levels.ERROR)
   end
 end
 

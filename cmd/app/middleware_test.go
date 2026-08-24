@@ -29,7 +29,7 @@ func TestMethodMiddleware(t *testing.T) {
 		handler := middleware(fakeHandler{}, mw)
 		data, status := getFailData(t, handler, request)
 		assert(t, data.Message, "Invalid request type")
-		assert(t, data.Details, "Expected: POST")
+		assert(t, data.Error, "Expected: POST")
 		assert(t, status, http.StatusMethodNotAllowed)
 	})
 	t.Run("Fails bad method with multiple", func(t *testing.T) {
@@ -38,7 +38,7 @@ func TestMethodMiddleware(t *testing.T) {
 		handler := middleware(fakeHandler{}, mw)
 		data, status := getFailData(t, handler, request)
 		assert(t, data.Message, "Invalid request type")
-		assert(t, data.Details, "Expected: POST; PATCH")
+		assert(t, data.Error, "Expected: POST; PATCH")
 		assert(t, status, http.StatusMethodNotAllowed)
 	})
 	t.Run("Allows ok method through", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestWithMrMiddleware(t *testing.T) {
 		data, status := getFailData(t, handler, request)
 		assert(t, status, http.StatusNotFound)
 		assert(t, data.Message, "No MRs Found")
-		assert(t, data.Details, "branch 'foo' does not have any merge requests")
+		assert(t, data.Error, "branch 'foo' does not have any merge requests")
 	})
 	t.Run("Handles when there are too many MRs", func(t *testing.T) {
 		request := makeRequest(t, http.MethodGet, "/foo", nil)
@@ -88,7 +88,7 @@ func TestWithMrMiddleware(t *testing.T) {
 		data, status := getFailData(t, handler, request)
 		assert(t, status, http.StatusBadRequest)
 		assert(t, data.Message, "Multiple MRs found")
-		assert(t, data.Details, "please call gitlab.choose_merge_request()")
+		assert(t, data.Error, "please call gitlab.choose_merge_request()")
 	})
 }
 
@@ -100,7 +100,7 @@ func TestValidatorMiddleware(t *testing.T) {
 			withPayloadValidation(methodToPayload{http.MethodPost: newPayload[FakePayload]}),
 		), request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "Foo is required")
+		assert(t, data.Error, "Foo is required")
 		assert(t, status, http.StatusBadRequest)
 	})
 	t.Run("Should allow valid payload through", func(t *testing.T) {
@@ -128,7 +128,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "Start is required; End is required")
+		assert(t, data.Error, "Start is required; End is required")
 		assert(t, status, http.StatusBadRequest)
 	})
 	t.Run("Should reject a missing line_range when FileName is set", func(t *testing.T) {
@@ -148,7 +148,7 @@ func TestValidatorMiddleware(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "The field 'LineRange' failed on validation on the 'required_with' tag")
+		assert(t, data.Error, "The field 'LineRange' failed on validation on the 'required_with' tag")
 		assert(t, status, http.StatusBadRequest)
 	})
 	t.Run("Should allow a missing line_range when there is no FileName (unlinked comment)", func(t *testing.T) {
