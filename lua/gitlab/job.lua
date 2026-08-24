@@ -55,7 +55,25 @@ M.run_job = function(endpoint, method, body, on_success, on_error)
     table.insert(cmd, 3, encoded_body)
   end
 
-  local ok, err = pcall(vim.system, cmd, { text = true }, function(out)
+  local ok, err = pcall(vim.system, cmd, { text = true }, M._make_on_exit(cmd, endpoint, on_success, on_error))
+  -- Curl didn't spawn successfully
+  if not ok then
+    u.notify(string.format("Failed to spawn `%s`: %s", table.concat(cmd, " "), err), vim.log.levels.ERROR)
+    if type(on_error) == "function" then
+      on_error()
+    end
+  end
+end
+
+---Return the on_exit function for the vim.system call in M.run_job.
+---Exported only so tests can call it directly; not part of the public API.
+---@param cmd string[]
+---@param endpoint string
+---@param on_success? OnSuccessCallback
+---@param on_error? OnErrorCallback
+---@return fun(out: vim.SystemCompleted)
+M._make_on_exit = function(cmd, endpoint, on_success, on_error)
+  return function(out)
     vim.schedule(function()
       -- Notify curl errors. Only WARN since a curl error doesn't exclude valid stdout.
       if out.code ~= 0 or out.signal ~= 0 then
@@ -131,14 +149,6 @@ M.run_job = function(endpoint, method, body, on_success, on_error)
         u.notify(string.format("%s", data.message), vim.log.levels.INFO)
       end
     end)
-  end)
-
-  -- Curl didn't spawn successfully
-  if not ok then
-    u.notify(string.format("Failed to spawn `%s`: %s", table.concat(cmd, " "), err), vim.log.levels.ERROR)
-    if type(on_error) == "function" then
-      on_error()
-    end
   end
 end
 
