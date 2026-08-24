@@ -137,6 +137,6 @@ func TestListDiscussions(t *testing.T) {
 		)
 		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not fetch emojis")
-		assert(t, data.Details, "Some error from emoji service")
+		assert(t, data.Error, "Some error from emoji service")
 	})
 }

@@ -48,7 +48,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "No MRs found")
-		assert(t, data.Details, "hcramer did not have any MRs")
+		assert(t, data.Error, "hcramer did not have any MRs")
 		assert(t, status, http.StatusNotFound)
 	})
 
@@ -63,7 +63,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "Username is required")
+		assert(t, data.Error, "Username is required")
 		assert(t, status, http.StatusBadRequest)
 	})
 
@@ -78,7 +78,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "UserId is required")
+		assert(t, data.Error, "UserId is required")
 		assert(t, status, http.StatusBadRequest)
 	})
 
@@ -91,7 +91,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
-		assert(t, data.Details, strings.Repeat("some error from Gitlab; ", 3))
+		assert(t, data.Error, strings.Repeat("some error from Gitlab; ", 3))
 		assert(t, status, http.StatusInternalServerError)
 	})
 
@@ -104,7 +104,7 @@ func TestListMergeRequestByUsername(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "An error occurred")
-		assert(t, data.Details, strings.Repeat("An error occurred on the /merge_requests_by_username endpoint; ", 3))
+		assert(t, data.Error, strings.Repeat("An error occurred on the /merge_requests_by_username endpoint; ", 3))
 		assert(t, status, http.StatusInternalServerError)
 	})
 }

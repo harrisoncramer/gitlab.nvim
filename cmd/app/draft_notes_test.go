@@ -184,7 +184,7 @@ func TestEditDraftNote(t *testing.T) {
 		)
 		data, status := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "Note is required")
+		assert(t, data.Error, "Note is required")
 		assert(t, status, http.StatusBadRequest)
 	})
 }

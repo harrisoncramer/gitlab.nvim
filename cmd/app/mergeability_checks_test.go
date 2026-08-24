@@ -116,6 +116,6 @@ func TestMergeabilityChecksHandler(t *testing.T) {
 		)
 		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Could not get mergeability checks")
-		assert(t, data.Details, "failed to fetch mergeability checks: "+errorFromGitlab.Error())
+		assert(t, data.Error, "failed to fetch mergeability checks: "+errorFromGitlab.Error())
 	})
 }

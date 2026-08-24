@@ -101,7 +101,7 @@ M.confirm_publish_all_drafts = function()
     require("gitlab.actions.discussions").rebuild_view(false, true)
   end, function(data)
     if data then
-      u.notify(string.format("%s: %s", data.message, data.details), vim.log.levels.ERROR)
+      u.notify(string.format("%s: %s", data.message, data.error), vim.log.levels.ERROR)
     end
     u.notify(
       "Draft(s) may have been published despite the error. Check the discussion tree. Try publishing drafts individually.",
@@ -133,7 +133,7 @@ M.confirm_publish_draft = function(tree)
     M.rebuild_view(unlinked)
   end, function(data)
     if data then
-      u.notify(string.format("%s: %s", data.message, data.details), vim.log.levels.ERROR)
+      u.notify(string.format("%s: %s", data.message, data.error), vim.log.levels.ERROR)
     end
     u.notify("Draft may have been published despite the error. Check the discussion tree.", vim.log.levels.WARN)
     M.rebuild_view(unlinked)

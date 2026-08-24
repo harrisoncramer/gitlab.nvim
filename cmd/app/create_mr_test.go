@@ -71,7 +71,7 @@ func TestCreateMr(t *testing.T) {
 		)
 		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "Title is required")
+		assert(t, data.Error, "Title is required")
 	})
 
 	t.Run("Handles missing target branch", func(t *testing.T) {
@@ -85,6 +85,6 @@ func TestCreateMr(t *testing.T) {
 		)
 		data, _ := getFailData(t, svc, request)
 		assert(t, data.Message, "Invalid payload")
-		assert(t, data.Details, "TargetBranch is required")
+		assert(t, data.Error, "TargetBranch is required")
 	})
 }

@@ -49,9 +49,9 @@ function async:fetch(dependencies, i, args)
   end
 
   -- Call the API, set the data, and then call the next API
-  -- TODO: Add a on_error_callback that will call choose_merge_request for the user:
+  -- TODO: Add a on_error callback that will call choose_merge_request for the user:
   -- function(data)
-  --   if data.details and data.details:match("call gitlab.choose_merge_request") then
+  --   if data.error and data.error:match("call gitlab.choose_merge_request") then
   --     require("gitlab").choose_merge_request(OPTS)
   --   end
   -- end
