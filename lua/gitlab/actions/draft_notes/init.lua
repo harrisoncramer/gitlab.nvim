@@ -40,7 +40,7 @@ end
 ---Send the edits to Gitlab and refresh the draft_notes tree.
 ---@param note_id integer
 ---@param unlinked boolean
----@return function
+---@return fun(text: string)
 M.confirm_edit_draft_note = function(note_id, unlinked)
   return function(text)
     local all_notes = List.new(state.DRAFT_NOTES)
