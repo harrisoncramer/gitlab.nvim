@@ -92,7 +92,7 @@ end
 M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
     callback = function()
-      local node = tree:get_node()
+      local node = common.get_current_node(tree)
       if node == nil or not common.is_node_note(node) then
         return
       end

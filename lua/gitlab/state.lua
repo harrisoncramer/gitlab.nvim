@@ -94,6 +94,7 @@ M.settings = {
       create_mr = "glC",
       choose_merge_request = "glc",
       start_review = "glS",
+      browse_commits = "glh",
       reload_review = "gl<C-R>",
       summary = "gls",
       copy_mr_url = "glu",
@@ -305,6 +306,7 @@ M.settings = {
       file_name = "Normal",
       resolved = "DiagnosticSignOk",
       unresolved = "DiagnosticSignWarn",
+      commit = "DiagnosticSignInfo",
       draft = "DiffviewReference",
       draft_mode = "DiagnosticWarn",
       live_mode = "DiagnosticOk",
@@ -342,6 +344,12 @@ M.set_global_keymaps = function()
     vim.keymap.set("n", keymaps.global.start_review, function()
       require("gitlab").review()
     end, { desc = "Start Gitlab review", nowait = keymaps.global.start_review_nowait })
+  end
+
+  if keymaps.global.browse_commits then
+    vim.keymap.set("n", keymaps.global.browse_commits, function()
+      require("gitlab").browse_commits()
+    end, { desc = "Browse MR commit history", nowait = keymaps.global.browse_commits_nowait })
   end
 
   if keymaps.global.reload_review then

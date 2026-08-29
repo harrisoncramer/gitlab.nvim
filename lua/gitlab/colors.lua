@@ -30,6 +30,7 @@ vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
     vim.api.nvim_set_hl(0, "GitlabFileName", get_colors_for_group(discussion_colors.file_name))
     vim.api.nvim_set_hl(0, "GitlabResolved", get_colors_for_group(discussion_colors.resolved))
     vim.api.nvim_set_hl(0, "GitlabUnresolved", get_colors_for_group(discussion_colors.unresolved))
+    vim.api.nvim_set_hl(0, "GitlabCommit", get_colors_for_group(discussion_colors.commit))
     vim.api.nvim_set_hl(0, "GitlabUnlinked", get_colors_for_group(discussion_colors.unlinked))
     vim.api.nvim_set_hl(0, "GitlabDraft", get_colors_for_group(discussion_colors.draft))
     vim.api.nvim_set_hl(0, "GitlabDraftMode", get_colors_for_group(discussion_colors.draft_mode))
