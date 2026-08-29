@@ -103,6 +103,30 @@ describe("gitlab/client.lua", function()
         assert.matches("decode error:", notifications[1].msg)
         assert.are.same(vim.log.levels.ERROR, notifications[1].level)
       end)
+
+      -- These bodies are structurally valid JSON, so `vim.json.decode` succeeds, but
+      -- they are not objects: `null` decodes to `vim.NIL`, and a bare number or string
+      -- decodes to a Lua number or string. Indexing those for `error` either raises or
+      -- silently yields nil, so they have to be rejected alongside a decode failure.
+      it("treats a structurally valid but non-object body as no usable data", function()
+        for _, body in ipairs({ "null", "123", '"just a string"' }) do
+          notifications = {}
+          local seen = "unset"
+          local out = base_out()
+          out.stdout = body
+          client._make_on_exit({ "curl" }, "/mr/info", function()
+            error("on_success should not run for body " .. body)
+          end, function(data)
+            seen = data
+          end)(out)
+          wait_for(function()
+            return seen == nil
+          end)
+          assert.is_nil(seen, "expected on_error(nil) for body " .. body)
+          assert.are.same(1, #notifications, "expected one notification for body " .. body)
+          assert.matches("Failed to parse JSON from /mr/info endpoint", notifications[1].msg)
+        end
+      end)
     end)
 
     describe("dispatch outcomes", function()
