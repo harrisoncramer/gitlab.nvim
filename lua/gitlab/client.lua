@@ -120,13 +120,18 @@ M._make_on_exit = function(display_cmd, endpoint, on_success, on_error)
       if out.stdout ~= "" then
         local data_ok
         data_ok, data = pcall(vim.json.decode, out.stdout)
-        if not data_ok then
+        -- A body that decodes to anything but a table is as unusable as one that doesn't
+        -- decode at all: `null` yields `vim.NIL`, and a bare number or string yields a
+        -- Lua number or string, none of which can carry `message`/`error`.
+        if not data_ok or type(data) ~= "table" then
           -- We don't notify the whole stdout here, as it could be a multi-KB HTML error
           -- page or a truncated multi-KB JSON blob. If the missing information turns
           -- out to be a problem, we should introduce some lua-side logging facility to
           -- log the full content.
           local msg = string.format("Failed to parse JSON from %s endpoint", endpoint)
-          if type(data) == "string" then
+          -- On a decode failure `data` is pcall's error message; on a successful decode
+          -- of a JSON string it's the payload, which is not a decode error.
+          if not data_ok and type(data) == "string" then
             msg = string.format(msg .. ", decode error: '%s'", data)
           end
           data = nil
@@ -135,8 +140,8 @@ M._make_on_exit = function(display_cmd, endpoint, on_success, on_error)
       end
 
       -- Handle decoded response data
-      -- No usable response body (either curl failed to reach the server (stdout empty),
-      -- or the body wasn't valid JSON):
+      -- No usable response body (curl failed to reach the server (stdout empty), the
+      -- body wasn't valid JSON, or it wasn't a JSON object):
       if data == nil then
         if type(on_error) == "function" then
           on_error()
