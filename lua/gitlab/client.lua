@@ -10,7 +10,8 @@ local M = {}
 ---@class SuccessResponse
 ---@field message string
 
----Shape of an error response from the Go server (see `handleError` in `cmd/app/client.go`).
+---Shape of an error response from the Go server (see `handleError` in
+---`cmd/app/client.go`).
 ---@class ErrorResponse
 ---@field message string
 ---@field details string -- TODO: Rename to error to make it more obvious
@@ -55,10 +56,19 @@ M.send_request = function(endpoint, method, body, on_success, on_error)
     table.insert(cmd, 3, encoded_body)
   end
 
-  local ok, err = pcall(vim.system, cmd, { text = true }, M._make_on_exit(cmd, endpoint, on_success, on_error))
+  -- The body can carry comment or MR text, so it must never reach a user facing
+  -- message. Both the spawn failure below and the stderr notice in `_make_on_exit`
+  -- report this redacted copy rather than `cmd` itself.
+  local display_cmd = cmd
+  if body ~= nil then
+    display_cmd = vim.deepcopy(cmd)
+    display_cmd[3] = "REDACTED"
+  end
+
+  local ok, err = pcall(vim.system, cmd, { text = true }, M._make_on_exit(display_cmd, endpoint, on_success, on_error))
   -- Curl didn't spawn successfully
   if not ok then
-    u.notify(string.format("Failed to spawn `%s`: %s", table.concat(cmd, " "), err), vim.log.levels.ERROR)
+    u.notify(string.format("Failed to spawn `%s`: %s", table.concat(display_cmd, " "), err), vim.log.levels.ERROR)
     if type(on_error) == "function" then
       on_error()
     end
@@ -67,12 +77,12 @@ end
 
 ---Return the on_exit function for the vim.system call in M.send_request.
 ---Exported only so tests can call it directly; not part of the public API.
----@param cmd string[]
+---@param display_cmd string[] The command, with any request body redacted
 ---@param endpoint string
 ---@param on_success? OnSuccessCallback
 ---@param on_error? OnErrorCallback
 ---@return fun(out: vim.SystemCompleted)
-M._make_on_exit = function(cmd, endpoint, on_success, on_error)
+M._make_on_exit = function(display_cmd, endpoint, on_success, on_error)
   return function(out)
     vim.schedule(function()
       -- Notify curl errors. Only WARN since a curl error doesn't exclude valid stdout.
@@ -97,7 +107,7 @@ M._make_on_exit = function(cmd, endpoint, on_success, on_error)
         u.notify(
           string.format(
             "curl wrote unexpectedly to stderr while running `%s`: %s",
-            table.concat(cmd, " "),
+            table.concat(display_cmd, " "),
             vim.trim(out.stderr)
           ),
           vim.log.levels.WARN
