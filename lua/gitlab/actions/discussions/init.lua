@@ -35,6 +35,22 @@ local M = {
   unlinked_discussion_tree = nil,
 }
 
+---Attach Treesitter's markdown parser to a discussion tree buffer, so that fenced code blocks
+---in comment bodies (e.g. ```python) get real language-specific syntax highlighting, on top of
+---the legacy regex syntax already defined for the `gitlab` filetype in after/syntax/gitlab.vim.
+---A no-op if the `markdown` parser isn't installed.
+---@param bufnr number
+local function attach_markdown_treesitter(bufnr)
+  vim.treesitter.language.register("markdown", "gitlab")
+  local ok = pcall(vim.treesitter.start, bufnr, "markdown")
+  if ok then
+    -- vim.treesitter.start() clears 'syntax' on the buffer to avoid double-highlighting, but
+    -- that also wipes the custom GitlabUsername/GitlabDate/etc. groups from
+    -- after/syntax/gitlab.vim, which aren't defined by the markdown parser. Reload them on top.
+    vim.bo[bufnr].syntax = "gitlab"
+  end
+end
+
 ---Delete discussion buffers to prevent leaked buffers on each M.open/M.close cycle.
 ---@param split_bufnr integer? Passed in because `unmount` has already nil'd `M.split.bufnr`.
 local function delete_bufs(split_bufnr)
@@ -150,6 +166,9 @@ M.open = function(callback, view_type)
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
 
+  attach_markdown_treesitter(M.linked_bufnr)
+  attach_markdown_treesitter(M.unlinked_bufnr)
+
   -- Set autocmds to clean up state when discussions buffers are deleted manually
   vim.api.nvim_create_autocmd("BufWipeout", {
     buffer = M.linked_bufnr,
@@ -250,7 +269,7 @@ M.move_to_discussion_tree = function()
         end
         discussion_node:expand()
       end
-      M.discussion_tree:render()
+      discussions_tree.render(M.discussion_tree)
       vim.api.nvim_set_current_win(M.split.winid)
       M.switch_view_type("discussions")
       vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
@@ -535,7 +554,7 @@ M.rebuild_discussion_tree = function()
   for _, id in ipairs(expanded_node_ids) do
     tree_utils.open_node_by_id(discussion_tree, id)
   end
-  discussion_tree:render()
+  discussions_tree.render(discussion_tree)
   discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_cursor_column, current_node, nil)
 
   M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
@@ -574,7 +593,7 @@ M.rebuild_unlinked_discussion_tree = function()
   for _, id in ipairs(expanded_node_ids) do
     tree_utils.open_node_by_id(unlinked_discussion_tree, id)
   end
-  unlinked_discussion_tree:render()
+  discussions_tree.render(unlinked_discussion_tree)
   discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_cursor_column, current_node)
 
   M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)

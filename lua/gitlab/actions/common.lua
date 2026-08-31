@@ -9,16 +9,34 @@ local indicators_common = require("gitlab.indicators.common")
 local state = require("gitlab.state")
 local M = {}
 
----Build note header from note.
+---Build note header from note, both as a plain string (for diagnostics messages, editing,
+---etc.) and as a list of styled segments the discussion tree can render directly, so pieces
+---like the username and date get highlighted without relying on regex over the flat string.
 ---@param note Note|DraftNote
 ---@return string
+---@return {text: string, hl: string?}[]
 M.build_note_header = function(note)
+  local segments
   if note.note then
-    return "@" .. state.USER.username .. " " .. state.settings.discussion_tree.draft
+    segments = {
+      { text = "@" .. state.USER.username, hl = "GitlabUsername" },
+      { text = " " },
+      { text = state.settings.discussion_tree.draft, hl = "GitlabDraft" },
+    }
+  else
+    local time = state.settings.discussion_tree.relative_date and u.time_since(note.created_at)
+      or u.format_to_local(note.created_at, vim.fn.strftime("%z"))
+    segments = {
+      { text = "@" .. note.author.username, hl = "GitlabUsername" },
+      { text = " " },
+      { text = time, hl = "GitlabDate" },
+    }
   end
-  local time = state.settings.discussion_tree.relative_date and u.time_since(note.created_at)
-    or u.format_to_local(note.created_at, vim.fn.strftime("%z"))
-  return "@" .. note.author.username .. " " .. time
+  local header = ""
+  for _, segment in ipairs(segments) do
+    header = header .. segment.text
+  end
+  return header, segments
 end
 
 ---Switch the options that control if buffers can be modified.

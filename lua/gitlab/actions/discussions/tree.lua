@@ -10,6 +10,11 @@ local NuiLine = require("nui.line")
 
 local M = {}
 
+-- Indentation is drawn as inline virtual text rather than literal buffer characters, so that
+-- note body lines (e.g. fenced code blocks like ```python) start at column 0 and can be parsed
+-- and syntax-highlighted correctly.
+local indent_ns = vim.api.nvim_create_namespace("gitlab_discussion_tree_indent")
+
 ---Create nodes for NuiTree from discussions.
 ---@param items Discussion[]
 ---@param unlinked? boolean False or nil means that discussions are linked to code lines
@@ -34,6 +39,7 @@ M.add_discussions_to_table = function(items, unlinked)
     ---@type string
     local root_id
     local root_text_nodes = {}
+    local root_text_segments
     local resolvable = false
     ---@type GitlabLineRange?
     local range = nil
@@ -44,7 +50,8 @@ M.add_discussions_to_table = function(items, unlinked)
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
+        _, root_text, root_text_nodes, root_text_segments =
+          M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
         root_old_file_name = (type(note.position) == "table" and note.position.old_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
@@ -78,6 +85,7 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_node = NuiTree.Node({
       range = range,
       text = root_text,
+      text_segments = root_text_segments,
       type = "note",
       is_root = true,
       id = root_id,
@@ -273,6 +281,7 @@ end
 ---@param note Note|DraftNote
 ---@param resolve_info? ResolveInfo Nil if the note is a child node
 ---@return string
+---@return {text: string, hl: string?}[]
 ---@return NuiTree.Node[]
 local function build_note_body(note, resolve_info)
   local text_nodes = {}
@@ -291,18 +300,27 @@ local function build_note_body(note, resolve_info)
     i = i + 1
   end
 
-  local symbol = ""
+  local symbol, symbol_hl = "", nil
   local is_draft = note.note ~= nil
   if resolve_info ~= nil and resolve_info.resolvable then
-    symbol = resolve_info.resolved and state.settings.discussion_tree.resolved
-      or state.settings.discussion_tree.unresolved
+    if resolve_info.resolved then
+      symbol, symbol_hl = state.settings.discussion_tree.resolved, "GitlabResolved"
+    else
+      symbol, symbol_hl = state.settings.discussion_tree.unresolved, "GitlabUnresolved"
+    end
   elseif not is_draft and resolve_info and not resolve_info.resolvable then
-    symbol = state.settings.discussion_tree.unlinked
+    symbol, symbol_hl = state.settings.discussion_tree.unlinked, "GitlabUnlinked"
   end
 
-  local noteHeader = common.build_note_header(note) .. " " .. symbol
+  local header, header_segments = common.build_note_header(note)
+  local noteHeader = header .. " " .. symbol
 
-  return noteHeader, text_nodes
+  table.insert(header_segments, { text = " " })
+  if symbol ~= "" then
+    table.insert(header_segments, { text = symbol, hl = symbol_hl })
+  end
+
+  return noteHeader, header_segments, text_nodes
 end
 
 ---Build note node.
@@ -311,10 +329,12 @@ end
 ---@return NuiTree.Node
 ---@return string
 ---@return NuiTree.Node[]
+---@return {text: string, hl: string?}[]
 M.build_note = function(note, resolve_info)
-  local text, text_nodes = build_note_body(note, resolve_info)
+  local text, text_segments, text_nodes = build_note_body(note, resolve_info)
   local note_node = NuiTree.Node({
     text = text,
+    text_segments = text_segments,
     is_draft = note.note ~= nil,
     id = note.id,
     file_name = (type(note.position) == "table" and note.position.new_path),
@@ -324,7 +344,7 @@ M.build_note = function(note, resolve_info)
     type = "note",
   }, text_nodes)
 
-  return note_node, text, text_nodes
+  return note_node, text, text_nodes, text_segments
 end
 
 ---Inspired by default func https://github.com/MunifTanjim/nui.nvim/blob/main/lua/nui/tree/util.lua#L38
@@ -347,18 +367,20 @@ M.nui_tree_prepare_node = function(node)
     local line = NuiLine()
     local expanders = state.settings.discussion_tree.expanders
 
-    line:append(string.rep(expanders.indentation, node._depth - 1))
-
     if i == 1 and node:has_children() then
-      line:append(node:is_expanded() and expanders.expanded or expanders.collapsed)
+      line:append(node:is_expanded() and expanders.expanded or expanders.collapsed, "GitlabExpander")
       if node.icon then
         line:append(node.icon .. " ", node.icon_hl)
       end
-    else
-      line:append(expanders.indentation)
     end
 
-    line:append(text, node.text_hl)
+    if i == 1 and node.text_segments then
+      for _, segment in ipairs(node.text_segments) do
+        line:append(segment.text, segment.hl)
+      end
+    else
+      line:append(text, node.text_hl)
+    end
 
     local note_id = tostring(node.is_root and node.root_note_id or node.id)
 
@@ -382,6 +404,38 @@ M.nui_tree_prepare_node = function(node)
   end
 
   return lines
+end
+
+---Draw each visible node's indentation as inline virtual text, reproducing the width that
+---used to be literal `expanders.indentation` characters (see M.nui_tree_prepare_node): nodes
+---with an expander icon are indented `depth - 1` times, leaf nodes `depth` times, so that leaf
+---text still lines up after a sibling's expander icon.
+---@param tree NuiTree
+M.apply_indentation = function(tree)
+  local bufnr = tree.bufnr
+  vim.api.nvim_buf_clear_namespace(bufnr, indent_ns, 0, -1)
+  local expanders = state.settings.discussion_tree.expanders
+  for id in pairs(tree.nodes.by_id) do
+    local node, start_linenr = tree:get_node(id)
+    if node and start_linenr then
+      local reps = node:has_children() and (node._depth - 1) or node._depth
+      if reps > 0 then
+        vim.api.nvim_buf_set_extmark(bufnr, indent_ns, start_linenr - 1, 0, {
+          virt_text = { { string.rep(expanders.indentation, reps) } },
+          virt_text_pos = "inline",
+        })
+      end
+    end
+  end
+end
+
+---Render the tree and redraw its virtual-text indentation. Use this instead of calling
+---`tree:render()` directly, since indentation is drawn on a separate namespace that
+---`tree:render()` does not clear or repopulate on its own.
+---@param tree NuiTree
+M.render = function(tree)
+  tree:render()
+  M.apply_indentation(tree)
 end
 
 ---@class ToggleNodesOptions
@@ -439,7 +493,7 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
       state.discussion_tree.unresolved_expanded = not state.discussion_tree.unresolved_expanded
     end
   end
-  tree:render()
+  M.render(tree)
   M.restore_cursor_position(winid, tree, current_cursor_column, current_node, root_node)
 end
 
@@ -564,7 +618,7 @@ M.toggle_node = function(winid, tree)
     node:expand()
   end
 
-  tree:render()
+  M.render(tree)
   M.restore_cursor_position(winid, tree, current_cursor_column, node, common.get_root_node(tree, node))
 end
 
