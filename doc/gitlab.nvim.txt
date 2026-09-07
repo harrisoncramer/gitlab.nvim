@@ -256,6 +256,7 @@ you call this function with no values the defaults will be used:
         choose_merge_request = "glc", -- Chose MR for review (if necessary check out the feature branch)
         start_review = "glS", -- Start review for the currently checked-out branch
         reload_review = "gl<C-R>", -- Load new MR state from Gitlab and apply new diff refs to the diff view
+        close_review = "glQ", -- Close the reviewer, discussions, and shut down the Go server
         summary = "gls", -- Show the editable summary of the MR
         copy_mr_url = "glu", -- Copy the URL of the MR to the system clipboard
         open_in_browser = "glo", -- Open the URL of the MR in the default Internet browser
@@ -936,11 +937,16 @@ https://github.com/sindrets/diffview.nvim) closes and re-opens the reviewer.
                                                     *gitlab.nvim.close_review*
 gitlab.close_review() ~
 
-Closes the reviewer tab and discussion tree and cleans up (e.g., removes
-winbar timer).
+Closes the reviewer tab and discussion tree, cleans up (e.g., removes
+winbar timer), and optionally shuts down the Go server.
 >lua
-  require("gitlab").close_review()
+  require("gitlab").close_review({shut_down_server = false})
 <
+    Parameters: ~
+        • {opts}: (table?)
+            • {shut_down_server}: (`boolean?`, default: `true`) If true, the
+              Go server is shut down.
+
                                                          *gitlab.nvim.summary*
 gitlab.summary() ~
 
