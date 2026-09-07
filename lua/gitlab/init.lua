@@ -75,8 +75,9 @@ return {
   reload_review = function()
     reviewer.reload()
   end,
-  close_review = function()
-    reviewer.close()
+  ---@param opts? CloseReviewerOpts
+  close_review = function(opts)
+    reviewer.close(opts)
   end,
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),

@@ -5,6 +5,7 @@
 
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
+local server = require("gitlab.server")
 local state = require("gitlab.state")
 local async = require("diffview.async")
 
@@ -92,8 +93,10 @@ M.open = function()
   git.check_mr_in_good_condition()
 end
 
----Close the reviewer and clean up.
-M.close = function()
+---Close the reviewer, clean up, and shut down the Go server.
+---@param opts? CloseReviewerOpts
+M.close = function(opts)
+  opts = u.merge({ shut_down_server = true }, opts and opts or {})
   if M.tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.tabid) then
     -- FIXME: This fails if there is only one tabpage. Find a way to use DiffviewClose
     -- that was originally here, but use it for the correct tabpage when there are
@@ -102,6 +105,9 @@ M.close = function()
   end
   local discussions = require("gitlab.actions.discussions")
   discussions.close()
+  if opts.shut_down_server then
+    server.shutdown()
+  end
 end
 
 ---Load new INFO state from Gitlab. Then, if diffview.api is available, apply the new
@@ -116,7 +122,7 @@ M.reload = function()
           { view = M.diffview }
         )
       else
-        M.close()
+        M.close({ shut_down_server = false })
         M.open()
       end
     end)

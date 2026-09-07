@@ -11,6 +11,9 @@
 ---@field avatar_url string
 ---@field web_url string
 
+---@class CloseReviewerOpts
+---@field shut_down_server boolean Whether the server should be shut down (default: true)
+
 ---The modification of a line in a diff.
 ---@alias ModificationType
 ---| "old" A deleted line
