@@ -21,6 +21,7 @@ local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
 local emoji = require("gitlab.emoji")
+local GitlabGroup = require("gitlab.autocmd")
 
 local M = {
   split_visible = false,
@@ -156,12 +157,16 @@ M.open = function(callback, view_type)
     callback = function()
       M.linked_bufnr = nil
     end,
+    desc = "Nil the linked discussion buffer",
+    group = GitlabGroup,
   })
   vim.api.nvim_create_autocmd("BufWipeout", {
     buffer = M.unlinked_bufnr,
     callback = function()
       M.unlinked_bufnr = nil
     end,
+    desc = "Nil the unlinked discussion buffer",
+    group = GitlabGroup,
   })
 
   -- Set autocmd to clean up state when discussions split is closed manually
@@ -172,6 +177,8 @@ M.open = function(callback, view_type)
     callback = function()
       vim.schedule(M.close)
     end,
+    desc = "Clear the discussion state",
+    group = GitlabGroup,
   })
 
   -- Initialize winbar
@@ -608,13 +615,18 @@ M.create_split_and_bufs = function()
       M.last_row, M.last_column = unpack(vim.api.nvim_win_get_cursor(0))
       M.last_node_at_cursor = M.discussion_tree and M.discussion_tree:get_node() or nil
     end,
+    desc = "Store cursor position",
+    group = GitlabGroup,
   })
 
   vim.api.nvim_create_autocmd("WinLeave", {
     buffer = unlinked_bufnr,
     callback = function()
+      -- TODO: Shouldn't this also set last_row and last_column?
       M.last_node_at_cursor = M.unlinked_discussion_tree and M.unlinked_discussion_tree:get_node() or nil
     end,
+    desc = "Store cursor position",
+    group = GitlabGroup,
   })
 
   return split, linked_bufnr, unlinked_bufnr

@@ -1,4 +1,5 @@
 local u = require("gitlab.utils")
+local GitlabGroup = require("gitlab.autocmd")
 
 local M = {}
 
@@ -131,6 +132,8 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
           vim.fn.setreg(register, text)
         end
       end,
+      desc = "Save popup contents to temp registers.",
+      group = GitlabGroup,
     })
   end
 
@@ -140,6 +143,8 @@ M.set_popup_keymaps = function(popup, action, linewise_action, opts)
       callback = function()
         exit(popup, opts)
       end,
+      desc = "Run callback before exiting popup",
+      group = GitlabGroup,
     })
   end
 end

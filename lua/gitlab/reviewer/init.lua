@@ -267,12 +267,13 @@ M.set_callback_for_file_changed = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewDiffBufWinEnter" },
-    group = group,
     callback = function(...)
       if M.tabid == vim.api.nvim_get_current_tabpage() then
         callback(...)
       end
     end,
+    desc = "Run callback when Diffview file changes",
+    group = group,
   })
 end
 
@@ -282,7 +283,6 @@ M.set_callback_for_buf_read = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.buf_read", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewDiffBufRead" },
-    group = group,
     callback = function(...)
       -- Only run the callback when we're in the MR's tabpage or when the tabpage has
       -- not yet been set (tabid = nil) in a freshly started review (is_open = true).
@@ -292,6 +292,8 @@ M.set_callback_for_buf_read = function(callback)
         callback(...)
       end
     end,
+    desc = "Run callback when Diffview buffer is loaded",
+    group = group,
   })
 end
 
@@ -301,12 +303,13 @@ M.set_callback_for_reviewer_leave = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.leave", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
-    group = group,
     callback = function(...)
       if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,
+    desc = "Run callback when focus leaves Diffview",
+    group = group,
   })
 end
 
@@ -317,12 +320,13 @@ M.set_callback_for_reviewer_enter = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.enter", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewViewEnter", "DiffviewViewOpened" },
-    group = group,
     callback = function(...)
       if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,
+    desc = "Run callback when focus enters Diffview",
+    group = group,
   })
 end
 
@@ -477,7 +481,6 @@ end
 M.set_reviewer_autocommands = function(bufnr)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
   vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
-    group = group,
     buffer = bufnr,
     callback = function()
       if vim.api.nvim_get_current_win() == M.buf_winids[bufnr] then
@@ -492,6 +495,8 @@ M.set_reviewer_autocommands = function(bufnr)
         del_keymaps(bufnr)
       end
     end,
+    desc = "(Un)set buffer-local options for reviewer buffers",
+    group = group,
   })
 end
 

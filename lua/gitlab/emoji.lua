@@ -1,5 +1,6 @@
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
+local GitlabGroup = require("gitlab.autocmd")
 
 -- Basic emoji aliases that are missing in Gitlab's list.
 ---@type Emoji
@@ -91,6 +92,7 @@ end
 ---@param bufnr integer The number of the buffer that holds the discussion tree
 M.init_popup = function(tree, bufnr)
   vim.api.nvim_create_autocmd({ "CursorHold" }, {
+    buffer = bufnr,
     callback = function()
       local node = tree:get_node()
       if node == nil or not common.is_node_note(node) then
@@ -132,7 +134,8 @@ M.init_popup = function(tree, bufnr)
         end
       end
     end,
-    buffer = bufnr,
+    desc = "Open the emoji popup",
+    group = GitlabGroup,
   })
 
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
@@ -140,6 +143,8 @@ M.init_popup = function(tree, bufnr)
       M.close_popup()
     end,
     buffer = bufnr,
+    desc = "Close the emoji popup",
+    group = GitlabGroup,
   })
 end
 

@@ -72,8 +72,8 @@ end
 ---Sets plugin configuration and builds and starts the server if necessary.
 ---@generic T
 ---@param dependencies GitlabDependency[]
----@param cb fun(argrs: T)
----@return fun(argrs: T)
+---@param cb fun(args: T?)
+---@return fun(args: T?)
 M.sequence = function(dependencies, cb)
   return function(args)
     local handler = async:new()

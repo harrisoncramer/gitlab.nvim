@@ -5,8 +5,17 @@ local state = require("gitlab.state")
 local u = require("gitlab.utils")
 local client = require("gitlab.client")
 local version = require("gitlab.version")
+local GitlabGroup = require("gitlab.autocmd")
 
 local M = {}
+
+---@type vim.SystemObj?
+local server_system_obj
+local kill_autocmd_created = false
+-- Set when the VimLeavePre autocmd kills the server, so that the server's
+-- on_exit callback skips the "server exited" error notification: it would
+-- otherwise fire (and might fail to render) while nvim is tearing down.
+local killed_on_exit = false
 
 -- Builds the binary if it doesn't exist, and starts the server. If the pre-existing binary has an older
 -- tag than the Lua code (exposed via the /version endpoint) then shuts down the server, rebuilds it, and
@@ -63,7 +72,29 @@ M.start = function(callback)
 
   local settings = vim.json.encode(go_server_settings)
 
-  local ok, err = pcall(vim.system, { state.settings.server.binary, settings }, {
+  if not kill_autocmd_created then
+    kill_autocmd_created = true
+    vim.api.nvim_create_autocmd({ "VimLeavePre" }, {
+      callback = function()
+        if server_system_obj == nil then
+          return
+        end
+        killed_on_exit = true
+        -- Send SIGKILL rather than SIGTERM: the server is a stateless proxy to the
+        -- Gitlab API, and a graceful shutdown would wait for in-flight requests.
+        -- Use `pcall` because the handle is already closed if the process exited on
+        -- its own, e.g. through the /shutdown endpoint.
+        pcall(function()
+          server_system_obj:kill("sigkill")
+        end)
+        server_system_obj = nil
+      end,
+      desc = "Kill the gitlab.nvim Go server process",
+      group = GitlabGroup,
+    })
+  end
+
+  local ok, obj = pcall(vim.system, { state.settings.server.binary, settings }, {
     stdout = function(_, data)
       if data == nil or parsed_port ~= nil then
         return
@@ -85,7 +116,7 @@ M.start = function(callback)
       end
     end,
   }, function(out)
-    if out.code ~= 0 then
+    if out.code ~= 0 and not killed_on_exit then
       vim.schedule(function()
         local msg = "Golang gitlab server exited: code: " .. out.code .. ", signal: " .. (out.signal or 0)
         if out.stderr ~= "" then
@@ -96,8 +127,10 @@ M.start = function(callback)
     end
   end)
 
-  if not ok then
-    u.notify("Could not start gitlab.nvim binary: " .. tostring(err), vim.log.levels.ERROR)
+  if ok then
+    server_system_obj = obj
+  else
+    u.notify("Could not start gitlab.nvim binary: " .. tostring(obj), vim.log.levels.ERROR)
   end
 end
 
