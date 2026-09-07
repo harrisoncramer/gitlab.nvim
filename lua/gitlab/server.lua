@@ -95,6 +95,11 @@ M.start = function(callback)
   end
 
   local ok, obj = pcall(vim.system, { state.settings.server.binary, settings }, {
+    -- The `stdin` param opens a pipe on the server's stdin that nvim holds open but
+    -- never writes to. The server exits when it sees EOF on the pipe, which is how it
+    -- notices that nvim is gone in the cases the VimLeavePre autocmd cannot cover:
+    -- SIGKILL, an OOM kill, or a crash.
+    stdin = true,
     stdout = function(_, data)
       if data == nil or parsed_port ~= nil then
         return
