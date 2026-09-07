@@ -15,6 +15,10 @@ var Version = "unknown" // Set via ldflags
 func main() {
 	log.SetFlags(0)
 
+	/* Set up before anything else, so that a server that is still initializing is
+	also shut down when Neovim dies. */
+	app.WatchForParentExit()
+
 	if len(os.Args) < 2 {
 		log.Fatal("Must provide server configuration")
 	}
