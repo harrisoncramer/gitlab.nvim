@@ -1,4 +1,5 @@
 local state = require("gitlab.state")
+local GitlabGroup = require("gitlab.autocmd")
 
 -- Set icons into global vim variables for syntax matching
 -- TODO: This could be simplified to assigning the discussion_tree table to
@@ -36,4 +37,6 @@ vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
     vim.api.nvim_set_hl(0, "GitlabLiveMode", get_colors_for_group(discussion_colors.live_mode))
     vim.api.nvim_set_hl(0, "GitlabSortMethod", get_colors_for_group(discussion_colors.sort_method))
   end,
+  desc = "Set up highlight groups",
+  group = GitlabGroup,
 })
