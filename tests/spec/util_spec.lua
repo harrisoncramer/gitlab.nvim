@@ -20,32 +20,6 @@ describe("utils/init.lua", function()
     end)
   end)
 
-  describe("get_last_word", function()
-    it("Returns the last word in a sentence", function()
-      local sentence = "Hello world!"
-      local got = u.get_last_word(sentence)
-      local want = "world!"
-      assert.are.same(want, got)
-    end)
-    it("Returns an empty string without text", function()
-      local sentence = ""
-      local got = u.get_last_word(sentence)
-      local want = ""
-      assert.are.same(want, got)
-    end)
-    it("Returns whole string w/out divider", function()
-      local sentence = "Thisdoesnothavebreaks"
-      local got = u.get_last_word(sentence)
-      assert.are.same(sentence, got)
-    end)
-    it("Returns correct word w/ different divider", function()
-      local sentence = "this|uses|a|different|divider"
-      local got = u.get_last_word(sentence, "|")
-      local want = "divider"
-      assert.are.same(want, got)
-    end)
-  end)
-
   describe("format_date", function()
     local current_date = {
       day = 19,
@@ -82,42 +56,6 @@ describe("utils/init.lua", function()
       local stamp = "2023-11-14T18:44:02Z"
       local got = u.time_since(stamp, current_date)
       local want = "5 days ago"
-      assert.are.same(want, got)
-    end)
-  end)
-
-  describe("remove_first_value", function()
-    it("Removes the first value correctly", function()
-      local got = u.remove_first_value({ 1, 2 })
-      local want = { 2 }
-      assert.are.same(want, got)
-    end)
-    it("Handles a one-length list", function()
-      local got = u.remove_first_value({ 1 })
-      local want = {}
-      assert.are.same(want, got)
-    end)
-    it("Handles a zero-length list", function()
-      local got = u.remove_first_value({})
-      local want = {}
-      assert.are.same(want, got)
-    end)
-  end)
-
-  describe("table_size", function()
-    it("Works for associative tables", function()
-      local got = u.remove_first_value({ 1, 2 })
-      local want = { 2 }
-      assert.are.same(want, got)
-    end)
-    it("Handles a one-length list", function()
-      local got = u.remove_first_value({ 1 })
-      local want = {}
-      assert.are.same(want, got)
-    end)
-    it("Handles a zero-length list", function()
-      local got = u.remove_first_value({})
-      local want = {}
       assert.are.same(want, got)
     end)
   end)

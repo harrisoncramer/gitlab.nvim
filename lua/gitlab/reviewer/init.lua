@@ -6,31 +6,19 @@
 local List = require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local state = require("gitlab.state")
-local git = require("gitlab.git")
-local hunks = require("gitlab.hunks")
 local async = require("diffview.async")
-local diffview_lib = require("diffview.lib")
 
 local M = {
   is_open = false,
   bufnr = nil,
-  tabnr = nil,
+  tabid = nil,
   stored_win = nil,
   buf_winids = {},
 }
 
--- Checks for legacy installations, only Diffview is supported.
-M.init = function()
-  if state.settings.reviewer ~= "diffview" then
-    vim.notify(
-      string.format("gitlab.nvim could not find reviewer %s, only diffview is supported", state.settings.reviewer),
-      vim.log.levels.ERROR
-    )
-  end
-end
-
--- Opens the reviewer window.
+-- Open the reviewer windows.
 M.open = function()
+  require("gitlab.emoji").init() -- Read in emojis for lookup purposes
   local diff_refs = state.INFO.diff_refs
   if diff_refs == nil then
     u.notify("Gitlab did not provide diff refs required to review this MR", vim.log.levels.ERROR)
@@ -42,7 +30,13 @@ M.open = function()
     return
   end
 
-  local diffview_open_command = "DiffviewOpen"
+  require("gitlab.git_async").check_current_branch_up_to_date_on_remote()
+  local git = require("gitlab.git")
+
+  -- The rename threshold used by Gitlab (through Gitaly) is 30%, see
+  -- https://gitlab.com/gitlab-org/gitaly/-/blob/db39e26f8f8a8da62e2c2db00325cf51315c89db/internal/gitaly/service/diff/commit_diff.go#L64-64
+  -- https://gitlab.com/gitlab-org/gitaly/-/blob/0e81e24ae1f650c242670eb7bf66c4b4b91b7813/internal/gitaly/service/diff/find_changed_paths.go#L116-116
+  local diffview_open_command = "DiffviewOpen --rename-threshold=30"
 
   if state.settings.reviewer_settings.diffview.imply_local then
     local has_clean_tree, err = git.has_clean_tree()
@@ -52,20 +46,21 @@ M.open = function()
     if has_clean_tree then
       diffview_open_command = diffview_open_command .. " --imply-local"
     else
-      u.notify(
-        "Your working tree has changes, cannot use 'imply_local' setting for gitlab reviews.\n Stash or commit all changes to use.",
-        vim.log.levels.WARN
-      )
+      u.notify("Working tree unclean. Stash or commit all changes to use 'imply_local'.", vim.log.levels.WARN)
       state.settings.reviewer_settings.diffview.imply_local = false
     end
   end
 
+  M.is_open = true
   vim.api.nvim_command(string.format("%s %s..%s", diffview_open_command, diff_refs.base_sha, diff_refs.head_sha))
 
-  M.is_open = true
-  local cur_view = diffview_lib.get_current_view()
-  M.diffview_layout = cur_view.cur_layout
-  M.tabnr = vim.api.nvim_get_current_tabpage()
+  M.diffview = require("diffview.lib").get_current_view() --[[@as DiffView?]]
+  if M.diffview == nil then
+    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    return
+  end
+  M.diffview_layout = M.diffview.cur_layout --[[@as Diff4]]
+  M.tabid = vim.api.nvim_get_current_tabpage()
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
     u.notify(
@@ -76,13 +71,13 @@ M.open = function()
 
   -- Register Diffview hook for close event to set tab page # to nil
   local on_diffview_closed = function(view)
-    if view.tabpage == M.tabnr then
-      M.tabnr = nil
+    if view.tabpage == M.tabid then
+      M.tabid = nil
       require("gitlab.actions.discussions.winbar").cleanup_timer()
     end
   end
   require("diffview.config").user_emitter:on("view_closed", function(_, args)
-    if M.tabnr == args.tabpage then
+    if M.tabid == args.tabpage then
       M.is_open = false
       on_diffview_closed(args)
     end
@@ -94,38 +89,61 @@ M.open = function()
     require("gitlab").toggle_discussions() -- Fetches data and opens discussions
   end
 
-  git.check_current_branch_up_to_date_on_remote(vim.log.levels.WARN)
   git.check_mr_in_good_condition()
 end
 
--- Closes the reviewer and cleans up
+---Close the reviewer and clean up.
 M.close = function()
-  vim.cmd("DiffviewClose")
+  if M.tabid ~= nil and vim.api.nvim_tabpage_is_valid(M.tabid) then
+    -- FIXME: This fails if there is only one tabpage. Find a way to use DiffviewClose
+    -- that was originally here, but use it for the correct tabpage when there are
+    -- multiple Diffviews open.
+    vim.cmd.tabclose(vim.api.nvim_tabpage_get_number(M.tabid))
+  end
   local discussions = require("gitlab.actions.discussions")
   discussions.close()
 end
 
---- Jumps to the location provided in the reviewer window
----@param file_name string The file name after change.
----@param old_file_name string The file name before change (different from file_name for renamed/moved files).
----@param line_number number Line number from the discussion node.
----@param new_buffer boolean If true, jump to the NEW SHA.
-M.jump = function(file_name, old_file_name, line_number, new_buffer)
+---Load new INFO state from Gitlab. Then, if diffview.api is available, apply the new
+---diff refs to the existing diffview, otherwise close and re-open the reviewer.
+M.reload = function()
+  state.load_new_state("info", function()
+    state.load_new_state("revisions", function()
+      local has_api, api = pcall(require, "diffview.api")
+      if has_api then
+        api.set_revs(
+          string.format("%s..%s", state.INFO.diff_refs.base_sha, state.INFO.diff_refs.head_sha),
+          { view = M.diffview }
+        )
+      else
+        M.close()
+        M.open()
+      end
+    end)
+  end)
+end
+
+---Jump to the location provided in the reviewer window.
+---@param file_name string The file name after change
+---@param old_file_name string The file name before change (different from file_name for renamed/moved files)
+---@param linenr integer Line number from the discussion node
+---@param new_buffer boolean If true, jump to the NEW SHA
+M.jump = function(file_name, old_file_name, linenr, new_buffer)
   -- Draft comments don't have `old_file_name` set
   old_file_name = old_file_name or file_name
 
-  if M.tabnr == nil then
+  if M.tabid == nil then
     u.notify("Can't jump to Diffvew. Is it open?", vim.log.levels.ERROR)
     return
   end
-  vim.api.nvim_set_current_tabpage(M.tabnr)
-  local view = diffview_lib.get_current_view()
-  if view == nil then
+  vim.api.nvim_set_current_tabpage(M.tabid)
+
+  if M.diffview == nil then
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
 
-  local files = view.panel:ordered_file_list()
+  local files = M.diffview.panel:ordered_file_list()
   local file = List.new(files):find(function(f)
     local oldpath = f.oldpath ~= nil and f.oldpath or f.path
     return new_buffer and f.path == file_name or oldpath == old_file_name
@@ -137,89 +155,65 @@ M.jump = function(file_name, old_file_name, line_number, new_buffer)
     )
     return
   end
-  async.await(view:set_file(file))
+  async.await(M.diffview:set_file(file))
 
-  local layout = view.cur_layout
   local number_of_lines
   if new_buffer then
-    layout.b:focus()
-    number_of_lines = u.get_buffer_length(layout.b.file.bufnr)
+    M.diffview_layout.b:focus()
+    number_of_lines = u.get_buffer_length(M.diffview_layout.b.file.bufnr)
   else
-    layout.a:focus()
-    number_of_lines = u.get_buffer_length(layout.a.file.bufnr)
+    M.diffview_layout.a:focus()
+    number_of_lines = u.get_buffer_length(M.diffview_layout.a.file.bufnr)
   end
-  if line_number > number_of_lines then
+  if linenr > number_of_lines then
     u.notify("Diagnostic position outside buffer. Jumping to last line instead.", vim.log.levels.WARN)
-    line_number = number_of_lines
+    linenr = number_of_lines
   end
-  vim.api.nvim_win_set_cursor(0, { line_number, 0 })
+  vim.api.nvim_win_set_cursor(0, { linenr, 0 })
   u.open_fold_under_cursor()
   vim.cmd("normal! zz")
 end
 
----Get the data from diffview, such as line information and file name. May be used by
----other modules such as the comment module to create line codes or set diagnostics
----@param current_win integer The ID of the currently focused window
----@return DiffviewInfo | nil
-M.get_reviewer_data = function(current_win)
-  local view = diffview_lib.get_current_view()
-  if view == nil then
-    return
+---Return start line and end line of visual selection.
+---@return integer
+---@return integer
+local get_visual_selection_boundaries = function()
+  local start_line = vim.fn.line("v")
+  local end_line = vim.fn.line(".")
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
   end
-  local layout = view.cur_layout
-  local old_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
-  local new_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  return start_line, end_line
+end
 
-  if old_win == nil or new_win == nil then
-    u.notify("Error getting window IDs for current files", vim.log.levels.ERROR)
-    return
-  end
-
-  local current_file = M.get_current_file_path()
-  if current_file == nil then
-    u.notify("Error getting current file from Diffview", vim.log.levels.ERROR)
+---Get the data from the reviewer: file names, line information, and cursor focus.
+---@return ReviewerData?
+M.get_reviewer_data = function()
+  if M.diffview_layout == nil then
     return
   end
 
-  local new_line = vim.api.nvim_win_get_cursor(new_win)[1]
-  local old_line = vim.api.nvim_win_get_cursor(old_win)[1]
-
-  local new_sha_focused = M.is_new_sha_focused(current_win)
-
-  local modification_type = hunks.get_modification_type(old_line, new_line, new_sha_focused)
-  if modification_type == nil then
-    u.notify("Error getting modification type", vim.log.levels.ERROR)
-    return
-  end
-
-  if modification_type == "bad_file_unmodified" then
-    u.notify("Comments on unmodified lines will be placed in the old file", vim.log.levels.WARN)
-  end
-
-  local current_bufnr = new_sha_focused and layout.b.file.bufnr or layout.a.file.bufnr
-  local opposite_bufnr = new_sha_focused and layout.a.file.bufnr or layout.b.file.bufnr
+  local start_line, end_line = get_visual_selection_boundaries()
+  local new_file_focused = M.is_new_file_focused(vim.api.nvim_get_current_win())
+  local diff_refs = state.INFO.diff_refs
 
   return {
-    old_file_name = M.is_file_renamed() and layout.a.file.path or "",
-    file_name = layout.b.file.path,
-    old_line_from_buf = old_line,
-    new_line_from_buf = new_line,
-    modification_type = modification_type,
-    current_bufnr = current_bufnr,
-    opposite_bufnr = opposite_bufnr,
-    new_sha_focused = new_sha_focused,
-    current_win_id = current_win,
+    old_file_name = M.is_file_renamed() and M.diffview_layout.a.file.path or M.diffview_layout.b.file.path,
+    file_name = M.diffview_layout.b.file.path,
+    old_sha = diff_refs.base_sha,
+    new_sha = diff_refs.head_sha,
+    start_line = start_line,
+    end_line = end_line,
+    new_file_focused = new_file_focused,
   }
 end
 
----Return whether user is focused on the new version of the file
+---Return true if user is focused on the new version of the file, otherwise false.
 ---@param current_win integer The ID of the currently focused window
 ---@return boolean
-M.is_new_sha_focused = function(current_win)
-  local view = diffview_lib.get_current_view()
-  local layout = view.cur_layout
-  local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
-  local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
+M.is_new_file_focused = function(current_win)
+  local b_win = u.get_window_id_by_buffer_id(M.diffview_layout.b.file.bufnr)
+  local a_win = u.get_window_id_by_buffer_id(M.diffview_layout.a.file.bufnr)
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil
@@ -227,49 +221,49 @@ M.is_new_sha_focused = function(current_win)
   return current_win == b_win
 end
 
----Get currently shown file data
+---Get data of currently shown file.
+---@return FileEntry?
 M.get_current_file_data = function()
-  local view = diffview_lib.get_current_view()
-  return view and view.panel and view.panel.cur_file
+  return M.diffview and M.diffview.panel and M.diffview.panel.cur_file
 end
 
----Get currently shown file path
----@return string|nil
+---Get path of currently shown file.
+---@return string?
 M.get_current_file_path = function()
   local file_data = M.get_current_file_data()
   return file_data and file_data.path
 end
 
----Get currently shown file's old path
----@return string|nil
+---Get old path of currently shown file.
+---@return string?
 M.get_current_file_oldpath = function()
   local file_data = M.get_current_file_data()
-  return file_data and file_data.oldpath or file_data.path
+  return file_data and (file_data.oldpath or file_data.path)
 end
 
----Tell whether current file is renamed or not
----@return boolean|nil
+---Return true if current file is renamed, otherwise false.
+---@return boolean?
 M.is_file_renamed = function()
   local file_data = M.get_current_file_data()
   return file_data and file_data.status == "R"
 end
 
----Tell whether current file has changes or not
----@return boolean|nil
+---Return true if current file has changes, otherwise false.
+---@return boolean?
 M.does_file_have_changes = function()
   local file_data = M.get_current_file_data()
-  return file_data.stats.additions > 0 or file_data.stats.deletions > 0
+  return file_data and (file_data.stats.additions > 0 or file_data.stats.deletions > 0)
 end
 
 ---Run callback every time the buffer in one of the two reviewer windows changes.
----@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+---@param callback fun(opts: table) For more information about opts see `callback` in :h nvim_create_autocmd
 M.set_callback_for_file_changed = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.file_changed", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewDiffBufWinEnter" },
     group = group,
     callback = function(...)
-      if M.tabnr == vim.api.nvim_get_current_tabpage() then
+      if M.tabid == vim.api.nvim_get_current_tabpage() then
         callback(...)
       end
     end,
@@ -277,14 +271,18 @@ M.set_callback_for_file_changed = function(callback)
 end
 
 ---Run callback the first time a new diff buffer is created and loaded into a window.
----@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+---@param callback fun(opts: table) For more information about opts see `callback` in :h nvim_create_autocmd
 M.set_callback_for_buf_read = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.buf_read", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewDiffBufRead" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+      -- Only run the callback when we're in the MR's tabpage or when the tabpage has
+      -- not yet been set (tabid = nil) in a freshly started review (is_open = true).
+      -- FIXME: This is a hacky workaround for cases when an added file is diffed
+      -- against diffview://null and this autocommand fires before tabid is set.
+      if vim.api.nvim_get_current_tabpage() == M.tabid or (M.is_open and M.tabid == nil) then
         callback(...)
       end
     end,
@@ -292,46 +290,49 @@ M.set_callback_for_buf_read = function(callback)
 end
 
 ---Run callback when the reviewer is closed or the user switches to another tab.
----@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+---@param callback fun(opts: table) For more information about opts see `callback` in :h nvim_create_autocmd
 M.set_callback_for_reviewer_leave = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.leave", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewViewLeave", "DiffviewViewClosed" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+      if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,
   })
 end
 
----Run callback when the reviewer is opened for the first time or the view is entered from another
----tab page.
----@param callback fun(opts: table) - for more information about opts see callback in :h nvim_create_autocmd
+---Run callback when the reviewer is opened for the first time or the view is entered
+---from another tab page.
+---@param callback fun(opts: table) For more information about opts see `callback` in :h nvim_create_autocmd
 M.set_callback_for_reviewer_enter = function(callback)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.enter", {})
   vim.api.nvim_create_autocmd("User", {
     pattern = { "DiffviewViewEnter", "DiffviewViewOpened" },
     group = group,
     callback = function(...)
-      if vim.api.nvim_get_current_tabpage() == M.tabnr then
+      if vim.api.nvim_get_current_tabpage() == M.tabid then
         callback(...)
       end
     end,
   })
 end
 
----Create the line-wise visual selection in the range of the motion (or on the [count] number of
----lines) and execute the gitlab.nvim API function. After that, restore the cursor position and the
----original operatorfunc.
----@param callback string Name of the gitlab.nvim API function to call
-M.execute_callback = function(callback)
+-- TODO: Add callback for view_post_layout to update M.diffview and M.diffview_layout
+-- after switching layout.
+
+---Create the line-wise visual selection in the range of the motion (or on the [count]
+---number of lines) and execute the callback. After that, restore the cursor position
+---and the original operatorfunc.
+---@param cb string Name of the gitlab.nvim API function to call
+M.execute_callback = function(cb)
   return function()
     vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { "'[V']" } }, {})
     local _, err = pcall(
       vim.api.nvim_cmd,
-      { cmd = "lua", args = { ("require'gitlab'.%s()"):format(callback) }, mods = { lockmarks = true } },
+      { cmd = "lua", args = { ("require'gitlab'.%s()"):format(cb) }, mods = { lockmarks = true } },
       {}
     )
     vim.api.nvim_win_set_cursor(M.old_winnr, M.old_cursor_position)
@@ -342,9 +343,9 @@ M.execute_callback = function(callback)
   end
 end
 
----Set the operatorfunc that will work on the lines defined by the motion that follows after the
----operator mapping, and enter the operator-pending mode.
----@param cb string Name of the gitlab.nvim API function to call, e.g., "create_multiline_comment".
+---Set the operatorfunc that will work on the lines defined by the motion that follows
+---after the operator mapping, and enter the operator-pending mode.
+---@param cb string Name of the gitlab.nvim API function to call, e.g., "create_multiline_comment"
 local function execute_operatorfunc(cb)
   M.old_opfunc = vim.opt.operatorfunc
   M.old_winnr = vim.api.nvim_get_current_win()
@@ -356,7 +357,7 @@ local function execute_operatorfunc(cb)
 end
 
 ---Set keymaps for creating comments, suggestions and for jumping to discussion tree.
----@param bufnr integer Number of the buffer for which the keybindings will be created.
+---@param bufnr integer Number of the buffer for which the keybindings will be created
 M.set_keymaps = function(bufnr)
   if bufnr == nil or not vim.api.nvim_buf_is_loaded(bufnr) then
     return
@@ -370,6 +371,9 @@ M.set_keymaps = function(bufnr)
   -- Set mappings for creating comments
   if keymaps.reviewer.create_comment ~= false then
     -- Set keymap for repeated operator keybinding
+    -- FIXME: Replace this by explicitly mapping repeated keymap in normal mode. The way it is now,
+    -- pressing `keymaps.reviewer.create_comment` in *any* operator-pending mode (e.g., after
+    -- pressing `d` for delete), triggers comment creation!
     vim.keymap.set("o", keymaps.reviewer.create_comment, function()
       -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
       vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
@@ -401,6 +405,7 @@ M.set_keymaps = function(bufnr)
   -- Set mappings for creating suggestions
   if keymaps.reviewer.create_suggestion ~= false then
     -- Set keymap for repeated operator keybinding
+    -- FIXME: Fix the same problem as for keymaps.reviewer.create_comment.
     vim.keymap.set("o", keymaps.reviewer.create_suggestion, function()
       -- The "V" in "V%d$" forces linewise motion, see `:h o_V`
       vim.api.nvim_cmd({ cmd = "normal", bang = true, args = { string.format("V%d$", vim.v.count1) } }, {})
@@ -440,7 +445,7 @@ M.set_keymaps = function(bufnr)
 end
 
 ---Delete keymaps from reviewer buffers.
----@param bufnr integer Number of the buffer from which the keybindings will be removed.
+---@param bufnr integer Number of the buffer from which the keybindings will be removed
 local del_keymaps = function(bufnr)
   if bufnr == nil or not vim.api.nvim_buf_is_loaded(bufnr) then
     return
@@ -462,7 +467,7 @@ local del_keymaps = function(bufnr)
   end
 end
 
---- Set up autocaommands that will take care of setting and unsetting buffer-local options and keymaps
+---Set up autocommands to set and unset buffer-local options and keymaps.
 M.set_reviewer_autocommands = function(bufnr)
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
   vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
@@ -471,11 +476,12 @@ M.set_reviewer_autocommands = function(bufnr)
     callback = function()
       if vim.api.nvim_get_current_win() == M.buf_winids[bufnr] then
         M.stored_win = vim.api.nvim_get_current_win()
-        vim.api.nvim_buf_set_option(bufnr, "modifiable", false)
+        u.switch_can_edit_buf(bufnr, false)
         M.set_keymaps(bufnr)
       else
+        -- Only make the local file modifiable, not the diffview buffer for the old revision
         if M.diffview_layout.b.id == M.buf_winids[bufnr] then
-          vim.api.nvim_buf_set_option(bufnr, "modifiable", true)
+          u.switch_can_edit_buf(bufnr, true)
         end
         del_keymaps(bufnr)
       end
@@ -483,10 +489,11 @@ M.set_reviewer_autocommands = function(bufnr)
   })
 end
 
---- Update the stored winid for a given reviewer buffer. This is necessary for the
---- M.set_reviewer_autocommands function to work correctly in cases like when the user closes one of
---- the original reviewer windows and Diffview automatically creates a new pair
---- of reviewer windows or the user wipes out a buffer and Diffview reloads it with a different ID.
+---Update the stored winid for a given reviewer buffer.
+---This is necessary for the M.set_reviewer_autocommands function to work correctly in
+---cases like when the user closes one of the original reviewer windows and Diffview
+---automatically creates a new pair of reviewer windows or the user wipes out a buffer
+---and Diffview reloads it with a different ID.
 M.update_winid_for_buffer = function(bufnr)
   M.buf_winids[bufnr] = vim.fn.bufwinid(bufnr)
 end

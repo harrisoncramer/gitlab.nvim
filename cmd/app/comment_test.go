@@ -59,6 +59,10 @@ func TestPostComment(t *testing.T) {
 			Comment: "Some comment",
 			PositionData: PositionData{
 				FileName: "file.txt",
+				LineRange: &LineRange{
+					Start: &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+					End:   &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+				},
 			},
 		}
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)

@@ -1,5 +1,6 @@
--- This module contains tree code specific to the discussion tree, that
--- is not used in the draft notes tree
+-- This module contains tree code specific to the discussion tree, that is not used in the draft
+-- notes tree.
+
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
@@ -9,9 +10,9 @@ local NuiLine = require("nui.line")
 
 local M = {}
 
----Create nodes for NuiTree from discussions
+---Create nodes for NuiTree from discussions.
 ---@param items Discussion[]
----@param unlinked boolean? False or nil means that discussions are linked to code lines
+---@param unlinked? boolean False or nil means that discussions are linked to code lines
 ---@return NuiTree.Node[]
 M.add_discussions_to_table = function(items, unlinked)
   local t = {}
@@ -24,8 +25,8 @@ M.add_discussions_to_table = function(items, unlinked)
     -- These properties are filled in by the first note
     ---@type string?
     local root_text = ""
-    ---@type string?
-    local root_note_id = ""
+    ---@type integer?
+    local root_note_id
     ---@type string?
     local root_file_name = ""
     ---@type string?
@@ -34,7 +35,7 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_id
     local root_text_nodes = {}
     local resolvable = false
-    ---@type GitlabLineRange|nil
+    ---@type GitlabLineRange?
     local range = nil
     local resolved = false
     local root_new_line = nil
@@ -49,7 +50,7 @@ M.add_discussions_to_table = function(items, unlinked)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
         root_old_line = (type(note.position) == "table" and note.position.old_line or nil)
         root_id = discussion.id
-        root_note_id = tostring(note.id)
+        root_note_id = note.id
         resolvable = note.resolvable
         resolved = note.resolved
         root_url = state.INFO.web_url .. "#note_" .. note.id
@@ -99,10 +100,10 @@ M.add_discussions_to_table = function(items, unlinked)
   return M.create_node_list_by_file_name(t)
 end
 
----Create path node
+---Create path node.
 ---@param relative_path string
 ---@param full_path string
----@param child_nodes NuiTree.Node[]?
+---@param child_nodes? NuiTree.Node[]
 ---@return NuiTree.Node
 local function create_path_node(relative_path, full_path, child_nodes)
   return NuiTree.Node({
@@ -116,7 +117,7 @@ local function create_path_node(relative_path, full_path, child_nodes)
   }, child_nodes or {})
 end
 
----Sort list of nodes (in place) of type "path" or "file_name"
+---Sort list of nodes (in place) of type "path" or "file_name".
 ---@param nodes NuiTree.Node[]
 local function sort_nodes(nodes)
   table.sort(nodes, function(node1, node2)
@@ -132,7 +133,7 @@ local function sort_nodes(nodes)
   end)
 end
 
----Merge path nodes which have only single path child
+---Merge path nodes which have only single path child.
 ---@param node NuiTree.Node
 local function flatten_nodes(node)
   if node.type ~= "path" then
@@ -151,10 +152,10 @@ local function flatten_nodes(node)
   sort_nodes(node.__children)
 end
 
----Create file name node
+---Create file name node.
 ---@param file_name string
 ---@param full_file_path string
----@param child_nodes NuiTree.Node[]?
+---@param child_nodes? NuiTree.Node[]
 ---@return NuiTree.Node
 local function create_file_name_node(file_name, full_file_path, child_nodes)
   local icon, icon_hl = u.get_icon(file_name)
@@ -169,6 +170,9 @@ local function create_file_name_node(file_name, full_file_path, child_nodes)
   }, child_nodes or {})
 end
 
+---Return comments from `node_list` grouped by the file they belong to.
+---@param node_list NuiTree.Node[]
+---@return NuiTree.Node[]
 local create_disscussions_by_file_name = function(node_list)
   -- Create all the folder and file name nodes.
   local discussion_by_file_name = {}
@@ -242,6 +246,11 @@ local create_disscussions_by_file_name = function(node_list)
   return discussion_by_file_name
 end
 
+---Return comments from `node_list` grouped by the file they belong to, with flattened
+---nodes when there is just a single path child, and sorted alphabetically by file
+---path/name.
+---@param node_list NuiTree.Node[]
+---@return NuiTree.Node[]
 M.create_node_list_by_file_name = function(node_list)
   -- Create all the folder and file name nodes.
   local discussion_by_file_name = create_disscussions_by_file_name(node_list)
@@ -256,29 +265,30 @@ M.create_node_list_by_file_name = function(node_list)
   return discussion_by_file_name
 end
 
-local attach_uuid = function(str)
-  return { text = str, id = u.uuid() }
-end
+---@class ResolveInfo
+---@field resolved boolean Indicates whether a Note is resolved
+---@field resolvable boolean Indicates whether a Note can be resolved
 
----Build note node body
+---Build note node body.
 ---@param note Note|DraftNote
----@param resolve_info table?
+---@param resolve_info? ResolveInfo Nil if the note is a child node
 ---@return string
 ---@return NuiTree.Node[]
 local function build_note_body(note, resolve_info)
   local text_nodes = {}
-  for bodyLine in u.split_by_new_lines(note.body or note.note) do
-    local line = attach_uuid(bodyLine)
+  local i = 0
+  for body_line in u.split_by_new_lines(note.body or note.note) do
     table.insert(
       text_nodes,
       NuiTree.Node({
         new_line = (type(note.position) == "table" and note.position.new_line),
         old_line = (type(note.position) == "table" and note.position.old_line),
-        text = line.text,
-        id = line.id,
+        text = body_line,
+        id = string.format("%d:%d", note.id, i),
         type = "note_body",
       }, {})
     )
+    i = i + 1
   end
 
   local symbol = ""
@@ -295,9 +305,9 @@ local function build_note_body(note, resolve_info)
   return noteHeader, text_nodes
 end
 
----Build note node
+---Build note node.
 ---@param note Note|DraftNote
----@param resolve_info table?
+---@param resolve_info? ResolveInfo Nil if the note is a child node
 ---@return NuiTree.Node
 ---@return string
 ---@return NuiTree.Node[]
@@ -318,6 +328,8 @@ M.build_note = function(note, resolve_info)
 end
 
 ---Inspired by default func https://github.com/MunifTanjim/nui.nvim/blob/main/lua/nui/tree/util.lua#L38
+---@param node NuiTree.Node
+---@return NuiLine[]
 M.nui_tree_prepare_node = function(node)
   if not node.text then
     error("missing node.text")
@@ -328,6 +340,7 @@ M.nui_tree_prepare_node = function(node)
     texts = { node.text }
   end
 
+  ---@type NuiLine[]
   local lines = {}
 
   for i, text in ipairs(texts) do
@@ -376,9 +389,9 @@ end
 ---@field toggle_unresolved boolean Whether to toggle unresolved discussions.
 ---@field keep_current_open boolean Whether to keep the current discussion open even if it should otherwise be closed.
 
----This function expands/collapses all nodes and their children according to the opts.
----@param tree NuiTree
+---Expand/collapse all nodes and their children according to the opts.
 ---@param winid integer
+---@param tree NuiTree
 ---@param unlinked boolean
 ---@param opts ToggleNodesOptions
 M.toggle_nodes = function(winid, tree, unlinked, opts)
@@ -387,6 +400,7 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
     return
   end
   local root_node = common.get_root_node(tree, current_node)
+  local current_cursor_column = vim.api.nvim_win_get_cursor(winid)[2]
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
@@ -426,12 +440,12 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
     end
   end
   tree:render()
-  M.restore_cursor_position(winid, tree, current_node, root_node)
+  M.restore_cursor_position(winid, tree, current_cursor_column, current_node, root_node)
 end
 
--- Get current node for restoring cursor position
+---Get current node for restoring cursor position.
 ---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
----@param last_node NuiTree.Node|nil The last active discussion tree node in case we are not in any of the discussion trees
+---@param last_node? NuiTree.Node The last active discussion tree node in case we are not in any of the discussion trees
 M.get_node_at_cursor = function(tree, last_node)
   if tree == nil then
     return
@@ -443,12 +457,13 @@ M.get_node_at_cursor = function(tree, last_node)
   end
 end
 
----Restore cursor position to the original node if possible
+---Restore cursor position to the original node if possible.
 ---@param winid integer Window number of the discussions split
 ---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
----@param original_node NuiTree.Node|nil The last node with the cursor
----@param root_node NuiTree.Node|nil The root node of the last node with the cursor
-M.restore_cursor_position = function(winid, tree, original_node, root_node)
+---@param cursor_column integer The original column of the cursor
+---@param original_node? NuiTree.Node The last node with the cursor
+---@param root_node? NuiTree.Node The root node of the last node with the cursor
+M.restore_cursor_position = function(winid, tree, cursor_column, original_node, root_node)
   if original_node == nil or tree == nil then
     return
   end
@@ -460,17 +475,16 @@ M.restore_cursor_position = function(winid, tree, original_node, root_node)
       _, line_number = tree:get_node("-" .. tostring(root_node.id))
     end
   end
-  if line_number ~= nil then
-    if vim.api.nvim_win_is_valid(winid) then
-      vim.api.nvim_win_set_cursor(winid, { line_number, 0 })
-    end
+  if line_number ~= nil and winid and vim.api.nvim_win_is_valid(winid) then
+    local last_line = vim.fn.line("$")
+    vim.api.nvim_win_set_cursor(winid, { math.min(line_number, last_line), cursor_column or 0 })
   end
 end
 
----This function expands a node and its children.
+---Expand a node and its children.
 ---@param tree NuiTree
----@param node NuiTree.Node
----@param is_resolved boolean If true, expand resolved discussions. If false, expand unresolved discussions.
+---@param node? NuiTree.Node
+---@param is_resolved boolean If true, expand resolved discussions. If false, expand unresolved discussions
 M.expand_recursively = function(tree, node, is_resolved)
   if node == nil then
     return
@@ -484,18 +498,18 @@ M.expand_recursively = function(tree, node, is_resolved)
   end
 end
 
----This function collapses a node and its children.
+---Collapse a node and its children.
 ---@param tree NuiTree
----@param node NuiTree.Node
----@param current_root_node NuiTree.Node The root node of the current node.
----@param keep_current_open boolean If true, the current node stays open, even if it should otherwise be collapsed.
----@param is_resolved boolean If true, collapse resolved discussions. If false, collapse unresolved discussions.
+---@param node? NuiTree.Node
+---@param current_root_node? NuiTree.Node The root node of the current node
+---@param keep_current_open boolean If true, the current node stays open, even if it should otherwise be collapsed
+---@param is_resolved boolean If true, collapse resolved discussions. If false, collapse unresolved discussions
 M.collapse_recursively = function(tree, node, current_root_node, keep_current_open, is_resolved)
   if node == nil then
     return
   end
   local root_node = common.get_root_node(tree, node)
-  if common.is_node_note(node) and root_node.resolved == is_resolved then
+  if common.is_node_note(node) and root_node and root_node.resolved == is_resolved then
     if keep_current_open and root_node == current_root_node then
       return
     end
@@ -507,7 +521,7 @@ M.collapse_recursively = function(tree, node, current_root_node, keep_current_op
   end
 end
 
----Expands a given node in a given tree by it's ID
+---Expand a given node in a given tree by its ID.
 ---@param tree NuiTree
 ---@param id string
 M.open_node_by_id = function(tree, id)
@@ -517,15 +531,15 @@ M.open_node_by_id = function(tree, id)
   end
 end
 
--- This function (settings.keymaps.discussion_tree.toggle_node) expands/collapses the current node and its children
-M.toggle_node = function(tree)
+---Expand or collapse the current node and its children.
+---@param winid integer The id if the tree split
+---@param tree NuiTree The current discussion tree
+M.toggle_node = function(winid, tree)
   local node = tree:get_node()
-  if node == nil then
-    return
-  end
+  local current_cursor_column = vim.api.nvim_win_get_cursor(winid)[2]
 
   -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
-  if node.type == "note_body" then
+  if node ~= nil and node.type == "note_body" then
     node = tree:get_node(node:get_parent_id())
   end
   if node == nil then
@@ -533,9 +547,7 @@ M.toggle_node = function(tree)
   end
 
   local children = node:get_child_ids()
-  if node == nil then
-    return
-  end
+
   if node:is_expanded() then
     node:collapse()
     if common.is_node_note(node) then
@@ -553,6 +565,7 @@ M.toggle_node = function(tree)
   end
 
   tree:render()
+  M.restore_cursor_position(winid, tree, current_cursor_column, node, common.get_root_node(tree, node))
 end
 
 return M

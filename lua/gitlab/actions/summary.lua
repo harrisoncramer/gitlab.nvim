@@ -1,17 +1,18 @@
 -- This module is responsible for the MR description
 -- This lets the user open the description in a popup and
 -- send edits to the description back to Gitlab
+
 local Layout = require("nui.layout")
 local Popup = require("nui.popup")
 local git = require("gitlab.git")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local common = require("gitlab.actions.common")
 local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local state = require("gitlab.state")
 local miscellaneous = require("gitlab.actions.miscellaneous")
 
--- No-break space used in summary details to make matching different parts of the line more robust
+-- No-break space used in summary details to make matching different parts of the line more robust.
 local nbsp = " "
 
 local M = {
@@ -22,15 +23,18 @@ local M = {
   description_bufnr = nil,
 }
 
--- The function will render a popup containing the MR title and MR description, and optionally,
--- any additional metadata that the user wants. The title and description are editable and
--- can be changed via the local action keybinding, which also closes the popup
+---Render a popup with the MR title and description, and, optionally, additional
+---metadata configured in `settings.info.fields`.
+---The title and description are editable, and changes can be confirmed via the local
+---action keybinding, which also closes the popup.
 M.summary = function()
   if M.layout_visible then
     M.layout:unmount()
     M.layout_visible = false
     return
   end
+
+  require("gitlab.git_async").check_current_branch_up_to_date_on_remote()
 
   local title = state.INFO.title
   local description_lines = common.build_content(state.INFO.description)
@@ -89,10 +93,10 @@ M.summary = function()
     vim.api.nvim_set_current_buf(description_popup.bufnr)
   end)
 
-  git.check_current_branch_up_to_date_on_remote(vim.log.levels.WARN)
   git.check_mr_in_good_condition()
 end
 
+---Update the contents and layout of the summary popup.
 M.update_summary_details = function()
   if not M.info_popup or not M.info_popup.bufnr then
     return
@@ -103,6 +107,9 @@ M.update_summary_details = function()
   M.update_details_popup(M.info_popup.bufnr, details_lines)
 end
 
+---Update the contents of the Details buffer.
+---@param bufnr integer Buffer number of the details window
+---@param info_lines string[] The new Detail contents to set in the buffer
 M.update_details_popup = function(bufnr, info_lines)
   u.switch_can_edit_buf(bufnr, true)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, info_lines)
@@ -110,7 +117,7 @@ M.update_details_popup = function(bufnr, info_lines)
   M.color_details(bufnr) -- Color values in details popup
 end
 
----Return the mergeability checks statuses and descriptions
+---Return the mergeability checks statuses and descriptions.
 ---@return string[]
 local make_mergeability_checks = function()
   local lines = {}
@@ -132,8 +139,11 @@ local make_mergeability_checks = function()
   return lines
 end
 
--- Builds a lua list of strings that contain metadata about the current MR. Only builds the
--- lines that users include in their state.settings.info.fields list.
+---Build a list of metadata about the current MR.
+---Only builds the lines that users include in their state.settings.info.fields list.
+---TODO: Consider splitting this into simpler functions and calculating `options` lazily
+---only when necessary.
+---@return string[]
 M.build_info_lines = function()
   local info = state.INFO
   local options = {
@@ -183,8 +193,12 @@ M.build_info_lines = function()
     end
   end
 
-  local function row_offset(row)
-    local offset = vim.fn.strcharlen(longest_used) - vim.fn.strcharlen(row)
+  ---Return the padding (no-break spaces) between the row title and content to make the contents on
+  ---individual rows aligned.
+  ---@param title string The title of the current row or multi-line section
+  ---@return string
+  local function get_padding(title)
+    local offset = vim.fn.strcharlen(longest_used) - vim.fn.strcharlen(title)
     return string.rep(nbsp, offset + 3)
   end
 
@@ -194,11 +208,11 @@ M.build_info_lines = function()
       v = "detailed_merge_status"
     end
     local row = options[v]
-    local title_prefix = "* " .. row.title .. row_offset(row.title)
+    local title_prefix = "* " .. row.title .. get_padding(row.title)
     local content = type(row.content) == "function" and row.content() or row.content
     if type(content) == "table" then
       -- Multi-line content
-      local padding = string.rep(nbsp, vim.fn.strcharlen(title_prefix)) -- no-break space
+      local padding = string.rep(nbsp, vim.fn.strcharlen(title_prefix))
       for i, line in ipairs(#content > 0 and content or { "" }) do
         table.insert(result, (i == 1 and title_prefix or padding) .. line)
       end
@@ -210,12 +224,12 @@ M.build_info_lines = function()
   return result
 end
 
--- This function will PUT the new description to the Go server
+---Send the new MR description to the Go server.
 M.edit_summary = function()
   local description = u.get_buffer_text(M.description_bufnr)
   local title = u.get_buffer_text(M.title_bufnr):gsub("\n", " ")
   local body = { title = title, description = description }
-  job.run_job("/mr/summary", "PUT", body, function(data)
+  client.send_request("/mr/summary", "PUT", body, function(data)
     u.notify(data.message, vim.log.levels.INFO)
     state.INFO.description = data.mr.description
     state.INFO.title = data.mr.title
@@ -223,12 +237,13 @@ M.edit_summary = function()
 end
 
 ---Create the Summary layout and individual popups that make up the Layout.
+---@param info_lines string[] Table of strings that make up the details content
 ---@return NuiLayout, NuiPopup, NuiPopup, NuiPopup
 M.create_layout = function(info_lines)
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
   local title_popup = Popup(popup.create_box_popup_state(nil, false, settings))
   M.title_bufnr = title_popup.bufnr
-  local description_popup = Popup(popup.create_popup_state("Description", settings))
+  local description_popup = Popup(popup.create_popup_state({ title = "Description", user_settings = settings }))
   M.description_bufnr = description_popup.bufnr
   local details_popup
   if state.settings.info.enabled then
@@ -254,11 +269,11 @@ M.create_internal_layout = function(info_lines, title_popup, description_popup, 
   local internal_layout
   if state.settings.info.enabled then
     if state.settings.info.horizontal then
-      local longest_line = u.get_longest_string(info_lines)
+      local max_line_length = u.get_max_length(info_lines)
       internal_layout = Layout.Box({
         Layout.Box(title_popup, { size = 3 }),
         Layout.Box({
-          Layout.Box(details_popup, { size = longest_line + 3 }),
+          Layout.Box(details_popup, { size = max_line_length + 3 }),
           Layout.Box(description_popup, { grow = 1 }),
         }, { dir = "row", size = "95%" }),
       }, { dir = "col" })
@@ -278,7 +293,7 @@ M.create_internal_layout = function(info_lines, title_popup, description_popup, 
   return internal_layout
 end
 
----Create the config for the outer Layout of the Summary
+---Create the config for the outer Layout of the Summary.
 ---@return nui_layout_options
 M.get_outer_layout_config = function()
   local settings = u.merge(state.settings.popup, state.settings.popup.summary or {})
@@ -292,6 +307,22 @@ M.get_outer_layout_config = function()
   }
 end
 
+---Return the highlight definition map.
+---Use a light background color (the foreground color of Normal highlight) when
+---vim.o.background and the `color` are dark.
+---@param color string Color definition, e.g., "#dc143c"
+---@return vim.api.keyset.highlight
+local function label_hl(color)
+  local r, g, b = color:match("%#(%x%x)(%x%x)(%x%x)")
+  local luminance = (0.299 * tonumber(r, 16) + 0.587 * tonumber(g, 16) + 0.114 * tonumber(b, 16)) / 255
+  local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+  local normal_fg = normal.fg and string.format("#%06x", normal.fg) or "#ffffff"
+  local bg = (vim.o.background == "dark" and luminance < 0.5) and normal_fg or nil
+  return { fg = color, bg = bg }
+end
+
+---Colorize the details buffer
+---@param bufnr integer The buffer number of the Details popup
 M.color_details = function(bufnr)
   local details_namespace = vim.api.nvim_create_namespace("Details")
   for i, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
@@ -299,8 +330,7 @@ M.color_details = function(bufnr)
       for j, label in ipairs(state.LABELS) do
         local start_idx, end_idx = line:find(label.Name, 1, true)
         if start_idx ~= nil and end_idx ~= nil then
-          vim.cmd("highlight " .. "label" .. j .. " guifg=white")
-          vim.api.nvim_set_hl(0, ("label" .. j), { fg = label.Color })
+          vim.api.nvim_set_hl(0, ("label" .. j), label_hl(label.Color))
           vim.hl.range(bufnr, details_namespace, ("label" .. j), { i - 1, start_idx - 1 }, { i - 1, end_idx })
         end
       end

@@ -2,13 +2,16 @@ local u = require("gitlab.utils")
 local popup = require("gitlab.popup")
 local Popup = require("nui.popup")
 local state = require("gitlab.state")
-local job = require("gitlab.job")
+local client = require("gitlab.client")
 local reviewer = require("gitlab.reviewer")
 
 local M = {}
 
 local function create_squash_message_popup()
-  return Popup(popup.create_popup_state("Squash Commit Message", state.settings.popup.squash_message))
+  return Popup(popup.create_popup_state({
+    title = "Squash Commit Message",
+    user_settings = state.settings.popup.squash_message,
+  }))
 end
 
 ---@class MergeOpts
@@ -17,6 +20,9 @@ end
 ---@field squash boolean?
 ---@field squash_message string?
 
+---Merge a mergeable MR into the target branch.
+---Prompt the user for squash message if commits should be squashed but no message is
+---provided.
 ---@param opts MergeOpts
 M.merge = function(opts)
   local merge_body = {
@@ -45,14 +51,15 @@ M.merge = function(opts)
   end
 end
 
+---Send request to Go server to merge MR.
 ---@param merge_body MergeOpts
----@param squash_message string?
+---@param squash_message? string
 M.confirm_merge = function(merge_body, squash_message)
   if squash_message ~= nil then
     merge_body.squash_message = squash_message
   end
 
-  job.run_job("/mr/merge", "POST", merge_body, function(data)
+  client.send_request("/mr/merge", "POST", merge_body, function(data)
     reviewer.close()
     u.notify(data.message, vim.log.levels.INFO)
   end)

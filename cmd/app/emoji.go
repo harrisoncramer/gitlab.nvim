@@ -3,30 +3,13 @@ package app
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
-
-type Emoji struct {
-	Unicode           string   `json:"unicode"`
-	UnicodeAlternates []string `json:"unicode_alternates"`
-	Name              string   `json:"name"`
-	Shortname         string   `json:"shortname"`
-	Category          string   `json:"category"`
-	Aliases           []string `json:"aliases"`
-	AliasesASCII      []string `json:"aliases_ascii"`
-	Keywords          []string `json:"keywords"`
-	Moji              string   `json:"moji"`
-}
-
-type EmojiMap map[string]Emoji
 
 type CreateNoteEmojiPost struct {
 	Emoji  string `json:"emoji"`
@@ -144,39 +127,4 @@ func (a emojiService) postEmojiOnNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		handleError(w, err, "Could not encode response", http.StatusInternalServerError)
 	}
-}
-
-/*
-attachEmojis reads the emojis from our external JSON file
-and attaches them to the data so that they can be looked up later
-*/
-func attachEmojis(a *data, fr FileReader) error {
-
-	e, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	binPath := filepath.Dir(e)
-	filePath := filepath.Join(binPath, "config", "emojis.json")
-
-	reader, err := fr.ReadFile(filePath)
-
-	if err != nil {
-		return fmt.Errorf("could not find emojis at %s", filePath)
-	}
-
-	bytes, err := io.ReadAll(reader)
-	if err != nil {
-		return errors.New("could not read emoji file")
-	}
-
-	var emojiMap EmojiMap
-	err = json.Unmarshal(bytes, &emojiMap)
-	if err != nil {
-		return errors.New("could not unmarshal emojis")
-	}
-
-	a.emojiMap = emojiMap
-	return nil
 }

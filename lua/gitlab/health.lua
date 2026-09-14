@@ -2,10 +2,12 @@ local state = require("gitlab.state")
 local List = require("gitlab.utils.list")
 local version = require("gitlab.version")
 local u = require("gitlab.utils")
+
 local M = {}
 
----Checks the health of the plugin
----@param return_results boolean
+---Check the health of the plugin.
+---@param return_results boolean If false (e.g., when invoked by `:checkhealth gitlab`), the result is not returned and a health report is started instead
+---@return boolean? success When return_results is false returns nil, otherwise returns true if the health ckeck doesn't find any issues, and false if there are errors
 M.check = function(return_results)
   local warnings = List.new({})
   local errors = List.new({})
@@ -14,6 +16,7 @@ M.check = function(return_results)
     vim.health.start("gitlab.nvim")
   end
 
+  -- TODO: Remove state.settings.reviewer and add to `removed_settings_fields` - this warning has been here for two years...
   if state.settings.reviewer == "delta" then
     table.insert(
       warnings,
@@ -27,11 +30,7 @@ M.check = function(return_results)
       package = "nui.popup",
     },
     {
-      name = "nvim-lua/plenary.nvim",
-      package = "plenary",
-    },
-    {
-      name = "dlyongemallo/diffview.nvim",
+      name = "dlyongemallo/diffview-plus.nvim",
       package = "diffview",
     },
   }
@@ -45,11 +44,25 @@ M.check = function(return_results)
       name = "nvim-tree/nvim-web-devicons",
       package = "nvim-web-devicons",
     },
+    {
+      name = "dlyongemallo/diffview-plus.nvim",
+      package = "diffview.api",
+    },
   }
 
-  local go_version_problem = version.check_go_version()
-  if go_version_problem ~= nil then
-    table.insert(warnings, go_version_problem)
+  if state.settings.server.binary_provided then
+    local binary_exists = vim.loop.fs_stat(state.settings.server.binary)
+    if binary_exists == nil then
+      table.insert(
+        errors,
+        string.format("The user-provided server path (%s) does not exist", state.settings.server.binary)
+      )
+    end
+  else
+    local go_version_problem = version.check_go_version()
+    if go_version_problem ~= nil then
+      table.insert(errors, go_version_problem)
+    end
   end
 
   for _, dep in ipairs(required_deps) do

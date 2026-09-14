@@ -6,7 +6,7 @@ import (
 
 type ErrorResponse struct {
 	Message string `json:"message"`
-	Details string `json:"details"`
+	Error   string `json:"error"`
 }
 
 type SuccessResponse struct {

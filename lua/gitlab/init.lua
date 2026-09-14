@@ -2,17 +2,16 @@ require("gitlab.utils.list")
 local u = require("gitlab.utils")
 local async = require("gitlab.async")
 local server = require("gitlab.server")
-local emoji = require("gitlab.emoji")
 local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local discussions = require("gitlab.actions.discussions")
 local merge_requests = require("gitlab.actions.merge_requests")
 local merge = require("gitlab.actions.merge")
+local rebase = require("gitlab.actions.rebase")
 local summary = require("gitlab.actions.summary")
 local data = require("gitlab.actions.data")
 local assignees_and_reviewers = require("gitlab.actions.assignees_and_reviewers")
 local comment = require("gitlab.actions.comment")
-local version = require("gitlab.version")
 local pipeline = require("gitlab.actions.pipeline")
 local create_mr = require("gitlab.actions.create_mr")
 local approvals = require("gitlab.actions.approvals")
@@ -29,29 +28,19 @@ local latest_pipeline = state.dependencies.latest_pipeline
 local revisions = state.dependencies.revisions
 local merge_requests_dep = state.dependencies.merge_requests
 local merge_requests_by_username_dep = state.dependencies.merge_requests_by_username
-local draft_notes_dep = state.dependencies.draft_notes
-local discussion_data = state.dependencies.discussion_data
 
----@param args Settings | {} | nil
+---@param args? GitlabSettings
 ---@return nil
 local function setup(args)
   if args == nil then
     args = {}
   end
 
-  local version_issue = version.check_go_version()
-  if version_issue ~= nil then
-    u.notify(version_issue, vim.log.levels.ERROR)
-    return
-  end
-
-  state.merge_settings(args) -- Merges user settings with default settings
-  server.build() -- Builds the Go binary if it doesn't exist
-  state.set_global_keymaps() -- Sets keymaps that are not bound to a specific buffer
+  state.merge_settings(args)
+  server.build()
+  state.set_global_keymaps()
   require("gitlab.colors") -- Sets colors
-  reviewer.init()
-  discussions.initialize_discussions() -- place signs / diagnostics for discussions in reviewer
-  emoji.init() -- Read in emojis for lookup purposes
+  discussions.initialize_discussions()
 
   local is_healthy = health.check(true)
   if not is_healthy then
@@ -83,11 +72,15 @@ return {
   review = async.sequence({ u.merge(info, { refresh = true }), revisions, user }, function()
     reviewer.open()
   end),
+  reload_review = function()
+    reviewer.reload()
+  end,
   close_review = function()
     reviewer.close()
   end,
   pipeline = async.sequence({ latest_pipeline }, pipeline.open),
   merge = async.sequence({ u.merge(info, { refresh = true }) }, merge.merge),
+  rebase = async.sequence({ u.merge(mergeability, { refresh = true }), info }, rebase.rebase),
   -- Discussion Tree Actions 🌴
   toggle_discussions = function()
     if discussions.split_visible then
@@ -96,8 +89,6 @@ return {
       async.sequence({
         info,
         user,
-        u.merge(draft_notes_dep, { refresh = true }),
-        u.merge(discussion_data, { refresh = true }),
       }, discussions.open)()
     end
   end,

@@ -5,13 +5,27 @@
 
 local u = require("gitlab.utils")
 local List = require("gitlab.utils.list")
+
 local M = {
-  emoji_map = nil,
   ahead_behind = { nil, nil },
+  -- Initial states of the discussion trees
+  discussion_tree = {
+    last_updated = nil,
+    updating = 0,
+    resolved_expanded = false,
+    unresolved_expanded = false,
+  },
+  unlinked_discussion_tree = {
+    resolved_expanded = false,
+    unresolved_expanded = false,
+  },
+  -- Used to set a specific MR when choosing a merge request
+  chosen_mr_iid = 0,
 }
 
----Returns a gitlab token, and a gitlab URL. Used to connect to gitlab.
----@return string|nil, string|nil, string|nil
+---Return a gitlab token and a gitlab URL required to connect to Gitlab.
+---TODO: Remove the third return value - it is always nil.
+---@return string?, string?, string?
 M.default_auth_provider = function()
   local git = require("gitlab.git")
   local base_path, err = M.settings.config_path, nil
@@ -42,9 +56,10 @@ M.default_auth_provider = function()
   return auth_token, gitlab_url, err
 end
 
---- These are the default settings for the plugin
+---The default settings for the plugin.
 M.settings = {
   auth_provider = M.default_auth_provider,
+  -- TODO: Remove file_separator, replace with u.path_separator in code.
   file_separator = u.path_separator,
   server = {
     binary = nil,
@@ -86,9 +101,13 @@ M.settings = {
       revoke = "glR",
       merge = "glM",
       set_auto_merge = "glm",
+      rebase = "glrr",
+      rebase_skip_ci = "glrs",
+      rebase_force = "glrf",
       create_mr = "glC",
       choose_merge_request = "glc",
       start_review = "glS",
+      reload_review = "gl<C-R>",
       summary = "gls",
       copy_mr_url = "glu",
       open_in_browser = "glo",
@@ -163,6 +182,7 @@ M.settings = {
     },
     spinner_chars = { "-", "\\", "|", "/" },
     auto_open = true,
+    focus_on_open = true,
     default_view = "discussions",
     blacklist = {},
     sort_by = "latest_reply",
@@ -186,12 +206,14 @@ M.settings = {
   },
   emojis = {
     formatter = nil,
+    version = "4",
   },
   create_mr = {
     target = nil,
     template_file = nil,
     delete_branch = false,
     squash = false,
+    -- TODO: The "fork" settings could be a config in .gitlab.nvim - they seem to be project-local
     fork = {
       enabled = false,
       forked_project_id = nil,
@@ -200,6 +222,10 @@ M.settings = {
       width = 40,
       border = "rounded",
     },
+  },
+  rebase_mr = {
+    skip_ci = false,
+    force = false,
   },
   choose_merge_request = {
     open_reviewer = true,
@@ -280,8 +306,6 @@ M.settings = {
     success = "✓",
     failed = "",
   },
-  go_server_running = false,
-  is_gitlab_project = false,
   colors = {
     discussion_tree = {
       username = "Keyword",
@@ -302,20 +326,8 @@ M.settings = {
   },
 }
 
--- These are the initial states of the discussion trees
-M.discussion_tree = {
-  resolved_expanded = false,
-  unresolved_expanded = false,
-}
-M.unlinked_discussion_tree = {
-  resolved_expanded = false,
-  unresolved_expanded = false,
-}
-
--- Used to set a specific MR when choosing a merge request
-M.chosen_mr_iid = 0
-
--- These keymaps are set globally when the plugin is initialized
+---Set global keymaps.
+---To be used when the plugin is initialized.
 M.set_global_keymaps = function()
   local keymaps = M.settings.keymaps
 
@@ -323,10 +335,17 @@ M.set_global_keymaps = function()
     return
   end
 
+  -- TODO: Refactor: simplify all the `function() somefunc() end` calls to `somefunc`.
   if keymaps.global.start_review then
     vim.keymap.set("n", keymaps.global.start_review, function()
       require("gitlab").review()
     end, { desc = "Start Gitlab review", nowait = keymaps.global.start_review_nowait })
+  end
+
+  if keymaps.global.reload_review then
+    vim.keymap.set("n", keymaps.global.reload_review, function()
+      require("gitlab").reload_review()
+    end, { desc = "Reload Gitlab review", nowait = keymaps.global.reload_review_nowait })
   end
 
   if keymaps.global.choose_merge_request then
@@ -431,6 +450,24 @@ M.set_global_keymaps = function()
     end, { desc = "Set MR to auto-merge", nowait = keymaps.global.set_auto_merge_nowait })
   end
 
+  if keymaps.global.rebase then
+    vim.keymap.set("n", keymaps.global.rebase, function()
+      require("gitlab").rebase()
+    end, { desc = "Rebase MR", nowait = keymaps.global.rebase_nowait })
+  end
+
+  if keymaps.global.rebase_skip_ci then
+    vim.keymap.set("n", keymaps.global.rebase_skip_ci, function()
+      require("gitlab").rebase({ skip_ci = true })
+    end, { desc = "Rebase MR and skip CI", nowait = keymaps.global.rebase_skip_ci_nowait })
+  end
+
+  if keymaps.global.rebase_force then
+    vim.keymap.set("n", keymaps.global.rebase_force, function()
+      require("gitlab").rebase({ force = true })
+    end, { desc = "Force rebase MR", nowait = keymaps.global.rebase_force_nowait })
+  end
+
   if keymaps.global.copy_mr_url then
     vim.keymap.set("n", keymaps.global.copy_mr_url, function()
       require("gitlab").copy_mr_url()
@@ -450,9 +487,9 @@ M.set_global_keymaps = function()
   end
 end
 
--- Merges user settings into the default settings, overriding them
----@param args Settings
----@return Settings
+---Merge user settings into the default settings, overriding the defaults.
+---@param args GitlabSettings
+---@return GitlabSettings
 M.merge_settings = function(args)
   if args.server and args.server.binary ~= nil then
     M.settings.server.binary_provided = true
@@ -465,18 +502,17 @@ M.print_settings = function()
   vim.print(M.settings)
 end
 
--- First reads environment variables into the settings module,
--- then attemps to read a `.gitlab.nvim` configuration file.
--- If after doing this, any variables are missing, alerts the user.
--- The `.gitlab.nvim` configuration file takes precedence.
-M.setPluginConfiguration = function()
+---Load Gitlab auth token and URL into the settings and notify user if auth token is
+---missing.
+---@return boolean success True if plugin is already initialized or when initialization succeeds, otherwise false (if auth token is missing)
+M.set_plugin_configuration = function()
   if M.initialized then
     return true
   end
 
   local token, url, err = M.settings.auth_provider()
   if err ~= nil then
-    return
+    return false
   end
 
   M.settings.auth_token = token
@@ -494,11 +530,10 @@ M.setPluginConfiguration = function()
   return true
 end
 
--- Dependencies
--- These tables are passed to the async.sequence function, which calls them in sequence
--- before calling an action. They are used to set global state that's required
--- for each of the actions to occur. This is necessary because some Gitlab behaviors (like
--- adding a reviewer) requires some initial state.
+-- GitlabDependency definitions to be passed to the async.sequence function, which calls
+-- them in sequence before performing an action. They are used to set global state
+-- that's required for each of the actions to occur.
+---@type GitlabDependencies
 M.dependencies = {
   user = {
     endpoint = "/users/me",
@@ -562,7 +597,7 @@ M.dependencies = {
         opts["not[label]"] = opts.notlabel
         opts.notlabel = nil
       end
-      return opts or vim.json.decode("{}")
+      return opts or vim.empty_dict()
     end,
   },
   merge_requests_by_username = {
@@ -597,10 +632,14 @@ M.dependencies = {
   },
 }
 
-M.load_new_state = function(dep, cb)
-  local job = require("gitlab.job")
+---Load new state for a dependency and execute callback with the data it returns.
+---@param dep string The dependency name to re-load
+---@param on_success fun(data:SuccessResponse) The function to call with the dependency data
+---@param on_error? fun(data:ErrorResponse?) The function to call when the request fails
+M.load_new_state = function(dep, on_success, on_error)
+  local client = require("gitlab.client")
   local dependency = M.dependencies[dep]
-  job.run_job(
+  client.send_request(
     dependency.endpoint,
     dependency.method or "GET",
     dependency.body and dependency.body() or nil,
@@ -608,17 +647,18 @@ M.load_new_state = function(dep, cb)
       if dependency.key then
         M[dependency.state] = u.ensure_table(data[dependency.key])
       end
-      if type(cb) == "function" then
-        cb(data) -- To set data manually...
-      end
-    end
+      on_success(data) -- To set data manually...
+    end,
+    on_error
   )
 end
 
--- This function clears out all of the previously fetched data. It's used
--- to reset the plugin state when the Go server is restarted
+---Clear out all of the previously fetched data.
+---Used to reset plugin state when the Go server is restarted.
 M.clear_data = function()
   M.INFO = nil
+  -- FIXME: The following loop should use pairs instead of ipairs to actually clear the
+  -- state.
   for _, dep in ipairs(M.dependencies) do
     M[dep.state] = nil
   end

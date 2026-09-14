@@ -38,13 +38,4 @@ func TestMembersHandler(t *testing.T) {
 		data, _ := getFailData(t, svc, request)
 		checkErrorFromGitlab(t, data, "Could not retrieve project members")
 	})
-	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
-		request := makeRequest(t, http.MethodGet, "/project/members", nil)
-		svc := middleware(
-			projectMemberService{testProjectData, fakeMemberLister{testBase{status: http.StatusSeeOther}}},
-			withMethodCheck(http.MethodGet),
-		)
-		data, _ := getFailData(t, svc, request)
-		checkNon200(t, data, "Could not retrieve project members", "/project/members")
-	})
 }

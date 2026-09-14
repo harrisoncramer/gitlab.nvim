@@ -2,6 +2,7 @@ local state = require("gitlab.state")
 local reviewer = require("gitlab.reviewer")
 local git = require("gitlab.git")
 local u = require("gitlab.utils")
+
 local M = {}
 
 ---@class ChooseMergeRequestOptions
@@ -9,8 +10,8 @@ local M = {}
 ---@field label? string[]
 ---@field notlabel? string[]
 
----Opens up a select menu that lets you choose a different merge request.
----@param opts ChooseMergeRequestOptions|nil
+---Open up a select menu to let user choose a merge request.
+---@param opts? ChooseMergeRequestOptions
 M.choose_merge_request = function(opts)
   if opts == nil then
     opts = state.settings.choose_merge_request

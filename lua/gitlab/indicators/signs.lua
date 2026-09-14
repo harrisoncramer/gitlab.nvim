@@ -4,6 +4,7 @@ local List = require("gitlab.utils.list")
 local discussion_sign_name = require("gitlab.indicators.diagnostics").discussion_sign_name
 
 local M = {}
+
 M.clear_signs = function()
   vim.fn.sign_unplace(discussion_sign_name)
 end
@@ -18,10 +19,11 @@ local severity_map = {
   "Hint",
 }
 
----Refresh the discussion signs for currently loaded file in reviewer For convinience we use same
----string for sign name and sign group ( currently there is only one sign needed)
----@param diagnostics Diagnostic[]
----@param bufnr number
+---Refresh discussion signs for the given buffer.
+---For convinience, we use the same string for the sign name and sign group (currently
+---there is only one sign needed).
+---@param diagnostics vim.Diagnostic.Set[]
+---@param bufnr integer
 M.set_signs = function(diagnostics, bufnr)
   if not state.settings.discussion_signs.enabled then
     return
@@ -33,6 +35,7 @@ M.set_signs = function(diagnostics, bufnr)
     local existing_signs =
       vim.fn.sign_getplaced(vim.api.nvim_get_current_buf(), { group = discussion_sign_name })[1].signs
 
+    -- Set gitlab_range signs for lines 2 and upwards of multiline diagnostics
     if diagnostic.end_lnum then
       local linenr = diagnostic.lnum + 1
       while linenr <= diagnostic.end_lnum do
@@ -40,6 +43,8 @@ M.set_signs = function(diagnostics, bufnr)
         local conflicting_comment_sign = List.new(existing_signs):find(function(sign)
           return u.ends_with(sign.name, gitlab_comment) and sign.lnum == linenr
         end)
+        -- Don't place gitlab_range sign if there's a gitlab_comment (which shows start of commnet)
+        -- sign on the same line
         if conflicting_comment_sign == nil then
           vim.fn.sign_place(
             linenr,
@@ -52,6 +57,7 @@ M.set_signs = function(diagnostics, bufnr)
       end
     end
 
+    -- Set gitlab_comment signs marking the beginning of a comment
     vim.fn.sign_place(
       diagnostic.lnum + 1,
       discussion_sign_name,
@@ -64,7 +70,7 @@ M.set_signs = function(diagnostics, bufnr)
   end
 end
 
----Define signs for discussions
+---Define signs for discussions.
 M.setup_signs = function()
   local discussion_sign_settings = state.settings.discussion_signs
   local comment_icon = discussion_sign_settings.icons.comment
