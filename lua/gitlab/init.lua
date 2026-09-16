@@ -40,6 +40,8 @@ local function setup(args)
   server.build()
   state.set_global_keymaps()
   require("gitlab.colors") -- Sets colors
+  -- FIXME: The plugin should be set up more lazily: All the work in
+  -- initialize_discussions should be done only when a review is actually opened
   discussions.initialize_discussions()
 
   local is_healthy = health.check(true)

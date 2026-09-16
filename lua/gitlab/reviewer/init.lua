@@ -14,7 +14,6 @@ local M = {
   bufnr = nil,
   tabid = nil,
   stored_win = nil,
-  buf_winids = {},
 }
 
 -- Open the reviewer windows.
@@ -60,7 +59,6 @@ M.open = function()
     u.notify("Could not find Diffview view", vim.log.levels.ERROR)
     return
   end
-  M.diffview_layout = M.diffview.cur_layout --[[@as Diff4]]
   M.tabid = vim.api.nvim_get_current_tabpage()
 
   if state.settings.discussion_diagnostic ~= nil or state.settings.discussion_sign ~= nil then
@@ -108,6 +106,17 @@ M.close = function(opts)
   if opts.shut_down_server then
     server.shutdown()
   end
+end
+
+---Return the current diffview layout.
+---@return Diff4?
+M.get_layout = function()
+  local layout = M.diffview and M.diffview.cur_layout
+  if layout == nil then
+    u.notify("Could not find Diffview view", vim.log.levels.ERROR)
+    return
+  end
+  return layout --[[@as Diff4]]
 end
 
 ---Load new INFO state from Gitlab. Then, if diffview.api is available, apply the new
@@ -163,13 +172,17 @@ M.jump = function(file_name, old_file_name, linenr, new_buffer)
   end
   async.await(M.diffview:set_file(file))
 
+  local layout = M.get_layout()
+  if layout == nil then
+    return
+  end
   local number_of_lines
   if new_buffer then
-    M.diffview_layout.b:focus()
-    number_of_lines = u.get_buffer_length(M.diffview_layout.b.file.bufnr)
+    layout.b:focus()
+    number_of_lines = u.get_buffer_length(layout.b.file.bufnr)
   else
-    M.diffview_layout.a:focus()
-    number_of_lines = u.get_buffer_length(M.diffview_layout.a.file.bufnr)
+    layout.a:focus()
+    number_of_lines = u.get_buffer_length(layout.a.file.bufnr)
   end
   if linenr > number_of_lines then
     u.notify("Diagnostic position outside buffer. Jumping to last line instead.", vim.log.levels.WARN)
@@ -195,7 +208,8 @@ end
 ---Get the data from the reviewer: file names, line information, and cursor focus.
 ---@return ReviewerData?
 M.get_reviewer_data = function()
-  if M.diffview_layout == nil then
+  local layout = M.get_layout()
+  if layout == nil then
     return
   end
 
@@ -203,9 +217,18 @@ M.get_reviewer_data = function()
   local new_file_focused = M.is_new_file_focused(vim.api.nvim_get_current_win())
   local diff_refs = state.INFO.diff_refs
 
+  local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
+  local diffview_file = new_file_focused and layout.b.file.path or layout.a.file.path
+  if not (buf_name == "diffview://null") and not vim.endswith(buf_name, diffview_file) then
+    u.notify(
+      string.format("Buffer name doesn't match reviewer filename %s. Restart the review.", diffview_file),
+      vim.log.levels.ERROR
+    )
+  end
+
   return {
-    old_file_name = M.is_file_renamed() and M.diffview_layout.a.file.path or M.diffview_layout.b.file.path,
-    file_name = M.diffview_layout.b.file.path,
+    old_file_name = M.is_file_renamed() and layout.a.file.path or layout.b.file.path,
+    file_name = layout.b.file.path,
     old_sha = diff_refs.base_sha,
     new_sha = diff_refs.head_sha,
     start_line = start_line,
@@ -218,8 +241,12 @@ end
 ---@param current_win integer The ID of the currently focused window
 ---@return boolean
 M.is_new_file_focused = function(current_win)
-  local b_win = u.get_window_id_by_buffer_id(M.diffview_layout.b.file.bufnr)
-  local a_win = u.get_window_id_by_buffer_id(M.diffview_layout.a.file.bufnr)
+  local layout = M.get_layout()
+  if layout == nil then
+    return false
+  end
+  local b_win = u.get_window_id_by_buffer_id(layout.b.file.bufnr)
+  local a_win = u.get_window_id_by_buffer_id(layout.a.file.bufnr)
   if a_win ~= current_win and b_win ~= current_win then
     current_win = M.stored_win
     M.stored_win = nil
@@ -479,17 +506,30 @@ end
 
 ---Set up autocommands to set and unset buffer-local options and keymaps.
 M.set_reviewer_autocommands = function(bufnr)
+  local layout = M.get_layout()
+  if layout == nil then
+    return false
+  end
+  local is_new_file = bufnr == layout.b.file.bufnr
+
   local group = vim.api.nvim_create_augroup("gitlab.diffview.autocommand.win_enter." .. bufnr, {})
-  vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter" }, {
+  vim.api.nvim_create_autocmd({
+    "WinEnter", -- Fires when focusing window that already is displaying buffer (e.g., when opening buffer in another tab)
+    "BufWinEnter", -- Fires when buffer enters focused window (e.g., when cycling diffview files)
+  }, {
     buffer = bufnr,
     callback = function()
-      if vim.api.nvim_get_current_win() == M.buf_winids[bufnr] then
+      local _layout = M.get_layout()
+      if _layout == nil then
+        return false
+      end
+      if vim.api.nvim_get_current_win() == (is_new_file and _layout.b.id or _layout.a.id) then
         M.stored_win = vim.api.nvim_get_current_win()
         u.switch_can_edit_buf(bufnr, false)
         M.set_keymaps(bufnr)
       else
-        -- Only make the local file modifiable, not the diffview buffer for the old revision
-        if M.diffview_layout.b.id == M.buf_winids[bufnr] then
+        -- Only make the new file modifiable, not the diffview buffer for the old revision
+        if is_new_file then
           u.switch_can_edit_buf(bufnr, true)
         end
         del_keymaps(bufnr)
@@ -498,15 +538,6 @@ M.set_reviewer_autocommands = function(bufnr)
     desc = "(Un)set buffer-local options for reviewer buffers",
     group = group,
   })
-end
-
----Update the stored winid for a given reviewer buffer.
----This is necessary for the M.set_reviewer_autocommands function to work correctly in
----cases like when the user closes one of the original reviewer windows and Diffview
----automatically creates a new pair of reviewer windows or the user wipes out a buffer
----and Diffview reloads it with a different ID.
-M.update_winid_for_buffer = function(bufnr)
-  M.buf_winids[bufnr] = vim.fn.bufwinid(bufnr)
 end
 
 return M
