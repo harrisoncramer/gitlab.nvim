@@ -15,12 +15,15 @@ local common = require("gitlab.actions.common")
 local List = require("gitlab.utils.list")
 local tree_utils = require("gitlab.actions.discussions.tree")
 local discussions_tree = require("gitlab.actions.discussions.tree")
+local virtual_indent = require("gitlab.actions.discussions.virtual_indent")
 local draft_notes = require("gitlab.actions.draft_notes")
 local signs = require("gitlab.indicators.signs")
 local diagnostics = require("gitlab.indicators.diagnostics")
 local winbar = require("gitlab.actions.discussions.winbar")
 local help = require("gitlab.actions.help")
 local emoji = require("gitlab.emoji")
+
+local indent_group = vim.api.nvim_create_augroup("gitlab.discussions.indentation", {})
 
 local M = {
   split_visible = false,
@@ -33,7 +36,24 @@ local M = {
   discussion_tree = nil,
   ---@type NuiTree?
   unlinked_discussion_tree = nil,
+  ---@type ("discussions"|"notes")?
+  current_view_type = nil,
 }
+
+---Attach Treesitter's markdown parser to a discussion tree buffer.
+---This enables code blocks (e.g. ```python) to get real language-specific syntax
+---highlighting, instead of the legacy regex syntax defined for the `gitlab` filetype in
+---`after/syntax/gitlab.vim`. A no-op if the `markdown` parser isn't installed.
+---@param bufnr number
+local function attach_markdown_treesitter(bufnr)
+  vim.treesitter.language.register("markdown", "gitlab")
+  if pcall(vim.treesitter.start, bufnr, "markdown") then
+    -- `vim.treesitter.start()` clears 'syntax' on the buffer but that also wipes the
+    -- note header highlighting, which the markdown parser knows nothing about. Reload
+    -- it on top (markdown regex syntax is skipped in that case).
+    vim.bo[bufnr].syntax = "ON"
+  end
+end
 
 ---Delete discussion buffers to prevent leaked buffers on each M.open/M.close cycle.
 ---@param split_bufnr integer? Passed in because `unmount` has already nil'd `M.split.bufnr`.
@@ -43,6 +63,29 @@ local function delete_bufs(split_bufnr)
     if vim.api.nvim_buf_is_valid(bufnr) then
       vim.api.nvim_buf_delete(bufnr, { force = true })
     end
+  end
+end
+
+---Return the currently selected tree.
+---Nil if the split is not a valid window or the window is not in the current tabpage.
+---@preturn tree? NuiTree
+local get_current_tree = function()
+  if M.split == nil or not (M.split.winid and vim.api.nvim_win_is_valid(M.split.winid)) then
+    return
+  end
+  local win_in_tabpage = false
+  for _, i in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if i == M.split.winid then
+      win_in_tabpage = true
+    end
+  end
+  if not win_in_tabpage then
+    return
+  end
+  if M.current_view_type == "discussions" then
+    return M.discussion_tree
+  elseif M.current_view_type == "notes" then
+    return M.unlinked_discussion_tree
   end
 end
 
@@ -142,13 +185,11 @@ M.open = function(callback, view_type)
   M.split_visible = true
   split:mount()
 
-  -- Set window and buffer local options to discussion tree split after mounting the split
-  for opt, val in pairs(state.settings.discussion_tree.winopts) do
-    vim.api.nvim_set_option_value(opt, val, { win = M.split.winid })
-  end
-
+  -- Set buffer-local options to discussion tree buffers.
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.linked_bufnr })
   vim.api.nvim_set_option_value("filetype", "gitlab", { buf = M.unlinked_bufnr })
+  attach_markdown_treesitter(M.linked_bufnr)
+  attach_markdown_treesitter(M.unlinked_bufnr)
 
   -- Set autocmds to clean up state when discussions buffers are deleted manually
   vim.api.nvim_create_autocmd("BufWipeout", {
@@ -162,6 +203,27 @@ M.open = function(callback, view_type)
     callback = function()
       M.unlinked_bufnr = nil
     end,
+  })
+
+  -- Where a line wraps depends on the window width, so a resize has to redraw the
+  -- indentation of the wrapped lines. The buffer's contents do not change, so the tree
+  -- needs no re-render.
+  -- vim.api.nvim_create_autocmd({ "WinResized", "VimResized", "TabEnter" }, {
+  vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
+    -- TODO: Find out why "WinResized" fires three times after toggling a node.
+    callback = function()
+      virtual_indent.apply(get_current_tree())
+    end,
+    desc = "Re-apply virtual indentation in discussion tree",
+    group = indent_group,
+  })
+  vim.api.nvim_create_autocmd("OptionSet", {
+    pattern = { "wrap", "breakat", "number", "relativenumber" },
+    callback = function()
+      virtual_indent.apply(get_current_tree())
+    end,
+    desc = "Re-apply virtual indentation in discussion tree when options change",
+    group = indent_group,
   })
 
   -- Set autocmd to clean up state when discussions split is closed manually
@@ -224,8 +286,10 @@ M.close = function()
   end)
   M.split_visible = false
   M.discussion_tree = nil
+  M.unlinked_discussion_tree = nil
   delete_bufs(split_bufnr)
   winbar.cleanup_timer()
+  vim.api.nvim_clear_autocmds({ group = indent_group })
 end
 
 ---Move to the discussion tree at the discussion from diagnostic on current line.
@@ -250,7 +314,7 @@ M.move_to_discussion_tree = function()
         end
         discussion_node:expand()
       end
-      M.discussion_tree:render()
+      discussions_tree.render(M.discussion_tree)
       vim.api.nvim_set_current_win(M.split.winid)
       M.switch_view_type("discussions")
       vim.api.nvim_win_set_cursor(M.split.winid, { line_number, 0 })
@@ -525,7 +589,7 @@ M.rebuild_discussion_tree = function()
   -- Combine inline draft notes with regular comments
   local all_nodes = u.join(draft_comment_nodes, existing_comment_nodes)
 
-  local discussion_tree = NuiTree({
+  M.discussion_tree = NuiTree({
     nodes = all_nodes,
     bufnr = M.linked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
@@ -533,13 +597,12 @@ M.rebuild_discussion_tree = function()
 
   -- Re-expand already expanded nodes
   for _, id in ipairs(expanded_node_ids) do
-    tree_utils.open_node_by_id(discussion_tree, id)
+    tree_utils.open_node_by_id(M.discussion_tree, id)
   end
-  discussion_tree:render()
-  discussions_tree.restore_cursor_position(M.split.winid, discussion_tree, current_cursor_column, current_node, nil)
+  discussions_tree.render(M.discussion_tree)
+  discussions_tree.restore_cursor_position(M.split.winid, M.discussion_tree, current_cursor_column, current_node, nil)
 
-  M.set_tree_keymaps(discussion_tree, M.linked_bufnr, false)
-  M.discussion_tree = discussion_tree
+  M.set_tree_keymaps(M.discussion_tree, M.linked_bufnr, false)
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
   state.discussion_tree.resolved_expanded = false
   state.discussion_tree.unresolved_expanded = false
@@ -564,7 +627,7 @@ M.rebuild_unlinked_discussion_tree = function()
   -- Combine draft notes with regular notes
   local all_nodes = u.join(draft_comment_nodes, existing_note_nodes)
 
-  local unlinked_discussion_tree = NuiTree({
+  M.unlinked_discussion_tree = NuiTree({
     nodes = all_nodes,
     bufnr = M.unlinked_bufnr,
     prepare_node = tree_utils.nui_tree_prepare_node,
@@ -572,13 +635,17 @@ M.rebuild_unlinked_discussion_tree = function()
 
   -- Re-expand already expanded nodes
   for _, id in ipairs(expanded_node_ids) do
-    tree_utils.open_node_by_id(unlinked_discussion_tree, id)
+    tree_utils.open_node_by_id(M.unlinked_discussion_tree, id)
   end
-  unlinked_discussion_tree:render()
-  discussions_tree.restore_cursor_position(M.split.winid, unlinked_discussion_tree, current_cursor_column, current_node)
+  discussions_tree.render(M.unlinked_discussion_tree)
+  discussions_tree.restore_cursor_position(
+    M.split.winid,
+    M.unlinked_discussion_tree,
+    current_cursor_column,
+    current_node
+  )
 
-  M.set_tree_keymaps(unlinked_discussion_tree, M.unlinked_bufnr, true)
-  M.unlinked_discussion_tree = unlinked_discussion_tree
+  M.set_tree_keymaps(M.unlinked_discussion_tree, M.unlinked_bufnr, true)
   common.switch_can_edit_bufs(false, M.linked_bufnr, M.unlinked_bufnr)
   state.unlinked_discussion_tree.resolved_expanded = false
   state.unlinked_discussion_tree.unresolved_expanded = false
@@ -876,7 +943,22 @@ M.switch_view_type = function(override)
     vim.api.nvim_set_current_buf(M.unlinked_bufnr)
   end
   vim.api.nvim_set_option_value("winfixbuf", true, { win = M.split.winid })
+
+  -- Set window local options to the discussion tree split. This needs to be done after
+  -- switching the view type because window-local options are in fact tied to the
+  -- buffer as well: see https://github.com/neovim/neovim/issues/11525.
+  local winopts = u.merge(state.settings.discussion_tree.winopts, {
+    -- These are required to make the virtual indentation work
+    breakindent = false,
+    linebreak = true,
+    showbreak = "NONE",
+  })
+  for opt, val in pairs(winopts) do
+    vim.api.nvim_set_option_value(opt, val, { win = M.split.winid })
+  end
+
   winbar.update_winbar()
+  virtual_indent.apply(get_current_tree())
 end
 
 ---Toggle comments tree type between "simple" and "by_file_name".

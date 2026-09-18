@@ -194,6 +194,8 @@
 ---@field date? string
 ---@field unlinked? string
 ---@field expander? string
+---@field wrap_marker? string
+---@field indent_guide? string
 ---@field directory? string
 ---@field directory_icon? string
 ---@field file_name? string
@@ -319,6 +321,9 @@
 ---@field draft? string Symbol to show next to draft comments/notes
 ---@field tree_type? "simple"|"by_file_name" Type of discussion tree - "simple" means just list of discussions, "by_file_name" means file tree with discussions under file
 ---@field draft_mode? boolean Whether comments are posted as drafts as part of a review
+---@field indent_width? integer Display columns one level of nesting indents by
+---@field indent_guides? IndentGuides Guides tying replies to the initial comment.
+---@field wrap_marker? string Marker drawn at the start of a wrapped line
 ---@field relative_date? boolean Whether to show relative time like "5 days ago" or absolute time like "03/01/2025 at 01:43"
 ---@field winopts? GitlabDiscussionsWinopts Window-local options for the discussion tree split
 ---@field winbar? function Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
@@ -330,13 +335,16 @@
 ---@class ExpanderOpts: table<string, string>
 ---@field expanded? string Icon for expanded discussion thread
 ---@field collapsed? string Icon for collapsed discussion thread
----@field indentation? string Indentation Icon
+
+---@class IndentGuides
+---@field vertical? string Drawn down a discussion that has more replies below
+---@field branch? string Drawn against a reply's header
+---@field last? string Drawn against the header of the last reply
+---@field horizontal? string Pads `branch` and `last` out to the indent width
 
 ---@class GitlabDiscussionsWinopts
 ---@field number? boolean Show line numbers
 ---@field relativenumber? boolean Show relative line numbers
----@field breakindent? boolean Every wrapped line will continue visually indented
----@field showbreak? string String to put at the start of lines that have been wrapped
 
 ---@class Keymaps
 ---@field disable_all boolean Disable all mappings created by the plugin

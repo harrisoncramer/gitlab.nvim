@@ -5,8 +5,6 @@ local state = require("gitlab.state")
 -- vim.g.gitlab_discussion_tree and accessing it as a vim dictionary in
 -- after/syntax/gitlab.vim.
 local discussion_tree = state.settings.discussion_tree
-vim.g.gitlab_discussion_tree_expander_open = discussion_tree.expanders.expanded
-vim.g.gitlab_discussion_tree_expander_closed = discussion_tree.expanders.collapsed
 vim.g.gitlab_discussion_tree_draft = discussion_tree.draft
 vim.g.gitlab_discussion_tree_resolved = discussion_tree.resolved
 vim.g.gitlab_discussion_tree_unresolved = discussion_tree.unresolved
@@ -25,6 +23,8 @@ vim.api.nvim_create_autocmd({ "VimEnter", "ColorScheme" }, {
     vim.api.nvim_set_hl(0, "GitlabMention", get_colors_for_group(discussion_colors.mention))
     vim.api.nvim_set_hl(0, "GitlabDate", get_colors_for_group(discussion_colors.date))
     vim.api.nvim_set_hl(0, "GitlabExpander", get_colors_for_group(discussion_colors.expander))
+    vim.api.nvim_set_hl(0, "GitlabWrapMarker", get_colors_for_group(discussion_colors.wrap_marker))
+    vim.api.nvim_set_hl(0, "GitlabIndentGuide", get_colors_for_group(discussion_colors.indent_guide))
     vim.api.nvim_set_hl(0, "GitlabDirectory", get_colors_for_group(discussion_colors.directory))
     vim.api.nvim_set_hl(0, "GitlabDirectoryIcon", get_colors_for_group(discussion_colors.directory_icon))
     vim.api.nvim_set_hl(0, "GitlabFileName", get_colors_for_group(discussion_colors.file_name))

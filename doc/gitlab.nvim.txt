@@ -326,8 +326,15 @@ you call this function with no values the defaults will be used:
       expanders = { -- Discussion tree icons
         expanded = " ", -- Icon for expanded discussion thread
         collapsed = " ", -- Icon for collapsed discussion thread
-        indentation = "  ", -- Indentation Icon
       },
+      indent_width = 2, -- Display columns that one level of nesting indents by. Indentation is drawn as virtual text, so it never enters the buffer and is not copied along with note text
+      indent_guides = { -- Guides tying replies to the initial comment. The characters are padded out to `indent_width`. Set `indent_guides = false` to turn the guides off
+        vertical = "│", -- Drawn down a discussion that has more replies below
+        branch = "├", -- Drawn against a reply's header
+        last = "╰", -- Drawn against the header of the last reply
+        horizontal = "─", -- Pads `branch` and `last` out to the indent width
+      },
+      wrap_marker = "↪ ", -- Marker drawn inside the tree's indentation at the start of a wrapped line. Dropped if wider than the indentation. Set `wrap_marker = ""` to turn the marker off
       spinner_chars = { "/", "|", "\\", "-" }, -- Characters for the refresh animation
       auto_open = true, -- Automatically open when the reviewer is opened
       focus_on_open = true, -- Automatically focus the discussion tree when it is opened
@@ -348,8 +355,12 @@ you call this function with no values the defaults will be used:
       winopts = { -- Window-local options for the discussion tree split
         number = false,
         relativenumber = false,
-        breakindent = true, -- Every wrapped line will continue visually indented
-        showbreak = "+ ", -- String to put at the start of lines that have been wrapped
+        -- The tree indents lines with virtual text and enforces 'breakindent=false',
+        -- 'linebreak=true', and 'showbreak=' because other values ruin the indentation
+        -- on wrapped lines. Use discussion_tree.wrap_marker instead of 'showbreak'.
+        -- The global 'breakat' option which controls at which characters lines can wrap
+        -- cannot be set per-window. If you want to enable soft-wrapping for long Gitlab
+        -- URLS, add this to your global configuration: `set breakat+==#`.
       }
       winbar = nil, -- Custom function to return winbar title, should return a string. Provided with WinbarTable (defined in annotations.lua)
                    -- If using lualine, add "gitlab" to disabled file types, otherwise you will not see the winbar.
@@ -477,6 +488,8 @@ you call this function with no values the defaults will be used:
         mention = "WarningMsg",
         date = "Comment",
         expander = "DiffviewNonText",
+        wrap_marker = "DiffviewNonText",
+        indent_guide = "DiffviewNonText",
         directory = "Directory",
         directory_icon = "DiffviewFolderSign",
         file_name = "Normal",
