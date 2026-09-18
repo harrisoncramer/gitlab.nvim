@@ -211,6 +211,9 @@ These `keymaps` are active in the discussion tree window.
 | `dd`        | Delete comment                                                                        |
 | `e`         | Edit comment                                                                          |
 | `r`         | Reply to comment                                                                      |
+| `se`        | Edit comment with suggestion preview in a new tab                                     |
+| `sr`        | Reply to comment with a suggestion preview in a new tab                               |
+| `sa`        | Apply the suggestion to the local file with a preview in a new tab                    |
 | `-`         | Toggle the resolved status of the whole discussion                                    |
 | `o`         | Jump to comment location in file                                                      |
 | `a`         | Jump to the comment location in the reviewer window                                   |
@@ -233,11 +236,12 @@ These `keymaps` are active in the discussion tree window.
 
 These `keymaps` are active in the reviewer window (the diff view).
 
-| Keys | Action                                                                   |
-| ---- | ------------------------------------------------------------------------ |
-| `c`  | Create a comment for the lines that the following {motion} moves over    |
-| `s`  | Create a suggestion for the lines that the following {motion} moves over |
-| `a`  | Jump to the comment in the discussion tree                               |
+| Keys | Action                                                                                             |
+| ---- | -------------------------------------------------------------------------------------------------- |
+| `c`  | Create a comment for the lines that the following {motion} moves over                              |
+| `s`  | Create a suggestion for the lines that the following {motion} moves over                           |
+| `S`  | Create a suggestion with preview in a new tab for the lines that the following {motion} moves over |
+| `a`  | Jump to the comment in the discussion tree                                                         |
 
 ## Contributing
 

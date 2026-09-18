@@ -551,7 +551,7 @@ end
 M.check_visual_mode = function()
   local mode = vim.api.nvim_get_mode().mode
   if mode ~= "v" and mode ~= "V" then
-    M.notify("Code suggestions and multiline comments are only available in visual mode", vim.log.levels.ERROR)
+    M.notify("Code suggestions are only available in visual mode", vim.log.levels.ERROR)
     return false
   end
   return true
