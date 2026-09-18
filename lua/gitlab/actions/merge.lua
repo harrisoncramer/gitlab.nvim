@@ -10,6 +10,7 @@ local M = {}
 local function create_squash_message_popup()
   return Popup(popup.create_popup_state({
     title = "Squash Commit Message",
+    filetype = "gitcommit",
     user_settings = state.settings.popup.squash_message,
   }))
 end

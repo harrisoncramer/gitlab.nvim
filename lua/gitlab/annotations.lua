@@ -427,6 +427,7 @@
 
 ---@class PopupOpts The options for customizing popup windows
 ---@field title string The string to appear on top of the popup
+---@field filetype? string The filetype of the popup (default: markdown)
 ---@field user_settings? table User-defined popup settings
 ---@field width? number Override default width
 ---@field height? number Override default height
