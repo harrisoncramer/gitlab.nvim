@@ -35,6 +35,26 @@ M.new_location_from_reviewer = function()
   return Location.new(reviewer_data, diff_hunks)
 end
 
+---Build the position_data payload for a positioned comment, anchored to the MR's current
+---revision or, with `M.location.commit_override` set, to that single commit. Gitlab
+---rejects a commit_id whose position refs do not describe the commit's own diff.
+---@return table
+M.build_position_data = function()
+  local revision = state.MR_REVISIONS[1]
+  local override = M.location.commit_override
+  return {
+    file_name = M.location.reviewer_data.file_name,
+    old_file_name = M.location.reviewer_data.old_file_name,
+    base_commit_sha = override and override.base_sha or revision.base_commit_sha,
+    start_commit_sha = override and override.start_sha or revision.start_commit_sha,
+    head_commit_sha = override and override.head_sha or revision.head_commit_sha,
+    old_line = M.location.location_data.old_line,
+    new_line = M.location.location_data.new_line,
+    line_range = M.location.location_data.line_range,
+    commit_id = override and override.commit_id,
+  }
+end
+
 ---Fire the API to send the comment data to the Go server.
 ---@param text string comment text
 ---@param unlinked boolean if true, the comment is not linked to a line
@@ -86,17 +106,7 @@ local confirm_create_comment = function(text, unlinked, discussion_id)
     return
   end
 
-  local revision = state.MR_REVISIONS[1]
-  local position_data = {
-    file_name = M.location.reviewer_data.file_name,
-    old_file_name = M.location.reviewer_data.old_file_name,
-    base_commit_sha = revision.base_commit_sha,
-    start_commit_sha = revision.start_commit_sha,
-    head_commit_sha = revision.head_commit_sha,
-    old_line = M.location.location_data.old_line,
-    new_line = M.location.location_data.new_line,
-    line_range = M.location.location_data.line_range,
-  }
+  local position_data = M.build_position_data()
 
   -- Creating a new comment (linked to specific changes)
   local body = u.merge({ type = "text", comment = text }, position_data)
@@ -247,6 +257,17 @@ end
 ---in the current MR.
 M.create_note = function()
   local layout = M.create_comment_layout({ unlinked = true })
+  layout:mount()
+end
+
+---Open a comment popup for a `location` the caller resolved itself, instead of reading the
+---live reviewer.
+---@param location table reviewer_data (file_name, old_file_name, new_file_focused,
+---start_line, end_line), location_data (old_line, new_line, line_range), and optionally
+---commit_override (base_sha, start_sha, head_sha, commit_id)
+M.create_comment_for_location = function(location)
+  M.location = location
+  local layout = M.create_comment_layout({ unlinked = false })
   layout:mount()
 end
 

@@ -178,6 +178,7 @@ These keymaps are available globally (i.e., in any buffer).
 | `glC`     | Create a new MR for currently checked-out feature branch                                          |
 | `glc`     | Chose MR for review                                                                               |
 | `glS`     | Start review for the currently checked-out branch                                                 |
+| `glh`     | Browse the MR's commit history, one commit at a time                                              |
 | `gl<C-R>` | Load new MR state from Gitlab and apply new diff refs to the diff view                            |
 | `gls`     | Show the editable summary of the MR                                                               |
 | `glu`     | Copy the URL of the MR to the system clipboard                                                    |
@@ -238,6 +239,22 @@ These `keymaps` are active in the reviewer window (the diff view).
 | `c`  | Create a comment for the lines that the following {motion} moves over    |
 | `s`  | Create a suggestion for the lines that the following {motion} moves over |
 | `a`  | Jump to the comment in the discussion tree                               |
+
+#### Commit Browser Keymaps
+
+These `keymaps` are active in the commit browser (`glh`), which steps through the
+MR one commit at a time.
+
+| Keys | Action                                                                          |
+| ---- | -------------------------------------------------------------------------------- |
+| `c`  | Comment on the current line, anchored to the commit being viewed                 |
+| `a`  | Jump to the comment in the discussion tree                                        |
+| `g?` | Show these keymaps                                                               |
+
+`c` works on both sides of the diff, including a line the commit deletes. To
+follow the line under the cursor to the next commit that changes it, bind
+`select_next_change_here` / `select_prev_change_here` in your diffview config.
+Those actions exist only in the `diffview+` fork.
 
 ## Contributing
 

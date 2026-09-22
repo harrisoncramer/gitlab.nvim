@@ -57,3 +57,61 @@ describe("gitlab/actions/comment.lua", function()
     end)
   end)
 end)
+
+-- Tests for the positioned-comment payload builder in actions/comment.lua. A browse-mode
+-- caller anchors via M.location.commit_override, which has to carry the browsed commit's
+-- whole diff refs because Gitlab validates commit_id against them; the regular reviewer
+-- path leaves it unset and gets the MR revision with no commit_id in the payload.
+
+local comment = require("gitlab.actions.comment")
+local state = require("gitlab.state")
+
+describe("actions/comment.lua build_position_data", function()
+  before_each(function()
+    state.MR_REVISIONS = {
+      {
+        base_commit_sha = "base123",
+        start_commit_sha = "start123",
+        head_commit_sha = "head123",
+      },
+    }
+  end)
+
+  local function make_location(commit_override)
+    return {
+      reviewer_data = { file_name = "f.lua", old_file_name = "" },
+      location_data = {
+        old_line = nil,
+        new_line = 10,
+        line_range = {
+          start = { new_line = 10, type = "new" },
+          ["end"] = { new_line = 10, type = "new" },
+        },
+      },
+      commit_override = commit_override,
+    }
+  end
+
+  it("Anchors a browse-mode comment to the browsed commit", function()
+    comment.location = make_location({
+      base_sha = "parentXYZ",
+      start_sha = "parentXYZ",
+      head_sha = "commitABC",
+      commit_id = "commitABC",
+    })
+    local position_data = comment.build_position_data()
+    assert.are.equal("commitABC", position_data.head_commit_sha)
+    assert.are.equal("commitABC", position_data.commit_id)
+    -- Sending the MR base here is what Gitlab rejects with "commit_id does not match the
+    -- diff refs"; the position has to describe the commit's own parent..commit diff.
+    assert.are.equal("parentXYZ", position_data.base_commit_sha)
+    assert.are.equal("parentXYZ", position_data.start_commit_sha)
+  end)
+
+  it("Leaves a regular reviewer comment's payload unchanged, with no commit_id", function()
+    comment.location = make_location(nil)
+    local position_data = comment.build_position_data()
+    assert.are.equal("head123", position_data.head_commit_sha)
+    assert.is_nil(position_data.commit_id)
+  end)
+end)

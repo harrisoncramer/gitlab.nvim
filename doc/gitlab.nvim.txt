@@ -255,6 +255,7 @@ you call this function with no values the defaults will be used:
         create_mr = "glC", -- Create a new MR for currently checked-out feature branch
         choose_merge_request = "glc", -- Chose MR for review (if necessary check out the feature branch)
         start_review = "glS", -- Start review for the currently checked-out branch
+        browse_commits = "glh", -- Browse the MR's commit history, one commit at a time
         reload_review = "gl<C-R>", -- Load new MR state from Gitlab and apply new diff refs to the diff view
         summary = "gls", -- Show the editable summary of the MR
         copy_mr_url = "glu", -- Copy the URL of the MR to the system clipboard
@@ -482,6 +483,7 @@ you call this function with no values the defaults will be used:
         file_name = "Normal",
         resolved = "DiagnosticSignOk",
         unresolved = "DiagnosticSignWarn",
+        commit = "DiagnosticSignInfo",
         draft = "DiffviewNonText",
         draft_mode = "DiagnosticWarn",
         live_mode = "DiagnosticOk",
@@ -921,6 +923,24 @@ Opens the reviewer pane. Can be used from anywhere within Neovim after the
 plugin is loaded. If run twice, will open a second reviewer pane.
 >lua
   require("gitlab").review()
+<
+                                                  *gitlab.nvim.browse_commits*
+gitlab.browse_commits() ~
+
+Opens a view of the MR's commit history, letting you step through it one commit
+at a time. Each entry shows a single commit's isolated diff, to understand how
+the MR was built up.
+
+Press `c` to comment on a line, anchored to the commit being viewed. This works
+on both sides of the diff, including a line the commit deletes. Press `a` on a
+commented line to jump to the comment in the discussion tree. `g?` lists these
+keymaps.
+
+To follow the line under the cursor to the next commit that changes it, bind
+`select_next_change_here` / `select_prev_change_here` in your diffview config.
+Those actions exist only in the `diffview+` fork.
+>lua
+  require("gitlab").browse_commits()
 <
                                                    *gitlab.nvim.reload_review*
 gitlab.reload_review() ~

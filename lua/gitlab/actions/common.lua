@@ -7,7 +7,44 @@ local u = require("gitlab.utils")
 local reviewer = require("gitlab.reviewer")
 local indicators_common = require("gitlab.indicators.common")
 local state = require("gitlab.state")
+local windows = require("gitlab.actions.discussions.windows")
 local M = {}
+
+---Return the window showing the tree in the current tabpage.
+---@param tree NuiTree
+---@return integer?
+local function get_tree_winid(tree)
+  local current_winid = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_get_buf(current_winid) == tree.bufnr then
+    return current_winid
+  end
+  local entry = windows.get()
+  if entry ~= nil and entry.bufnr == tree.bufnr then
+    return entry.winid
+  end
+end
+
+---Return the node under `winid`'s cursor, plus that cursor's column.
+---`tree:get_node()` resolves the window as `win_findbuf(tree.bufnr)[1]`. The discussion
+---buffers are shared between tabpages, so that window belongs to an arbitrary tab.
+---@param tree NuiTree
+---@param winid integer
+---@return NuiTree.Node?, integer column
+M.get_node_at = function(tree, winid)
+  local row, column = unpack(vim.api.nvim_win_get_cursor(winid))
+  return tree:get_node(row), column
+end
+
+---Return the node under the cursor of the current tabpage's tree window.
+---@param tree NuiTree
+---@return NuiTree.Node?
+M.get_current_node = function(tree)
+  local winid = get_tree_winid(tree)
+  if winid == nil then
+    return nil
+  end
+  return (M.get_node_at(tree, winid))
+end
 
 ---Build note header from note.
 ---@param note Note|DraftNote
@@ -99,7 +136,7 @@ end
 ---@param tree NuiTree
 ---@return string?
 M.get_url = function(tree)
-  local current_node = tree:get_node()
+  local current_node = M.get_current_node(tree)
   local note_node = M.get_note_node(tree, current_node)
   if note_node == nil then
     return
@@ -134,7 +171,7 @@ end
 ---For developers!
 ---@param tree NuiTree
 M.print_node = function(tree)
-  local current_node = tree:get_node()
+  local current_node = M.get_current_node(tree)
   vim.print(current_node)
 end
 
@@ -253,18 +290,18 @@ end
 ---either the `new_line` or `old_line`.
 ---@param old_line? integer The line number in the OLD version
 ---@param new_line? integer The line number in the NEW version
----@param start_line_code string The line code for the start of the range
----@param end_line_code string The line code for the end of the range
+---@param line_range LineRange The range, whose type says which side the comment is on
 ---@return integer start_line
 ---@return integer end_line
 ---@return boolean is_new_sha True if line range refers to NEW SHA
-M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end_line_code)
-  local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
-  local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
-  if old_line ~= nil and old_start_line ~= 0 then
+M.get_line_numbers_for_range = function(old_line, new_line, line_range)
+  local old_start_line, new_start_line = indicators_common.parse_line_code(line_range.start.line_code)
+  local old_end_line, new_end_line = indicators_common.parse_line_code(line_range["end"].line_code)
+  local on_old_side = indicators_common.is_old_position({ old_line = old_line, line_range = line_range })
+  if on_old_side and old_line ~= nil then
     local range = old_end_line - old_start_line
     return (old_line - range), old_line, false
-  elseif new_line ~= nil then
+  elseif not on_old_side and new_line ~= nil then
     local range = new_end_line - new_start_line
     -- Force start_line to be greater than 0
     -- TODO: use `math.max(new_line - range, 1)` instead
@@ -282,12 +319,8 @@ end
 ---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local line_number, _, is_new_sha = M.get_line_numbers_for_range(
-      root_node.old_line,
-      root_node.new_line,
-      root_node.range.start.line_code,
-      root_node.range["end"].line_code
-    )
+    local line_number, _, is_new_sha =
+      M.get_line_numbers_for_range(root_node.old_line, root_node.new_line, root_node.range)
     return line_number, is_new_sha
   else
     return M.get_line_number(root_node.id)
@@ -297,7 +330,7 @@ end
 ---Move the cursor to the reviewer's location associated with the note.
 ---@param tree NuiTree
 M.jump_to_reviewer = function(tree)
-  local node = tree:get_node()
+  local node = M.get_current_node(tree)
   local root_node = M.get_root_node(tree, node)
   if root_node == nil then
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
@@ -308,13 +341,29 @@ M.jump_to_reviewer = function(tree)
     u.notify("Could not get line number", vim.log.levels.ERROR)
     return
   end
+  -- A commit-anchored comment has no position in the MR's changeset. Its line numbers
+  -- only mean anything in that commit's own diff, which is what the commit browser shows.
+  if root_node.commit_id ~= nil then
+    -- Gitlab renumbers a commit comment's top-level old_line to the MR base where it can,
+    -- but leaves the line range in the commit's own numbering, which is what the browser
+    -- shows. A comment without a range is not one this plugin wrote.
+    local on_old_side = not is_new_sha
+    local range_start = on_old_side and root_node.range ~= nil and root_node.range.start.old_line or nil
+    require("gitlab.reviewer.history").jump_to_commit(
+      root_node.commit_id,
+      root_node.file_name,
+      range_start or line_number,
+      on_old_side
+    )
+    return
+  end
   reviewer.jump(root_node.file_name, root_node.old_file_name, line_number, is_new_sha)
 end
 
 ---Jump to the file in a new tab.
 ---@param tree NuiTree
 M.jump_to_file = function(tree)
-  local node = tree:get_node()
+  local node = M.get_current_node(tree)
   local root_node = M.get_root_node(tree, node)
   if root_node == nil then
     u.notify("Could not get discussion node", vim.log.levels.ERROR)
