@@ -6,7 +6,7 @@ local M = {}
 ---@param opts PopupOpts Options for customizing the popup
 ---@return table
 M.create_popup_state = function(opts)
-  opts = opts or { filetype = "markdown" }
+  opts = u.merge({ filetype = "markdown" }, opts)
   local settings = u.merge(require("gitlab.state").settings.popup, opts.user_settings or {})
   local view_opts = {
     buf_options = {
