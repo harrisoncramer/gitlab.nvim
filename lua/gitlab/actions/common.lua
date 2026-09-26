@@ -262,10 +262,10 @@ M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end
   local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
   local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
   if old_line ~= nil and old_start_line ~= 0 then
-    local range = (old_start_line and old_end_line) and (old_end_line - old_start_line) or 0
+    local range = old_end_line - old_start_line
     return (old_line - range), old_line, false
   elseif new_line ~= nil then
-    local range = (new_start_line and new_end_line) and (new_end_line - new_start_line) or 0
+    local range = new_end_line - new_start_line
     -- Force start_line to be greater than 0
     -- TODO: use `math.max(new_line - range, 1)` instead
     local start_line = (new_line - range > 0) and (new_line - range) or 1
