@@ -53,15 +53,14 @@ M.filter_placeable_discussions = function()
 end
 
 ---Parse old and new line from a line code like "3f454a98e586d1aa0d322e19afd5e67e08f2d3c8_10_44".
----@param line_code string A SHA hash of the file name and line numbers before and after change
----@return integer The line number before the change
----@return integer The line number after the change
+---GitLab can return an empty line code for a ranged discussion.
+---@param line_code? string A SHA hash of the file name and line numbers before and after change
+---@return integer? The line number before the change
+---@return integer? The line number after the change
 M.parse_line_code = function(line_code)
   local line_code_regex = "%w+_(%d+)_(%d+)"
-  local old_line, new_line = line_code:match(line_code_regex)
-  old_line = tonumber(old_line) --[[@as integer]]
-  new_line = tonumber(new_line) --[[@as integer]]
-  return old_line, new_line
+  local old_line, new_line = (line_code or ""):match(line_code_regex)
+  return tonumber(old_line), tonumber(new_line)
 end
 
 ---Return true if discussion/draft belongs to the old file, otherwise false.
