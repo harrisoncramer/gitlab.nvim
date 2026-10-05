@@ -248,19 +248,30 @@ M.get_line_number = function(id)
   return ((is_new_sha and first_note.position.new_line or first_note.position.old_line) or 1), is_new_sha
 end
 
+---Return the OLD and NEW line numbers for one end of a note range. The `draft_notes` API
+---leaves `line_code` empty inside `line_range`, so fall back to the line numbers that the
+---range end carries itself.
+---@param range_end PositionInfo One end of a `line_range`
+---@return integer? old_line
+---@return integer? new_line
+local function parse_range_end(range_end)
+  local old_line, new_line = indicators_common.parse_line_code(range_end.line_code or "")
+  return old_line or range_end.old_line, new_line or range_end.new_line
+end
+
 ---Return start and end line numbers for the note range, and whether comment is on "NEW SHA".
----The range is calculated from the line codes but the position itself is based on
+---The range is calculated from the range ends but the position itself is based on
 ---either the `new_line` or `old_line`.
 ---@param old_line? integer The line number in the OLD version
 ---@param new_line? integer The line number in the NEW version
----@param start_line_code string The line code for the start of the range
----@param end_line_code string The line code for the end of the range
+---@param range_start PositionInfo The start of the range
+---@param range_end PositionInfo The end of the range
 ---@return integer start_line
 ---@return integer end_line
 ---@return boolean is_new_sha True if line range refers to NEW SHA
-M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end_line_code)
-  local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
-  local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
+M.get_line_numbers_for_range = function(old_line, new_line, range_start, range_end)
+  local old_start_line, new_start_line = parse_range_end(range_start)
+  local old_end_line, new_end_line = parse_range_end(range_end)
   if old_line ~= nil and old_start_line ~= 0 then
     local range = old_end_line - old_start_line
     return (old_line - range), old_line, false
@@ -285,8 +296,8 @@ M.get_line_number_from_node = function(root_node)
     local line_number, _, is_new_sha = M.get_line_numbers_for_range(
       root_node.old_line,
       root_node.new_line,
-      root_node.range.start.line_code,
-      root_node.range["end"].line_code
+      root_node.range.start,
+      root_node.range["end"]
     )
     return line_number, is_new_sha
   else
