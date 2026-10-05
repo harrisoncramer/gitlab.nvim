@@ -248,24 +248,42 @@ M.get_line_number = function(id)
   return ((is_new_sha and first_note.position.new_line or first_note.position.old_line) or 1), is_new_sha
 end
 
+---Return the number of lines between the start and end of a range on one side of the diff.
+---Line codes are preferred because they hold both line numbers, whereas the range's
+---`old_line`/`new_line` are 0 on the side a line doesn't exist on.
+---@param start_from_code? integer The start line parsed from the line code
+---@param end_from_code? integer The end line parsed from the line code
+---@param start_line? integer The start line from the range
+---@param end_line? integer The end line from the range
+---@return integer
+local function get_range_length(start_from_code, end_from_code, start_line, end_line)
+  if start_from_code and end_from_code then
+    return end_from_code - start_from_code
+  end
+  if (start_line or 0) > 0 and (end_line or 0) > 0 then
+    return end_line - start_line
+  end
+  return 0
+end
+
 ---Return start and end line numbers for the note range, and whether comment is on "NEW SHA".
----The range is calculated from the line codes but the position itself is based on
----either the `new_line` or `old_line`.
+---The range is calculated from the line codes, or from the range's line numbers if GitLab
+---returns empty line codes, but the position itself is based on either the `new_line` or `old_line`.
 ---@param old_line? integer The line number in the OLD version
 ---@param new_line? integer The line number in the NEW version
----@param start_line_code string The line code for the start of the range
----@param end_line_code string The line code for the end of the range
+---@param line_range LineRange The range of the note
 ---@return integer start_line
 ---@return integer end_line
 ---@return boolean is_new_sha True if line range refers to NEW SHA
-M.get_line_numbers_for_range = function(old_line, new_line, start_line_code, end_line_code)
-  local old_start_line, new_start_line = indicators_common.parse_line_code(start_line_code)
-  local old_end_line, new_end_line = indicators_common.parse_line_code(end_line_code)
+M.get_line_numbers_for_range = function(old_line, new_line, line_range)
+  local start, end_ = line_range.start, line_range["end"]
+  local old_start_line, new_start_line = indicators_common.parse_line_code(start.line_code)
+  local old_end_line, new_end_line = indicators_common.parse_line_code(end_.line_code)
   if old_line ~= nil and old_start_line ~= 0 then
-    local range = (old_start_line and old_end_line) and (old_end_line - old_start_line) or 0
+    local range = get_range_length(old_start_line, old_end_line, start.old_line, end_.old_line)
     return (old_line - range), old_line, false
   elseif new_line ~= nil then
-    local range = (new_start_line and new_end_line) and (new_end_line - new_start_line) or 0
+    local range = get_range_length(new_start_line, new_end_line, start.new_line, end_.new_line)
     -- Force start_line to be greater than 0
     -- TODO: use `math.max(new_line - range, 1)` instead
     local start_line = (new_line - range > 0) and (new_line - range) or 1
@@ -285,8 +303,7 @@ M.get_line_number_from_node = function(root_node)
     local line_number, _, is_new_sha = M.get_line_numbers_for_range(
       root_node.old_line,
       root_node.new_line,
-      root_node.range.start.line_code,
-      root_node.range["end"].line_code
+      root_node.range
     )
     return line_number, is_new_sha
   else
