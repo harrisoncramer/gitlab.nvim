@@ -79,8 +79,8 @@ local create_multiline_diagnostic = function(d_or_n)
   local start_line, end_line, _ = actions_common.get_line_numbers_for_range(
     first_note.position.old_line,
     first_note.position.new_line,
-    line_range.start.line_code,
-    line_range["end"].line_code
+    line_range.start,
+    line_range["end"]
   )
 
   return create_diagnostic({
