@@ -32,7 +32,11 @@ M.new_location_from_reviewer = function()
   end
   local diff_hunks =
     hunks.get_hunks(reviewer_data.old_sha, reviewer_data.new_sha, reviewer_data.old_file_name, reviewer_data.file_name)
-  return Location.new(reviewer_data, diff_hunks)
+  local location = Location.new(reviewer_data, diff_hunks)
+  if location == nil then
+    u.notify("Error getting location information", vim.log.levels.ERROR)
+  end
+  return location
 end
 
 ---Fire the API to send the comment data to the Go server.
@@ -340,7 +344,23 @@ M.can_create_comment = function(must_be_visual)
   end
 
   -- Check that we are in a valid buffer
-  if not M.sha_exists() then
+  if not M.file_exists() then
+    return false
+  end
+
+  -- Check we're in visual mode for code suggestions and multiline comments
+  if must_be_visual and not u.check_visual_mode() then
+    return false
+  end
+
+  if M.location == nil then
+    return false
+  end
+
+  -- Check that there aren't unsaved modifications
+  local is_modified = vim.bo[0].modified
+  if state.settings.reviewer_settings.diffview.imply_local and is_modified then
+    u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.ERROR)
     return false
   end
 
@@ -353,24 +373,12 @@ M.can_create_comment = function(must_be_visual)
   if err ~= nil then
     return false
   end
-  -- Check that there aren't unsaved modifications
-  local is_modified = vim.bo[0].modified
-  if state.settings.reviewer_settings.diffview.imply_local and (is_modified or has_changes) then
+  if state.settings.reviewer_settings.diffview.imply_local and has_changes then
     u.notify("Cannot leave comments on changed files, please stash or commit and push", vim.log.levels.ERROR)
     return false
   end
 
   if not git.check_current_branch_up_to_date_on_remote(vim.log.levels.ERROR) then
-    return false
-  end
-
-  -- Check we're in visual mode for code suggestions and multiline comments
-  if must_be_visual and not u.check_visual_mode() then
-    return false
-  end
-
-  if M.location == nil then
-    u.notify("Error getting location information", vim.log.levels.ERROR)
     return false
   end
 
@@ -380,7 +388,7 @@ end
 ---Check whether user is commenting on a valid buffer.
 ---Tightly coupled to how the Diffview plugin names non-existent buffers!
 ---@return boolean
-M.sha_exists = function()
+M.file_exists = function()
   if vim.fn.expand("%") == "diffview://null" then
     u.notify("This file does not exist, please comment on the other buffer", vim.log.levels.ERROR)
     return false
