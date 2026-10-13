@@ -300,11 +300,8 @@ end
 ---@return boolean is_new_sha True if line number refers to NEW SHA
 M.get_line_number_from_node = function(root_node)
   if root_node.range then
-    local line_number, _, is_new_sha = M.get_line_numbers_for_range(
-      root_node.old_line,
-      root_node.new_line,
-      root_node.range
-    )
+    local line_number, _, is_new_sha =
+      M.get_line_numbers_for_range(root_node.old_line, root_node.new_line, root_node.range)
     return line_number, is_new_sha
   else
     return M.get_line_number(root_node.id)
