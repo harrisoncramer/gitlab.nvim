@@ -41,6 +41,7 @@ type PositionData struct {
 	StartCommitSHA string     `json:"start_commit_sha"`
 	Type           string     `json:"type"`
 	LineRange      *LineRange `json:"line_range" validate:"required_with=FileName"`
+	CommitID       string     `json:"commit_id,omitempty"`
 }
 
 /* RequestWithPosition is an interface that abstracts the handling of position data for a comment or a draft comment */

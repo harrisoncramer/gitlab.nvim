@@ -9,12 +9,17 @@ import (
 
 type fakeCommentClient struct {
 	testBase
+	capturedOpt **gitlab.CreateMergeRequestDiscussionOptions
 }
 
 func (f fakeCommentClient) CreateMergeRequestDiscussion(pid interface{}, mergeRequest int64, opt *gitlab.CreateMergeRequestDiscussionOptions, options ...gitlab.RequestOptionFunc) (*gitlab.Discussion, *gitlab.Response, error) {
 	resp, err := f.handleGitlabError()
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if f.capturedOpt != nil {
+		*f.capturedOpt = opt
 	}
 
 	return &gitlab.Discussion{Notes: []*gitlab.Note{{}}}, resp, err
@@ -80,10 +85,70 @@ func TestPostComment(t *testing.T) {
 		assert(t, data.Message, "Comment created successfully")
 	})
 
+	t.Run("Passes commit_id through to the Gitlab client when provided", func(t *testing.T) {
+		testCommentCreationData := PostCommentRequest{
+			Comment: "Some comment",
+			PositionData: PositionData{
+				FileName: "file.txt",
+				CommitID: "abc123",
+				LineRange: &LineRange{
+					Start: &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+					End:   &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+				},
+			},
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+		var capturedOpt *gitlab.CreateMergeRequestDiscussionOptions
+		svc := middleware(
+			commentService{testProjectData, fakeCommentClient{capturedOpt: &capturedOpt}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:   newPayload[PostCommentRequest],
+				http.MethodDelete: newPayload[DeleteCommentRequest],
+				http.MethodPatch:  newPayload[EditCommentRequest],
+			}),
+			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
+		)
+		getSuccessData(t, svc, request)
+		if capturedOpt.CommitID == nil {
+			t.Fatal("expected CommitID to be set")
+		}
+		assert(t, *capturedOpt.CommitID, "abc123")
+	})
+
+	t.Run("Leaves commit_id unset when not provided", func(t *testing.T) {
+		testCommentCreationData := PostCommentRequest{
+			Comment: "Some comment",
+			PositionData: PositionData{
+				FileName: "file.txt",
+				LineRange: &LineRange{
+					Start: &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+					End:   &PositionInfo{Type: "", OldLine: 4, NewLine: 4},
+				},
+			},
+		}
+		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
+		var capturedOpt *gitlab.CreateMergeRequestDiscussionOptions
+		svc := middleware(
+			commentService{testProjectData, fakeCommentClient{capturedOpt: &capturedOpt}},
+			withMr(testProjectData, fakeMergeRequestLister{}),
+			withPayloadValidation(methodToPayload{
+				http.MethodPost:   newPayload[PostCommentRequest],
+				http.MethodDelete: newPayload[DeleteCommentRequest],
+				http.MethodPatch:  newPayload[EditCommentRequest],
+			}),
+			withMethodCheck(http.MethodPost, http.MethodDelete, http.MethodPatch),
+		)
+		getSuccessData(t, svc, request)
+		if capturedOpt.CommitID != nil {
+			t.Fatalf("expected CommitID to be nil, got %q", *capturedOpt.CommitID)
+		}
+	})
+
 	t.Run("Handles errors from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
-			commentService{testProjectData, fakeCommentClient{testBase{errFromGitlab: true}}},
+			commentService{testProjectData, fakeCommentClient{testBase: testBase{errFromGitlab: true}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
 				http.MethodPost:   newPayload[PostCommentRequest],
@@ -99,7 +164,7 @@ func TestPostComment(t *testing.T) {
 	t.Run("Handles non-200s from Gitlab client", func(t *testing.T) {
 		request := makeRequest(t, http.MethodPost, "/mr/comment", testCommentCreationData)
 		svc := middleware(
-			commentService{testProjectData, fakeCommentClient{testBase{status: http.StatusSeeOther}}},
+			commentService{testProjectData, fakeCommentClient{testBase: testBase{status: http.StatusSeeOther}}},
 			withMr(testProjectData, fakeMergeRequestLister{}),
 			withPayloadValidation(methodToPayload{
 				http.MethodPost:   newPayload[PostCommentRequest],
