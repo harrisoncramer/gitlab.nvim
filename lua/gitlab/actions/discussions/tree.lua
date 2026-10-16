@@ -3,6 +3,7 @@
 
 local u = require("gitlab.utils")
 local common = require("gitlab.actions.common")
+local virtual_indent = require("gitlab.actions.discussions.virtual_indent")
 local List = require("gitlab.utils.list")
 local state = require("gitlab.state")
 local NuiTree = require("nui.tree")
@@ -345,17 +346,10 @@ M.nui_tree_prepare_node = function(node)
 
   for i, text in ipairs(texts) do
     local line = NuiLine()
-    local expanders = state.settings.discussion_tree.expanders
 
-    line:append(string.rep(expanders.indentation, node._depth - 1))
-
-    if i == 1 and node:has_children() then
-      line:append(node:is_expanded() and expanders.expanded or expanders.collapsed)
-      if node.icon then
-        line:append(node.icon .. " ", node.icon_hl)
-      end
-    else
-      line:append(expanders.indentation)
+    -- Draw the filetype icon in the `by_file_name` tree type
+    if i == 1 and node:has_children() and node.icon then
+      line:append(node.icon .. " ", node.icon_hl)
     end
 
     line:append(text, node.text_hl)
@@ -382,6 +376,15 @@ M.nui_tree_prepare_node = function(node)
   end
 
   return lines
+end
+
+---Render the tree and redraw its virtual-text indentation and indent guides.
+---Use this instead of calling `tree:render()` directly, since the indentation lives on
+---a separate namespace that `tree:render()` does not clear or repopulate on its own.
+---@param tree NuiTree
+M.render = function(tree)
+  tree:render()
+  virtual_indent.apply(tree)
 end
 
 ---@class ToggleNodesOptions
@@ -439,7 +442,7 @@ M.toggle_nodes = function(winid, tree, unlinked, opts)
       state.discussion_tree.unresolved_expanded = not state.discussion_tree.unresolved_expanded
     end
   end
-  tree:render()
+  M.render(tree)
   M.restore_cursor_position(winid, tree, current_cursor_column, current_node, root_node)
 end
 
@@ -564,7 +567,7 @@ M.toggle_node = function(winid, tree)
     node:expand()
   end
 
-  tree:render()
+  M.render(tree)
   M.restore_cursor_position(winid, tree, current_cursor_column, node, common.get_root_node(tree, node))
 end
 
