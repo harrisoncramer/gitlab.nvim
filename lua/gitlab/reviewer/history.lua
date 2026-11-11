@@ -29,130 +29,37 @@ local async = require("diffview.async")
 
 local M = {}
 
----Return the first parent of `sha`, or nil when git cannot resolve it (a root commit).
----@param sha string
----@return string?
-local function first_parent(sha)
-  local out = vim.fn.systemlist({ "git", "rev-parse", "--verify", sha .. "^1" })
-  if vim.v.shell_error ~= 0 then
-    return nil
-  end
-  return out[1]
-end
-
----@class BrowseContext
----@field commit_sha string SHA of the commit currently shown
----@field parent_sha string SHA of that commit's first parent, the old side of the shown diff
----@field file string Path of the current file (new version)
----@field old_file string Path of the current file (old version; equals file unless renamed)
----@field new_side boolean True if the cursor is in the new (commit) window, false for old (commit^)
----@field line integer Cursor line number in the focused window
-
----Gather everything needed from the live FileHistory view and cursor. Notifies and
----returns nil when the view, commit, file, or side cannot be determined.
----@return BrowseContext?
-M.get_context = function()
-  if reviewer.history_tabid == nil or vim.api.nvim_get_current_tabpage() ~= reviewer.history_tabid then
-    u.notify("Not in the commit browser", vim.log.levels.ERROR)
-    return nil
-  end
-
-  local view = require("diffview.lib").get_current_view()
-  if view == nil or view.panel == nil or view.panel.cur_item == nil then
-    u.notify("No commit browser view", vim.log.levels.ERROR)
-    return nil
-  end
-
-  local log_entry = view.panel.cur_item[1]
-  local commit_sha = log_entry and log_entry.commit and log_entry.commit.hash
-  local cur_file = view.panel.cur_item[2]
-  if commit_sha == nil or cur_file == nil then
-    u.notify("Could not read commit or file", vim.log.levels.ERROR)
-    return nil
-  end
-
-  local layout = view.cur_layout
-  if layout == nil or layout.a == nil or layout.b == nil then
-    u.notify("No diff layout", vim.log.levels.ERROR)
-    return nil
-  end
-
-  local current_bufnr = vim.api.nvim_win_get_buf(vim.api.nvim_get_current_win())
-  if current_bufnr ~= layout.a.file.bufnr and current_bufnr ~= layout.b.file.bufnr then
-    u.notify("Put the cursor in a diff window", vim.log.levels.ERROR)
-    return nil
-  end
-
-  local parent_sha = first_parent(commit_sha)
-  if parent_sha == nil then
-    u.notify("Could not resolve the parent of the browsed commit", vim.log.levels.ERROR)
-    return nil
-  end
-
-  return {
-    commit_sha = commit_sha,
-    parent_sha = parent_sha,
-    file = cur_file.path,
-    old_file = cur_file.oldpath or cur_file.path,
-    new_side = current_bufnr == layout.b.file.bufnr,
-    line = vim.api.nvim_win_get_cursor(0)[1],
-  }
-end
-
----Return the boundaries of the current visual selection, low line first.
----@return integer
----@return integer
-local function visual_selection_boundaries()
-  local start_line = vim.fn.line("v")
-  local end_line = vim.fn.line(".")
-  if start_line > end_line then
-    start_line, end_line = end_line, start_line
-  end
-  return start_line, end_line
-end
-
----Build the Location for [start_line, end_line] against the browsed commit's own diff.
----@param ctx BrowseContext
----@param start_line integer
----@param end_line integer
+---Build the Location for the reviewer data's lines against the browsed commit's own diff.
+---@param reviewer_data ReviewerData
 ---@return Location
-local function build_location(ctx, start_line, end_line)
-  ---@type ReviewerData
-  local reviewer_data = {
-    file_name = ctx.file,
-    old_file_name = ctx.old_file,
-    old_sha = ctx.parent_sha,
-    new_sha = ctx.commit_sha,
-    start_line = start_line,
-    end_line = end_line,
-    new_file_focused = ctx.new_side,
-  }
-  local diff_hunks = hunks.get_hunks(ctx.parent_sha, ctx.commit_sha, ctx.old_file, ctx.file)
+local function build_location(reviewer_data)
+  local diff_hunks =
+    hunks.get_hunks(reviewer_data.old_sha, reviewer_data.new_sha, reviewer_data.old_file_name, reviewer_data.file_name)
   return Location.new(reviewer_data, diff_hunks)
 end
 
----Attach the commit_override anchoring the location to ctx's browsed commit (see module
+---Attach the commit_override anchoring the location to the browsed commit (see module
 ---header) and hand it to the existing comment path.
----@param ctx BrowseContext
+---@param reviewer_data ReviewerData
 ---@param location table
-local function submit_comment(ctx, location)
+local function submit_comment(reviewer_data, location)
   location.commit_override = {
-    base_sha = ctx.parent_sha,
-    start_sha = ctx.parent_sha,
-    head_sha = ctx.commit_sha,
-    commit_id = ctx.commit_sha,
+    base_sha = reviewer_data.old_sha,
+    start_sha = reviewer_data.old_sha,
+    head_sha = reviewer_data.new_sha,
+    commit_id = reviewer_data.new_sha,
   }
   require("gitlab.actions.comment").create_comment_for_location(location)
 end
 
 ---Comment on the current line while browsing, anchored to the browsed commit.
 M.create_comment = function()
-  local ctx = M.get_context()
-  if ctx == nil then
+  local reviewer_data = reviewer.get_reviewer_data("file_history")
+  if reviewer_data == nil then
     return
   end
 
-  submit_comment(ctx, build_location(ctx, ctx.line, ctx.line))
+  submit_comment(reviewer_data, build_location(reviewer_data))
 end
 
 ---Comment on the range covered by the operator motion or visual selection while browsing.
@@ -161,14 +68,13 @@ M.create_multiline_comment = function()
     return
   end
 
-  local ctx = M.get_context()
-  if ctx == nil then
+  local reviewer_data = reviewer.get_reviewer_data("file_history")
+  if reviewer_data == nil then
     u.press_escape()
     return
   end
 
-  local start_line, end_line = visual_selection_boundaries()
-  submit_comment(ctx, build_location(ctx, start_line, end_line))
+  submit_comment(reviewer_data, build_location(reviewer_data))
 end
 
 ---Show `file_path` at commit `sha` in the FileHistory panel and move the cursor to

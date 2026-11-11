@@ -278,9 +278,68 @@ local get_visual_selection_boundaries = function()
   return start_line, end_line
 end
 
----Get the data from the reviewer: file names, line information, and cursor focus.
+---Read the commit browser's shown diff, the browsed commit against its first parent.
+---Notifies and returns nil when the view, commit, parent, file, or side cannot be determined.
 ---@return ReviewerData?
-M.get_reviewer_data = function()
+local get_file_history_data = function()
+  if M.history_tabid == nil or vim.api.nvim_get_current_tabpage() ~= M.history_tabid then
+    u.notify("Not in the commit browser", vim.log.levels.ERROR)
+    return nil
+  end
+
+  local view = require("diffview.lib").get_current_view()
+  if view == nil or view.panel == nil or view.panel.cur_item == nil then
+    u.notify("No commit browser view", vim.log.levels.ERROR)
+    return nil
+  end
+
+  local log_entry = view.panel.cur_item[1]
+  local commit_sha = log_entry and log_entry.commit and log_entry.commit.hash
+  local cur_file = view.panel.cur_item[2]
+  if commit_sha == nil or cur_file == nil then
+    u.notify("Could not read commit or file", vim.log.levels.ERROR)
+    return nil
+  end
+
+  local layout = view.cur_layout
+  if layout == nil or layout.a == nil or layout.b == nil then
+    u.notify("No diff layout", vim.log.levels.ERROR)
+    return nil
+  end
+
+  local current_bufnr = vim.api.nvim_win_get_buf(vim.api.nvim_get_current_win())
+  if current_bufnr ~= layout.a.file.bufnr and current_bufnr ~= layout.b.file.bufnr then
+    u.notify("Put the cursor in a diff window", vim.log.levels.ERROR)
+    return nil
+  end
+
+  -- A root commit has no parent to anchor a comment to.
+  local parent_sha = layout.a.file.rev and layout.a.file.rev.commit
+  if parent_sha == nil or parent_sha == require("diffview.vcs.adapters.git.rev").GitRev.NULL_TREE_SHA then
+    u.notify("Could not resolve the parent of the browsed commit", vim.log.levels.ERROR)
+    return nil
+  end
+
+  local start_line, end_line = get_visual_selection_boundaries()
+  return {
+    file_name = cur_file.path,
+    old_file_name = cur_file.oldpath or cur_file.path,
+    old_sha = parent_sha,
+    new_sha = commit_sha,
+    start_line = start_line,
+    end_line = end_line,
+    new_file_focused = current_bufnr == layout.b.file.bufnr,
+  }
+end
+
+---Get the data from the reviewer: file names, line information, and cursor focus.
+---@param mode? "file_history" Read the commit browser instead of the MR's diff
+---@return ReviewerData?
+M.get_reviewer_data = function(mode)
+  if mode == "file_history" then
+    return get_file_history_data()
+  end
+
   local diffview_layout = M.get_layout()
   if diffview_layout == nil then
     return

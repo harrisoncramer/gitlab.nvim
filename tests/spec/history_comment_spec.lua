@@ -1,10 +1,11 @@
 -- Tests for reviewer/history.lua create_comment: what the new side anchors to, and that
--- the old side refuses. M.get_context and the comment module are stubbed so these run
--- without a live Diffview/FileHistory view, and gitlab.git is stubbed so the position is
--- built from a diff the test controls.
+-- the old side refuses. reviewer.get_reviewer_data and the comment module are stubbed so
+-- these run without a live Diffview/FileHistory view, and gitlab.git is stubbed so the
+-- position is built from a diff the test controls.
 
 local history = require("gitlab.reviewer.history")
 local comment = require("gitlab.actions.comment")
+local reviewer = require("gitlab.reviewer")
 
 ---Make hunks.get_hunks return the hunks of `diff_text` instead of shelling out to git.
 local function stub_diff(diff_text)
@@ -16,7 +17,7 @@ local function stub_diff(diff_text)
 end
 
 describe("reviewer/history.lua create_comment", function()
-  local original_get_context = history.get_context
+  local original_get_reviewer_data = reviewer.get_reviewer_data
   local original_create_comment_for_location = comment.create_comment_for_location
 
   -- The browsed commit replaces old line 40 with two lines, so on the new side line 40 is
@@ -38,20 +39,22 @@ index 1111111..2222222 100644
   end)
 
   after_each(function()
-    history.get_context = original_get_context
+    reviewer.get_reviewer_data = original_get_reviewer_data
     comment.create_comment_for_location = original_create_comment_for_location
     package.loaded["gitlab.git"] = nil
   end)
 
   it("Anchors a new-side comment to the browsed commit", function()
-    history.get_context = function()
+    reviewer.get_reviewer_data = function(mode)
+      assert.are.equal("file_history", mode)
       return {
-        commit_sha = "commitABC",
-        parent_sha = "parentXYZ",
-        file = "f.lua",
-        old_file = "f.lua",
-        new_side = true,
-        line = 40,
+        new_sha = "commitABC",
+        old_sha = "parentXYZ",
+        file_name = "f.lua",
+        old_file_name = "f.lua",
+        new_file_focused = true,
+        start_line = 40,
+        end_line = 40,
       }
     end
 
@@ -76,14 +79,16 @@ index 1111111..2222222 100644
   end)
 
   it("Sends both line numbers for a line the browsed commit did not change", function()
-    history.get_context = function()
+    reviewer.get_reviewer_data = function(mode)
+      assert.are.equal("file_history", mode)
       return {
-        commit_sha = "commitABC",
-        parent_sha = "parentXYZ",
-        file = "f.lua",
-        old_file = "f.lua",
-        new_side = true,
-        line = 42,
+        new_sha = "commitABC",
+        old_sha = "parentXYZ",
+        file_name = "f.lua",
+        old_file_name = "f.lua",
+        new_file_focused = true,
+        start_line = 42,
+        end_line = 42,
       }
     end
 
@@ -103,14 +108,16 @@ index 1111111..2222222 100644
   end)
 
   it("Types an old-side line as a deletion of the browsed commit", function()
-    history.get_context = function()
+    reviewer.get_reviewer_data = function(mode)
+      assert.are.equal("file_history", mode)
       return {
-        commit_sha = "commitABC",
-        parent_sha = "parentXYZ",
-        file = "f.lua",
-        old_file = "f.lua",
-        new_side = false,
-        line = 40,
+        new_sha = "commitABC",
+        old_sha = "parentXYZ",
+        file_name = "f.lua",
+        old_file_name = "f.lua",
+        new_file_focused = false,
+        start_line = 40,
+        end_line = 40,
       }
     end
 
@@ -131,7 +138,7 @@ index 1111111..2222222 100644
 end)
 
 describe("reviewer/history.lua create_multiline_comment", function()
-  local original_get_context = history.get_context
+  local original_get_reviewer_data = reviewer.get_reviewer_data
   local original_create_comment_for_location = comment.create_comment_for_location
 
   local bufnr
@@ -157,7 +164,7 @@ index 1111111..2222222 100644
   end)
 
   after_each(function()
-    history.get_context = original_get_context
+    reviewer.get_reviewer_data = original_get_reviewer_data
     comment.create_comment_for_location = original_create_comment_for_location
     package.loaded["gitlab.git"] = nil
     -- Leave any visual mode the test left behind before tearing down the buffer.
@@ -169,14 +176,16 @@ index 1111111..2222222 100644
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
     vim.cmd("normal! V2j")
 
-    history.get_context = function()
+    reviewer.get_reviewer_data = function(mode)
+      assert.are.equal("file_history", mode)
       return {
-        commit_sha = "commitABC",
-        parent_sha = "parentXYZ",
-        file = "f.lua",
-        old_file = "f.lua",
-        new_side = true,
-        line = 2,
+        new_sha = "commitABC",
+        old_sha = "parentXYZ",
+        file_name = "f.lua",
+        old_file_name = "f.lua",
+        new_file_focused = true,
+        start_line = 2,
+        end_line = 4,
       }
     end
 
@@ -202,14 +211,16 @@ index 1111111..2222222 100644
     vim.api.nvim_win_set_cursor(0, { 2, 0 })
     vim.cmd("normal! V2j")
 
-    history.get_context = function()
+    reviewer.get_reviewer_data = function(mode)
+      assert.are.equal("file_history", mode)
       return {
-        commit_sha = "commitABC",
-        parent_sha = "parentXYZ",
-        file = "f.lua",
-        old_file = "f.lua",
-        new_side = false,
-        line = 2,
+        new_sha = "commitABC",
+        old_sha = "parentXYZ",
+        file_name = "f.lua",
+        old_file_name = "f.lua",
+        new_file_focused = false,
+        start_line = 2,
+        end_line = 4,
       }
     end
 
