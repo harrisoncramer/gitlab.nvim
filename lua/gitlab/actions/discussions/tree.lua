@@ -41,10 +41,13 @@ M.add_discussions_to_table = function(items, unlinked)
     local root_new_line = nil
     local root_old_line = nil
     local root_url
+    ---@type string?
+    local root_commit_id
 
     for j, note in ipairs(discussion.notes) do
       if j == 1 then
-        _, root_text, root_text_nodes = M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable })
+        _, root_text, root_text_nodes =
+          M.build_note(note, { resolved = note.resolved, resolvable = note.resolvable }, true)
         root_file_name = (type(note.position) == "table" and note.position.new_path or nil)
         root_old_file_name = (type(note.position) == "table" and note.position.old_path or nil)
         root_new_line = (type(note.position) == "table" and note.position.new_line or nil)
@@ -55,6 +58,9 @@ M.add_discussions_to_table = function(items, unlinked)
         resolved = note.resolved
         root_url = state.INFO.web_url .. "#note_" .. note.id
         range = (type(note.position) == "table" and note.position.line_range or nil)
+        -- go-gitlab types commit_id as a plain string, so a note without a commit arrives
+        -- as "", never nil
+        root_commit_id = (note.commit_id ~= nil and note.commit_id ~= "") and note.commit_id or nil
       else -- Otherwise insert it as a child node...
         local note_node = M.build_note(note)
         table.insert(discussion_children, note_node)
@@ -89,6 +95,7 @@ M.add_discussions_to_table = function(items, unlinked)
       resolvable = resolvable,
       resolved = resolved,
       url = root_url,
+      commit_id = root_commit_id,
     }, body)
 
     table.insert(t, root_node)
@@ -272,9 +279,10 @@ end
 ---Build note node body.
 ---@param note Note|DraftNote
 ---@param resolve_info? ResolveInfo Nil if the note is a child node
+---@param is_root? boolean True if the note is the root of a discussion or draft note
 ---@return string
 ---@return NuiTree.Node[]
-local function build_note_body(note, resolve_info)
+local function build_note_body(note, resolve_info, is_root)
   local text_nodes = {}
   local i = 0
   for body_line in u.split_by_new_lines(note.body or note.note) do
@@ -300,7 +308,13 @@ local function build_note_body(note, resolve_info)
     symbol = state.settings.discussion_tree.unlinked
   end
 
-  local noteHeader = common.build_note_header(note) .. " " .. symbol
+  -- The marker belongs to the discussion, so it goes on the root and not on every reply
+  local commit_marker = ""
+  if is_root and note.commit_id and note.commit_id ~= "" then
+    commit_marker = " " .. note.commit_id:sub(1, 7)
+  end
+
+  local noteHeader = common.build_note_header(note) .. commit_marker .. " " .. symbol
 
   return noteHeader, text_nodes
 end
@@ -308,11 +322,12 @@ end
 ---Build note node.
 ---@param note Note|DraftNote
 ---@param resolve_info? ResolveInfo Nil if the note is a child node
+---@param is_root? boolean True if the note is the root of a discussion or draft note
 ---@return NuiTree.Node
 ---@return string
 ---@return NuiTree.Node[]
-M.build_note = function(note, resolve_info)
-  local text, text_nodes = build_note_body(note, resolve_info)
+M.build_note = function(note, resolve_info, is_root)
+  local text, text_nodes = build_note_body(note, resolve_info, is_root)
   local note_node = NuiTree.Node({
     text = text,
     is_draft = note.note ~= nil,
@@ -395,12 +410,11 @@ end
 ---@param unlinked boolean
 ---@param opts ToggleNodesOptions
 M.toggle_nodes = function(winid, tree, unlinked, opts)
-  local current_node = tree:get_node()
+  local current_node, current_cursor_column = common.get_node_at(tree, winid)
   if current_node == nil then
     return
   end
   local root_node = common.get_root_node(tree, current_node)
-  local current_cursor_column = vim.api.nvim_win_get_cursor(winid)[2]
   for _, node in ipairs(tree:get_nodes()) do
     if opts.toggle_resolved then
       if
@@ -445,13 +459,14 @@ end
 
 ---Get current node for restoring cursor position.
 ---@param tree NuiTree The inline discussion tree or the unlinked discussion tree
----@param last_node? NuiTree.Node The last active discussion tree node in case we are not in any of the discussion trees
-M.get_node_at_cursor = function(tree, last_node)
+---@param winid integer The window whose cursor position to check
+---@param last_node? NuiTree.Node The last active discussion tree node in case `winid` isn't the current window
+M.get_node_at_cursor = function(tree, winid, last_node)
   if tree == nil then
     return
   end
-  if vim.api.nvim_get_current_win() == vim.fn.win_findbuf(tree.bufnr)[1] then
-    return tree:get_node()
+  if winid == vim.api.nvim_get_current_win() then
+    return (common.get_node_at(tree, winid))
   else
     return last_node
   end
@@ -476,7 +491,9 @@ M.restore_cursor_position = function(winid, tree, cursor_column, original_node, 
     end
   end
   if line_number ~= nil and winid and vim.api.nvim_win_is_valid(winid) then
-    local last_line = vim.fn.line("$")
+    -- The rebuild restores every registered window, so `winid` is usually not the current
+    -- one; the clamp has to be against its buffer, not against whatever is focused.
+    local last_line = vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(winid))
     vim.api.nvim_win_set_cursor(winid, { math.min(line_number, last_line), cursor_column or 0 })
   end
 end
@@ -535,8 +552,7 @@ end
 ---@param winid integer The id if the tree split
 ---@param tree NuiTree The current discussion tree
 M.toggle_node = function(winid, tree)
-  local node = tree:get_node()
-  local current_cursor_column = vim.api.nvim_win_get_cursor(winid)[2]
+  local node, current_cursor_column = common.get_node_at(tree, winid)
 
   -- Switch to the "note" node from "note_body" nodes to enable toggling discussions inside comments
   if node ~= nil and node.type == "note_body" then
